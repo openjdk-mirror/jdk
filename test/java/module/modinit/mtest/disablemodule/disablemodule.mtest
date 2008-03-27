@@ -1,0 +1,83 @@
+# Defines m1, m2 
+# m1 imports m2 with default versionconstraint
+# Test disables m2, and makes sure no more module instance of m2 can be 
+# instantiated. 
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        new m2.MainB().run(args);
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+    ModuleDefinition md = module.getModuleDefinition();
+
+    try {
+        Module m = md.getModuleInstance();
+    }
+    catch(Throwable e) {
+        throw new Exception("Module definition cannot be instantiated.");	
+    }
+
+    try {
+        // Disable the "java.se" module definition.
+        Repository r = Repository.getBootstrapRepository();
+        ModuleDefinition se = r.find("java.se");
+        ModuleSystem ms = se.getRepository().getModuleSystem();
+        ms.disableModuleDefinition(se);
+        throw new Exception("Standard module definition should not be disabled.");
+    }
+    catch(UnsupportedOperationException ise) {
+    }
+    catch(Throwable e) {
+        throw new Exception("Incorrect exception is thrown when disabling standard module definition.");	
+    }
+
+    try {
+        // Disable the module definition.
+        ModuleSystem ms = md.getRepository().getModuleSystem();
+        ms.disableModuleDefinition(md);
+
+        // try to instantiate a disabled module definition.
+        Module m = md.getModuleInstance();
+        throw new Exception("Disabled module definition should not be instantiable.");
+    }
+    catch(IllegalStateException ise) {
+    }
+    catch(Throwable e) {
+        throw new Exception("Incorrect exception is thrown when instantiating disabled module definition.");	
+    }
+
+    try {
+        // Disable the same module definition again.
+        ModuleSystem ms = md.getRepository().getModuleSystem();
+        ms.disableModuleDefinition(md);
+        Module m = md.getModuleInstance();
+        throw new Exception("Disabled module definition should not be instantiable.");
+    }
+    catch(IllegalStateException ise) {
+    }
+    catch(Throwable e) {
+        throw new Exception("Incorrect exception is thrown when instantiating disabled module definition.");	
+    }
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

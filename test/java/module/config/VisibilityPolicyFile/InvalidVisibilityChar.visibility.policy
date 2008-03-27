@@ -1,0 +1,8 @@
+
++, a.b.c, [1.0, 2.0)   
+
+// This entry is not valid
+*, a.b.c, [1.0, 2.0)  
+
+-, a.b.c, 1.0.0+	
+

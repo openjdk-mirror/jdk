@@ -1,5 +1,5 @@
 /*
- * Copyright 1994-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -508,6 +508,7 @@ public final class System {
      * <dt>java.class.version   <dd>Java class version number
      * <dt>java.class.path      <dd>Java classpath
      * <dt>os.name              <dd>Operating System Name
+     * <dt>os.platform          <dd>Operating System Platform
      * <dt>os.arch              <dd>Operating System Architecture
      * <dt>os.version           <dd>Operating System Version
      * <dt>file.separator       <dd>File separator ("/" on Unix)
@@ -578,6 +579,8 @@ public final class System {
      *     <td>Path of extension directory or directories</td></tr>
      * <tr><td><code>os.name</code></td>
      *     <td>Operating system name</td></tr>
+     * <tr><td><code>os.platform</code></td>
+     *     <td>Operating system platform</td></tr>
      * <tr><td><code>os.arch</code></td>
      *     <td>Operating system architecture</td></tr>
      * <tr><td><code>os.version</code></td>

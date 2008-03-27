@@ -1,0 +1,8 @@
+
+importer a.b.c @ 1.0 {
+    p.q.r @ 1.7.0;
+    
+    // original constraint is 1+. Error!
+    x.y.z @ [0.2, 4.0);
+};
+

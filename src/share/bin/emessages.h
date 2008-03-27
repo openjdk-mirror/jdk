@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,6 +41,15 @@
 #define ARG_ERROR1      "Error: %s requires class path specification"
 #define ARG_ERROR2      "Error: %s requires jar file specification"
 #define ARG_ERROR3      "Error: The -J option should not be followed by a space."
+#define ARG_ERROR4      "Error: %s requires jam file specification"
+#define ARG_ERROR5      "Error: %s requires module specification"
+#define ARG_ERROR6      "Error: %s requires modulemain specification"
+#define ARG_ERROR7      "Error: %s requires repository specification"
+#define ARG_ERROR8      "Error: -jar or classname cannot be specified with module options -jam, -repository, -module or -modulemain"
+#define ARG_ERROR9      "Error: -jam or -module must be specified"
+#define ARG_ERROR10     "Error: only one -jam or -module can be specified"
+#define ARG_ERROR11     "Error: only one -jam or -repository can be specified"
+#define ARG_ERROR12     "Error: -jar, -jam, -module or a class name must be specified"
 
 #define JVM_ERROR1      "Error: Could not create the Java Virtual Machine.\n" GEN_ERROR
 #define JVM_ERROR2      "Error: Could not detach main thread.\n" JNI_ERROR

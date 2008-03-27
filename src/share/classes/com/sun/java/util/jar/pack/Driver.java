@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2003-2007 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -217,6 +217,7 @@ class Driver {
             // Accept jarfiles ending with .jar or .zip.
             // Accept jarfile of "-" (stdout), but only if unpacking.
             || !(jarfile.toLowerCase().endsWith(".jar")
+                 || jarfile.toLowerCase().endsWith(".jam")
                  || jarfile.toLowerCase().endsWith(".zip")
                  || (jarfile.equals("-") && !doPack))) {
             printUsage(doPack, false, System.err);

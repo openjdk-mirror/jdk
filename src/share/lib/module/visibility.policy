@@ -1,0 +1,41 @@
+/**
+ * Each visibility policy file consists of zero or more entries in the following
+ * format:
+ *   ['+'|'-'], <module-name>
+ *   ['+'|'-'], <module-name>, <version-constraint>
+ *
+ * For example,
+ *   -, a.b.c
+ *   +, p.q.r, 0.0+
+ *   -, x.y.z, [1.0, 2.0) 
+ *   ....
+ *
+ * Each entry must begin with either '+' or '-', followed by a module name, and
+ * an optional version constraint. 
+ *
+ * '+' means that any module matches the specified name and version constraint
+ * is visible, while '-' means that the matched module is invisible. If the 
+ * version constraint is not present, the default version constraint is assumed.
+ *
+ * Note that the module-name may be set to the wildcard value, *, which allows
+ * it to match any module. In addition, the module-name may be suffixed to the 
+ * wildcard value, ".*", which allows it to match any module that has the 
+ * module-name's prefix.
+ *
+ * For example,
+ *   -, a.b.*
+ *   -, p.q.r, 0.0+
+ *   -, x.y.z, [1.0, 2.0) 
+ *   +, *
+ *
+ * When setting the module-name or version-constraint, do not surround it with 
+ * quotes.
+ *
+ * When determining if a module is visible, each entry in the visiblity policy
+ * is looped through. If the module name's and version match an entry, the 
+ * specified visibility in the entry is returned. If a module matches no entry
+ * in the visibility policy, the module is assumed to be visible.
+ */
+
+// default visiblity policy
++, *

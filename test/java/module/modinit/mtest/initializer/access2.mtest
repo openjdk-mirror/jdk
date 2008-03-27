@@ -1,0 +1,59 @@
+#
+# Verify that the module initializer is invoked
+# and that it cannot access classes in imported modules
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ModuleInitializerClass("m1.InitializerImpl")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.Main
+>> begin class m1.MainA
+	if (InitializerImpl.CALLED == false) {
+	    throw new Exception("module initializer not called");
+	}
+	new m2.MainB().run("from m1");
+>> end class
+>> begin class m1.InitializerImpl
+> super
+implements ModuleInitializer
+> body
+    static volatile boolean CALLED;
+
+    public void initialize(Module module) throws ModuleInitializationException {
+	CALLED = true;
+	try {
+	    new m2.MainB().info("from module initializer");
+	    throw new ModuleInitializationException("failed");
+	} catch (NoClassDefFoundError e) {
+	    System.out.println("OK: " + e);
+	} catch (Exception ex) {
+	    if (ex instanceof ModuleInitializationException) {
+	        throw ((ModuleInitializationException) ex);
+	    } else {
+	        throw new ModuleInitializationException("failed", ex);
+	    }
+	} 
+    }
+    
+    public void release(Module module) {
+    }    
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

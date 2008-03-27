@@ -1,5 +1,5 @@
 /*
- * Copyright 1994-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-2007 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,10 @@ package java.lang;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.File;
+import java.module.Module;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Superpackage;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.AccessController;
@@ -247,6 +249,19 @@ public abstract class ClassLoader {
         initialized = true;
     }
 
+    /**
+     * Returns the Module this ClassLoader is associated with.
+     *
+     * <p>If this class loader is the module class loader of a
+     * {@link Module}, this method returns that Module object. Otherwise
+     * it returns null.
+     *
+     * @return the Module this ClassLoader is associated with or null.
+     */
+    public Module getModule() {
+        return null;
+    }
+
 
     // -- Class --
 
@@ -375,6 +390,86 @@ public abstract class ClassLoader {
      */
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         throw new ClassNotFoundException(name);
+    }
+
+    /**
+     * Finds the superpackage with the specified fully qualified name.
+     * This method is invoked by the Java virtual machine to resolve superpackage
+     * references. Typically, it should not be called by application code.
+     *
+     * <p>The default implementation of this method calls
+     * {@link #findResource findResource()} to obtain the contents of the
+     * superpackage file and {@link #defineSuperpackage defineSuperpackage()}
+     * to construct the {@code Superpackage} object.
+
+     * @param  name
+     *         The fully qualified name of the superpackage
+     *
+     * @return  The resulting <tt>Superpackage</tt> object
+     *
+     * @throws  ClassNotFoundException
+     *          If the superpackage could not be found
+     */
+    protected Superpackage findSuperpackage(String name) throws ClassNotFoundException {
+        throw new ClassNotFoundException(name);
+    }
+
+    /**
+     * Converts an array of bytes into an instance of class <tt>Superpackage</tt>.
+     * Typically this method will only invoked by a class loader's
+     * {@link #findSuperpackage findSuperpackage()} method.
+     *
+     * @param  name
+     *         The expected fully qualified name of the superpackage, or
+     *         <tt>null</tt> if not known
+     *
+     * @param  b
+     *         The bytes that make up the superpackage data.  The bytes in positions
+     *         <tt>off</tt> through <tt>off+len-1</tt> should have the format
+     *         of a valid superpackage file as defined by the <a
+     *         href="http://java.sun.com/docs/books/vmspec/">Java Virtual
+     *         Machine Specification</a>.
+     *
+     * @param  off
+     *         The start offset in <tt>b</tt> of the superpackage data
+     *
+     * @param  len
+     *         The length of the superpackage data
+     *
+     * @return  The <tt>Superpackage</tt> object that was created from the specified
+     *          superpackage data.
+     *
+     * @throws  ClassFormatError
+     *          If the data did not contain a valid superpackage
+     *
+     * @throws  IndexOutOfBoundsException
+     *          If either <tt>off</tt> or <tt>len</tt> is negative, or if
+     *          <tt>off+len</tt> is greater than <tt>b.length</tt>.
+     *
+     */
+    protected final Superpackage defineSuperpackage(String name, byte[] b, int off, int len)
+        throws ClassFormatError
+    {
+        Class<?> clazz = defineClass(name, b, off, len);
+        try {
+            return getSuperpackageConstructor().newInstance(clazz);
+        } catch (Exception e) {
+            throw (ClassFormatError)new ClassFormatError
+                ("Could not construct superpackage").initCause(e);
+        }
+    }
+
+    private static volatile Constructor<Superpackage> superpackageConstructor;
+
+    private static Constructor<Superpackage> getSuperpackageConstructor() throws NoSuchMethodException {
+        Constructor<Superpackage> c = superpackageConstructor;
+        // XXX add doPrivileged()
+        if (c == null) {
+            c = Superpackage.class.getDeclaredConstructor(Class.class);
+            c.setAccessible(true);
+            superpackageConstructor = c;
+        }
+        return c;
     }
 
     /**
@@ -2023,17 +2118,23 @@ class SystemClassLoaderAction
         this.parent = parent;
     }
 
-    public ClassLoader run() throws Exception {
-        String cls = System.getProperty("java.system.class.loader");
-        if (cls == null) {
-            return parent;
-        }
-
+    private ClassLoader newClassLoader(String cls) throws Exception {
         Constructor ctor = Class.forName(cls, true, parent)
             .getDeclaredConstructor(new Class[] { ClassLoader.class });
         ClassLoader sys = (ClassLoader) ctor.newInstance(
             new Object[] { parent });
         Thread.currentThread().setContextClassLoader(sys);
         return sys;
+    }
+
+    public ClassLoader run() throws Exception {
+        String cls = System.getProperty("java.system.class.loader");
+        if (cls != null) {
+            return newClassLoader(cls);
+        } else if (Boolean.getBoolean("java.system.module.loader")) {
+            return newClassLoader("sun.module.core.ProxyModuleLoader");
+        } else {
+            return parent;
+        }
     }
 }

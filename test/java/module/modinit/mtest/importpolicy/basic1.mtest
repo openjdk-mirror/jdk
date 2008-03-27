@@ -1,0 +1,35 @@
+#
+# Verify that the custom import policy is invoked
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportPolicyClass("m1.ImportPolicyImpl")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.Main
+>> begin class m1.MainA
+	if (ImportPolicyImpl.CALLED == false) {
+	    throw new Exception("Import policy not called");
+	}
+>> end class
+>> begin class m1.ImportPolicyImpl
+> super
+implements ImportPolicy
+> body
+    static volatile boolean CALLED;
+
+    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
+	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+	    throws UnsatisfiedDependencyException {
+	CALLED = true;
+	Repository rep = moduleDef.getRepository();
+	return Collections.singletonList(rep.find("java.se"));
+    }
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

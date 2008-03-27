@@ -1,0 +1,49 @@
+#
+# m1 imports m2, m3
+# m3 imports reexports m2
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2"),
+    @ImportModule(name="m3")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3", reexport=true)
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@MainClass("m3.MainC")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test
+>>> begin test m2
+return
+>>> end test
+>>> begin test m3
+return
+>>> end test

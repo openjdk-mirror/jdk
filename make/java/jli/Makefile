@@ -1,5 +1,5 @@
 #
-# Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright 2005-2007 Sun Microsystems, Inc.  All Rights Reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -92,6 +92,17 @@ ifeq ($(PLATFORM), solaris)
 endif
 
 OTHER_CPPFLAGS += $(LIBARCH_DEFINES)
+
+# if we have module sources then build the launcher with modules features
+ENABLE_MODULE_LAUNCHER = $(shell \
+  if [ -f $(SHARE_SRC)/classes/sun/module/ModuleLauncher.java ]; then \
+    echo true; \
+  else \
+    echo false; \
+  fi)
+ifeq ($(ENABLE_MODULE_LAUNCHER), true) 
+    OTHER_CPPFLAGS += -DENABLE_MODULE_LAUNCHER
+endif # ENABLE_MODULE_LAUNCHER
 
 
 ifneq ($(PLATFORM), windows)	# UNIX systems

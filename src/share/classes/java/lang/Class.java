@@ -1,5 +1,5 @@
 /*
- * Copyright 1994-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-2007 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Superpackage;
 import java.lang.ref.SoftReference;
 import java.io.InputStream;
 import java.io.ObjectStreamField;
@@ -695,6 +696,18 @@ public final
         } else
             return getSuperclass();
     }
+
+    /**
+     * Returns the superpackage this class is a member of,
+     * or null if it is not a member of a superpackage.
+     *
+     * @return the superpackage this class is a member of,
+     * or null if it is not a member of a superpackage.
+     */
+    public Superpackage getSuperpackage() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
 
     /**
      * Gets the package for this class.  The class loader of this class is used

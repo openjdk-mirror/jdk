@@ -1,0 +1,76 @@
+#
+# Verify that the custom import policy is invoked
+# and that it can initialize and call other modules
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportPolicyClass("m1.ImportPolicyImpl")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.Main
+>> begin class m1.MainA
+	if (ImportPolicyImpl.CALLED != 1) {
+	    throw new Exception("Import policy not called once: " + ImportPolicyImpl.CALLED);
+	}
+	new m2.MainB().run("from m1");
+>> end class
+>> begin class m1.ImportPolicyImpl
+> super
+implements ImportPolicy
+> body
+    static volatile int CALLED;
+
+    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
+	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+	    throws ModuleInitializationException {
+	if (CALLED != 0) {
+	    throw new ModuleInitializationException("Import policy called more than once");
+	}
+	CALLED++;
+	Repository rep = moduleDef.getRepository();
+	ModuleDefinition md = rep.find("m3");
+	Module m = md.getModuleInstance();
+	ClassLoader cl = m.getClassLoader();
+	try {
+	    Class clazz = cl.loadClass("m3.MainC");
+	    Object o = clazz.newInstance();
+	    System.out.println("m3: " + o);
+//	    new Exception().printStackTrace();
+	} catch (Exception e) {
+	    throw new ModuleInitializationException("could not get m3", e);
+	}
+	List<ModuleDefinition> mds = new ArrayList<ModuleDefinition>();
+	mds.add(rep.find("java.se"));
+	mds.add(rep.find("m2"));
+	return mds;
+    }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

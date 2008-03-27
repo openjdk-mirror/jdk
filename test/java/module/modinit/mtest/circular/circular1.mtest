@@ -1,0 +1,34 @@
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        new m2.MainB().info(args);
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m1")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+        new m1.MainA().info(args);
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test
+>>> begin test m2
+return
+>>> end test

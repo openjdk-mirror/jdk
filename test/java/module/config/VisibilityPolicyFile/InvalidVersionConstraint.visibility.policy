@@ -1,0 +1,10 @@
+
++, a.b.c, [1.0, 2.0)
+-, a.b.c, 1.0.0+
+
+// The next entry is not valid
++, d.e.f, [1.0, ]
+
+-, d.e.f
+	
+

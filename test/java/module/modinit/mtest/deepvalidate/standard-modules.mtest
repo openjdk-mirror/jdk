@@ -1,0 +1,54 @@
+# Tests deep validations with standard modules
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")})
+> export
+m1.MainA
+>> begin class m1.MainA
+    Repository r = module.getModuleDefinition().getRepository();
+    ModuleDefinition seMD = r.find("java.se");
+    Module m = seMD.getModuleInstance();
+
+    // java.se should support deep validation
+    if (m.supportsDeepValidation() == false) {
+        throw new Exception("java.se does not support deep validation as expected.");
+    }
+
+    // deep validation should succeed for java.se
+    try {
+        m.deepValidate();
+    }
+    catch (UnsupportedOperationException u) {
+        throw new Exception("java.se's deep validation is not expected to fail: " + u);
+    }
+    catch (ModuleInitializationException e) {
+        throw new Exception("java.se's deep validation is not expected to fail: " + e);
+    }
+
+    ModuleDefinition classpMD = r.find("java.classpath");
+    Module classp = classpMD.getModuleInstance();
+
+    // classp should NOT support deep validation
+    if (classp.supportsDeepValidation()) {
+        throw new Exception("java.classpath unexpectedly supports deep validation.");
+    }
+
+    // deep validation should fail for classp
+    try {
+        classp.deepValidate();
+        throw new Exception("java.classpath's deep validation does not fail as expected.");
+    }
+    catch (UnsupportedOperationException u) {
+    }
+    catch (ModuleInitializationException e) {
+        throw new Exception("java.classpath's deep validation fails but unexpected exception is thrown: " + e);
+    }
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

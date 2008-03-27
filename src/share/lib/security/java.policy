@@ -28,6 +28,7 @@ grant {
 	permission java.util.PropertyPermission "java.vendor.url", "read";
 	permission java.util.PropertyPermission "java.class.version", "read";
 	permission java.util.PropertyPermission "os.name", "read";
+	permission java.util.PropertyPermission "os.platform", "read";
 	permission java.util.PropertyPermission "os.version", "read";
 	permission java.util.PropertyPermission "os.arch", "read";
 	permission java.util.PropertyPermission "file.separator", "read";

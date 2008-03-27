@@ -1,0 +1,17 @@
+
+importer a.b.c @ 1.0 {
+    p.q.r @ 1.7.0;
+    x.y.z @ 2.3.4;
+};
+
+// The next entry has more than one semicolon.
+importer a.b.* @ 1.* {
+    p.q.r @ 1.8.0;
+    x.y.z @ 2.*;
+    s.t.u @ 7.8.9;
+};;
+
+importer * {
+    p.q.r @ [1.0, 2.0);
+    x.y.z @ [2.0, 3.0);
+};

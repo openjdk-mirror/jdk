@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A basic test with multiple modules and some optional elements. -->
+<modules>
+    <module>
+        <name>org.foo.xml</name>
+        <version>1.3</version>
+    </module>
+    <module>
+        <name>org.foo.soap</name>
+        <version>2.0.0</version>
+        <platform-binding>
+            <platform>linux</platform>
+            <arch>x86</arch>
+        </platform-binding>
+        <path>soap2Linux</path>
+    </module>
+    <module>
+        <name>org.foo.soap</name>
+        <version>2.0.0</version>
+        <path>soap2Other</path>
+    </module>
+</modules>

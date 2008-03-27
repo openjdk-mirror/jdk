@@ -1,0 +1,104 @@
+# Defines m1, m2, m3, m4 v1.2, and m4.1.6
+# imports:
+#     m1
+#    /  \
+#  m2    m3
+#    \  /
+#     m4
+#
+# m2 imports m4 1.0+
+# m3 imports m4 1.5+
+#
+# verify that they both get m4 1.6 and that it is the same module instance
+#
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.1")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2"),
+    @ImportModule(name="m3")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        m2.MainB.get().run(args);
+        m3.MainC.get().run(args);
+	Object o = m2.MainB.get().getMainD();
+	m3.MainC.get().setMainD(o);
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4", version="1.0+")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+> import
+import m4.MainD;
+> run
+        MainD.get().run(args);
+	if (MainD.get().version.equals("1.6") == false) {
+	    throw new Exception("wrong version of m4");
+	}
+> body
+    public MainD getMainD() {
+	return new MainD();
+    }
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@Version("2.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4", version="1.5+")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+> import
+import m4.MainD;
+> run
+        MainD.get().run(args);
+	if (MainD.get().version.equals("1.6") == false) {
+	    throw new Exception("wrong version of m4");
+	}
+> body
+    public void setMainD(Object o) throws Exception {
+	MainD m = (MainD)o;
+	System.out.println("got m4: " + m);
+	m.info();
+    }
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@Version("1.2")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m4.MainD
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@Version("1.6")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m4.MainD
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

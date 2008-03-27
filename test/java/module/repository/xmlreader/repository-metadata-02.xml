@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- All optional elements are missing. -->
+<modules>
+    <module>
+        <name>org.foo.xml</name>
+        <version>1.3</version>
+    </module>
+</modules>

@@ -1,0 +1,97 @@
+#
+# Verify that getMemberClasses() and getExportedClasses return the 
+# correct information for the module when legacy classes are involved.
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@LegacyClasses({
+   "a.b.c",
+   "x.y.z"})
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.MainA
+>> begin file MODULE-INF/legacy-classes.list
+> copy legacy-classes.list
+>> end file
+>> begin class m1.MainA
+    // m1 should only export m1.MainA
+    Set<String> memberClasses = module.getModuleDefinition().getMemberClasses();
+    if (memberClasses == null) {
+	throw new Exception("getMemberClasses() should never return null.");
+    }	
+    if (memberClasses.size() != 3) {
+	throw new Exception("m1 should have three member classes.");
+    }
+    if (memberClasses.contains("m1.MainA") == false 
+        || memberClasses.contains("a.b.c") == false
+        || memberClasses.contains("x.y.z") == false) {
+        throw new Exception("Missing member classes in m1.");		
+    }		
+    Set<String> exportedClasses = module.getModuleDefinition().getExportedClasses();
+    if (exportedClasses == null) {
+        throw new Exception("getExportedClasses() should never return null.");
+    }	
+    if (exportedClasses.size() != 1) {
+        throw new Exception("m1 should have one exported class.");
+    }
+    if (exportedClasses.contains("m1.MainA") == false) {
+        throw new Exception("Missing exported classes in m1.");		
+    }		
+
+    Module m2;
+    try {
+        ModuleDefinition md2 = module.getModuleDefinition().getRepository().find("m2");
+        m2 = md2.getModuleInstance();
+    }
+    catch (ModuleInitializationException mie) {
+        throw new Exception("Unable to instantiate m2.");
+    }						
+
+    // m2 should  export m1.MainA, a.b.c, and x.y.z
+    memberClasses = m2.getModuleDefinition().getMemberClasses();
+    if (memberClasses == null) {
+        throw new Exception("getMemberClasses() should never return null.");
+    }	
+    if (memberClasses.size() != 3) {
+        throw new Exception("m2 should have three member classes.");
+    }
+    if (memberClasses.contains("m2.MainB") == false 
+        || memberClasses.contains("a.b.c") == false
+        || memberClasses.contains("x.y.z") == false) {
+        throw new Exception("Missing member classes in m2.");		
+    }		
+    exportedClasses = m2.getModuleDefinition().getExportedClasses();
+    if (exportedClasses == null) {
+        throw new Exception("getExportedClasses() should never return null.");
+    }	
+    if (exportedClasses.size() != 3) {
+        throw new Exception("m2 should have three exported classes.");
+    }
+    if (exportedClasses.contains("m2.MainB") == false
+        || exportedClasses.contains("a.b.c") == false
+        || exportedClasses.contains("x.y.z") == false) {
+        throw new Exception("Missing exported classes in m2.");		
+    }		
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ExportLegacyClasses
+@LegacyClasses({
+   "a.b.c",
+   "x.y.z"})
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin file MODULE-INF/legacy-classes.list
+> copy legacy-classes.list
+>> end file
+>>> end module
+>>> begin test m1
+return
+>>> end test

@@ -395,6 +395,28 @@ TREEAPI_LINKOPT = -linkoffline ../../../../api $(DOCSDIR)/api/
 # TREEAPI_PKGS is located in NON_CORE_PKGS.gmk
 
 #
+# Variables used by MODULE target
+#
+
+MODULE_SOURCEPATH  = $(TOPDIR)/src/share/classes
+MODULE_DOCDIR	 = $(DOCSDIR)/jsr277
+
+MODULE_JAVADOCFLAGS = $(COMMON_JAVADOCFLAGS)			\
+		   -encoding ascii			        \
+                   -nodeprecatedlist                            \
+                   -d $(MODULE_DOCDIR)				\
+                   -sourcepath $(MODULE_SOURCEPATH)               \
+                   -windowtitle $(MODULE_WINDOWTITLE)             \
+                   -doctitle $(MODULE_DOCTITLE)                   \
+                   -header $(MODULE_JAVADOCHEADER)                \
+                   -linkoffline ../../../../../api $(DOCSDIR)/api/
+
+MODULE_WINDOWTITLE = "Java Module System"
+MODULE_DOCTITLE    = "Java$(TRADEMARK) Module System"
+MODULE_JAVADOCHEADER      = "Java Module System"
+# MODULE_PKGS is located in NON_CORE_PKGS.gmk
+
+#
 # Path where javadoc should find source files for release docs
 #
 RELEASEDOCS_SRCPATH = "$(SHARE_SRC)/classes$(CLASSPATH_SEPARATOR)$(PLATFORM_SRC)/classes$(CLASSPATH_SEPARATOR)$(GENSRCDIR)$(CLASSPATH_SEPARATOR)$(SHARE_SRC)/doc/stub$(CLASSPATH_SEPARATOR)$(CLOSED_SRC)/share/classes$(CLASSPATH_SEPARATOR)$(IMPORTSRCDIR)"
@@ -412,6 +434,7 @@ include NON_CORE_PKGS.gmk
 
 # Targets for all APIs other than the core platform APIs
 ALL_OTHER_TARGETS = \
+    moduledocs \
     mirrordocs \
     docletapidocs \
     tagletapidocs \
@@ -633,6 +656,14 @@ treeapidocs:
 		   -sourcepath $(RELEASEDOCS_SRCPATH) \
 		   $(TREEAPI_LINKOPT)                  \
 		   $(TREEAPI_PKGS)
+
+.PHONY: moduledocs
+moduledocs:
+	@# ######## api-module ############################
+	$(RM) -r $(MODULE_DOCDIR)
+	$(MKDIR) -p $(MODULE_DOCDIR)
+	$(JAVADOC_CMD) $(MODULE_JAVADOCFLAGS)                     \
+		   $(MODULE_PKGS)
 
 # DEBUG TARGET
 # List the values defined in the makefile hierarchy, to make sure everything

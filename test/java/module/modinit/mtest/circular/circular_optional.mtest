@@ -1,0 +1,62 @@
+#
+# m1 imports m2, X
+# m2 imports m1 optional
+#
+# m2 should be invalid because m1 is present but invalid
+#
+>>> begin module m0
+> annotations
+@MainClass("m0.Main")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m0.Main
+>> begin class m0.Main
+	String[] moduleNames = new String[] { "m1", "m2" };
+	for (String moduleName : moduleNames) {
+	    ModuleDefinition md = repository.find(moduleName);
+	    try {
+		Module m = md.getModuleInstance();
+		throw new Exception("Module not in error state: " + moduleName);
+	    } catch (ModuleInitializationException e) {
+		System.out.println("OK: " + e);
+	    }
+	}
+>> end class
+>>> end module
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2"),
+    @ImportModule(name="X")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        new m2.MainB().run(args);
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m1", optional=true)
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test
+>>> begin test m2
+exception ModuleInitializationException
+>>> end test
+>>> begin test m0
+return
+>>> end test

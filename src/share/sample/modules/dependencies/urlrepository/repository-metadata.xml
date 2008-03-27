@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modules>
+  <module>
+    <name>hello</name>
+    <version>1.0</version>
+  </module>
+  <module>
+    <name>dep</name>
+    <version>1.0</version>
+  </module>
+</modules>

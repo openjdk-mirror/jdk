@@ -1,0 +1,51 @@
+Working on the Java ModuleSystem Using the NetBeans IDE
+
+This NetBeans project allows a developer interested in learning about the
+Java Module System to modify, build, test, and generate javadoc for it.
+
+
+README FIRST
+
+The file make/netbeans/README describes how to use NetBeans with OpenJDK
+projects in general.  The rest of this file describes specifics of the Java
+Module System.
+
+
+WORKING WITH THE JAVA MODULE SYSTEM
+
+The Java Module System source code is written in pure Java code.  Most of the
+code is in
+     java/module
+     sun/module
+
+There are a few related files in other packages (for example,
+java/lang/ClassLoader.java).  The packages containing those files are part of
+this NetBeans project.  But while those entire packages get built (and
+cleaned) by this project, only a few files in those other packages are related
+to the Java Module System.
+
+
+The set of actions supported by this project are:
+
+* Build Project:
+  - Compiles the Java Module System source files and puts the class files
+    under build/${platform}-${arch}/classes.
+
+* Generate Javadoc for Project
+  - Generates the javadoc for the all the packages that have code related to
+    the Java Module System.
+
+  - The javadoc is generated under build/${platform}-${arch}/javadoc/modules.
+
+* Test Project
+  - Runs jtreg unit tests located under test/java/module and test/sun/module.
+
+  - The test results are written under
+        build/${platform}-${arch}/jtreg/modules
+
+    and the HTML test report can be found at
+        build/${platform}-${arch}/jtreg/modules/JTreport/index.html
+
+* Clean Project
+  - Removes class files, test files, javadoc, etc., etc. created by this
+    project under build/${platform}-${arch} 

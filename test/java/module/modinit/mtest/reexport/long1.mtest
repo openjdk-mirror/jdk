@@ -1,0 +1,122 @@
+#
+# m1 imports m2
+# m2 imports reexports m3
+# m3 imports reexports m4
+# m4 imports reexports m5
+# m5 imports reexports m6
+# m6 imports m7
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+> run
+        new m2.MainB().run("from m1");
+        new m3.MainC().run("from m1");
+        new m4.MainD().run("from m1");
+        new m5.MainE().run("from m1");
+        new m6.MainF().run("from m1");
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3", reexport=true)
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@MainClass("m3.MainC")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4", reexport=true)
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+        new m4.MainD().run("from m3");
+        new m5.MainE().run("from m3");
+        new m6.MainF().run("from m3");
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@MainClass("m4.MainD")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m5", reexport=true)
+})
+> export
+m4.MainD
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin module m5
+> annotations
+@MainClass("m5.MainE")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m6", reexport=true)
+})
+> export
+m5.MainE
+>> begin class m5.MainE
+>> end class
+>>> end module
+>>> begin module m6
+> annotations
+@MainClass("m6.MainF")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m7")
+})
+> export
+m6.MainF
+>> begin class m6.MainF
+>> end class
+>>> end module
+>>> begin module m7
+> annotations
+@MainClass("m7.MainG")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3")
+})
+> export
+m7.MainG
+>> begin class m7.MainG
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test
+>>> begin test m2
+return
+>>> end test
+>>> begin test m3
+return
+>>> end test
+>>> begin test m4
+return
+>>> end test
+>>> begin test m5
+return
+>>> end test
+>>> begin test m6
+return
+>>> end test
+>>> begin test m7
+return
+>>> end test

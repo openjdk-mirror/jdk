@@ -1,0 +1,14 @@
+>>> begin module main
+> annotations
+@MainClass("main.Main")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+main.Main
+>> begin class main.Main
+>> end class
+>>> end module
+>>> begin test main
+return
+>>> end test

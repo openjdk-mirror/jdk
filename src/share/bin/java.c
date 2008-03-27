@@ -55,6 +55,18 @@
 
 #include "java.h"
 
+typedef struct {
+  int     argc;
+  char ** argv;
+  char *  jarfile;
+  char *  classname;
+  char *  jamfile;
+  char *  module;
+  char *  modulemain;
+  char *  repository;
+  InvocationFunctions ifn;
+} JavaMainArgs;
+
 /*
  * A NOTE TO DEVELOPERS: For performance reasons it is important that
  * the program image remain relatively small until after SelectVersion
@@ -67,6 +79,7 @@ static jboolean printVersion = JNI_FALSE; /* print and exit */
 static jboolean showVersion = JNI_FALSE;  /* print but continue */
 static jboolean printUsage = JNI_FALSE;   /* print and exit*/
 static jboolean printXUsage = JNI_FALSE;  /* print and exit*/
+static jboolean initiateModule = JNI_FALSE; /* launch and exit*/
 
 static const char *_program_name;
 static const char *_launcher_name;
@@ -96,14 +109,18 @@ static int numOptions, maxOptions;
  */
 static void SetClassPath(const char *s);
 static void SelectVersion(int argc, char **argv, char **main_class);
-static jboolean ParseArguments(int *pargc, char ***pargv, char **pjarfile,
-                               char **pclassname, int *pret, const char *jvmpath);
+static jboolean ParseArguments(int *pargc, char ***pargv,
+                               char **pjarfile, char **pclassname,
+                               char **pjamfile, char **module,
+                               char **modulemain, char **repository,
+                               int *pret, const char *jvmpath);
 static jboolean InitializeJVM(JavaVM **pvm, JNIEnv **penv,
                               InvocationFunctions *ifn);
 static jstring NewPlatformString(JNIEnv *env, char *s);
 static jobjectArray NewPlatformStringArray(JNIEnv *env, char **strv, int strc);
 static jclass LoadClass(JNIEnv *env, char *name);
 static jstring GetMainClassName(JNIEnv *env, char *jarname);
+static jboolean IsMethodPublic(JNIEnv *env, jclass mainClass, jmethodID mainID);
 
 static void TranslateApplicationArgs(int jargc, const char **jargv, int *pargc, char ***pargv);
 static jboolean AddApplicationOptions(int cpathc, const char **cpathv);
@@ -111,6 +128,8 @@ static void SetApplicationClassPath(const char**);
 
 static void PrintJavaVersion(JNIEnv *env, jboolean extraLF);
 static void PrintUsage(JNIEnv* env, jboolean doXUsage);
+
+static jboolean LaunchModule(JNIEnv* env, JavaMainArgs *args);
 
 static void SetPaths(int argc, char **argv);
 
@@ -162,14 +181,6 @@ static jlong threadStackSize = 0;  /* stack size of the new thread */
 
 int JNICALL JavaMain(void * args); /* entry point                  */
 
-typedef struct {
-  int     argc;
-  char ** argv;
-  char *  jarfile;
-  char *  classname;
-  InvocationFunctions ifn;
-} JavaMainArgs;
-
 /*
  * Entry point.
  */
@@ -189,6 +200,11 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
 {
     char *jarfile = 0;
     char *classname = 0;
+    char *jamfile = 0;
+    char *module  = 0;
+    char *modulemain = 0;
+    char *repository = 0;
+
     char *cpath = 0;
     char *main_class = NULL;
     int ret;
@@ -276,13 +292,22 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
      *  Parse command line options; if the return value of
      *  ParseArguments is false, the program should exit.
      */
-    if (!ParseArguments(&argc, &argv, &jarfile, &classname, &ret, jvmpath)) {
+    if (!ParseArguments(&argc, &argv,
+                        &jarfile, &classname,
+                        &jamfile, &module,
+                        &modulemain, &repository,
+                        &ret, jvmpath)) {
         return(ret);
     }
 
     /* Override class path if -jar flag was specified */
     if (jarfile != 0) {
         SetClassPath(jarfile);
+    }
+
+    /* set the ProxyModuleClassLoader now if required */
+    if (initiateModule) {
+        AddOption("-Djava.system.module.loader=true", NULL);
     }
 
     /* set the -Dsun.java.command pseudo property */
@@ -297,10 +322,58 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
     /* Show the splash screen if needed */
     ShowSplashScreen();
 
-    return ContinueInNewThread(&ifn, argc, argv, jarfile, classname, ret);
+    return ContinueInNewThread(&ifn,
+                               argc, argv,
+                               jarfile, classname,
+                               jamfile, module,
+                               modulemain, repository,
+                               ret);
 
 }
 
+/*
+ * Basic sanity check for the argument rules:
+ * A. Module launcher rules
+ *  a). Mutually exclusive -jam or -module
+ *  b). -repository can only be used with -module
+ *  c). optionally a -modulemain can be used
+ *
+ * B. Jar and Class (legacy)
+ *   a). a Jar or a classname must be specified
+ *
+ */
+jboolean SanityCheck(const JavaMainArgs *args)
+{
+    if (initiateModule) {
+
+        if (args->jarfile != NULL || args->classname != NULL) {
+            ReportErrorMessage(ARG_ERROR8);
+            return JNI_FALSE;
+        }
+
+        if (args->jamfile == NULL && args->module == NULL) {
+            ReportErrorMessage(ARG_ERROR9);
+            return JNI_FALSE;
+        }
+
+        if (args->jamfile != NULL && args->module != NULL) {
+            ReportErrorMessage(ARG_ERROR10);
+            return JNI_FALSE;
+        }
+
+
+        if (args->jamfile != NULL && args->repository != NULL) {
+            ReportErrorMessage(ARG_ERROR11);
+            return JNI_FALSE;
+        }
+
+    } else if (args->jarfile == NULL && args->classname == NULL) {
+        ReportErrorMessage(ARG_ERROR12);
+        return JNI_FALSE;
+    }
+    // Alls well that ends well
+    return JNI_TRUE;
+}
 
 int JNICALL
 JavaMain(void * _args)
@@ -321,6 +394,7 @@ JavaMain(void * _args)
     int ret = 0;
     jlong start, end;
 
+    jboolean sanity = JNI_TRUE;
 
     /* Initialize the virtual machine */
 
@@ -343,15 +417,18 @@ JavaMain(void * _args)
         }
     }
 
-    /* If the user specified neither a class name nor a JAR file */
-    if (printXUsage || printUsage || (jarfile == 0 && classname == 0)) {
-        PrintUsage(env, printXUsage);
-        if ((*env)->ExceptionOccurred(env)) {
-            ReportExceptionDescription(env);
-            ReportErrorMessage(JNI_ERROR);
-            ret=1;
-        }
-        goto leave;
+    if (printXUsage || printUsage || (sanity = SanityCheck(args)) == JNI_FALSE) {
+        if (!sanity) ret=1;
+            PrintUsage(env, printXUsage);
+            if ((*env)->ExceptionOccurred(env)) {
+                ReportExceptionDescription(env);
+                ReportErrorMessage(JNI_ERROR);
+                ret=1;
+            }
+            goto leave;
+    } else if (initiateModule) {
+            ret = (LaunchModule(env, args) == JNI_TRUE) ? 0 : 1;
+            goto leave;
     }
 
     FreeKnownVMs();  /* after last possible PrintUsage() */
@@ -452,33 +529,9 @@ JavaMain(void * _args)
         goto leave;
     }
 
-    {    /* Make sure the main method is public */
-        jint mods;
-        jmethodID mid;
-        jobject obj = (*env)->ToReflectedMethod(env, mainClass,
-                                                mainID, JNI_TRUE);
-
-        if( obj == NULL) { /* exception occurred */
-            ReportExceptionDescription(env);
-            ReportErrorMessage(JNI_ERROR);
-            goto leave;
-        }
-
-        mid =
-          (*env)->GetMethodID(env,
-                              (*env)->GetObjectClass(env, obj),
-                              "getModifiers", "()I");
-        if ((*env)->ExceptionOccurred(env)) {
-            ReportExceptionDescription(env);
-            ReportErrorMessage(JNI_ERROR);
-            goto leave;
-        }
-
-        mods = (*env)->CallIntMethod(env, obj, mid);
-        if ((mods & 1) == 0) { /* if (!Modifier.isPublic(mods)) ... */
-            ReportErrorMessage(CLS_ERROR4);
-            goto leave;
-        }
+    if (IsMethodPublic(env, mainClass, mainID) == JNI_FALSE) {
+        ReportErrorMessage(CLS_ERROR4);
+        goto leave;
     }
 
     /* Build argument array */
@@ -1003,8 +1056,11 @@ SelectVersion(int argc, char **argv, char **main_class)
  * process return value) is set to 0 for a normal exit.
  */
 static jboolean
-ParseArguments(int *pargc, char ***pargv, char **pjarfile,
-                       char **pclassname, int *pret, const char *jvmpath)
+ParseArguments(int *pargc, char ***pargv,
+               char **pjarfile, char **pclassname,
+               char **pjamfile, char **pmodule,
+               char **pmodulemain, char **prepository,
+               int *pret, const char *jvmpath)
 {
     int argc = *pargc;
     char **argv = *pargv;
@@ -1022,6 +1078,24 @@ ParseArguments(int *pargc, char ***pargv, char **pjarfile,
         } else if (JLI_StrCmp(arg, "-jar") == 0) {
             ARG_CHECK (argc, ARG_ERROR2, arg);
             jarflag = JNI_TRUE;
+#ifdef ENABLE_MODULE_LAUNCHER   /* Remove this and in Makefile when jsr277 is merged */
+        } else if (strcmp(arg, "-jam") == 0) {
+            ARG_CHECK (argc, ARG_ERROR4, arg);
+            *pjamfile = *argv++; --argc;
+            initiateModule = JNI_TRUE;
+        } else if (strcmp(arg, "-module") == 0) {
+            ARG_CHECK (argc, ARG_ERROR5, arg);
+            *pmodule = *argv++; --argc;
+            initiateModule = JNI_TRUE;
+        } else if (strcmp(arg, "-modulemain") == 0) {
+            ARG_CHECK (argc, ARG_ERROR6, arg);
+            *pmodulemain = *argv++; --argc;
+            initiateModule = JNI_TRUE;
+        } else if (strcmp(arg, "-repository") == 0) {
+            ARG_CHECK (argc, ARG_ERROR7, arg);
+            *prepository = *argv++; --argc;
+            initiateModule = JNI_TRUE;
+#endif /* ENABLE_MODULE_LAUNCHER */
         } else if (JLI_StrCmp(arg, "-help") == 0 ||
                    JLI_StrCmp(arg, "-h") == 0 ||
                    JLI_StrCmp(arg, "-?") == 0) {
@@ -1093,13 +1167,21 @@ ParseArguments(int *pargc, char ***pargv, char **pjarfile,
         }
     }
 
-    if (--argc >= 0) {
-        if (jarflag) {
-            *pjarfile = *argv++;
-            *pclassname = 0;
-        } else {
-            *pjarfile = 0;
-            *pclassname = *argv++;
+
+    if (argc >= 0) {
+        /*
+         * when given a module or jamfile there is no need to assume
+         * the last arg to be the jar or classname
+         */
+        if (!initiateModule) {
+            if (jarflag) {
+                *pjarfile = *argv++;
+                *pclassname = 0;
+            } else  {
+                *pclassname = *argv++;
+                *pjarfile = 0;
+            }
+            --argc;
         }
         *pargc = argc;
         *pargv = argv;
@@ -1143,14 +1225,26 @@ InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn)
 
 
 #define NULL_CHECK0(e) if ((e) == 0) { \
+    if (JLI_IsTraceLauncher() == JNI_TRUE && (*env)->ExceptionOccurred(env)) { \
+        ReportExceptionDescription(env); \
+    } \
     ReportErrorMessage(JNI_ERROR); \
     return 0; \
   }
 
 #define NULL_CHECK(e) if ((e) == 0) { \
+    if (JLI_IsTraceLauncher() == JNI_TRUE && (*env)->ExceptionOccurred(env)) { \
+        ReportExceptionDescription(env); \
+    } \
     ReportErrorMessage(JNI_ERROR); \
     return; \
   }
+
+#define JNI_CHECK0() if ((*env)->ExceptionOccurred(env)) { \
+    ReportExceptionDescription(env); \
+    (*env)->ExceptionClear(env); \
+    return 0; \
+}
 
 static jstring platformEncoding = NULL;
 static jstring getPlatformEncoding(JNIEnv *env) {
@@ -1280,6 +1374,39 @@ LoadClass(JNIEnv *env, char *name)
     return cls;
 }
 
+/*
+ * Make sure the main method is public.
+ */
+static jboolean
+IsMethodPublic(JNIEnv *env, jclass mainClass, jmethodID mainID)
+{
+    jint mods;
+    jmethodID mid;
+    jobject obj = (*env)->ToReflectedMethod(env, mainClass, mainID, JNI_TRUE);
+
+    if( obj == NULL) { /* exception occurred */
+        ReportExceptionDescription(env);
+        ReportErrorMessage(JNI_ERROR);
+        return JNI_FALSE;
+    }
+
+    mid = (*env)->GetMethodID(env,
+                             (*env)->GetObjectClass(env, obj),
+                              "getModifiers", "()I");
+
+    if ((*env)->ExceptionOccurred(env)) {
+        ReportExceptionDescription(env);
+        ReportErrorMessage(JNI_ERROR);
+        return JNI_FALSE;
+    }
+
+    mods = (*env)->CallIntMethod(env, obj, mid);
+    if ((mods & 1) == 0) { /* if (!Modifier.isPublic(mods)) ... */
+        ReportErrorMessage(CLS_ERROR4);
+        return JNI_FALSE;
+    }
+    return JNI_TRUE;
+}
 
 /*
  * Returns the main class name for the specified jar file.
@@ -1531,6 +1658,151 @@ PrintJavaVersion(JNIEnv *env, jboolean extraLF)
               );
 
     (*env)->CallStaticVoidMethod(env, ver, print);
+}
+
+
+/*
+ * Entry point to the module launcher, note the exceptions are checked
+ * if they have occured and the function will return to the caller,
+ * where the exception are checked again and the exit value will be set.
+ */
+
+static jboolean
+LaunchModule(JNIEnv* env, JavaMainArgs *args)
+{
+    jclass cls;
+    jclass scls;
+    jclass mainClass;
+
+    /*
+     * The loader, main and the cleanup methods
+     */
+    jmethodID moduleLoaderID;
+    jmethodID mainID;
+    jmethodID cleanUpID;
+
+    /*
+     * Convenience methods
+     */
+    jmethodID setRepository;
+    jmethodID setModule;
+    jmethodID setModuleMain;
+    jmethodID setJamFile;
+    jmethodID setDebug;
+
+    /*
+     * The setup details
+     */
+    jstring repositoryName;
+    jstring moduleName;
+    jstring moduleMainName;
+    jstring jamFileName;
+
+    jobjectArray mainArgs;
+    int n;
+
+    /*
+     * Initialize the ModuleLauncher with the required data
+     */
+    NULL_CHECK0(cls = (*env)->FindClass(env, "sun/module/ModuleLauncher"));
+
+    if (args->jamfile != NULL) {
+        NULL_CHECK0(setJamFile = (*env)->GetStaticMethodID(env, cls,
+                                "setJamFile", "(Ljava/lang/String;)V"));
+        jamFileName = NewPlatformString(env, args->jamfile);
+        (*env)->CallStaticVoidMethod(env, cls, setJamFile, jamFileName);
+    } else {
+        if (args->repository != NULL) {
+            NULL_CHECK0(setRepository = (*env)->GetStaticMethodID(env, cls,
+                                "setRepository", "(Ljava/lang/String;)V"));
+            repositoryName = NewPlatformString(env, args->repository);
+            (*env)->CallStaticVoidMethod(env, cls, setRepository, repositoryName);
+            JNI_CHECK0();
+        }
+        if (args->module != NULL) {
+            NULL_CHECK0(setModule = (*env)->GetStaticMethodID(env, cls,
+                                "setModule", "(Ljava/lang/String;)V"));
+            moduleName = NewPlatformString(env, args->module);
+            (*env)->CallStaticVoidMethod(env, cls, setModule, moduleName);
+            JNI_CHECK0();
+        }
+    }
+
+    if (args->modulemain != NULL) {
+        NULL_CHECK0(setModuleMain = (*env)->GetStaticMethodID(env, cls,
+        "setModuleMain", "(Ljava/lang/String;)V"));
+        moduleMainName = NewPlatformString(env, args->modulemain);
+        (*env)->CallStaticVoidMethod(env, cls, setModuleMain, moduleMainName);
+        JNI_CHECK0();
+    }
+
+    NULL_CHECK0(setDebug = (*env)->GetStaticMethodID(env, cls, "setDebug", "(Z)V"));
+    (*env)->CallStaticVoidMethod(env, cls, setDebug , JLI_IsTraceLauncher());
+    JNI_CHECK0();
+
+    /*
+     * Load the class using the module class loader.
+     */
+    NULL_CHECK0(moduleLoaderID = (*env)->GetStaticMethodID(env, cls,
+                                "loadModuleClass", "()Ljava/lang/Class;"));
+
+    mainClass = (*env)->CallStaticObjectMethod(env, cls, moduleLoaderID);
+    JNI_CHECK0();
+    if (mainClass == NULL) {
+       return 0;
+    }
+
+    /*
+     * Get the application's main method
+     */
+    mainID = (*env)->GetStaticMethodID(env, mainClass, "main",
+                                       "([Ljava/lang/String;)V");
+    JNI_CHECK0();
+    if (mainID == NULL) {
+        ReportErrorMessage(CLS_ERROR3);
+        return 0;
+    }
+
+
+    /*
+     * Get the main class and verify its ok.
+     */
+    if (IsMethodPublic(env, mainClass, mainID) == JNI_FALSE) {
+        ReportErrorMessage(CLS_ERROR4);
+        return 0;
+    }
+
+    /*
+     * Populate the argument array for the main entry point.
+     */
+    NULL_CHECK0(scls = (*env)->FindClass(env, "java/lang/String"));
+    NULL_CHECK0(mainArgs = (*env)->NewObjectArray(env, args->argc, scls, NULL));
+    for (n = 0 ; n < args->argc ; n++) {
+        (*env)->SetObjectArrayElement(env, mainArgs, n, NewPlatformString(env, args->argv[n]));
+    }
+    JNI_CHECK0();
+
+    /*
+     * Invoke main method.
+     */
+    (*env)->CallStaticVoidMethod(env, mainClass, mainID, mainArgs);
+    JNI_CHECK0();
+
+    /*
+     * Its ok to call this method with a pending exception
+     */
+    (*env)->DeleteLocalRef(env, mainArgs);
+    JNI_CHECK0();
+
+   /*
+    * Cleanup the repositories created, if any, noting that this
+    * happens only on a clean exit from the VM.
+    */
+    NULL_CHECK0(cleanUpID = (*env)->GetStaticMethodID(env, cls,
+                                               "cleanUp", "()V"));
+    (*env)->CallStaticObjectMethod(env, cls, cleanUpID);
+    JNI_CHECK0();
+    return 1;
 }
 
 /*
@@ -1924,8 +2196,12 @@ IsWildCardEnabled()
 }
 
 static int
-ContinueInNewThread(InvocationFunctions* ifn, int argc,
-                     char **argv, char *jarfile, char *classname, int ret)
+ContinueInNewThread(InvocationFunctions* ifn,
+                    int argc, char **argv,
+                    char *jarfile, char *classname,
+                    char *jamfile, char *module,
+                    char *modulemain, char *repository,
+                    int ret)
 {
 
     /*
@@ -1951,6 +2227,10 @@ ContinueInNewThread(InvocationFunctions* ifn, int argc,
       args.argv = argv;
       args.jarfile = jarfile;
       args.classname = classname;
+      args.repository = repository;
+      args.module = module;
+      args.modulemain = modulemain;
+      args.jamfile    = jamfile;
       args.ifn = *ifn;
 
       rslt = ContinueInNewThread0(JavaMain, threadStackSize, (void*)&args);

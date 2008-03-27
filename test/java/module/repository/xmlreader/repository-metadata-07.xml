@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Check that platform & arch specific work, case-insensitively. -->
+<modules>
+    <module>
+        <name>org.foo.xml</name>
+        <version>1.3</version>
+        <platform-binding>
+            <platform>solaris</platform>
+            <arch>sparc</arch>
+        </platform-binding>
+        <path>one/two</path>
+    </module>
+</modules>

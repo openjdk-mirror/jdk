@@ -1,0 +1,72 @@
+# Defines m2 with ClassesDirectoryPath annnotation
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+    ModuleDefinition moduleDef = module.getModuleDefinition();
+    Repository r = moduleDef.getRepository();
+
+    try {
+        ModuleDefinition md2 = r.find("m2");
+        Module m2 = md2.getModuleInstance();
+    	
+        String name = "m2/MainA.class";
+        ClassLoader clazzLoader = m2.getClassLoader();
+        try {
+            Class clazz = clazzLoader.loadClass(name);
+            throw new Exception("Unexpected class found in WEB-INF/lib/m2/MainA.class.");
+        }
+        catch(ClassNotFoundException e) {		
+        }
+
+        name = "r1.txt";
+    	
+        // Checks ClassLoader.getResourceAsStream()
+        InputStream in = clazzLoader.getResourceAsStream(name);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        String line = reader.readLine();
+        if (line.equals("resource 1") == false) {
+            throw new Exception("Wrong content: " + line);
+        }
+        in.close();		
+    	
+        // Checks ClassLoader.getResource()
+        in = clazzLoader.getResource(name).openConnection().getInputStream();
+        reader = new BufferedReader(new InputStreamReader(in));
+        line = reader.readLine();
+        if (line.equals("resource 1") == false) {
+            throw new Exception("Wrong content: " + line);
+        }
+        in.close();					
+    }
+    catch (ModuleInitializationException e) {
+        throw new Exception("Unable to instantiate m2");
+    }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ClassesDirectoryPath("WEB-INF/lib")
+@MainClass("m2.MainB")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin file WEB-INF/lib/r1.txt
+> copy a/r1.txt
+>> end file
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

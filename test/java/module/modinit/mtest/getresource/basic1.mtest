@@ -1,0 +1,111 @@
+#
+# Verify that getResourceAsStream(), getResource(), and getResources()
+# return the correct data for resources within the module
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.MainA
+>> begin file resources/r1.txt
+> copy r1.txt
+>> end file
+>> begin class m1.MainA
+> import
+import java.net.*;
+> run
+	checkClassResource();
+	checkFileResource();
+	checkMissingResource();
+> body
+    private void checkMissingResource() throws Exception {
+	String name = "m1/Bar.class";
+	System.out.println("Checking " + name + "...");
+	ClassLoader cl = module.getClassLoader();
+	InputStream in;
+	in = cl.getResourceAsStream(name);
+	if (in != null) {
+	    throw new Exception("Found non-existant resource");
+	}
+	URL url = cl.getResource(name);
+	if (url != null) {
+	    throw new Exception("Found non-existant resource");
+	}
+	List<URL> urls = Collections.list(cl.getResources(name));
+	if (urls.isEmpty() == false) {
+	    throw new Exception("Found non-existant resource");
+	}
+    }
+
+    private void checkClassResource() throws Exception {
+	String name = "m1/MainA.class";
+	System.out.println("Checking " + name + "...");
+	ClassLoader cl = module.getClassLoader();
+	InputStream in;
+	in = cl.getResourceAsStream(name);
+	checkClassStream(in);
+	URL url = cl.getResource(name);
+	System.out.println("URL: " + url);
+	checkClassStream(url.openStream());
+	checkClassStream(url.openStream());
+	List<URL> urls = Collections.list(cl.getResources(name));
+	if (urls.size() != 1) {
+	    throw new Exception("Expected one URL");
+	}
+	checkClassStream(urls.get(0).openStream());
+	URLConnection conn = url.openConnection();
+	System.out.println("headers: " + conn.getHeaderFields());
+	if ("application/octet-stream".equals(conn.getHeaderField("Content-type")) == false) {
+	    throw new Exception("Wrong content type");
+	}
+    }
+
+    private static void checkClassStream(InputStream in) throws Exception {
+	DataInputStream din = new DataInputStream(in);
+	int k = din.readInt();
+	if (k != 0xcafebabe) {
+	    throw new Exception("Wrong data: " + k);
+	}
+	in.close();
+    }
+
+    private void checkFileResource() throws Exception {
+	String name = "resources/r1.txt";
+	System.out.println("Checking " + name + "...");
+	ClassLoader cl = module.getClassLoader();
+	InputStream in;
+	in = cl.getResourceAsStream(name);
+	checkFileStream(in);
+	URL url = cl.getResource(name);
+	System.out.println("URL: " + url);
+	checkFileStream(url.openStream());
+	checkFileStream(url.openStream());
+	List<URL> urls = Collections.list(cl.getResources(name));
+	if (urls.size() != 1) {
+	    throw new Exception("Expected one URL");
+	}
+	checkFileStream(urls.get(0).openStream());
+	URLConnection conn = url.openConnection();
+	System.out.println("headers: " + conn.getHeaderFields());
+	if ("text/plain".equals(conn.getHeaderField("Content-type")) == false) {
+	    throw new Exception("Wrong content type");
+	}
+    }
+
+    private static void checkFileStream(InputStream in) throws Exception {
+	BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+	String line = reader.readLine();
+	if (line.equals("resource 1") == false) {
+	    throw new Exception("Wrong content: " + line);
+	}
+	in.close();
+    }
+    
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

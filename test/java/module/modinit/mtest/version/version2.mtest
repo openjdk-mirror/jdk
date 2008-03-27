@@ -1,0 +1,53 @@
+# Defines m1, m2 v1.0, m2 v2.0
+# m1 imports m2 with VersionConstraint("1.0")
+# Test makes sure m1 gets m2 v1.0 and not v2.0
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2", version="1.0")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        new m2.MainB().run(args);
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+        System.out.println("m2 v1.0: " + module);
+	if (version.equals("1.0") == false) {
+	    throw new RuntimeException("Version in moduleDefinition does not match: " + version);
+	}
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@Version("2.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+        System.out.println("m2 v2.0: " + module);
+	if (version.equals("2.0") == false) {
+	    throw new RuntimeException("Version in moduleDefinition does not match: " + version);
+	}
+	throw new RuntimeException("m1 imported the wrong version");
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

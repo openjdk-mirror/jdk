@@ -1,0 +1,90 @@
+#
+# m1 imports m2
+# m2 imports m3, m4
+# m3 imports m1
+#
+# m2 exports class m.Class1
+# m4 exports class m.Class1
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        new m2.MainB().run("from m1");
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@AllowShadowing
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3"),
+    @ImportModule(name="m4")
+})
+> export
+m2.MainB
+m.Class1
+>> begin class m2.MainB
+	if (m.Class1.V != 2) {
+	    throw new Exception("Wrong Class1");
+	}
+	System.out.println("OK");
+        new m3.MainC().run("from m2");
+        new m4.MainD().run("from m2");
+>> end class
+>> begin class m.Class1
+> body
+    public static int V = 1;
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@MainClass("m3.MainC")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m1")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@MainClass("m4.MainD")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m4.MainD
+m.Class1
+>> begin class m4.MainD
+	if (m.Class1.V != 2) {
+	    throw new Exception("Wrong Class1");
+	}
+	System.out.println("OK");
+>> end class
+>> begin class m.Class1
+> body
+    public static int V = 2;
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test
+>>> begin test m2
+return
+>>> end test
+>>> begin test m3
+return
+>>> end test
+>>> begin test m4
+return
+>>> end test

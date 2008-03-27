@@ -1,0 +1,53 @@
+/**
+ * Each import override policy file consists of zero or more entries in the following
+ * format:
+ * 
+ *   importer <importer-module-name> [@ <version-constraint>] {
+ *  	  <imported-module-name> @ <overridden-version-constraint>;
+ *        ...
+ *   };
+ *
+ * For example,
+ *   importer x.y.z @ [1.0, 1.1) {
+ *	  a.b.c @ 1.7.1;
+ *	  p.q.r @ 2.3.4;
+ *   };
+ *   ....
+ *
+ * Each entry must begin with "importer", followed by an importer module name, 
+ * and an optional version constraint. If the version constraint is not present, 
+ * the default version constraint is assumed.
+ *
+ * Inside each entry, it contains zero or more sub-entry. Each sub-entry begins
+ * with the imported module name, followed by the overridden version constraint.
+ *
+ * The importer module name may be set to the wildcard value, "*", which allows
+ * it to match any importer module. In addition, the module name may be suffixed 
+ * to the wildcard value, ".*", which allows it to match any importer module that 
+ * has the module name's prefix.
+ *
+ * For example,
+ *   importer * {
+ *	  a.b.c @ [1.7, 1.8);
+ *  	  p.q.r @ [2.3, 2.4);
+ *   };
+ *
+ *   importer x.y.* @ [1.0, 1.1) {
+ *	  a.b.c @ [1.7, 1.8);
+ *  	  p.q.r @ [2.3, 2.4);
+ *   };
+ *
+ * When setting the <importer-module-name>, <version-constraint>, 
+ * <imported-module-name>, or <overridden-version-constraint>, do not surround it 
+ * with quotes.
+ *
+ * When determining the import overridden constraints for a module, each entry in 
+ * the import override policy is looped through. If the importer module name's and 
+ * version match an entry, the specified overridden constraints in the entry is 
+ * used. If a module matches no entry in the import overridden constraints, 
+ * the original import constraints are assumed.
+ */
+
+// default import override policy
+importer * {
+};

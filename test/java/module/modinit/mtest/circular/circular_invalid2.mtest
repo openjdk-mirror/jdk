@@ -1,0 +1,73 @@
+#
+# m1 imports m2, m3; m2 optional
+# m2 imports m3, X
+# m3 imports m2
+#
+# -> initialization of m1 must fail since m3 cannot be initialized
+# Attempts to obtain Module instances for m1, m2, and m3 must all fail
+#
+>>> begin module m0
+> annotations
+@MainClass("m0.Main")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m0.Main
+>> begin class m0.Main
+	String[] moduleNames = new String[] { "m1", "m2", "m3" };
+	for (String moduleName : moduleNames) {
+	    ModuleDefinition md = repository.find(moduleName);
+	    try {
+		Module m = md.getModuleInstance();
+		throw new Exception("Module not in error state: " + moduleName);
+	    } catch (ModuleInitializationException e) {
+		System.out.println("OK: " + e);
+	    }
+	}
+>> end class
+>>> end module
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2", optional=true),
+    @ImportModule(name="m3")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        new m3.MainC().run(args);
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3"),
+    @ImportModule(name="X")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+	new m2.MainB().run(args);
+>> end class
+>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test
+>>> begin test m0
+return
+>>> end test

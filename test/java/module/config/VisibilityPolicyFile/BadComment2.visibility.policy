@@ -1,0 +1,6 @@
+
++, a.b.c, [1.0, 2.0)   
+-, a.b.c, 1.0.0+	// Comments cannot be inlined!
++, d.e.f
+-, d.e.f
+

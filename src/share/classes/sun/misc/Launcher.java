@@ -1,5 +1,5 @@
 /*
- * Copyright 1998-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1998-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,12 +28,23 @@ package sun.misc;
 import java.io.File;
 import java.io.IOException;
 import java.io.FilePermission;
+import java.module.Module;
+import java.module.ModuleDefinition;
+import java.module.ModuleDefinitionContent;
+import java.module.ModuleInitializationException;
+import java.module.Repository;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.MalformedURLException;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Set;
 import java.util.Vector;
@@ -46,6 +57,7 @@ import java.security.Permissions;
 import java.security.Permission;
 import java.security.ProtectionDomain;
 import java.security.CodeSource;
+import sun.module.core.ExtensionModuleLoader;
 import sun.security.action.GetPropertyAction;
 import sun.security.util.SecurityConstants;
 import sun.net.www.ParseUtil;
@@ -121,13 +133,14 @@ public class Launcher {
      */
     static class ExtClassLoader extends URLClassLoader {
         private File[] dirs;
+        private volatile ExtensionModuleLoader extensionModuleLoader = null;
+        private volatile boolean initExtModuleLoaderInProgress = false;
 
         /**
          * create an ExtClassLoader. The ExtClassLoader is created
          * within a context that limits which files it can read
          */
-        public static ExtClassLoader getExtClassLoader() throws IOException
-        {
+        public static ExtClassLoader getExtClassLoader() throws IOException  {
             final File[] dirs = getExtDirs();
 
             try {
@@ -160,6 +173,34 @@ public class Launcher {
         public ExtClassLoader(File[] dirs) throws IOException {
             super(getExtURLs(dirs), null, factory);
             this.dirs = dirs;
+        }
+
+        /**
+         * Constructs extension module loader for the extension modules in
+         * the extension repository.
+         */
+        private void initExtensionModuleLoader() {
+            if (extensionModuleLoader != null) {
+                // If extension module loader has been created, simply return.
+                return;
+            }
+
+            /**
+             * During the construction of the extension module loader, it is
+             * possible that it would trigger additional classloading through
+             * the application classloader or the extension classloader.
+             *
+             * The initExtModuleLoaderInProgress flag is used to track if we
+             * are in the middle of extension module loader construction to
+             * avoid constructing the extension module loader multiple times.
+             */
+            if (initExtModuleLoaderInProgress == false) {
+                initExtModuleLoaderInProgress = true;
+
+                extensionModuleLoader = new ExtensionModuleLoader();
+
+                initExtModuleLoaderInProgress = false;
+            }
         }
 
         private static File[] getExtDirs() {
@@ -197,12 +238,89 @@ public class Launcher {
             return ua;
         }
 
+        @Override
+        protected Class<?> findClass(final String name)
+            throws ClassNotFoundException {
+            try {
+                // Delegate to super class first
+                return super.findClass(name);
+            } catch (ClassNotFoundException cnfe) {
+                // Construct and initialize extension module loader if necessary
+                initExtensionModuleLoader();
+
+                // If the class is not found from parent classloader and urls,
+                // find the class from the extension modules.
+                if (extensionModuleLoader != null
+                    && extensionModuleLoader.isClassExported(name)) {
+                        return extensionModuleLoader.loadClass(name);
+                }
+
+                // if we still cannot find the type from the requested
+                // module, rethrow exception
+                throw cnfe;
+            }
+        }
+
+        @Override
+        public URL getResource(String name)  {
+            // Delegate to super class first
+            URL url = super.getResource(name);
+            if (url != null)  {
+                return url;
+            }
+
+            // Construct and initialize extension module loader if necessary
+            initExtensionModuleLoader();
+
+            // If resource is not found from parent classloader and urls,
+            // find the class from the extension modules.
+            if (extensionModuleLoader != null
+                && extensionModuleLoader.isResourceExported(name)) {
+                    return extensionModuleLoader.getResource(name);
+            }
+
+            return null;
+        }
+
+        @Override
+        public Enumeration<URL> getResources(String name) throws IOException {
+            Vector<URL> v = new Vector<URL>();
+
+            // Delegate to super class first
+            Enumeration<URL> e = super.getResources(name);
+            if (e != null) {
+                for (URL url : Collections.list(e)) {
+                    v.add(url);
+                }
+            }
+
+            // Construct and initialize extension module loader if necessary
+            initExtensionModuleLoader();
+
+            // If resource is not found from parent classloader and urls,
+            // find the class from the extension modules.
+            if (extensionModuleLoader != null
+                && extensionModuleLoader.isResourceExported(name))  {
+                e = extensionModuleLoader.getResources(name);
+                if (e != null) {
+                    for (URL url : Collections.list(e)) {
+                        v.add(url);
+                    }
+                }
+            }
+
+            return v.elements();
+        }
+
+
         /*
          * Searches the installed extension directories for the specified
          * library name. For each extension directory, we first look for
          * the native library in the subdirectory whose name is the value
          * of the system property <code>os.arch</code>. Failing that, we
-         * look in the extension directory itself.
+         * look in the extension directory itself. Failing that, we
+         * searches the modules in the extension repository for the
+         * specified library name.
          */
         public String findLibrary(String name) {
             name = System.mapLibraryName(name);
@@ -221,12 +339,21 @@ public class Launcher {
                     return file.getAbsolutePath();
                 }
             }
+
+            // Construct and initialize extension module loader if necessary
+            initExtensionModuleLoader();
+
+            // If the library is not found from parent classloader and urls,
+            // find the library from the extension modules.
+            if (extensionModuleLoader != null)  {
+                extensionModuleLoader.findLibrary(name);
+            }
+
             return null;
         }
 
         private static AccessControlContext getContext(File[] dirs)
-            throws IOException
-        {
+            throws IOException   {
             PathPermissions perms =
                 new PathPermissions(dirs);
 

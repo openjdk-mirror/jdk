@@ -1,0 +1,90 @@
+#
+# m1 imports m2, m3, m4
+# m3 marked optional
+# 
+# m3 imports m5
+# m5 imports m6
+# m6 missing
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2"),
+    @ImportModule(name="m3", optional=true),
+    @ImportModule(name="m4")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+> run
+        new m2.MainB().info(args);
+	try {
+	    Class clazz = Class.forName("m3.MainC");
+	    throw new Exception("Got class: " + clazz);
+	} catch (ClassNotFoundException e) {
+	    System.out.println("OK: " + e);
+	}
+        new m4.MainD().info(args);
+	checkImports();
+> body
+    private void checkImports() {
+	List<Module> importedModules = module.getImportedModules();
+	System.out.println("imported: " + importedModules);
+	if ((importedModules.size() != 3)
+		|| (importedModules.get(0).getModuleDefinition().getName().equals("java.se") == false)
+		|| (importedModules.get(1).getModuleDefinition().getName().equals("m2") == false)
+		|| (importedModules.get(2).getModuleDefinition().getName().equals("m4") == false)) {
+	    throw new RuntimeException("Invalid imports: " + importedModules);
+	}
+    }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m5")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m4.MainD
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin module m5
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m6")
+})
+> export
+m5.MainE
+>> begin class m5.MainE
+>> end class
+>>> end module
+#>>> begin module m6
+#>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test

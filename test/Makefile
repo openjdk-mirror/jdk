@@ -47,10 +47,10 @@ JPRT_ARCHIVE_BUNDLE=$(TEST_ROOT)/JPRT_ARCHIVE_BUNDLE.zip
 # Default home for JTREG
 ifeq ($(PLATFORM), windows)
   JT_HOME = J:/svc/jct-tools3.2.2_02
-  JTREG_KEY_OPTION=-k:!ignore
+  JTREG_KEY_OPTION=
 else
   JT_HOME = /java/svc/jct-tools3.2.2_02
-  JTREG_KEY_OPTION=-k:\!ignore
+  JTREG_KEY_OPTION=
 endif
 
 # Default JTREG to run

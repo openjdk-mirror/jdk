@@ -1,0 +1,68 @@
+#
+# m1 imports m2, m3
+#
+# m2 exports class m.Class1
+# m3 exports class m.Class2
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2"),
+    @ImportModule(name="m3")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+m.Class1
+>> begin class m2.MainB
+	if (m.Class1.V != 1) {
+	    throw new Exception("Wrong Class1");
+	}
+	System.out.println("OK");
+>> end class
+>> begin class m.Class1
+> body
+    public static int V = 1;
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@MainClass("m3.MainC")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m3.MainC
+m.Class2
+>> begin class m3.MainC
+	if (m.Class2.V != 2) {
+	    throw new Exception("Wrong Class1");
+	}
+	System.out.println("OK");
+>> end class
+>> begin class m.Class2
+> body
+    public static int V = 2;
+>> end class
+>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test
+>>> begin test m2
+return
+>>> end test
+>>> begin test m3
+return
+>>> end test

@@ -1,0 +1,55 @@
+#
+# m1 imports m2, m3, m4
+# m3 marked optional
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2"),
+    @ImportModule(name="m3", optional=true),
+    @ImportModule(name="m4")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+> run
+        new m2.MainB().info(args);
+        new m3.MainC().info(args);
+        new m4.MainD().info(args);
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m4.MainD
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

@@ -1,0 +1,35 @@
+#
+# m1 imports m2
+# m2 imports reexports m1
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@AllowShadowing
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m1", reexport=true)
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test
+>>> begin test m2
+exception ModuleInitializationException
+>>> end test

@@ -1,0 +1,224 @@
+# m1 imports m2 and m3
+# m1 has resource r1.txt
+# m2 has resources r1.txt ... r8.txt, but exports only r3.txt
+# m3 has resources r1.txt ... r8.txt, but exports only r5.txt
+#
+# Verify that getResourceAsStream()/getResource()/getResources() of the module
+# classloader returns the resources from the module itslef and the exported
+# resources from the imported module
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2"),
+    @ImportModule(name="m3")
+})
+> export
+m1.MainA
+>> begin file r1.txt
+> copy r1.txt
+>> end file
+>> begin class m1.MainA
+> import
+import java.net.URL;
+> run
+        ModuleDefinition moduleDef = module.getModuleDefinition();
+        ClassLoader cl = module.getClassLoader();
+        Repository repository = moduleDef.getRepository();
+
+        InputStream is;
+        URL url;
+        Enumeration<URL> urls;
+        
+        // r1.txt should be accessible from m1
+        //
+        is = cl.getResourceAsStream("r1.txt");
+        if (is == null)  {
+            throw new Exception("m1 should have access to r1.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("r1.txt");
+        if (url == null) {
+            throw new Exception("m1 should have access to r1.txt through getResource().");
+        }
+        urls = cl.getResources("r1.txt");
+        if (urls == null || urls.hasMoreElements() == false) {
+            throw new Exception("m1 should have access to r1.txt through getResources().");
+        }
+
+        // r2.txt should NOT be accessible from m1
+        //
+        is = cl.getResourceAsStream("r2.txt");
+        if (is != null)  {
+            throw new Exception("m1 should have no access to r2.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("r2.txt");
+        if (url != null) {
+            throw new Exception("m1 should have no access to r2.txt through getResource().");
+        }
+        urls = cl.getResources("r2.txt");
+        if (urls != null && urls.hasMoreElements()) {
+            throw new Exception("m1 should have no access to r2.txt through getResources().");
+        }
+        
+        // a/r3.txt should be accessible from m1 through m2
+        //
+        is = cl.getResourceAsStream("a/r3.txt");
+        if (is == null)  {
+            throw new Exception("m1 should have access to a/r3.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("a/r3.txt");
+        if (url == null) {
+            throw new Exception("m1 should have access to a/r3.txt through getResource().");
+        }
+        urls = cl.getResources("a/r3.txt");
+        if (urls == null || urls.hasMoreElements() == false) {
+            throw new Exception("m1 should have access to a/r3.txt through getResources().");
+        }
+        
+        // b/r4.txt should NOT be accessible from m1
+        //
+        is = cl.getResourceAsStream("b/r4.txt");
+        if (is != null)  {
+            throw new Exception("m1 should have no access to b/r4.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("b/r4.txt");
+        if (url != null) {
+            throw new Exception("m1 should have no access to b/r4.txt through getResource().");
+        }
+        urls = cl.getResources("b/r4.txt");
+        if (urls != null && urls.hasMoreElements()) {
+            throw new Exception("m1 should have no access to b/r4.txt through getResources().");
+        }
+
+        // a/c/r5.txt should be accessible from m1 through m3
+        //
+        is = cl.getResourceAsStream("a/c/r5.txt");
+        if (is == null)  {
+            throw new Exception("m1 should have access to a/c/r5.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("a/c/r5.txt");
+        if (url == null) {
+            throw new Exception("m1 should have access to a/c/r5.txt through getResource().");
+        }
+        urls = cl.getResources("a/c/r5.txt");
+        if (urls == null || urls.hasMoreElements() == false) {
+            throw new Exception("m1 should have access to a/c/r5.txt through getResources().");
+        }
+
+        // b/d/r6.txt should NOT be accessible from m1
+        //
+        is = cl.getResourceAsStream("b/d/r6.txt");
+        if (is != null)  {
+            throw new Exception("m1 should have no access to b/d/r6.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("b/d/r6.txt");
+        if (url != null) {
+            throw new Exception("m1 should have no access to b/d/r6.txt through getResource().");
+        }
+        urls = cl.getResources("b/d/r6.txt");
+        if (urls != null && urls.hasMoreElements()) {
+            throw new Exception("m1 should have no access to b/d/r6.txt through getResources().");
+        }
+
+        // aa/r7.txt should NOT be accessible from m1
+        //
+        is = cl.getResourceAsStream("aa/r7.txt");
+        if (is != null)  {
+            throw new Exception("m1 should have no access to aa/r7.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("aa/r7.txt");
+        if (url != null) {
+            throw new Exception("m1 should have no access to aa/r7.txt through getResource().");
+        }
+        urls = cl.getResources("aa/r7.txt");
+        if (urls != null && urls.hasMoreElements()) {
+            throw new Exception("m1 should have no access to aa/r7.txt through getResources().");
+        }
+
+        // bb/r8.txt should NOT be accessible from m1
+        //
+        is = cl.getResourceAsStream("bb/r8.txt");
+        if (is != null)  {
+            throw new Exception("m1 should have no access to bb/r8.txt through getResourceAsStream().");
+        }
+        url = cl.getResource("bb/r8.txt");
+        if (url != null) {
+            throw new Exception("m1 should have no access to bb/r8.txt through getResource().");
+        }
+        urls = cl.getResources("bb/r8.txt");
+        if (urls != null && urls.hasMoreElements()) {
+            throw new Exception("m1 should have no access to bb/r8.txt through getResources().");
+        }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ExportResources({
+    "a/r3.txt"
+})
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+>> begin file r1.txt
+> copy r1.txt
+>> end file
+>> begin file r2.txt
+> copy r2.txt
+>> end file
+>> begin file a/r3.txt
+> copy a/r3.txt
+>> end file
+>> begin file b/r4.txt
+> copy b/r4.txt
+>> end file
+>> begin file a/c/r5.txt
+> copy a/c/r5.txt
+>> end file
+>> begin file b/d/r6.txt
+> copy b/d/r6.txt
+>> end file
+>> begin file aa/r7.txt
+> copy aa/r7.txt
+>> end file
+>> begin file bb/r8.txt
+> copy bb/r8.txt
+>> end file
+>>> end module
+>>> begin module m3
+> annotations
+@ExportResources({
+    "a/c/r5.txt"
+})
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+>> begin file r1.txt
+> copy r1.txt
+>> end file
+>> begin file r2.txt
+> copy r2.txt
+>> end file
+>> begin file a/r3.txt
+> copy a/r3.txt
+>> end file
+>> begin file b/r4.txt
+> copy b/r4.txt
+>> end file
+>> begin file a/c/r5.txt
+> copy a/c/r5.txt
+>> end file
+>> begin file b/d/r6.txt
+> copy b/d/r6.txt
+>> end file
+>> begin file aa/r7.txt
+> copy aa/r7.txt
+>> end file
+>> begin file bb/r8.txt
+> copy bb/r8.txt
+>> end file
+>>> end module
+>>> begin test m1
+return
+>>> end test

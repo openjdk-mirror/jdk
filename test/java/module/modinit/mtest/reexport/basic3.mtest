@@ -1,0 +1,75 @@
+#
+# m1 imports m2
+# m2 imports m3, m4, reexports m3
+# m3 imports m4, m5, reexports m5
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+> run
+        new m2.MainB().run("from m1");
+	System.out.println("m1 calling m3: " + new m3.MainC());
+	System.out.println("m1 calling m5: " + new m5.MainE());
+        new m3.MainC().run("from m1");
+        new m5.MainE().run("from m1");
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3", reexport=true),
+    @ImportModule(name="m4")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+	System.out.println("m2 calling m3: " + new m3.MainC());
+	new m4.MainD().run("from m2");
+	System.out.println("m2 calling m5: " + new m5.MainE());
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4"),
+    @ImportModule(name="m5", reexport=true)
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+	new m4.MainD().run("from m3");
+	new m5.MainE().run("from m3");
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m4.MainD
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin module m5
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m5.MainE
+>> begin class m5.MainE
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

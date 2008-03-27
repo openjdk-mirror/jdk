@@ -1,0 +1,11 @@
+
+// no-op 
+
+importer a.b.c.* {
+};
+
+importer a.b.* {
+};
+
+importer * {
+};

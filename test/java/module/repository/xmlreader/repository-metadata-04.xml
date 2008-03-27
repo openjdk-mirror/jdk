@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Check error processing: has arch, but not platform. -->
+<modules>
+    <module>
+        <name>org.foo.soap</name>
+        <version>2.0.0</version>
+        <platform-binding>
+            <arch>x86</arch>
+        </platform-binding>
+        <path>soap2Linux</path>
+    </module>
+</modules>

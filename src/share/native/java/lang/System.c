@@ -1,5 +1,5 @@
 /*
- * Copyright 1994-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -120,6 +120,7 @@ Java_java_lang_System_initProperties(JNIEnv *env, jclass cla, jobject props)
 
     /* os properties */
     PUTPROP(props, "os.name", sprops->os_name);
+    PUTPROP(props, "os.platform", sprops->os_platform);
     PUTPROP(props, "os.version", sprops->os_version);
     PUTPROP(props, "os.arch", sprops->os_arch);
 

@@ -1,0 +1,51 @@
+#
+# m1 imports m2
+#
+# m1 and m2 both define class m.Class1
+#
+# NOTE that because we do not have real spkg file with membership lists yet,
+# we need to export all classes we care about
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2", optional=true)
+})
+> export
+m1.MainA
+m.Class1
+>> begin class m1.MainA
+>> end class
+>> begin class m.Class1
+> body
+    public static int V = 1;
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+m.Class1
+>> begin class m2.MainB
+	if (m.Class1.V != 2) {
+	    throw new Exception("Wrong Class1");
+	}
+	System.out.println("OK");
+>> end class
+>> begin class m.Class1
+> body
+    public static int V = 2;
+>> end class
+>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test
+>>> begin test m2
+return
+>>> end test

@@ -1,0 +1,208 @@
+# Defines
+# - m1
+# - m2 imports m3; no overlapped member class
+# - m4 imports m5 imports m6; overlapped member class in m4 and m6
+# - m7 imports m4, m6; overlapped member class in m4 and m6
+# - m8 imports java.classpath; deep validation should fail
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m1.MainA"
+})       
+> export
+m1.MainA
+>> begin class m1.MainA
+    ModuleDefinition md = module.getModuleDefinition();
+    Repository r = md.getRepository();
+    Module m1 = md.getModuleInstance();
+
+    // m1 should support deep validation
+    if (m1.supportsDeepValidation() == false) {
+        throw new Exception("m1 does not support deep validation as expected.");
+    }    
+    // deep validation should succeed
+    m1.deepValidate();
+
+    // m2 and m3 should also support deep validation
+    ModuleDefinition md2 = r.find("m2");
+    ModuleDefinition md3 = r.find("m3");
+    Module m2 = md2.getModuleInstance();
+    Module m3 = md3.getModuleInstance();
+        
+    // m2 should support deep validation
+    if (m2.supportsDeepValidation() == false) {
+        throw new Exception("m2 does not support deep validation as expected.");
+    }
+    if (m3.supportsDeepValidation() == false) {
+        throw new Exception("m3 does not support deep validation as expected.");
+    }
+    // deep validation should succeed
+    m2.deepValidate();
+    m3.deepValidate();
+
+    // m4, m5 and m6 should also support deep validation
+    ModuleDefinition md4 = r.find("m4");
+    ModuleDefinition md5 = r.find("m5");
+    ModuleDefinition md6 = r.find("m6");
+    Module m4 = md4.getModuleInstance();
+    Module m5 = md5.getModuleInstance();
+    Module m6 = md6.getModuleInstance();
+
+    // m4 should support deep validation
+    if (m4.supportsDeepValidation() == false) {
+        throw new Exception("m4 does not support deep validation as expected.");
+    }
+    // m5 should support deep validation
+    if (m5.supportsDeepValidation() == false) {
+        throw new Exception("m5 does not support deep validation as expected.");
+    }
+    if (m6.supportsDeepValidation() == false) {
+        throw new Exception("m6 does not support deep validation as expected.");
+    }
+
+    // deep validation should succeed for m5 and m6, but not m4
+    try {
+        m4.deepValidate();
+        throw new Exception("m4's deep validation does not fail as expected.");
+    }
+    catch (ModuleInitializationException e) {
+    }
+    m5.deepValidate();
+    m6.deepValidate();
+
+
+    ModuleDefinition md7 = r.find("m7");
+    Module m7 = md7.getModuleInstance();
+
+    // m7 should support deep validation
+    if (m7.supportsDeepValidation() == false) {
+        throw new Exception("m7 does not support deep validation as expected.");
+    }
+
+    // deep validation should fail for m7
+    try {
+        m7.deepValidate();
+        throw new Exception("m7's deep validation does not fail as expected.");
+    }
+    catch (ModuleInitializationException e) {
+    }
+
+    
+    ModuleDefinition md8 = r.find("m8");
+    Module m8 = md8.getModuleInstance();
+
+    // m8 should NOT support deep validation
+    if (m8.supportsDeepValidation() == false) {
+        throw new Exception("m8 does not support deep validation as expected.");
+    }
+
+    // deep validation should fail for m8
+    try {
+        m8.deepValidate();
+        throw new Exception("m8's deep validation does not fail as expected.");
+    }
+    catch (UnsupportedOperationException u) {
+        throw new Exception("m8's deep validation fails but unexpected exception is thrown: " + u);
+    }
+    catch (ModuleInitializationException e) {
+    }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3")})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m2.MainB"
+})       
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m3.MainC"
+})       
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m5")})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "conflictTypeXYZ",
+    "m4.MainD"
+})    
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin module m5
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m6")})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m5.MainE"
+})       
+    
+>> begin class m5.MainE
+>> end class
+>>> end module
+>>> begin module m6
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "conflictTypeXYZ",
+    "m6.MainF"
+})    
+>> begin class m6.MainF
+>> end class
+>>> end module
+>>> begin module m7
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4"),
+    @ImportModule(name="m6")
+})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m7.MainG"
+})    
+>> begin class m7.MainG
+>> end class
+>>> end module
+>>> begin module m8
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="java.classpath")
+})
+@LegacyClasses({        // Use it as a workaround to populate the membership list
+    "conflictTypeXYZ",
+    "m8.MainH"
+})    
+>> begin class m8.MainH
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

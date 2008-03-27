@@ -176,8 +176,12 @@ jint GetErgoPolicy();
 
 jboolean ServerClassMachine();
 
-static int ContinueInNewThread(InvocationFunctions* ifn, int argc, char** argv,
-                        char* jarfile, char* classname, int ret);
+static int ContinueInNewThread(InvocationFunctions* ifn,
+                               int argc, char **argv,
+                               char *jarfile, char *classname,
+                               char *jamfile, char *module,
+                               char *modulemain, char *repository,
+                               int ret);
 
 /*
  * Initialize platform specific settings

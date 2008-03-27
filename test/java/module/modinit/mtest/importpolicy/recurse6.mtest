@@ -1,0 +1,135 @@
+#
+# Verify that the custom import policy for m0 is invoked
+# and that it instantiating the invalid module m1 does not cause initialization
+# of m0 to fail.
+#
+>>> begin module m0
+> annotations
+@MainClass("m0.Main")
+@ImportPolicyClass("m0.ImportPolicyImpl")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4")
+})
+> export
+m0.Main
+>> begin class m0.Main
+	new m4.MainD().run("from m0");
+	System.out.println("OK");
+>> end class
+>> begin class m0.ImportPolicyImpl
+> super
+implements ImportPolicy
+> body
+    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
+	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+	    throws ModuleInitializationException {
+	Repository rep = moduleDef.getRepository();
+	ModuleDefinition md = rep.find("m1");
+	try {
+	    Module m = md.getModuleInstance();
+	    throw new RuntimeException("Unexpectedly got m1: " + m);
+	} catch (ModuleInitializationException e) {
+	    System.out.println("OK: " + e);
+	}
+	List<ModuleDefinition> mds = new ArrayList<ModuleDefinition>();
+	mds.add(rep.find("java.se"));
+	mds.add(rep.find("m4"));
+	return mds;
+    }
+>> end class
+>>> end module
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportPolicyClass("m1.ImportPolicyImpl")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.Main
+>> begin class m1.MainA
+	if (ImportPolicyImpl.CALLED == false) {
+	    throw new Exception("Import policy not called");
+	}
+	new m2.MainB().run("from m1");
+>> end class
+>> begin class m1.ImportPolicyImpl
+> super
+implements ImportPolicy
+> body
+    static volatile boolean CALLED;
+
+    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
+	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+	    throws ModuleInitializationException {
+	CALLED = true;
+	Repository rep = moduleDef.getRepository();
+	ModuleDefinition md = rep.find("m3");
+	Module m = md.getModuleInstance();
+	ClassLoader cl = m.getClassLoader();
+	try {
+	    Class clazz = cl.loadClass("m3.MainC");
+	    Object o = clazz.newInstance();
+	    System.out.println("m3: " + o);
+	} catch (Exception e) {
+	    throw new ModuleInitializationException("could not get m3", e);
+	}
+	List<ModuleDefinition> mds = new ArrayList<ModuleDefinition>();
+	mds.add(rep.find("java.se"));
+	mds.add(rep.find("m2"));
+	return mds;
+    }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4"),
+    @ImportModule(name="m1")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m5")
+})
+> export
+m4.MainD
+>> begin class m4.MainD
+	new m5.MainE().run("from m4");
+>> end class
+>>> end module
+>>> begin module m5
+> annotations
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m5.MainE
+>> begin class m5.MainE
+>> end class
+>>> end module
+>>> begin test m0
+return
+>>> end test
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test

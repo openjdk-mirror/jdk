@@ -1,0 +1,18 @@
+#
+# m1 imports itself
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m1")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+>> end class
+>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test

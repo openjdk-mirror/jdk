@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Check error processing: has platform-binding, but no contained elements. -->
+<modules>
+    <module>
+        <name>org.foo.soap</name>
+        <version>2.0.0</version>
+        <platform-binding>
+        </platform-binding>
+        <path>soap2Linux</path>
+    </module>
+</modules>

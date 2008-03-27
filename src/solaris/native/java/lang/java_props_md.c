@@ -1,5 +1,5 @@
 /*
- * Copyright 1998-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1998-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -170,6 +170,17 @@ GetJavaProperties(JNIEnv *env)
         struct utsname name;
         uname(&name);
         sprops.os_name = strdup(name.sysname);
+
+        if (strcasecmp(sprops.os_name, "SunOS") == 0) {
+            sprops.os_platform = "solaris";
+        } else if (strcasecmp(sprops.os_name, "Solaris") == 0) {
+            sprops.os_platform = "solaris";
+        } else if (strcasecmp(sprops.os_name, "Linux") == 0) {
+            sprops.os_platform = "linux";
+        } else {
+            sprops.os_platform = sprops.os_name;
+        }
+
         sprops.os_version = strdup(name.release);
 
         sprops.os_arch = ARCHPROPNAME;

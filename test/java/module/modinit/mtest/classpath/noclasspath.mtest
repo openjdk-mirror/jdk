@@ -1,0 +1,60 @@
+#
+# Make sure that when we do not import the classpath module,
+# we cannot see classes or resources from the classpath or the extension
+# classloader.
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+> import
+import java.net.URL;
+> run
+	// on the classpath
+	ClassLoader loader = module.getClassLoader();
+	try {
+	    System.out.println("class: " + Class.forName("classp.MainX"));
+	    throw new Exception("Loaded unexpected class");
+	} catch (ClassNotFoundException e) {
+	    System.out.println("OK: " + e);
+	}
+	try {
+	    System.out.println("class: " + Class.forName("com.sun.crypto.provider.SunJCE"));
+	    throw new Exception("Loaded unexpected class");
+	} catch (ClassNotFoundException e) {
+	    System.out.println("OK: " + e);
+	}
+
+	InputStream in = loader.getResourceAsStream("classp/cp1.txt");
+	if (in != null) {
+	    throw new Exception("Found unexpected resource: " + in);
+	}
+	
+	URL url = loader.getResource("classp/cp1.txt");
+	if (url != null) {
+	    throw new Exception("Found unexpected resource: " + url);
+	}
+
+	List<URL> urls = Collections.list(loader.getResources("META-INF/MANIFEST.MF"));
+	System.out.println("urls: " + urls);
+//	url = null;
+//	for (URL u : urls) {
+//	    if (u.getPath().contains("sunjce")) {
+//		url = u;
+//		break;
+//	    }
+//	}
+	url = loader.getResource("com/sun/crypto/provider/SunJCE.class");
+	if (url != null) {
+	    throw new Exception("Found unexpected sunjce resource");
+	}
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

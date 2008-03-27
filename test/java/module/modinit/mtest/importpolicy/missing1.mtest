@@ -1,0 +1,18 @@
+#
+# Verify module initialization fails if the import policy is missing
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportPolicyClass("m1.ImportPolicyImpl")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.Main
+>> begin class m1.MainA
+>> end class
+>>> end module
+>>> begin test m1
+exception ModuleInitializationException
+>>> end test

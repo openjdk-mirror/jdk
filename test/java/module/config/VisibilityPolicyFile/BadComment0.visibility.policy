@@ -1,0 +1,7 @@
+/**
+// Comment without closing "*/"
+
++, a.b.c, [1.0, 2.0)
+-, a.b.c, 1.0.0+
++, d.e.f
+-, d.e.f

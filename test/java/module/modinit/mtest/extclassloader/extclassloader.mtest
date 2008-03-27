@@ -1,0 +1,193 @@
+# 1. Defines m1, m2 v1, m2 v2, m3, m4, and m5 modules.
+# - m3 imports m2 version 1.0+
+# - m4 imports java.classpath
+# - m5 imports m4
+# 2. Installs m2 v1, m2 v2, m3, m4 and m5 modules into a URLRepository.
+# 3. Launch another process and use the URLRepository as the extension repository.
+# 4. Only m2 v2, m3 should be visible through the extension repository because
+# - m2 v2 is a higher version than m2 v1
+# - m3 imports m2 v2 that is also recognized by the extension module loader
+# - m4 is NOT recognized because it imports the classpath module
+# - m5 is NOT recognized because it imports m4
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@ImportModules({
+    @ImportModule(name="java.se")})
+> export
+m1.MainA
+>> begin class m1.MainA
+> import 
+    import java.io.*;
+    import java.module.*;
+> run
+	testExtensionModuleLoader();
+> body
+    private void testExtensionModuleLoader() throws Exception {
+        Repository r = module.getModuleDefinition().getRepository();
+        String testScratch = System.getProperty("test.scratch", ".");
+
+        // Create source location for a URLRepository
+        File repositorySourceDir = new File(testScratch, 
+                                    "tmp_mtest" + File.separator 
+                                    + "extclassloader" + File.separator
+                                    + "extrepo-" + System.currentTimeMillis());
+        repositorySourceDir.mkdirs();
+
+        Repository extensionRepo = Modules.newURLRepository("extension", repositorySourceDir.toURI().toURL());
+
+        for (ModuleArchiveInfo mai : r.list()) {
+            // Installs all modules into the URLRepository, except m1.
+            if (mai.getName().equals("m1") == false)
+                extensionRepo.install(new File(mai.getFileName()).toURI().toURL());
+        }
+            
+        // Create custom repository.properties file        
+        File repositoryPropFile = new File(repositorySourceDir, "extclassloader.repository.properties");
+        PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(repositoryPropFile)));
+        pw.println("extension.parent=bootstrap");
+        pw.println("extension.source=" + repositorySourceDir.getCanonicalFile().toURI().toURL());
+        pw.println("extension.classname=sun.module.repository.URLRepository");
+        pw.close();
+        
+        runWithCustomExtensionRepository(repositoryPropFile);        
+    }
+    
+    private void runWithCustomExtensionRepository(File repositoryPropFile) throws Exception {    
+        String javaCmd = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+        if (!new File(javaCmd).exists()) {
+            javaCmd = javaCmd + ".exe";
+        }
+
+        List<String> cmdLine = new ArrayList<String>();
+        cmdLine.add(javaCmd);
+        cmdLine.add("-Djava.module.repository.properties.file=" + repositoryPropFile.getCanonicalFile());
+        cmdLine.add("-module");
+        cmdLine.add("m3");
+
+        ProcessBuilder pb = new ProcessBuilder(cmdLine);
+        pb.redirectErrorStream(true);
+        pb.directory(new File(System.getProperty("test.scratch", ".")));
+        Process p = pb.start();
+        p.waitFor();
+        BufferedReader br = new BufferedReader(
+            new InputStreamReader(
+                p.getInputStream()), 8192);
+        String msg = "";
+        String s = null;
+        while ((s = br.readLine()) != null) {
+            msg += ">>> " + s + "\n";
+        }
+        System.out.println(msg);
+        if (p.exitValue() != 0) {
+            throw new Exception("Unexpected termination: " + p.exitValue());
+        }
+    }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@Version("1.0")
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se")})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@Version("2.0")
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se")})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@Version("1.0")
+@MainClass("m3.MainC")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2", version="1.0+")})
+> export
+m3.MainC
+>> begin class m3.MainC
+
+    Class clazz = null;
+    try {
+        clazz = Class.forName("m1.MainA");
+        if (clazz != null) {
+        System.out.println("m1 is found unexpectedly.");
+            throw new Exception("m1.MainA is found unexpectedly.");
+        }
+    } catch(ClassNotFoundException cnfe) {
+        // exception expected
+    }
+    
+    try {
+        clazz = Class.forName("m2.MainB");
+        Module m = clazz.getClassLoader().getModule();
+        if (m.getModuleDefinition().getVersion().equals(Version.valueOf(2, 0, 0)) == false) {
+            throw new Exception("m2.MainB in module m2 v2 is not found as expected.");
+        }
+    } catch(ClassNotFoundException cnfe) {
+        throw new Exception("m2.MainB is not found as expected.");
+    }
+
+    try {
+        clazz = Class.forName("m3.MainC");
+    } catch(ClassNotFoundException cnfe) {
+        throw new Exception("m3.MainC is not found as expected.");
+    }
+
+    try {
+        clazz = Class.forName("m4.MainD");
+        if (clazz != null) {
+            throw new Exception("m4.MainD is found unexpectedly.");
+        }
+    } catch(ClassNotFoundException cnfe) {
+        // exception expected
+    }
+
+    try {
+        clazz = Class.forName("m5.MainE");
+        if (clazz != null) {
+            throw new Exception("m5.MainE is found unexpectedly.");
+        }
+    } catch(ClassNotFoundException cnfe) {
+        // exception expected
+    }
+>> end class
+>>> end module
+>>> begin module m4
+> annotations
+@Version("1.0")
+@MainClass("m4.MainD")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="java.classpath")})
+> export
+m4.MainD
+>> begin class m4.MainD
+>> end class
+>>> end module
+>>> begin module m5
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m4")})
+> export
+m5.MainE
+>> begin class m5.MainE
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test

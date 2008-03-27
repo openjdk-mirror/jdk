@@ -1,0 +1,47 @@
+# Defines m1, m2, m3
+# m2 imports m3 with invalid versionconstraint
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+        ModuleDefinition moduleDef = module.getModuleDefinition();
+        Repository r = moduleDef.getRepository();
+        try {
+            ModuleDefinition md2 = r.find("m2");
+            Module m = md2.getModuleInstance();
+            throw new Exception("m2 should not be instantiable.");
+        }        
+        catch (ModuleInitializationException mie) {
+        }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3", version="XYZ")
+})
+> export
+m2.MainB
+>>> end module
+>>> begin module m3
+> annotations
+@MainClass("m3.MainC")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m3.MainC
+>>> end module
+>>> begin test m1
+return
+>>> end test

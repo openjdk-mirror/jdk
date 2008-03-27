@@ -84,6 +84,10 @@ TREEAPI_PKGS 	 = com.sun.source.tree \
 
 SMARTCARDIO_PKGS = javax.smartcardio
 
+# temporary, helps to generate just the JSR 277 javadocs
+MODULE_PKGS      = java.module \
+		   java.module.annotation
+
 # non-core packages in rt.jar
 NON_CORE_PKGS    = $(DOMAPI_PKGS) \
                    $(MGMT_PKGS) \

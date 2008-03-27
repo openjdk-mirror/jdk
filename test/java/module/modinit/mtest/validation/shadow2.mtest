@@ -1,0 +1,69 @@
+#
+# m1 imports m2
+#
+# m1 and m2 both define class m.Class1
+# m1 is marked @AllowShadowing
+# m1 should see m.Class1 from m2
+#
+# NOTE that because we do not have real spkg file with membership lists yet,
+# we need to export all classes we care about
+#
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@AllowShadowing
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m2")
+})
+> export
+m1.MainA
+m.Class1
+>> begin class m1.MainA
+> import
+import m.Class1;
+> run
+	Class1 c1 = new Class1();
+	System.out.println("Object: " + c1);
+	Class clazz = c1.getClass();
+	System.out.println("Class: " + clazz);
+	System.out.println("ClassLoader: " + clazz.getClassLoader());
+	System.out.println("Module: " + clazz.getClassLoader().getModule());
+	System.out.println("V: " + c1.V);
+	if (c1.V != 2) {
+	    throw new Exception("Wrong Class1: " + c1);
+	}
+	System.out.println("OK");
+>> end class
+>> begin class m.Class1
+> body
+    public int V = 1;
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m2.MainB
+m.Class1
+>> begin class m2.MainB
+	m.Class1 c1 = new m.Class1();
+	if (c1.V != 2) {
+	    throw new Exception("Wrong Class1");
+	}
+	System.out.println("OK");
+>> end class
+>> begin class m.Class1
+> body
+    public int V = 2;
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test
+>>> begin test m2
+return
+>>> end test

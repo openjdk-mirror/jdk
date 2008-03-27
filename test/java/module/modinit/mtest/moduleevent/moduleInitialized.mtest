@@ -1,0 +1,112 @@
+# Defines m1, m2, m3
+# m2 imports m3
+# Test instantiating m2, and MODULE_INITIALIZED events should be sent for m2 and m3.
+>>> begin module m1
+> annotations
+@MainClass("m1.MainA")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m1.MainA
+>> begin class m1.MainA
+    Repository r = module.getModuleDefinition().getRepository();
+    ModuleSystem ms = r.getModuleSystem();
+    ModuleDefinition md2 = r.find("m2");
+    ModuleDefinition md3 = r.find("m3");
+
+    final java.util.concurrent.BlockingQueue<ModuleSystemEvent> eventQueue = new java.util.concurrent.LinkedBlockingQueue<ModuleSystemEvent>();
+    ModuleSystemListener moduleSystemListener = new ModuleSystemListener() {
+        public void handleEvent(ModuleSystemEvent e) {
+	    if (e.getType() == ModuleSystemEvent.Type.MODULE_INITIALIZED)
+                eventQueue.add(e);
+        }        
+    };        
+    // Add module system listener
+    ms.addModuleSystemListener(moduleSystemListener);
+
+    try {			
+        // Instantiating m2        
+	md2.getModuleInstance();
+	
+	// Poll first MODULE_INITIALIZED event
+	//
+	ModuleSystemEvent evt = eventQueue.poll(20L, java.util.concurrent.TimeUnit.SECONDS);
+	if (evt.getType() != ModuleSystemEvent.Type.MODULE_INITIALIZED) {
+	    throw new Exception("Unexpected module system event type: " + evt.getType());			
+	}
+    
+	if (evt.getModuleDefinition() != md3) {
+	    throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());			
+	}
+    
+	// Poll second MODULE_INITIALIZED event
+	//
+	evt = eventQueue.poll(20L, java.util.concurrent.TimeUnit.SECONDS);
+	if (evt.getType() != ModuleSystemEvent.Type.MODULE_INITIALIZED) {
+	    throw new Exception("Unexpected module system event type: " + evt.getType());			
+	}
+    
+	if (evt.getModuleDefinition() != md2) {
+	    throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());			
+	}			
+    }
+    catch(ModuleInitializationException mie) {
+	throw new Exception("Unexpected exception: " + mie);		
+    }        
+
+    // Remove module system listener
+    ms.removeModuleSystemListener(moduleSystemListener);
+    
+    // Clear event queue
+    eventQueue.clear();        
+
+    try {
+	// Releasing module instances of md2 and md3
+	ms.releaseModule(md2);
+	ms.releaseModule(md3);
+	
+	// Instantiating m2 again       
+	md2.getModuleInstance();
+	
+	// No MODULE_INITIALIZED event should be sent to the
+	// module system listener after it has been removed.
+	ModuleSystemEvent evt = eventQueue.poll(5L, java.util.concurrent.TimeUnit.SECONDS);
+	if (evt != null) {
+            throw new Exception("Unexpected module system event after module system listener is removed: " + evt);
+	}		
+    }
+    catch(ModuleInitializationException mie) {
+        throw new Exception("Unexpected exception: " + mie);		
+    }
+>> end class
+>>> end module
+>>> begin module m2
+> annotations
+@MainClass("m2.MainB")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m3")
+})
+> export
+m2.MainB
+>> begin class m2.MainB
+>> end class
+>>> end module
+>>> begin module m3
+> annotations
+@MainClass("m3.MainC")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se")
+})
+> export
+m3.MainC
+>> begin class m3.MainC
+>> end class
+>>> end module
+>>> begin test m1
+return
+>>> end test
