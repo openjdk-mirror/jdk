@@ -41,11 +41,6 @@ public class JRepoTest {
     static final ByteArrayOutputStream bout = new ByteArrayOutputStream();
     static final ByteArrayOutputStream berr = new ByteArrayOutputStream();
 
-    // XXX Temporary until releaseModule is implemented: uninstallation cannot
-    // XXX succeed until then.  Once implemented, the else clauses in uses of
-    // XXX isWin should be retained.
-    static final boolean isWin = System.getProperty("os.name").startsWith("Windows");
-
     public static void realMain(String args[]) throws Throwable {
         JRepo jr = new JRepo(new PrintStream(bout), new PrintStream(berr), null);
 
@@ -187,12 +182,12 @@ public class JRepoTest {
 
         // ... but that by appending the version, uninstall succeeds.
         check(jr.run(getArgs("un -v -r " + repo + " JRepoModuleB 2.0")) && outputOK(1));
-        check(jr.run(getArgs("list -v -r " + repo)) && outputOK(isWin ? 7 : 5));
+        check(jr.run(getArgs("list -v -r " + repo)) && outputOK(5));
 
         // Verify that the -f flag causes the remaining JRepoModuleB versions
         // to be uninstalled
-        check(jr.run(getArgs("un -v -f -r " + repo + " JRepoModuleB")) && outputOK(isWin ? 3 : 2));
-        check(jr.run(getArgs("list -v -r " + repo)) && outputOK(isWin ? 7 : 3));
+        check(jr.run(getArgs("un -v -f -r " + repo + " JRepoModuleB")) && outputOK(2));
+        check(jr.run(getArgs("list -v -r " + repo)) && outputOK(3));
 
         // Install more modules to verify -i works
         jamFile = JamBuilder.createJam(
@@ -215,7 +210,7 @@ public class JRepoTest {
         JRepo jr2 = new JRepo(
             new PrintStream(bout), new PrintStream(berr), new MockReader());
         check(jr2.run(getArgs("un -v -i -r " + repo + " JRepoModuleD")) && outputOK(5));
-        check(jr2.run(getArgs("list -v -r " + repo)) && outputOK(isWin ? 9 : 4));
+        check(jr2.run(getArgs("list -v -r " + repo)) && outputOK(4));
 
         /*
          * End of checks on LocalRepository, now try a few on URLRepository.
@@ -229,7 +224,7 @@ public class JRepoTest {
         File repoDownloadDir = new File(urlRepoDir, "download");
         Map<String, String> config = new HashMap<String, String>();
         config.put(
-            "sun.module.repository.URLRepository.downloadDirectory",
+            "sun.module.repository.URLRepository.cacheDirectory",
             repoDownloadDir.getAbsolutePath());
 
         String urlRepoPath = urlRepoDir.getCanonicalPath();

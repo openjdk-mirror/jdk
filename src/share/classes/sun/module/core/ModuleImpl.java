@@ -454,9 +454,9 @@ final class ModuleImpl extends Module {
         // Build version constraint map from the ImportDependencies
         Map<String,VersionConstraint> versionConstraints = new HashMap<String,VersionConstraint>();
         for (ImportDependency dep : importDependencies) {
-            if (versionConstraints.put(dep.getModuleName(), dep.getVersionConstraint()) != null) {
+            if (versionConstraints.put(dep.getName(), dep.getVersionConstraint()) != null) {
                 fail(null, "Module " + moduleString + " imports module "
-                     + dep.getModuleName() + " more than once.");
+                     + dep.getName() + " more than once.");
             }
         }
         versionConstraints = Collections.unmodifiableMap(versionConstraints);
@@ -575,11 +575,11 @@ final class ModuleImpl extends Module {
                 if (dep.isOptional() == false) {
                     fail(null, "Import policy error in module " + moduleString
                          + ": non-optional imported module definition is missing in the returned list: "
-                         + dep.getModuleName() + " " + dep.getVersionConstraint());
+                         + dep.getName() + " " + dep.getVersionConstraint());
                 }
                 continue;
             }
-            String name = dep.getModuleName();
+            String name = dep.getName();
             if (name.equals(md.getName()) == false) {
                 fail(null, "Import policy error in module " + moduleString
                     + ": mismatch in the name of imported module definition in the returned list: "
@@ -613,7 +613,7 @@ final class ModuleImpl extends Module {
             Repository rep = moduleDef.getRepository();
             List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
             for (ImportDependency dep : importDependencies) {
-                String name = dep.getModuleName();
+                String name = dep.getName();
                 VersionConstraint constraint = constraints.get(name);
                 if (constraint == null) {
                     throw new ModuleInitializationException
@@ -626,12 +626,12 @@ final class ModuleImpl extends Module {
                     if (dep.isOptional() == false) {
                         throw new ModuleInitializationException
                             ("Default import policy error in module " + moduleString
-                            + ": imported module " + dep.getModuleName() + " "
+                            + ": imported module " + dep.getName() + " "
                              + dep.getVersionConstraint() + " is not found");
                     }
                     if (DEBUG) {
                         System.out.println("Optional import is not satisfied: "
-                                           + dep.getModuleName() + " " + dep.getVersionConstraint());
+                                           + dep.getName() + " " + dep.getVersionConstraint());
                     }
                     continue;
                 }

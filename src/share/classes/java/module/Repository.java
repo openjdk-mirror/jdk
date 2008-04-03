@@ -27,6 +27,8 @@ package java.module;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -38,6 +40,9 @@ import sun.module.repository.RepositoryConfig;
 
 /**
  * This class represents the repository in the module system.
+ *
+ * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
+ * method in this class will cause a {@link NullPointerException} to be thrown.
  * <p>
  * @see java.module.ModuleDefinition
  * @see java.module.ModuleSystemPermission
@@ -56,8 +61,9 @@ public abstract class Repository {
 
     private final ModuleSystem system;
 
-    /** Listens to RepositoryEvents. */
-    private RepositoryListener repositoryListener = null;
+    /** Listeners of RepositoryEvents. */
+    private static RepositoryListener repositoryListener = null;
+    private static Object listenerSyncObject = new Object();
 
     /**
      * Obtains the default thread factory when Repository.class is loaded, so
@@ -67,7 +73,7 @@ public abstract class Repository {
     private static final ThreadFactory threadFactory = Executors.defaultThreadFactory();
 
     /** Used to run the RepositoryEventHandler. */
-    private ExecutorService executorService = null;
+    private static ExecutorService executorService = null;
 
     /** Shuts down the repository upon JVM exit; see {@link #shutdownOnExit}. */
     private Thread shutdownThread;
@@ -92,9 +98,6 @@ public abstract class Repository {
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to create a new
      *         instance of repository.
-     * @throws NullPointerException if <code>parent</code> is null,
-     *         <code>name</code> is null, <code>source</code> is null,
-     *         or <code>system</code> is null.
      * @throws IllegalArgumentException if a circularity is detected.
      */
     protected Repository(Repository parent, String name, URL source, ModuleSystem system) {
@@ -146,8 +149,6 @@ public abstract class Repository {
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to create a new
      *         instance of repository.
-     * @throws NullPointerException if <code>name</code> is null,
-     *         <code>source</code> is null, or <code>system</code> is null.
      * @throws IllegalArgumentException if a circularity is detected.
      */
     protected Repository(String name, URL source, ModuleSystem system) {
@@ -247,28 +248,36 @@ public abstract class Repository {
     public abstract void shutdown() throws IOException;
 
     /**
-     * Enable or disable that the repository is shutdown when the
-     * module system terminates. Shutdown will be attempted only
-     * during the normal termination of the virtual machine, as
-     * defined by the Java Language Specification. By default,
-     * shutdown on exit is disabled.
+     * Enable or disable that the repository is shutdown when the module
+     * system terminates. Shutdown will be attempted only during the normal
+     * termination of the virtual machine, as defined by the Java Language
+     * Specification. By default, shutdown on exit is disabled.
      *
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("shutdownRepository")</code>
-     * permission to ensure it's ok to shutdown a repository.
+     * If a security manager is present, this method calls the security
+     * manager's <code>checkPermission</code> method with a
+     * <code>ModuleSystemPermission("shutdownRepository")</code> permission
+     * to ensure it's ok to shutdown a repository.
      *
      * @param value indicating enabling or disabling of shutdown.
-     * @throws SecurityException if a security manager exists and
-     * its <tt>checkPermission</tt> method denies access
-     * to shutdown the repository.
+     * @throws SecurityException if a security manager exists and its
+     *         <tt>checkPermission</tt> method denies access to shutdown the
+     *         repository.
      */
-    public synchronized void shutdownOnExit(boolean value) {
+    public final synchronized void shutdownOnExit(final boolean value) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("shutdownRepository"));
         }
+        // shutdownOnExit under doPrivileged()
+        AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+            public Boolean run() {
+                doShutdownOnExit(value);
+                return Boolean.TRUE;
+            }
+        });
+    }
 
+    private void doShutdownOnExit(boolean value) {
         // Create/destroy shutdownThread based on given value.
         if (value) {
             if (shutdownThread == null) {
@@ -315,9 +324,7 @@ public abstract class Repository {
      * @return true if this repository supports reloading.
      * @see #reload()
      */
-    public boolean isReloadSupported() {
-        return false;
-    }
+    public abstract boolean supportsReload();
 
     /**
      * Find a module definition. Equivalent to:
@@ -325,14 +332,14 @@ public abstract class Repository {
      *      find(moduleName, VersionConstraint.DEFAULT);
      * </pre>
      *
-     * If this repository instance has not been initialized when this
-     * method is called, it will be initialized automatically by
-     * calling the initialize method with no argument.
+     * If this repository instance has not been initialized when this method
+     * is called, it will be initialized automatically by calling the
+     * {@link #initialize} method with no argument.
      *
      * @param name the module definition's name.
-     * @return the module definition or null if not found. If
-     *         more than one module definition matches the specified
-     *         name, the latest version is returned.
+     * @return the module definition or null if not found. If more than one
+     *         module definition matches the specified name, the highest
+     *         version is returned.
      * @throws IllegalStateException if the repository instance has been
      *         shutdown.
      */
@@ -344,15 +351,15 @@ public abstract class Repository {
     /**
      * Find a module definition.
      *
-     * If this repository instance has not been initialized when this
-     * method is called, it will be initialized automatically by
-     * calling the initialize method with no argument.
+     * If this repository instance has not been initialized when this method
+     * is called, it will be initialized automatically by calling the
+     * {@link #initialize} method with no argument.
      *
      * @param name the module definition's name.
      * @param versionConstraint the version constraint.
-     * @return the module definition or null if not found. If
-     *         more than one module definition matches the specified
-     *         name and version constraint, the latest version is returned.
+     * @return the module definition or null if not found. If more than one
+     *         module definition matches the specified name and version
+     *         constraint, the highest version is returned.
      * @throws IllegalStateException if the repository instance has been
      *         shutdown.
      */
@@ -386,7 +393,7 @@ public abstract class Repository {
      *
      * If this repository instance has not been initialized when this
      * method is called, it will be initialized automatically by
-     * calling the initialize method with no argument.
+     * calling the {@link #initialize} method with no argument.
      *
      * @return the result list.
      * @throws IllegalStateException if the repository instance has been
@@ -398,12 +405,11 @@ public abstract class Repository {
     }
 
     /**
-     * Find all matching module definitions that match the specified
-     * constraint.
+     * Find all matching module definitions that match the specified constraint.
      *
      * If this repository instance has not been initialized when this
      * method is called, it will be initialized automatically by
-     * calling the initialize method with no argument.
+     * calling the {@link #initialize} method with no argument.
      *
      * @param constraint the constraint.
      * @return the result list.
@@ -460,131 +466,130 @@ public abstract class Repository {
     }
 
     /**
-     * Find all matching module definitions in the repository. This
-     * method should be overridden by repository implementations for
-     * finding matching module definitions, and will be invoked by
-     * the find method after checking the parent repository for
-     * the requested module definitions.
+     * Find all matching module definitions in the repository. This method
+     * should be overridden by repository implementations for finding
+     * matching module definitions, and will be invoked by the
+     * {@link #find} method after checking the parent repository for the
+     * requested module definitions.
      * <p>
-     * If this repository instance has not been initialized when this
-     * method is called, it will be initialized automatically by
-     * calling the initialize method with no argument.
+     * If this repository instance has not been initialized when this method
+     * is called, it will be initialized automatically by calling the
+     * {@link #initialize} method with no argument.
      *
      * @param constraint the constraint.
      * @return the collection of matching module definitions.
-     * @throws IllegalStateException if the repository instance has
-     * not been initialized or has been shutdown.
+     * @throws IllegalStateException if the repository instance has not been
+     *         initialized or has been shutdown.
      */
     protected abstract List<ModuleDefinition> findModuleDefinitions(Query constraint);
 
     /**
-     * Returns an unmodifiable list of the installed module archives' information
-     * in the repository. The list will contain a snapshot of the installed module
-     * archives in the repository at the time of the given invocation of this method.
+     * Returns an unmodifiable list of the installed module archives'
+     * information in the repository. The list will contain a snapshot of the
+     * installed module archives in the repository at the time of the given
+     * invocation of this method.
      * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("listModuleArchive")
-     * </code> permission to ensure it's ok to return the information of the
-     * installed module archives in a repository.
+     * If a security manager is present, this method calls the security
+     * manager's <code>checkPermission</code> method with a
+     * <code>ModuleSystemPermission("listModuleArchive")</code> permission to
+     * ensure it's ok to return the information of the installed module
+     * archives in a repository.
      *
-     * @return an unmodifiable list of the installed module archives' information.
+     * @return an unmodifiable list of the installed module archives'
+     *         information.
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to return the
-     *         the information of the installed module archives.
-     * @throws IllegalStateException if the repository instance has not
-     *         been initialized or it has been shutdown.
+     *         information of the installed module archives.
+     * @throws IllegalStateException if the repository instance has not been
+     *         initialized or it has been shutdown.
      */
     public abstract List<ModuleArchiveInfo> list();
 
     /**
      * Install a module archive with the module definition into the repository.
      * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("installModuleArchive")
-     * </code> permission to ensure it's ok to install a module
-     * archive into a repository.
+     * If a security manager is present, this method calls the security
+     * manager's <code>checkPermission</code> method with a
+     * <code>ModuleSystemPermission("installModuleArchive")</code> permission
+     * to ensure it's ok to install a module archive into a repository.
      *
-     * @param u the URL to the module archive.
-     * @return the <code>ModuleArchiveInfo</code> object that represents
-     *         the installed module archive.
+     * @param url the URL to the module archive.
+     * @return the <code>ModuleArchiveInfo</code> object that represents the
+     *         installed module archive.
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to install a
      *         module archive in the repository.
+     * @throws UnsupportedOperationException if the repository is read-only.
      * @throws IOException if an error occurs while installing the module archive.
      * @throws ModuleFormatException if the module archive format is not
      *         supported by this implementation.
-     * @throws UnsupportedOperationException if the repositoryis read-only.
      * @throws IllegalStateException if a module definition with the same name,
      *         version and platform binding is already installed, or if the
      *         repository instance has not been initialized or it has been
      *         shutdown.
      */
-    public abstract ModuleArchiveInfo install(URL u) throws IOException;
+    public abstract ModuleArchiveInfo install(URL url) throws IOException;
 
     /**
      * Uninstall a module archive from the repository.
      * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("uninstallModuleArchive")
-     * </code> permission to ensure it's ok to uninstall a module
-     * archive from a repository.
+     * If a security manager is present, this method calls the security
+     * manager's <code>checkPermission</code> method with a
+     * <code>ModuleSystemPermission("uninstallModuleArchive")</code>
+     * permission to ensure it's ok to uninstall a module archive from a
+     * repository.
      *
      * @param m the module archive to be uninstalled.
-     * @return true if the module archive is found and uninstalled,
-     *         returns false otherwise.
-     * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to uninstall the module archive in the repository.
-     * @throws IllegalStateException if the module definition in the specified
-     *         specified module archive is in use, or
-     *         if the repository instance has not been
-     *         initialized or it has been shutdown.
+     * @return true if the module archive is found and uninstalled, returns
+     *         false otherwise.
+     * @throws SecurityException if a security manager exists and its
+     *         <tt>checkPermission</tt> method denies access to uninstall the
+     *         module archive in the repository.
      * @throws UnsupportedOperationException if the repository is read-only.
-     * @throws IOException If an error occurs while uninstalling the module archive.
+     * @throws IllegalStateException if the module definition in the specified
+     *         specified module archive is in use, or if the repository
+     *         instance has not been initialized or it has been shutdown.
+     * @throws IOException If an error occurs while uninstalling the module
+     *         archive.
      */
     public abstract boolean uninstall(ModuleArchiveInfo m) throws IOException;
 
     /**
-     * Reload the repository. The behavior of this method depends on
-     * the implementation.
+     * Reload the repository. The behavior of this method depends on the
+     * implementation.
      * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("reloadRepository")</code>
-     * permission to ensure it's ok to reload module
-     * definitions in a repository.
+     * If a security manager is present, this method calls the security
+     * manager's <code>checkPermission</code> method with a
+     * <code>ModuleSystemPermission("reloadRepository")</code> permission
+     * to ensure it's ok to reload module definitions in a repository.
      *
-     * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to reload module definitions in the repository.
-     * @throws UnsupportedOperationException if the repository
-     *         does not support reload.
-     * @throws IllegalStateException if a module definition is in use
-     *         thus cannot be reloaded.
-     * @throws IOException If an error occurs while reloading the
-     *         module definitions.
+     * @throws SecurityException if a security manager exists and its
+     *         <tt>checkPermission</tt> method denies access to reload module
+     *         definitions in the repository.
+     * @throws UnsupportedOperationException if the repository does not
+     *         support reload.
+     * @throws IllegalStateException if a module definition is in use thus
+     *         cannot be reloaded.
+     * @throws IOException If an error occurs while reloading the module
+     *         definitions.
      */
     public abstract void reload() throws IOException;
 
     /**
-     * Adds the specified repository listener to receive repository events
-     * from this repository.
+     * Adds the specified repository listener to receive repository events from
+     * the repositories.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a <code>
-     * ModuleSystemPermission("addRepositoryListener")</code> permission to
-     * ensure it's ok to add a repository listener to the repository.
+     * manager's checkPermission method with a
+     * <code>ModuleSystemPermission("addRepositoryListener")</code> permission
+     * to ensure it's ok to add a repository listener to the repositories.
      *
      * @param listener the repository listener
      * @throws SecurityException if a security manager exists and its
-     *         checkPermission method denies access to add a repository
-     *         listener to the repository.
-     * @throws NullPointerException if listener is null.
+     *         <tt>checkPermission</tt> method denies access to add a
+     *         repository listener to the repositories.
      */
-    public final void addRepositoryListener(RepositoryListener listener) {
+    public static final void addRepositoryListener(RepositoryListener listener) {
         if (listener == null) {
             throw new NullPointerException("Repository listener must not be null.");
         }
@@ -594,27 +599,27 @@ public abstract class Repository {
             sm.checkPermission(new ModuleSystemPermission("addRepositoryListener"));
         }
 
-        synchronized (this) {
+        synchronized(listenerSyncObject) {
             repositoryListener = EventMulticaster.add(repositoryListener, listener);
         }
     }
 
     /**
-     * Removes the specified repository listener so that it no longer
-     * receives repository events from this repository.
+     * Removes the specified repository listener so that it no longer receives
+     * repository events from the repositories.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a <code>
-     * ModuleSystemPermission("removeModuleSystemListener")</code> permission to
-     * ensure it's ok to remove a repository listener from the repository.
+     * manager's checkPermission method with a
+     * <code>ModuleSystemPermission("removeModuleSystemListener")</code>
+     * permission to ensure it's ok to remove a repository listener from the
+     * repositories.
      *
      * @param listener the repository listener
      * @throws SecurityException if a security manager exists and its
-     *         checkPermission method denies access to remove a repository
-     *         listener from the repository.
-     * @throws NullPointerException if listener is null.
+     *         <tt>checkPermission</tt> method denies access to remove a
+     *         repository listener from the repositories.
      */
-    public final void removeRepositoryListener(RepositoryListener listener) {
+    public static final void removeRepositoryListener(RepositoryListener listener) {
         if (listener == null) {
             throw new NullPointerException("Repository listener must not be null.");
         }
@@ -624,7 +629,7 @@ public abstract class Repository {
             sm.checkPermission(new ModuleSystemPermission("removeRepositoryListener"));
         }
 
-        synchronized (this) {
+        synchronized(listenerSyncObject) {
             repositoryListener = EventMulticaster.remove(repositoryListener, listener);
         }
     }
@@ -656,8 +661,8 @@ public abstract class Repository {
     }
 
     /**
-     * Processes repository event occuring in this repository by
-     * dispatching them to any registered RepositoryListener objects.
+     * Processes repository event occuring in this repository by dispatching
+     * them to any registered RepositoryListener objects.
      *
      * @param event the repository event
      */
@@ -668,7 +673,7 @@ public abstract class Repository {
         if (listener == null)
             return;
 
-        synchronized(this) {
+        synchronized(listenerSyncObject) {
             if (executorService == null) {
                 // Creates a single thread executor that creates thread in the main
                 // thread group.
@@ -721,15 +726,13 @@ public abstract class Repository {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-
-        builder.append("Repository[name=");
+        builder.append("repository ");
         builder.append(getName());
         if (getSourceLocation() != null) {
-            builder.append(",source=");
+            builder.append(" (");
             builder.append(getSourceLocation());
+            builder.append(")");
         }
-        builder.append("]");
-
         return builder.toString();
     }
 

@@ -88,7 +88,7 @@ public class ImportDependency implements java.io.Serializable {
      *
      * @return the name of the imported module definition.
      */
-    public String getModuleName() {
+    public String getName() {
         return name;
     }
 
@@ -143,7 +143,7 @@ public class ImportDependency implements java.io.Serializable {
 
         ImportDependency importDep = (ImportDependency) obj;
 
-        return (name.equals(importDep.getModuleName())
+        return (name.equals(importDep.getName())
                 && constraint.equals(importDep.getVersionConstraint())
                 && reexport == importDep.isReexported()
                 && optional == importDep.isOptional());
@@ -174,17 +174,15 @@ public class ImportDependency implements java.io.Serializable {
     public String toString() {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("ImportDependency[imported-module=");
+        builder.append("ImportDependency[module ");
         builder.append(name);
-        builder.append(",version-constraint=");
+        builder.append(" ");
         builder.append(constraint.toString());
         if (reexport) {
-            builder.append(",re-export=");
-            builder.append(reexport);
+            builder.append(",re-export");
         }
         if (optional) {
-            builder.append(",optional=");
-            builder.append(optional);
+            builder.append(",optional");
         }
         builder.append("]");
 

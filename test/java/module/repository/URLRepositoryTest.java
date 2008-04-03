@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.module.*;
 import java.net.URL;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.JarFile;
+import java.util.concurrent.*;
 import sun.module.JamUtils;
 import sun.module.repository.MetadataXMLWriter;
 import sun.module.repository.RepositoryConfig;
@@ -44,7 +46,7 @@ import sun.module.repository.URLRepository;
  * @summary Test URLRepository via file: and http: protocols.
  * @library ../tools
  * @compile -XDignore.symbol.file URLRepositoryTest.java URLRepositoryServer.java ../tools/JamBuilder.java
- * @run main URLRepositoryTest
+ * @run main/othervm/timeout=600 URLRepositoryTest
  */
 public class URLRepositoryTest {
     static final boolean debug = System.getProperty("repository.debug") != null;
@@ -67,11 +69,29 @@ public class URLRepositoryTest {
     // Configuration of the URLRepository.
     Map<String, String> repoConfig;
 
+    // Setup repository listener
+    static final BlockingQueue<RepositoryEvent> initEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
+    static final BlockingQueue<RepositoryEvent> shutdownEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
+    static final BlockingQueue<RepositoryEvent> installEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
+    static final BlockingQueue<RepositoryEvent> uninstallEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
+
     static public void realMain(String[] args) throws Throwable {
         new URLRepositoryTest().runMain(args);
     }
 
-    void runMain(String[] args) throws Throwable{
+    void runMain(String[] args) throws Throwable {
+
+        // Enables shadow file copies in the repository if we're running
+        // on Windows. This is to prevent file locking in the
+        // source location.
+        if (System.getProperty("os.platform").equalsIgnoreCase("windows"))   {
+            System.setProperty("java.module.repository.shadowcopyfiles", "true");
+        }
+
         File baseDir = new File(System.getProperty("test.scratch", "."),
                                 getTestBaseDirName()).getCanonicalFile();
 
@@ -96,13 +116,31 @@ public class URLRepositoryTest {
         jamFiles.addAll(getJams());
 
         repoConfig = new HashMap<String, String>();
-        repoConfig.put("sun.module.repository.URLRepository.downloadDirectory",
+        repoConfig.put("sun.module.repository.URLRepository.cacheDirectory",
             repoDownloadDir.getAbsolutePath());
 
         // These configs are so that this test will run on any platform
         repoConfig.put("sun.module.repository.URLRepository.test.platform", "windows");
         repoConfig.put("sun.module.repository.URLRepository.test.arch", "i586");
 
+        // Add repository listener
+        RepositoryListener repositoryListener = new RepositoryListener() {
+            public void handleEvent(RepositoryEvent e) {
+                if (e.getType() == RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
+                    initEventQueue.add(e);
+                }
+                if (e.getType() == RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
+                    shutdownEventQueue.add(e);
+                }
+                if (e.getType() == RepositoryEvent.Type.MODULE_INSTALLED) {
+                    installEventQueue.add(e);
+                }
+                if (e.getType() == RepositoryEvent.Type.MODULE_UNINSTALLED) {
+                    uninstallEventQueue.add(e);
+                }
+            }
+        };
+        Repository.addRepositoryListener(repositoryListener);
 
         // Running the file-based test first creates the filesystem layout of
         // JAM, metadata, and repository-metadata.xml files required by an
@@ -170,10 +208,18 @@ public class URLRepositoryTest {
     void runTest(URL url, boolean fileBased) throws Throwable {
         Repository repo = Modules.newURLRepository(
             RepositoryConfig.getSystemRepository(), "test", url, repoConfig);
+
+        // Only REPOSITORY_INITIALIZED event should be fired.
+        check(initializeEventExists(repo));
+        check(!shutdownEventExists(repo));
+        check(!installEventExists(repo, null));
+        check(!uninstallEventExists(repo, null));
+
         if (fileBased) {
             fileBasedRepo = (URLRepository) repo;
         }
-        check(JamUtils.recursiveDelete(repoSrcDir));
+      //  check(JamUtils.recursiveDelete(repoSrcDir));
+        JamUtils.recursiveDelete(repoSrcDir);
         repoSrcDir.mkdirs();
 
         println("=" + getClass().getName() + " with " + url);
@@ -183,25 +229,30 @@ public class URLRepositoryTest {
     void runTest0(Repository repo, boolean fileBased) throws Throwable {
         // In a different repository, verify we get an exception if we require
         // the source location to exist, but it does not.
+        Repository r2 = null;
         try {
             Map<String, String> tmpConfig = new HashMap<String, String>();
             tmpConfig.putAll(repoConfig);
             tmpConfig.put("sun.module.repository.URLRepository.sourceLocationMustExist", "true");
-            Repository r2 = Modules.newURLRepository(
+            r2 = Modules.newURLRepository(
                 RepositoryConfig.getSystemRepository(),
                 "test2", new URL("file:///doesNotExist"), tmpConfig);
             fail();
         } catch (FileNotFoundException ex) {
-            check(ex.getMessage().contains(
-                          "doesNotExist" + File.separator
-                          + "repository-metadata.xml"));
+            check(ex.getMessage().contains("does not exist"));
         } catch (Throwable t) {
             unexpected(t);
         }
 
+        // No event should be fired.
+        check(!initializeEventExists(r2));
+        check(!shutdownEventExists(r2));
+        check(!installEventExists(r2, null));
+        check(!uninstallEventExists(r2, null));
+
         // Verify the repository is active and reloadable
         check(repo.isActive());
-        check(! (fileBased ^ repo.isReloadSupported()));
+        check(repo.supportsReload());
 
         // Verify that subsequent initialize is a no-op
         try {
@@ -211,13 +262,19 @@ public class URLRepositoryTest {
             unexpected(t);
         }
 
+        // No event should be fired.
+        check(!initializeEventExists(repo));
+        check(!shutdownEventExists(repo));
+        check(!installEventExists(repo, null));
+        check(!uninstallEventExists(repo, null));
+
         // Check that find() and list() return nothing from repo since, the
         // repository's source dir does not exist.  Do this only for fileBased
         // repository: the logic is the same for both repositories, and is
         // much harder to test for the non-fileBased case.
         if (fileBased) {
             check(repo.list().size() == 0);
-            check(repo.findAll().size() == 12); // java.se, java.classpath, ...
+            check(findModuleDefsInRepository(repo).size() == 0);
         }
 
         println("=repoSrcDir=" + repoSrcDir + " exists=" + repoSrcDir.exists());
@@ -239,10 +296,24 @@ public class URLRepositoryTest {
             ModuleArchiveInfo mai =
                 workRepo.install(f.getCanonicalFile().toURI().toURL());
             check(mai != null);
+
+            // MODULE_INSTALLED event should be fired.
+            check(!initializeEventExists(workRepo));
+            check(!shutdownEventExists(workRepo));
+            check(installEventExists(workRepo, mai));
+            check(!uninstallEventExists(workRepo, null));
         }
 
         if (!fileBased) {
             repo.reload();
+
+            // MODULE_UNINSTALLED and MODULE_INSTALLED events
+            // should be fired for the existing modules
+            check(!initializeEventExists(repo));
+            check(!shutdownEventExists(repo));
+            check(installEventQueue.size() == jamFiles.size());
+            check(!uninstallEventExists(repo, null));
+            installEventQueue.clear();
         }
 
         List<ModuleArchiveInfo> installed = repo.list();
@@ -254,9 +325,23 @@ public class URLRepositoryTest {
         Repository workRepo = fileBased ? repo : fileBasedRepo;
         for (ModuleArchiveInfo mai : new ArrayList<ModuleArchiveInfo>(workRepo.list())) {
             check(workRepo.uninstall(mai));
+
+            // MODULE_UNINSTALLED event should be fired.
+            check(!initializeEventExists(workRepo));
+            check(!shutdownEventExists(workRepo));
+            check(!installEventExists(workRepo, null));
+            check(uninstallEventExists(workRepo, mai));
         }
         if (!fileBased) {
             repo.reload();
+
+            // MODULE_UNINSTALLED and MODULE_INSTALLED events
+            // should be fired for the existing modules
+            check(!initializeEventExists(repo));
+            check(!shutdownEventExists(repo));
+            check(!installEventExists(repo, null));
+            check(uninstallEventQueue.size() == jamFiles.size());
+            uninstallEventQueue.clear();
         }
 
         List<ModuleArchiveInfo> installed = repo.list();
@@ -304,10 +389,16 @@ public class URLRepositoryTest {
                 fail();
             } catch (IllegalStateException ex) {
                 println("===" + ex.getMessage());
-                check(ex.getMessage().contains("already exists in the repository"));
+                check(ex.getMessage().contains("is already installed"));
             } catch (Throwable t) {
                 unexpected(t);
             }
+
+            // No event should be fired.
+            check(!initializeEventExists(repo));
+            check(!shutdownEventExists(repo));
+            check(!installEventExists(repo, null));
+            check(!uninstallEventExists(repo, null));
 
             // Check that one more module is listed, but the same number
             // is findable.
@@ -316,13 +407,21 @@ public class URLRepositoryTest {
             File extra = JamBuilder.createJam(
                 "extra", "SampleExtra", "ModuleExtra",
                 "0.1", "notsolaris", "notsparc", false, jamDir);
-            repo.install(extra.getCanonicalFile().toURI().toURL());
+            ModuleArchiveInfo mai = null;
+            mai = repo.install(extra.getCanonicalFile().toURI().toURL());
+            check(mai != null);
+
+            // MODULE_INSTALLED event should be fired.
+            check(!initializeEventExists(repo));
+            check(!shutdownEventExists(repo));
+            check(installEventExists(repo, mai));
+            check(!uninstallEventExists(repo, null));
 
             check(repo.list().size() == numInstalled + 1);
             check(repo.findAll().size() == numFound);
         }
 
-        // Non-file URL should cause exception from URLRepository.install.
+        // Non .jam/.jar/.jam.pack.gz should cause exception from URLRepository.install.
         try {
             repo.install(new URL("http://www.sun.com"));
             fail();
@@ -333,18 +432,22 @@ public class URLRepositoryTest {
                 pass();
             }
         } catch(IllegalArgumentException ex) {
-            if (fileBased) {
-                pass();
-            } else {
-                fail();
-            }
+            fail();
+        } catch(ModuleFormatException mfex) {
+            pass();
         } catch (Throwable t) {
             unexpected(t);
         }
 
+        // No event should be fired.
+        check(!initializeEventExists(repo));
+        check(!shutdownEventExists(repo));
+        check(!installEventExists(repo, null));
+        check(!uninstallEventExists(repo, null));
+
         // Non-existent file URL should fail
         try {
-            repo.install(new URL("file:/nonexistentfileforsuredontyouthinkireallyhope"));
+            repo.install(new URL("file:/nonexistentfileforsuredontyouthinkireallyhope.jam"));
             fail();
         } catch (UnsupportedOperationException ex) {
             if (fileBased) {
@@ -352,15 +455,21 @@ public class URLRepositoryTest {
             } else {
                 pass();
             }
-        } catch(IllegalArgumentException ex) {
-            if (fileBased) {
-                pass();
-            } else {
-                fail();
-            }
+        } catch (IllegalArgumentException ex) { ex.printStackTrace();
+            fail();
+        } catch (ModuleFormatException mfex) {
+            unexpected(mfex);
+        } catch (IOException ioex)  {
+            pass();
         } catch (Throwable t) {
             unexpected(t);
         }
+
+        // No event should be fired.
+        check(!initializeEventExists(repo));
+        check(!shutdownEventExists(repo));
+        check(!installEventExists(repo, null));
+        check(!uninstallEventExists(repo, null));
     }
 
     void checkUninstall(Repository repo, boolean fileBased) throws Throwable {
@@ -369,13 +478,22 @@ public class URLRepositoryTest {
 
         dumpMai("Checking uninstall", repo.list());
         check(defns != null && defns.size() != 0);
-        runModule(repo, "ModuleMain", null);
+
+// Can only run ModuleMain if the platform is Windows and i586
+//        runModule(repo, "ModuleMain", null);
 
         // Verify uninstall only works from fileBased repository
         if (fileBased) {
             for (ModuleArchiveInfo mai : repo.list()) {
                 if ("ModuleMumble".equals(mai.getName())) {
                     check(repo.uninstall(mai));
+
+                    // MODULE_UNINSTALLED event should be fired.
+                    check(!initializeEventExists(repo));
+                    check(!shutdownEventExists(repo));
+                    check(!installEventExists(repo, null));
+                    check(uninstallEventExists(repo, mai));
+
                     break;
                 }
             }
@@ -388,6 +506,12 @@ public class URLRepositoryTest {
             } catch (Exception ex) {
                 unexpected(ex);
             }
+
+            // No event should be fired.
+            check(!initializeEventExists(repo));
+            check(!shutdownEventExists(repo));
+            check(!installEventExists(repo, null));
+            check(!uninstallEventExists(repo, null));
         }
 
         List<ModuleDefinition> bootDefns = Repository.getBootstrapRepository().findAll();
@@ -418,6 +542,12 @@ public class URLRepositoryTest {
             println("=shutting down " + repo.getSourceLocation());
             repo.shutdown();
 
+            // REPOSITORY_SHUTDOWN event should be fired.
+            check(!initializeEventExists(repo));
+            check(shutdownEventExists(repo));
+            check(!installEventExists(repo, null));
+            check(!uninstallEventExists(repo, null));
+
             // Verify cannot initialize() after shutdown()
             try {
                 repo.initialize();
@@ -426,7 +556,19 @@ public class URLRepositoryTest {
                 pass();
             }
 
+            // No event should be fired.
+            check(!initializeEventExists(repo));
+            check(!shutdownEventExists(repo));
+            check(!installEventExists(repo, null));
+            check(!uninstallEventExists(repo, null));
+
             repo.shutdown();        // sic: multiple shutdowns are OK
+
+            // No event should be fired.
+            check(!initializeEventExists(repo));
+            check(!shutdownEventExists(repo));
+            check(!installEventExists(repo, null));
+            check(!uninstallEventExists(repo, null));
         }
     }
 
@@ -435,6 +577,90 @@ public class URLRepositoryTest {
         for (ModuleArchiveInfo mai : maiInfos) {
             println("=mai: " + mai);
         }
+    }
+
+    static boolean initializeEventExists(Repository repo) throws Exception {
+        // Poll REPOSITORY_INITIALIZED event
+        //
+        RepositoryEvent evt = initEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static boolean shutdownEventExists(Repository repo) throws Exception {
+        // Poll REPOSITORY_SHUTDOWN event
+        //
+        RepositoryEvent evt = shutdownEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static boolean installEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
+        // Poll MODULE_INSTALLED event
+        //
+        RepositoryEvent evt = installEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.MODULE_INSTALLED) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            if (mai != null && evt.getModuleArchiveInfo() != mai) {
+                throw new Exception("Unexpected repository event for: " + evt.getModuleArchiveInfo());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static boolean uninstallEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
+        // Poll MODULE_UNINSTALLED event
+        //
+        RepositoryEvent evt = uninstallEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.MODULE_UNINSTALLED) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            if (mai != null && evt.getModuleArchiveInfo() != mai) {
+                throw new Exception("Unexpected repository event for: " + evt.getModuleArchiveInfo());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static List<ModuleDefinition> findModuleDefsInRepository(Repository r) {
+        List<ModuleDefinition> result = new ArrayList<ModuleDefinition>();
+        for (ModuleDefinition md : r.findAll()) {
+            if (md.getRepository() == r) {
+                result.add(md);
+            }
+        }
+        return result;
     }
 
     private static void println(String s) {

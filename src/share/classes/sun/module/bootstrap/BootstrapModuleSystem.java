@@ -87,7 +87,7 @@ public final class BootstrapModuleSystem extends ModuleSystem {
         for (ImportDependency imp : moduleDef.getImportDependencies()) {
 
             // Find the imported module only through the bootstrap repository.
-            ModuleDefinition md = Repository.getBootstrapRepository().find(imp.getModuleName(), imp.getVersionConstraint());
+            ModuleDefinition md = Repository.getBootstrapRepository().find(imp.getName(), imp.getVersionConstraint());
 
             // Instantiate a new module instance of the imported module
             Module importedModule = getModuleInternal(md);
@@ -104,21 +104,21 @@ public final class BootstrapModuleSystem extends ModuleSystem {
     }
 
     @Override
-    public void releaseModule(ModuleDefinition definition) {
+    public void releaseModule(ModuleDefinition moduleDef) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("releaseModule"));
         }
-        if (definition.getName().startsWith("java.")) {
+        if (moduleDef.getName().startsWith("java.")) {
             throw new UnsupportedOperationException("Cannot release module instances with name begins with \"java.\".");
         }
-        if (definition.getRepository() == Repository.getBootstrapRepository()) {
+        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in the bootstrap repository.");
         }
-        if (definition.getRepository().getModuleSystem() != this) {
+        if (moduleDef.getRepository().getModuleSystem() != this) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in a different module system.");
         }
-        if (definition.isModuleReleasable() == false) {
+        if (moduleDef.isModuleReleasable() == false) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from a module definition which is not releasable.");
         }
 
@@ -127,18 +127,18 @@ public final class BootstrapModuleSystem extends ModuleSystem {
     }
 
     @Override
-    public void disableModuleDefinition(ModuleDefinition definition) {
+    public void disableModuleDefinition(ModuleDefinition moduleDef) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("disableModuleDefinition"));
         }
-        if (definition.getName().startsWith("java.")) {
+        if (moduleDef.getName().startsWith("java.")) {
             throw new UnsupportedOperationException("Cannot disable module definition with name begins with \"java.\".");
         }
-        if (definition.getRepository() == Repository.getBootstrapRepository()) {
+        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
             throw new UnsupportedOperationException("Cannot disable module definition in the bootstrap repository.");
         }
-        if (definition.getRepository().getModuleSystem() != this) {
+        if (moduleDef.getRepository().getModuleSystem() != this) {
             throw new UnsupportedOperationException("Cannot disable module definition in a different module system..");
         }
     }

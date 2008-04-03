@@ -25,6 +25,7 @@
 
 package sun.module.repository;
 
+import java.io.ByteArrayInputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,10 +95,18 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
      * duplicates, though other elements are).
      */
     public static Set<ModuleInfo> read(URL source) throws SAXException, IOException {
-        SchemaFactory f = SchemaFactory.newInstance("http://www.w3.org/2001/XMLSchema");
         InputStream schemaStream = null;
         InputStream repoStream = null;
+
         try {
+            SchemaFactory f = SchemaFactory.newInstance("http://www.w3.org/2001/XMLSchema");
+
+            // Read the soruce into a byte array so it does not need to be downloaded
+            // more than once.
+            repoStream = source.openStream();
+            byte[] byteBuffer = JamUtils.getInputStreamAsBytes(repoStream);
+
+            // Validate schema
             schemaStream = new BufferedInputStream(
                     ClassLoader.getSystemResourceAsStream(
                         "java/module/RepositoryMetadata.xml"));
@@ -105,26 +114,23 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
             StreamSource ss = new StreamSource(schemaStream);
             Schema s = f.newSchema(ss);
             Validator v = s.newValidator();
-            repoStream = new BufferedInputStream(source.openStream());
-            v.validate(new StreamSource(repoStream));
+            InputStream is = new ByteArrayInputStream(byteBuffer);
+            v.validate(new StreamSource(is));
+
+            XMLReader xmlReader = XMLReaderFactory.createXMLReader();
+
+            MetadataXMLReader moduleTypeReader =
+                new MetadataXMLReader(source.toString());
+            xmlReader.setErrorHandler(moduleTypeReader);
+            xmlReader.setContentHandler(moduleTypeReader);
+            is = new ByteArrayInputStream(byteBuffer);
+            xmlReader.parse(new InputSource(is));;
+
+            return moduleTypeReader.moduleInfos;
         } finally {
+            JamUtils.close(repoStream);
             JamUtils.close(schemaStream);
-            JamUtils.close(repoStream);
         }
-
-        XMLReader xmlReader = XMLReaderFactory.createXMLReader();
-
-        MetadataXMLReader moduleTypeReader =
-            new MetadataXMLReader(source.toString());
-        xmlReader.setErrorHandler(moduleTypeReader);
-        xmlReader.setContentHandler(moduleTypeReader);
-        repoStream = new BufferedInputStream(source.openStream());
-        try {
-            xmlReader.parse(new InputSource(repoStream));;
-        } finally {
-            JamUtils.close(repoStream);
-        }
-        return moduleTypeReader.moduleInfos;
     }
 
     private MetadataXMLReader(String sourceLocation) {

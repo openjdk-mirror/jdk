@@ -99,8 +99,8 @@ public final class ModuleLauncher {
                     throw new Exception("No Main-Class attribute in the module definition");
                 }
             }
-            Module module = moddef.getModuleInstance();
-            ClassLoader loader = module.getClassLoader();
+            Module m = moddef.getModuleInstance();
+            ClassLoader loader = m.getClassLoader();
             ProxyModuleLoader.setPrimaryModuleLoader(loader);
             Class<?> clazz = loader.loadClass(mainClassName);
             return clazz;

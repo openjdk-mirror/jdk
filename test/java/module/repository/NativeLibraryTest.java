@@ -59,6 +59,13 @@ public class NativeLibraryTest extends LibraryTest {
     }
 
     private void run(String[] args) throws Throwable {
+        // Enables shadow file copies in the repository if we're running
+        // on Windows. This is to prevent file locking in the
+        // source location.
+        if (System.getProperty("os.platform").equalsIgnoreCase("windows")) {
+            System.setProperty("java.module.repository.shadowcopyfiles", "true");
+        }
+
         // Run the tests against a URLRepository
         File srcDir = makeTestDir("urlSource");
         repo = Modules.newURLRepository(
@@ -126,7 +133,7 @@ public class NativeLibraryTest extends LibraryTest {
             try {
                 runModule(repo, modName, "loaded " + nativeLibFile.getName());
                 fail();
-            } catch (ClassNotFoundException cnfe) {
+            } catch (ModuleInitializationException mie) {
                 pass();
             } catch(Throwable t) {
                 unexpected(t);

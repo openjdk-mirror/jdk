@@ -24,7 +24,7 @@
 /**
  * @test
  * @compile -XDignore.symbol.file RunMTest.java classp/MainX.java
- * @run main/othervm/timeout=300 RunMTest
+ * @run main/othervm/timeout=600 RunMTest
  */
 
 import java.util.*;

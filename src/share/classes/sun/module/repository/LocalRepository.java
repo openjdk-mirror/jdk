@@ -25,54 +25,58 @@
 
 package sun.module.repository;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.io.IOException;
 import java.module.ModuleArchiveInfo;
 import java.module.ModuleDefinition;
 import java.module.ModuleSystem;
-import java.module.ModuleSystemPermission;
+import java.module.Modules;
 import java.module.Query;
 import java.module.Repository;
-import java.module.RepositoryEvent;
 import java.module.Version;
-import java.module.annotation.PlatformBinding;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import sun.module.JamUtils;
+import sun.module.repository.cache.Cache;
+import sun.module.repository.cache.ModuleDefInfo;
 
 /**
- * A repository for module definitions stored on the file system.
+ * A repository for module definitions stored in the repository interchange
+ * directory on the file system.
  * <p>
  * When the repository is initialized, the source location is interpreted by
  * the <code>LocalRepository</code> instance as a directory where the module
  * definitions are stored in the repository interchange directory.
  *
  * @see java.module.ModuleArchiveInfo
+ * @see java.module.ModuleDefinition
+ * @see java.module.Query
  * @see java.module.Repository
  * @since 1.7
  */
-public final class LocalRepository extends Repository {
+public final class LocalRepository extends AbstractRepository {
     /** Prefix of all properties use to configure this repository. */
     private static final String PROPERTY_PREFIX = "sun.module.repository.LocalRepository.";
 
     /**
-     * True iff the sourceDir is writable.  Note that this can change upon
+     * True iff the sourceDirectory is writable.  Note that this can change upon
      * {@link #reload()}.
      */
     private boolean readOnly;
 
     /**
      * Directory in which JAM files are installed, derived from the source
-     * location given in constructors.
+     * location given in the constructors.
      */
-    private File sourceDir;
+    private File sourceDirectory;
 
     /**
      * True if the source location must exist during execution of {@code
@@ -88,8 +92,8 @@ public final class LocalRepository extends Repository {
         PROPERTY_PREFIX + "sourceLocationMustExist";
 
     /**
-     * True if all modules must be uninstalled during execution of {@code
-     * shutdown()}.
+     * True if all modules must be removed from the source location
+     * during execution of {@code shutdown()}.
      */
     private boolean uninstallOnShutdown;
 
@@ -98,71 +102,27 @@ public final class LocalRepository extends Repository {
 
     /**
      * Directory containing directories for JAM expansion and creation of any
-     * other artifacts for this repository, unless their locations are
-     * specified by client via properties.
+     * other artifacts for this repository.
      */
-    private File baseDir;
+    private File cacheDirectory;
 
     /**
-     * Directory into which embedded jars and native libraries in a JAM are
-     * expanded.  Not created in the filesystem unless actually needed.
-     */
-    private File expansionDir;
-
-    /**
-     * Name of expansion directory based on system property and config in
-     * {@link #initialize(Map<String, String>)}.
-     */
-    private String expansionDirName;
-
-    /**
-     * Directory name corresponding to {@code EXPANSION_DIR_KEY} as obtained
+     * Directory name corresponding to {@code CACHE_DIR_KEY} as obtained
      * from System properties.
      */
-    private static final String sysPropExpansionDirName;
+    private static final String sysPropCacheDirName;
 
     /**
      * Property name to configure the directory into which native libraries
      * and embedded JAR files are expanded from a JAM file.
      */
-    private static final String EXPANSION_DIR_KEY =
-        PROPERTY_PREFIX + "expansionDirectory";
+    private static final String CACHE_DIR_KEY =
+        PROPERTY_PREFIX + "cacheDirectory";
 
     static {
         sysPropSourceLocMustExist = RepositoryUtils.getProperty(SOURCE_LOC_MUST_EXIST_KEY);
-        sysPropExpansionDirName = RepositoryUtils.getProperty(EXPANSION_DIR_KEY);
+        sysPropCacheDirName = RepositoryUtils.getProperty(CACHE_DIR_KEY);
     }
-
-    /** Describes the contents of this repository. */
-    private RepositoryContents contents = new RepositoryContents();
-
-    /**
-     * A cache of ModuleDefinitions that have been installed and which also
-     * match the current platform binding.  Module definitions are added as
-     * they are installed and removed as they are uninstalled.  (Contrast with
-     * {@code contents}, which describes all installed modules regardless of
-     * platform binding.)
-     */
-    private final List<ModuleDefinition> modDefCache =
-        new ArrayList<ModuleDefinition>();
-
-    /** Marks the time this repository was created. */
-    private final long timestamp;
-
-    /** JAM files that have been installed. */
-    private final List<File> jams = new ArrayList<File>();
-
-    /** True if this repository has been initialized but not yet shutdown. */
-    private boolean active;
-
-    /** True if this repository has been shutdown. */
-    private boolean shutdown;
-
-    private static String platform = RepositoryUtils.getPlatform();
-
-    private static String arch = RepositoryUtils.getArch();
-
-    private static final Map<String, String> DEFAULT_CONFIG = Collections.emptyMap();
 
     /**
      * Creates a new <code>LocalRepository</code> instance.
@@ -227,9 +187,7 @@ public final class LocalRepository extends Repository {
      */
     public LocalRepository(Repository parent, String name,
             URL source, Map<String, String> config) throws IOException {
-        super(parent, name, source, ModuleSystem.getDefault());
-        timestamp = System.currentTimeMillis();
-        initialize(config);
+        super(parent, name, source, config);
     }
 
     /**
@@ -256,210 +214,7 @@ public final class LocalRepository extends Repository {
     }
 
     //
-    // Extend Repository
-    //
-
-    @Override
-    public void initialize() throws IOException {
-        initialize(DEFAULT_CONFIG);
-    }
-
-    /**
-     * @see Repository#install(URL u)
-     * @return a {code ModuleArchiveInfo} corresponding to the newly-installed
-     * module, or null if the module was already installed.
-     * @throws IOException if given URL names a file that does not exist.
-     *         directory.
-     */
-    @Override
-    public synchronized ModuleArchiveInfo install(URL u) throws IOException {
-        assertActive();
-        assertNotReadOnly();
-        assertValidDirs();
-
-        File f = JamUtils.getFile(u);
-        File dest = new File(sourceDir + File.separator + f.getName());
-        if (dest.exists()) {
-            throw new IllegalStateException(
-                msg("Cannot overwrite " + f.getName()
-                    + " in repository's source directory"));
-        }
-        JamUtils.saveStreamAsFile(new FileInputStream(f), dest);
-
-        ModuleArchiveInfo rc = installInternal(dest);
-        return rc;
-    }
-
-    @Override
-    public synchronized boolean uninstall(ModuleArchiveInfo mai) throws IOException {
-        assertActive();
-        assertNotReadOnly();
-        assertValidDirs();
-
-        if (!contents.contains(mai)) {
-            return false;
-        }
-
-        // Remove any legacy JAR files for this module
-        File legacyJarDir = RepositoryUtils.getLegacyJarDir(expansionDir, mai.getName(), mai.getVersion(), mai.getPlatform(), mai.getArchitecture());
-        if (legacyJarDir.isDirectory()) {
-            // XXX Remove the Windows-specificity once disableModuleDefinition is implemented
-            if (!platform.startsWith("windows")) {
-                if (!JamUtils.recursiveDelete(legacyJarDir)) {
-                    throw new IOException(
-                        msg("Could not delete expansion directory " + legacyJarDir));
-                }
-            }
-        } else if (legacyJarDir.exists()) {
-            throw new IllegalStateException(
-                msg("File " + legacyJarDir.getCanonicalPath()
-                    + " is expected to be a directory but is not"));
-        }
-
-        ModuleDefinition md = contents.get(mai);
-        // XXX Uncomment below disableModuleDefinition is implemented
-        //if (md != null) {
-        //    getModuleSystem().disableModuleDefinition(md);
-        //}
-
-        // Remove the module file if it is the same one that was installed,
-        // as determined by timestamp.  Don't remove if the timestamp is
-        // different, as that could represent file copied over the installed
-        // file.
-        // XXX Remove the Windows-specificity once disableModuleDefinition is implemented
-        if (!platform.startsWith("windows")) {
-            File f = new File(mai.getFileName());
-            if (f.lastModified() == mai.getLastModified() && f.isFile() && !f.delete()) {
-                throw new IOException(
-                    msg("Could not delete module for " + mai.getName()
-                        + "from the repository"));
-            }
-        }
-
-        // Remove from cache & contents
-        modDefCache.remove(md);
-        boolean rc = contents.remove(mai);
-
-        if (rc) {
-            // Send MODULE_UNINSTALLED event
-            RepositoryEvent evt = new RepositoryEvent(this, RepositoryEvent.Type.MODULE_UNINSTALLED, mai);
-            processEvent(evt);
-        }
-        return rc;
-    }
-
-    @Override
-    public synchronized List<ModuleDefinition> findModuleDefinitions(Query constraint) {
-        assertActive();
-        return RepositoryUtils.findModuleDefinitions(constraint, modDefCache);
-    }
-
-    @Override
-    public List<ModuleArchiveInfo> list() {
-        return Collections.unmodifiableList(contents.getModuleArchiveInfos());
-    }
-
-    /**
-     * Compares the cache with the contents of the source directory.  Modules
-     * that are in both places are not affected.  Modules in the cache but not
-     * source directory are uninstalled.  Modules in the source directory but
-     * not the cache are installed.
-     */
-    @Override
-    public synchronized void reload() throws IOException {
-        assertActive();
-        readOnly = (sourceDir.canWrite() == false);
-        initializeCache();
-
-        // Build a list of modules to uninstall, and of modules currently
-        // installed that won't be uninstalled by this reload.
-        List<ModuleArchiveInfo> uninstallCandidates = new ArrayList<ModuleArchiveInfo>();
-        Set<File> currentModules = new HashSet<File>();
-        for (ModuleArchiveInfo mai : contents.getModuleArchiveInfos()) {
-            File f = new File(mai.getFileName());
-            long modTime = mai.getLastModified();
-            // Uninstall if source file is missing, or if it has been updated on disk.
-            if (!f.isFile() || (modTime != 00 && f.lastModified() != modTime)) {
-                uninstallCandidates.add(mai);
-            } else {
-                currentModules.add(f);
-            }
-        }
-
-        // Uninstall modules for which there is no corresponding file in the
-        // source directory
-        for (ModuleArchiveInfo mai : uninstallCandidates) {
-            uninstall(mai);
-        }
-
-        // Install modules that have a JAM in the source directory, but are
-        // not in the cache.
-        for (File f : sourceDir.listFiles(JamUtils.JAM_FILTER)) {
-            if (!currentModules.contains(f)) {
-                installInternal(f);
-            }
-        }
-    }
-
-    /**
-     * Uninstalls all modules.  Removes repository-specific directories.
-     *
-     * @throws java.io.IOException if there's an error removing directories.
-     */
-    @Override
-    public synchronized void shutdown() throws IOException {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            sm.checkPermission(new ModuleSystemPermission("shutdownRepository"));
-        }
-        if (shutdown) {
-            return;             // shutdown only once
-        }
-        assertActive();
-
-        if (uninstallOnShutdown) {
-            // Only remove what was installed
-            for (ModuleArchiveInfo mai : contents.getModuleArchiveInfos()) {
-                File f = new File(mai.getFileName());
-                if (f.isFile()) {
-                    f.delete();
-                }
-            }
-        }
-
-        removeCache();
-
-        active = false;
-        shutdown = true;
-
-        // Send REPOSITORY_SHUTDOWN event
-        RepositoryEvent evt = new RepositoryEvent(this, RepositoryEvent.Type.REPOSITORY_SHUTDOWN);
-        processEvent(evt);
-    }
-
-    @Override
-    public boolean isActive() {
-        return active;
-    }
-
-    /**
-     * @return true if this repository is read-only; false otherwise
-     */
-    @Override
-    public boolean isReadOnly() {
-        return readOnly;
-    }
-
-    /**
-     * @return true
-     */
-    @Override
-    public boolean isReloadSupported() {
-        return true;
-    }
-
-    //
-    // Implementation specific to LocalRepository
+    // Extend AbstractRepository
     //
 
     /**
@@ -485,17 +240,7 @@ public final class LocalRepository extends Repository {
      * @param config Map of configuration names to their values
      * @throws IOException if the repository cannot be initialized
      */
-    private synchronized void initialize(Map<String, String> config) throws IOException {
-        if (active) {
-            return;             // initialize only once
-        }
-        if (shutdown) {
-            throw new IllegalStateException(msg("Repository is shut down."));
-        }
-        if (config == null) {
-            throw new NullPointerException(msg("Parameter 'config' cannot be null."));
-        }
-
+    protected void doInitialize(Map<String, String> config) throws IOException {
         if ("true".equalsIgnoreCase(sysPropSourceLocMustExist)) {
             sourceLocMustExist = true;
         } else {
@@ -504,157 +249,300 @@ public final class LocalRepository extends Repository {
 
         uninstallOnShutdown = "true".equalsIgnoreCase(config.get(UNINSTALL_ON_SHUTDOWN_KEY));
 
-        expansionDirName = sysPropExpansionDirName != null
-            ? sysPropExpansionDirName : config.get(EXPANSION_DIR_KEY);
+        String cacheDirName = sysPropCacheDirName != null
+            ? sysPropCacheDirName :      config.get(CACHE_DIR_KEY);
+        if (cacheDirName != null) {
+            cacheDirectory = new File(cacheDirName);
+        }
 
-        sourceDir = JamUtils.getFile(getSourceLocation());
-        readOnly = (sourceDir.canWrite() == false);
-        if (sourceDir.isDirectory()) {
-            initializeCache();
-            installJams();
-        } else {
+        sourceDirectory = JamUtils.getFile(getSourceLocation());
+        readOnly = (sourceDirectory.canWrite() == false);
+        if (sourceDirectory.isDirectory() == false) {
             if (sourceLocMustExist) {
-                missingDir("source", sourceDir);
+                missingDir("source", sourceDirectory);
             }
         }
 
-        active = true;
-
-        // Send REPOSITORY_INITIALIZED event
-        RepositoryEvent evt = new RepositoryEvent(this, RepositoryEvent.Type.REPOSITORY_INITIALIZED);
-        processEvent(evt);
-    }
-
-    /**
-     * Installs given JAM file into the repository.
-     */
-    private ModuleArchiveInfo installInternal(File file) throws IOException {
-        if (file.isFile() == false) {
-            throw new IOException(msg("File does not exist: " + file));
-        }
-
-        ModuleDefinition md = RepositoryUtils.createLocalModuleDefinition(
-            this, file, expansionDir);
-
-        ModuleArchiveInfo mai  = new ModuleArchiveInfo(
-            this, md.getName(), md.getVersion(),
-            platform, arch,
-            file.getAbsolutePath(), file.lastModified());
-
-        // Determine if the module definition matches the current platform platform
-        PlatformBinding platformBinding = md.getAnnotation(PlatformBinding.class);
-
-        if (RepositoryUtils.bindingMatches(platformBinding, platform, arch)) {
-            modDefCache.add(md);
-            contents.put(mai, md);
+        // Constructs a repository cache instance
+        if (cacheDirectory != null) {
+            repositoryCache = Cache.newInstance(cacheDirectory);
         } else {
-            contents.put(mai, null);
+            repositoryCache = Cache.newInstance();
         }
 
-        if (mai != null) {
-            // Send MODULE_INSTALLED event
-            RepositoryEvent evt = new RepositoryEvent(this, RepositoryEvent.Type.MODULE_INSTALLED, mai);
-            processEvent(evt);
-        }
-
-        return mai;
-    }
-
-    /**
-     * Ensure that the required directories exist.
-     */
-    private void initializeCache() throws IOException {
-        if (expansionDirName != null) {
-            expansionDir = new File(expansionDirName,
-                                    getName() + "-" + timestamp + "-expand");
-        } else {
-            if (baseDir == null) {
-                baseDir = new File(JamUtils.createTempDir(), "LocalRepository");
-                baseDir = new File(baseDir, getName() + "-" + timestamp);
-            }
-            expansionDir = new File(baseDir, "expand");
-        }
         assertValidDirs();
-    }
 
-    /**
-     * Removes the contents of the repository's metadata and download
-     * directories.  Clears repository contents and list of loaded JAMs.
-     */
-    private void removeCache() throws IOException {
-        if (baseDir != null) {
-            JamUtils.recursiveDelete(baseDir);
-        }
+        // Iterates the JAM files in the source directory, and cook them
+        // one-by-one.
+        File[] jamFiles = sourceDirectory.listFiles(JamUtils.JAM_JAR_FILTER);
 
-        if (expansionDir != null) {
-            JamUtils.recursiveDelete(expansionDir);
-        }
-
-        baseDir = null;
-        expansionDir = null;
-        contents.clear();
-        jams.clear();
-    }
-
-    /**
-     * Install JAM files in the source dir that aren't already installed.
-     */
-    private void installJams() {
-        File[] jamFiles = sourceDir.listFiles(JamUtils.JAM_JAR_FILTER);
-        for (File jf : jamFiles) {
-            if (!jams.contains(jf)) {
-                // no need to retry if it does not work the first time
-                jams.add(jf);
+        if (jamFiles != null) {
+            Map<ModuleArchiveInfo, ModuleDefInfo> mdInfoMap =
+                                        new HashMap<ModuleArchiveInfo, ModuleDefInfo>();
+            for (File file : jamFiles) {
                 try {
                     // XXX Log this action
-                    installInternal(jf);
+
+                    // Put the jam file into the repository cache and cook it
+                    ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(file);
+
+                    // Constructs a module archive info
+                    ModuleArchiveInfo mai  = new ModuleArchiveInfo(
+                        this, mdInfo.getName(), mdInfo.getVersion(),
+                        mdInfo.getPlatform(), mdInfo.getArch(),
+                        file.getAbsolutePath(), file.lastModified());
+
+                    mdInfoMap.put(mai, mdInfo);
+
+                    // Adds the module archive info into the internal data structure.
+                    moduleArchiveInfos.add(mai);
                 } catch (Exception ex) {
                     // XXX log warning but otherwise ignore
+                    System.err.println("Failed to load module from " + file + ": " + ex);
+                }
+            }
+
+            // It is certainly possible that the source directory may contain more
+            // than one module with the same name and same version, e.g.
+            // duplicate module with different JAM filename, or platform neutral
+            // module vs platform specific module.
+            //
+            // Constructs the module definitions from the module archives
+            // based on the current platform and architecture.
+            constructModuleDefinitions(mdInfoMap);
+        }
+    }
+
+    /**
+     * Install a module archive from a URL.
+     */
+    protected ModuleArchiveInfo doInstall(URL url) throws IOException {
+        InputStream is = null;
+        File tmpFile = null;
+        File jamFile = null;
+
+        try {
+            URLConnection uc = url.openConnection();
+            is = uc.getInputStream();
+
+            // Store the file in a temp directory first. Unpack the file if
+            // necessary.
+            tmpFile = File.createTempFile("local-repository-install-", "tmp");
+            tmpFile.deleteOnExit();
+
+            if (url.getFile().endsWith(".jam.pack.gz")) {
+                JamUtils.unpackStreamAsFile(is, tmpFile);
+            } else {
+                JamUtils.saveStreamAsFile(is, tmpFile);
+            }
+
+            // Retrieve the module metadata from the JAM file to find out
+            // the module information, e.g. name, version, etc.
+            //
+            // No need to shadow copy (if set) because this is a temp file.
+            ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(tmpFile, false);
+
+            // Check to see if there exists a module archive that has
+            // the same name, version, and platform binding.
+            for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+                if (mai.getName().equals(mdInfo.getName())
+                    && mai.getVersion().equals(mdInfo.getVersion()))  {
+                    if (mai.isPlatformArchNeutral()) {
+                        if (mdInfo.isPlatformArchNeutral()) {
+                            throw new IllegalStateException("A module definition with the same name,"
+                                + " version, and platform binding is already installed");
+                        }
+                    } else if (mai.getPlatform().equals(mdInfo.getPlatform())
+                               && mai.getArch().equals(mdInfo.getArch())) {
+                        throw new IllegalStateException("A module definition with the same name,"
+                            + " version, and platform binding is already installed");
+                    }
+                }
+            }
+
+            // Generate the destination jam file
+            String jamName = JamUtils.getJamFilename(mdInfo.getName(),
+                                mdInfo.getVersion(), mdInfo.getPlatform(),
+                                mdInfo.getArch());
+            jamFile = new File(sourceDirectory + File.separator + jamName + ".jam");
+
+            // Checks to see if the jam file already exists in the source directory.
+            //
+            // Typically, this check is a bit redundent because we have already
+            // checked above that there is no existing module archive that has
+            // the same name, version, and platform binding as the
+            // about-to-be-installed module archive. If such file exists, it could
+            // happen only if that file was installed into source location somehow
+            // but the local repository in this JVM session was not aware of it.
+            if (jamFile.exists() && !jamFile.canWrite()) {
+                throw new IOException(
+                    "Cannot overwrite " + jamFile.getName()
+                        + " in the source directory: " + sourceDirectory);
+            }
+
+            // Copy the jam file into the source directory.
+            //
+            // Note that we always copy the unpacked JAM file into the
+            // source directory. This is done to optimize the startup
+            // performance of the local repository in subsequence launch.
+            JamUtils.copyFile(tmpFile, jamFile);
+
+            // Put the JAM file into the repository cache, cook it, and
+            // update the internal data structure to reflect the change.
+            return addModuleArchiveInternal(jamFile);
+        } catch(IOException ioe) {
+            // Something went wrong, remove the jam file in the source
+            // directory.
+            if (jamFile != null) {
+                jamFile.delete();
+            }
+            throw ioe;
+        } finally {
+            JamUtils.close(is);
+            if (tmpFile != null) {
+                tmpFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Uninstall a module archive.
+     */
+    protected boolean doUninstall(ModuleArchiveInfo mai) throws IOException {
+        // Checks if the module archive still exists.
+        if (!moduleArchiveInfos.contains(mai)) {
+            return false;
+        }
+
+        // Remove the module archive if it is the same one that was installed,
+        // as determined by timestamp.  Don't remove if the timestamp is
+        // different, as that could mean a file has been copied over the
+        // installed file.
+        File f = new File(mai.getFileName());
+        if (f.lastModified() != mai.getLastModified()) {
+            throw new IOException(
+                "Could not delete module archive because the modification "
+                + "date was different than expected: " + mai.getFileName());
+        }
+        if (f.isFile() && !f.delete()) {
+            throw new IOException(
+                "Could not delete module archive: " + mai.getFileName());
+        }
+
+        // Remove the module archive and the corresponding module definition
+        // (if it has been created) from the internal data structures so this
+        // repository wont'recognize it anymore.
+        removeModuleArchiveInternal(mai);
+
+        return true;
+    }
+
+    /**
+     * Reload all module archives.
+     */
+    protected void doReload() throws IOException {
+        readOnly = (sourceDirectory.canWrite() == false);
+
+        // Build a list of modules to uninstall, and of modules currently
+        // installed that won't be uninstalled by this reload.
+        List<ModuleArchiveInfo> uninstallCandidates = new ArrayList<ModuleArchiveInfo>();
+        Set<File> existingJams = new HashSet<File>();
+        for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+            File f = new File(mai.getFileName());
+            long modTime = mai.getLastModified();
+            // Uninstall if source file is missing, or if it has been updated on disk.
+            if (!f.isFile() || (modTime != 0 && f.lastModified() != modTime)) {
+                uninstallCandidates.add(mai);
+            } else {
+                existingJams.add(f);
+            }
+        }
+
+        // Remove modules from the internal data structures for which there
+        // is no corresponding JAM file in the source directory.
+        for (ModuleArchiveInfo mai : uninstallCandidates) {
+            // Removes the module archive and the corresponding module
+            // definition from the internal data structure so this
+            // repository won't recognize it anymore.
+            removeModuleArchiveInternal(mai);
+        }
+
+        // Adds the new module archive from the source directory, but are
+        // not in the cache.
+        for (File file : sourceDirectory.listFiles(JamUtils.JAM_FILTER)) {
+            if (!existingJams.contains(file))  {
+                try {
+                    // Put the JAM file into the repository cache, cook it,
+                    // and update the internal data structure of this
+                    // repository to reflect the change.
+                    addModuleArchiveInternal(file);
+                } catch(IOException ioe) {
+                    // XXX: if reload() throws exception, there is no gurantee
+                    // that the internal data structure of the repository
+                    // remains the same as before reload() is called.
+                    throw ioe;
+                }
+            }
+        }
+
+        // It is possible that a platform specific module (that matches the
+        // running platform/arch) have been uninstalled, but there is a
+        // platform neutral module with the same name and version already
+        // installed previously (i.e. not newly installed) in the repository.
+        // In this case, the repository does not have any module definition for
+        // this module name/version, and we'll need to construct a new module
+        // definition and sync up the internal data structure again.
+        reconstructModuleDefinitionsIfNecessary();
+    }
+
+    /**
+     * Shutdown the repository.
+     */
+    protected void doShutdown() throws IOException {
+        // XXX This is a hook for testing shutdownOnExit.
+        if (uninstallOnShutdown) {
+            // Only remove what was installed
+            for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+                try {
+                    uninstall(mai);
+                } catch(Exception e) {
+                    // ignore exception
                 }
             }
         }
     }
 
-    private void assertActive() throws IllegalStateException {
-         if (!isActive()) {
-             throw new IllegalStateException(msg("Repository is not active."));
-        }
+    /**
+     * @return true if this repository is read-only; false otherwise
+     */
+    @Override
+    public boolean isReadOnly() {
+        return readOnly;
     }
 
-    private void assertNotActive() throws IllegalStateException {
-         if (isActive()) {
-             throw new IllegalStateException(msg("Repository is active."));
-        }
+    /**
+     * @return true
+     */
+    @Override
+    public boolean supportsReload() {
+        return true;
     }
 
-    private void assertNotReadOnly() throws IllegalStateException {
-        if (isReadOnly()) {
-            throw new UnsupportedOperationException(msg("Repository is read-only."));
-        }
-    }
-
-    private void assertValidDirs() throws IOException {
+    protected void assertValidDirs() throws IOException {
         if (sourceLocMustExist) {
-            if (sourceDir == null || !sourceDir.isDirectory()) {
-                missingDir("source", sourceDir);
+            if (sourceDirectory == null || !sourceDirectory.isDirectory()) {
+                missingDir("source", sourceDirectory);
             }
         }
-        if (expansionDir != null
-            && (expansionDir.exists() && !expansionDir.isDirectory())) {
+        if (cacheDirectory != null
+            && (cacheDirectory.exists() && !cacheDirectory.isDirectory())) {
             throw new IOException(
-                msg("Specified expansion directory "
-                    + expansionDir + " is not a directory"));
+                cacheDirectory + " is not a directory");
         }
     }
 
     private void missingDir(String type, File dir) throws IOException {
-        throw new IOException(
-            msg("Specified " + type + " directory "
-                + dir + " does not exist or is not a directory"));
-    }
-
-    private String msg(String s) {
-        return "LocalRepository: " + getName() + " at "
-            + getSourceLocation().toExternalForm() + ": " + s;
+        throw new FileNotFoundException(
+            dir + " does not exist or is not a directory");
     }
 }

@@ -25,8 +25,6 @@
 
 package java.module;
 
-import java.util.EventObject;
-
 /**
  * This class represents a module system event that occurs in the module
  * system.
@@ -38,9 +36,7 @@ import java.util.EventObject;
  *
  * @since 1.7
  */
-public class ModuleSystemEvent extends EventObject {
-
-    private static final long serialVersionUID = -2113392048839692418L;
+public class ModuleSystemEvent {
 
     /**
      * Types of module system events.
@@ -59,44 +55,81 @@ public class ModuleSystemEvent extends EventObject {
         /**
          * The initialization of a module instance has failed.
          */
-        MODULE_INITIALIZATION_EXCEPTION
+        MODULE_INITIALIZATION_EXCEPTION,
+
+        /**
+         * A module definition has been disabled successfully.
+         */
+        MODULE_DEFINITION_DISABLED
     };
 
     private Type type;
-    private transient Module module;
-    private transient ModuleDefinition moduleDef;
-    private transient ModuleInitializationException exception;
+    private ModuleSystem source;
+    private Module module;
+    private ModuleDefinition moduleDef;
+    private ModuleInitializationException exception;
 
     /**
-     * Constructs a ModuleSystemEvent object with the specified module system,
-     * event type, and module instance.
+     * Constructs a ModuleSystemEvent object with event type MODULE_INITIALIZED,
+     * or MODULE_RELEASED, using the specified module system, event type, and
+     * module instance.
      *
      * @param source the module system where the event occurs
      * @param type the event type
      * @param module the module instance that the event applies to
-     * @throws NullPointerException if source is null, type is null, or
-     *         module is null.
+     * @throws IllegalArgumentException if type is
+     *         MODULE_INITIALIZATION_EXCEPTION or MODULE_DEFINITION_DISABLED
+     * @throws NullPointerException if source is null, type is null,
+     *         or module is null.
+     *
      */
     public ModuleSystemEvent(ModuleSystem source, Type type, Module module) {
-        super(source);
-
         if (source == null)
-            throw new NullPointerException("source must not be null.");
+            throw new NullPointerException("source must not be null");
 
         if (type == null)
-            throw new NullPointerException("type must not be null.");
+            throw new NullPointerException("type must not be null");
 
         if (module == null)
-            throw new NullPointerException("module must not be null.");
+            throw new NullPointerException("module must not be null");
+
+        if (!(type.equals(Type.MODULE_INITIALIZED) || type.equals(Type.MODULE_RELEASED)))
+            throw new IllegalArgumentException("type must not be " + type);
 
         this.type = type;
+        this.source = source;
         this.module = module;
         this.moduleDef = module.getModuleDefinition();
         this.exception = null;
     }
 
     /**
-     * Constructs a ModuleSystemEvent object with the specified module system,
+     * Constructs a ModuleSystemEvent object with event type
+     * MODULE_DEFINITION_DISABLED, using the specified module system
+     * and module definition.
+     *
+     * @param source the module system where the event occurs
+     * @param moduleDef the module definition that the event applies to
+     * @throws NullPointerException if source is null, or moduleDef is null.
+     *
+     */
+    public ModuleSystemEvent(ModuleSystem source, ModuleDefinition moduleDef) {
+        if (source == null)
+            throw new NullPointerException("source must not be null");
+
+        if (moduleDef == null)
+            throw new NullPointerException("moduleDef must not be null");
+
+        this.type = ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED;
+        this.source = source;
+        this.module = null;
+        this.moduleDef = moduleDef;
+        this.exception = null;
+    }
+
+    /**
+     * Constructs a ModuleSystemEvent object with event type
+     * MODULE_INITIALIZATION_EXCEPTION, using the specified module system,
      * module definition, and module initialization exception.
      *
      * @param source the module system where the event occurs
@@ -106,18 +139,17 @@ public class ModuleSystemEvent extends EventObject {
      *         exception is null.
      */
     public ModuleSystemEvent(ModuleSystem source, ModuleDefinition moduleDef, ModuleInitializationException exception) {
-        super(source);
-
         if (source == null)
-            throw new NullPointerException("source must not be null.");
+            throw new NullPointerException("source must not be null");
 
         if (moduleDef == null)
-            throw new NullPointerException("moduleDef must not be null.");
+            throw new NullPointerException("moduleDef must not be null");
 
         if (exception == null)
-            throw new NullPointerException("exception must not be null.");
+            throw new NullPointerException("exception must not be null");
 
         this.type = ModuleSystemEvent.Type.MODULE_INITIALIZATION_EXCEPTION;
+        this.source = source;
         this.module = null;
         this.moduleDef = moduleDef;
         this.exception = exception;
@@ -130,6 +162,12 @@ public class ModuleSystemEvent extends EventObject {
         return type;
     }
 
+    /**
+     * Returns the module system associated with the event.
+     */
+    public ModuleSystem getSource() {
+        return source;
+    }
 
     /**
      * Returns the module.
@@ -164,17 +202,12 @@ public class ModuleSystemEvent extends EventObject {
 
         builder.append("ModuleSystemEvent[type=");
         builder.append(type.toString());
-
-        ModuleDefinition md = moduleDef;
-        if (type.equals(ModuleSystemEvent.Type.MODULE_INITIALIZATION_EXCEPTION) == false) {
-            // MODULE_INITIALIZED or MODULE_RELEASED
-            md = module.getModuleDefinition();
-        }
-
-        builder.append(",module-name=");
-        builder.append(md.getName());
-        builder.append(",module-version=");
-        builder.append(md.getVersion());
+        builder.append(",module-system=");
+        builder.append(getSource().toString());
+        builder.append(",module=");
+        builder.append(moduleDef.getName());
+        builder.append(" v");
+        builder.append(moduleDef.getVersion());
         builder.append("]");
 
         return builder.toString();

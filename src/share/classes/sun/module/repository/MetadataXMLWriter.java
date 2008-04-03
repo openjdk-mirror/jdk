@@ -70,10 +70,10 @@ public class MetadataXMLWriter {
         if (tmpRepoMDFile.exists()) {
             if (!tmpRepoMDFile.delete()) {
                 throw new IOException(
-                    repo.msg("Cannot update repository metadata file for "
+                    "Cannot update repository metadata file for "
                         + mai.getName()
                         + ": cannot create temporary repository metadata file "
-                        + tmpRepoMDFile));
+                        + tmpRepoMDFile);
             }
         }
         MetadataXMLWriter writer = new MetadataXMLWriter(tmpRepoMDFile);
@@ -91,28 +91,28 @@ public class MetadataXMLWriter {
 
         if (!writer.end()) {
             throw new IOException(
-                repo.msg("Cannot update repository metadata file for "
+                "Cannot update repository metadata file for "
                     + mai.getName()
                     + ": failure while writing temporary repository metadata file "
-                    + tmpRepoMDFile));
+                    + tmpRepoMDFile);
         }
 
         File prev = new File(repoMDFile.getCanonicalPath() + ".prev");
         prev.delete();
         if (!repoMDFile.renameTo(prev)) {
             throw new IOException(
-                repo.msg("Cannot update repository metadata file for "
+                "Cannot update repository metadata file for "
                     + mai.getName()
-                    + ": cannot rename " + repoMDFile + " to " + prev));
+                    + ": cannot rename " + repoMDFile + " to " + prev);
         }
         prev.deleteOnExit();
 
         if (!tmpRepoMDFile.renameTo(repoMDFile)) {
             throw new IOException(
-                repo.msg("Cannot update repository metadata file for "
+                "Cannot update repository metadata file for "
                     + mai.getName()
                     + ": cannot create updated repository-metadata.xml file"
-                    + " by renaming " + tmpRepoMDFile + " to " + repoMDFile));
+                    + " by renaming " + tmpRepoMDFile + " to " + repoMDFile);
         }
     }
 
@@ -141,12 +141,11 @@ public class MetadataXMLWriter {
         indent++;
         output("<name>" + mai.getName() + "</name>");
         output("<version>" + mai.getVersion().toString() + "</version>");
-        String platform = mai.getPlatform();
-        if (platform != null) {
+        if (!mai.isPlatformArchNeutral())  {
             output("<platform-binding>");
             indent++;
-            output("<platform>" + platform + "</platform>");
-            output("<arch>" + mai.getArchitecture() + "</arch>");
+            output("<platform>" + mai.getPlatform() + "</platform>");
+            output("<arch>" + mai.getArch() + "</arch>");
             indent--;
             output("</platform-binding>");
         }

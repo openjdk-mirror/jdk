@@ -167,24 +167,25 @@ public abstract class ModuleSystem {
     }
 
     // Module system listener(s)
-    private ModuleSystemListener moduleSystemListener = null;
+    private static ModuleSystemListener moduleSystemListener = null;
+    private static Object listenerSyncObject = new Object();
 
     /**
      * Adds the specified module system listener to receive module system
-     * events from this module system.
+     * events from the module systems.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's checkPermission method with a <code>
      * ModuleSystemPermission("addModuleSystemListener")</code> permission to
-     * ensure it's ok to add a module system listener to the module system.
+     * ensure it's ok to add a module system listener to the module systems.
      *
      * @param listener the module system listener
      * @throws SecurityException if a security manager exists and its
      *         checkPermission method denies access to add a module system
-     *         listener to the module system.
+     *         listener to the module systems.
      * @throws NullPointerException if listener is null.
      */
-    public final void addModuleSystemListener(ModuleSystemListener listener) {
+    public static final void addModuleSystemListener(ModuleSystemListener listener) {
         if (listener == null) {
             throw new NullPointerException("Module system listener must not be null.");
         }
@@ -194,27 +195,28 @@ public abstract class ModuleSystem {
             sm.checkPermission(new ModuleSystemPermission("addModuleSystemListener"));
         }
 
-        synchronized (this) {
+        synchronized(listenerSyncObject) {
             moduleSystemListener = EventMulticaster.add(moduleSystemListener, listener);
         }
     }
 
     /**
      * Removes the specified module system listener so that it no longer
-     * receives module system events from this module system.
+     * receives module system events from the module systems.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's checkPermission method with a <code>
-     * ModuleSystemPermission("removeModuleSystemListener")</code> permission to
-     * ensure it's ok to remove a module system listener from the module system.
+     * ModuleSystemPermission("removeModuleSystemListener")</code> permission
+     * to ensure it's ok to remove a module system listener from the module
+     * systems.
      *
      * @param listener the module system listener
      * @throws SecurityException if a security manager exists and its
      *         checkPermission method denies access to remove a module system
-     *         listener from the module system.
+     *         listener from the module systems.
      * @throws NullPointerException if listener is null.
      */
-    public final void removeModuleSystemListener(ModuleSystemListener listener) {
+    public static final void removeModuleSystemListener(ModuleSystemListener listener) {
         if (listener == null) {
             throw new NullPointerException("Module system listener must not be null.");
         }
@@ -224,7 +226,7 @@ public abstract class ModuleSystem {
             sm.checkPermission(new ModuleSystemPermission("removeModuleSystemListener"));
         }
 
-        synchronized (this) {
+        synchronized(listenerSyncObject) {
             moduleSystemListener = EventMulticaster.remove(moduleSystemListener, listener);
         }
     }
@@ -252,6 +254,7 @@ public abstract class ModuleSystem {
                     case MODULE_INITIALIZED:
                     case MODULE_RELEASED:
                     case MODULE_INITIALIZATION_EXCEPTION:
+                    case MODULE_DEFINITION_DISABLED:
                         listener.handleEvent(event);
                         break;
                     default:
@@ -261,7 +264,7 @@ public abstract class ModuleSystem {
         }
     }
 
-    private ExecutorService executorService = null;
+    private static ExecutorService executorService = null;
 
     /**
      * Processes module system event occuring in this module system by
@@ -276,7 +279,7 @@ public abstract class ModuleSystem {
         if (listener == null)
             return;
 
-        synchronized(this) {
+        synchronized(listenerSyncObject) {
             if (executorService == null) {
                 // Creates a single thread executor that creates thread in the main
                 // thread group.

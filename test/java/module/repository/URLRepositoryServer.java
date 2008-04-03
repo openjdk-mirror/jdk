@@ -78,6 +78,8 @@ public class URLRepositoryServer {
                     if (!served.exists()) {
                         if (debug) System.err.println(
                             "URLRepositoryServer: No such file " +  uri);
+                        e.sendResponseHeaders(404, 0);
+                        e.close();
                     } else {
                         if (debug) System.err.println(
                             "URLRepositoryServer: Serving file " +  uri);

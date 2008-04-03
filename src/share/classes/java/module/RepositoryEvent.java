@@ -25,8 +25,6 @@
 
 package java.module;
 
-import java.util.EventObject;
-
 /**
  * This class represents a repository event that occurs in the repository.
  *
@@ -37,7 +35,7 @@ import java.util.EventObject;
  *
  * @since 1.7
  */
-public class RepositoryEvent extends EventObject {
+public class RepositoryEvent {
 
     /**
      * Types of repository events.
@@ -65,13 +63,9 @@ public class RepositoryEvent extends EventObject {
         MODULE_UNINSTALLED
     };
 
-    /*
-     * JDK 1.1 serialVersionUID
-     */
-    private static final long serialVersionUID = 5422851685952565936L;
-
     private Type type;
-    private transient ModuleArchiveInfo info;
+    private Repository source;
+    private ModuleArchiveInfo info;
 
     /**
      * Constructs a RepositoryEvent object with the specified repository,
@@ -82,8 +76,6 @@ public class RepositoryEvent extends EventObject {
      * @throws NullPointerException if source is null or type is null.
      */
     public RepositoryEvent(Repository source, Type type) {
-        super(source);
-
         if (source == null)
             throw new NullPointerException("source must not be null.");
 
@@ -91,6 +83,7 @@ public class RepositoryEvent extends EventObject {
             throw new NullPointerException("type must not be null.");
 
         this.type = type;
+        this.source = source;
         this.info = null;
     }
 
@@ -105,8 +98,6 @@ public class RepositoryEvent extends EventObject {
      *         info is null.
      */
     public RepositoryEvent(Repository source, Type type, ModuleArchiveInfo info) {
-        super(source);
-
         if (source == null)
             throw new NullPointerException("source must not be null.");
 
@@ -117,6 +108,7 @@ public class RepositoryEvent extends EventObject {
             throw new NullPointerException("info must not be null.");
 
         this.type = type;
+        this.source = source;
         this.info = info;
     }
 
@@ -125,6 +117,13 @@ public class RepositoryEvent extends EventObject {
      */
     public Type getType() {
         return type;
+    }
+
+    /**
+     * Returns the repository associated with the event.
+     */
+    public Repository getSource() {
+        return source;
     }
 
     /**
@@ -147,11 +146,11 @@ public class RepositoryEvent extends EventObject {
         builder.append("RepositoryEvent[type=");
         builder.append(type.toString());
         builder.append(",repository=");
-
-        Repository repository = (Repository) getSource();
-        builder.append(repository.getName());
-        builder.append(",module-archive-info=");
-        builder.append(info.toString());
+        builder.append(getSource().getName());
+        if (info != null) {
+            builder.append(",module-archive-info=");
+            builder.append(info.toString());
+        }
         builder.append("]");
 
         return builder.toString();

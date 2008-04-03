@@ -80,24 +80,24 @@ public final class ModuleSystemImpl extends ModuleSystem {
     }
 
     @Override
-    public synchronized void releaseModule(ModuleDefinition definition) {
+    public synchronized void releaseModule(ModuleDefinition moduleDef) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("releaseModule"));
         }
-        if (definition.getName().startsWith("java.")) {
+        if (moduleDef.getName().startsWith("java.")) {
             throw new UnsupportedOperationException("Cannot release module instances with name begins with \"java.\".");
         }
-        if (definition.getRepository() == Repository.getBootstrapRepository()) {
+        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in the bootstrap repository.");
         }
-        if (definition.getRepository().getModuleSystem() != this) {
+        if (moduleDef.getRepository().getModuleSystem() != this) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in a different module system.");
         }
-        if (definition.isModuleReleasable() == false) {
+        if (moduleDef.isModuleReleasable() == false) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from a module definition which is not releasable.");
         }
-        Module moduleToRelease = modules.get(definition);
+        Module moduleToRelease = modules.get(moduleDef);
         if (moduleToRelease == null) {
             // There is no module instance that is fully initialized, partially
             // initialized, or in error state, which corresponds to the module
@@ -110,7 +110,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
         // fully initialized module instance, or obtain an initialization
         // exception.
         try {
-            getModule(definition);
+            getModuleInternal(moduleDef);
         } catch(ModuleInitializationException mie) {
             // No module instance is instantiated successfully, thus nothing
             // to release.
@@ -168,40 +168,50 @@ public final class ModuleSystemImpl extends ModuleSystem {
     }
 
     @Override
-    public void disableModuleDefinition(ModuleDefinition definition) {
+    public void disableModuleDefinition(ModuleDefinition moduleDef) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("disableModuleDefinition"));
         }
-        if (definition.getName().startsWith("java.")) {
+        if (moduleDef.getName().startsWith("java.")) {
             throw new UnsupportedOperationException("Cannot disable module definition with name begins with \"java.\".");
         }
-        if (definition.getRepository() == Repository.getBootstrapRepository()) {
+        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
             throw new UnsupportedOperationException("Cannot disable module definition in the bootstrap repository.");
         }
-        if (definition.getRepository().getModuleSystem() != this) {
+        if (moduleDef.getRepository().getModuleSystem() != this) {
             throw new UnsupportedOperationException("Cannot disable module definition in a different module system..");
         }
         synchronized(disabledModuleDefinitionIds) {
-            if (disabledModuleDefinitionIds.contains(new Long(definition.getId()))) {
+            if (disabledModuleDefinitionIds.contains(new Long(moduleDef.getId()))) {
                 throw new IllegalStateException("Cannot disable module definition which has already been disabled.");
             }
-            disabledModuleDefinitionIds.add(new Long(definition.getId()));
+            disabledModuleDefinitionIds.add(new Long(moduleDef.getId()));
         }
+
+        // Send MODULE_DEFINITION_DISABLED event
+        ModuleSystemEvent evt = new ModuleSystemEvent(this, moduleDef);
+        this.sendEvent(evt);
     }
 
     @Override
-    public Module getModule(ModuleDefinition definition) throws ModuleInitializationException {
+    public Module getModule(ModuleDefinition moduleDef) throws ModuleInitializationException {
         // Check if the module definition has been disabled.
         //
         synchronized(disabledModuleDefinitionIds) {
-            if (disabledModuleDefinitionIds.contains(new Long(definition.getId()))) {
+            if (disabledModuleDefinitionIds.contains(new Long(moduleDef.getId()))) {
                 throw new IllegalStateException("Cannot instantiate new module instance from a disabled module definition.");
             }
         }
+        return getModuleInternal(moduleDef);
+    }
 
+    /**
+     * Internal method to get a module instance from a module definition.
+     */
+    private Module getModuleInternal(ModuleDefinition moduleDef) throws ModuleInitializationException {
         try {
-            ModuleImpl m = getModuleInstance(definition);
+            ModuleImpl m = getModuleInstance(moduleDef);
             if (m.initializationComplete() || (Thread.currentThread() != initializerThread)) {
                 // Wait for the module initializer thread to ready the module
                 // or if initialization is already complete, check if there
@@ -232,15 +242,15 @@ public final class ModuleSystemImpl extends ModuleSystem {
         }
     }
 
-    synchronized ModuleImpl getModuleInstance(ModuleDefinition definition) {
-        if (definition.getRepository().getModuleSystem() != this) {
+    synchronized ModuleImpl getModuleInstance(ModuleDefinition moduleDef) {
+        if (moduleDef.getRepository().getModuleSystem() != this) {
             throw new IllegalArgumentException
                 ("Cannot instantiate new module instance from module definition in a different module system.");
         }
-        ModuleImpl module = modules.get(definition);
+        ModuleImpl module = modules.get(moduleDef);
         if (module == null) {
-            module = new ModuleImpl(this, definition);
-            modules.put(definition, module);
+            module = new ModuleImpl(this, moduleDef);
+            modules.put(moduleDef, module);
             newModules.add(module);
         }
         return module;

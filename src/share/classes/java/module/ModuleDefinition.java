@@ -283,23 +283,13 @@ public abstract class ModuleDefinition {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-/*
-        builder.append("ModuleDefinition[name=");
-        builder.append(getName());
-        builder.append(",version=");
-        builder.append(getVersion());
-        builder.append(",repository=");
-        builder.append(getRepository().getName());
-        builder.append("]");
-*/
-        builder.append("ModuleDefinition ");
+        builder.append("module definition ");
         builder.append(getName());
         builder.append(" v");
         builder.append(getVersion());
         builder.append(" (");
         builder.append(getRepository().getName());
         builder.append(" repository)");
-
         return builder.toString();
     }
 }

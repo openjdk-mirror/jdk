@@ -43,7 +43,7 @@ import sun.module.repository.URLRepository;
  * @summary Test URLRepository reloading.
  * @library ../tools
  * @compile -XDignore.symbol.file URLRepositoryReloadTest.java URLRepositoryTest.java URLRepositoryServer.java ../tools/JamBuilder.java
- * @run main URLRepositoryReloadTest
+ * @run main/othervm/timeout=600 URLRepositoryReloadTest
  */
 public class URLRepositoryReloadTest extends URLRepositoryTest {
     String getTestBaseDirName() {
@@ -57,6 +57,14 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
     }
 
     void runTest0(Repository repo, boolean fileBased) throws Throwable {
+
+        // Enables shadow file copies in the repository if we're running
+        // on Windows. This is to prevent file locking in the
+        // source location.
+        if (System.getProperty("os.platform").equalsIgnoreCase("windows")) {
+            System.setProperty("java.module.repository.shadowcopyfiles", "true");
+        }
+
         /*
          * Create two repositories at the same source location as the given
          * repo.  Initializing them will populate them with some modules.
@@ -73,9 +81,22 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         Repository repoWork = Modules.newURLRepository(
             RepositoryConfig.getSystemRepository(), "repoWork",
             fileBasedRepo.getSourceLocation(), repoConfig);
+
+        // Only REPOSITORY_INITIALIZED event should be fired.
+        check(initializeEventExists(repoWork));
+        check(!shutdownEventExists(repoWork));
+        check(!installEventExists(repoWork, null));
+        check(!uninstallEventExists(repoWork, null));
+
         Repository repoTest = Modules.newURLRepository(
             RepositoryConfig.getSystemRepository(), "repoTest",
             repo.getSourceLocation(), repoConfig);
+
+        // Only REPOSITORY_INITIALIZED event should be fired.
+        check(initializeEventExists(repoTest));
+        check(!shutdownEventExists(repoTest));
+        check(!installEventExists(repoTest, null));
+        check(!uninstallEventExists(repoTest, null));
 
         /*
          * Check three cases of reload() [spec 6.2.6]
@@ -92,16 +113,28 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(repoTest.find("ModuleJamNew") == null);
         File jamNew = JamBuilder.createJam(
                 "jamnew", "JamNew", "ModuleJamNew",
-                "1.0", "windows", "i586", false, jamDir);
+                "1.0", null, null, false, jamDir);
         ModuleArchiveInfo maiNew = repoWork.install(
             jamNew.getCanonicalFile().toURI().toURL());
         check(maiNew != null);
         check(repoWork.find("ModuleJamNew") != null);
 
+        // Only MODULE_INSTALLED event should be fired.
+        check(!initializeEventExists(repoWork));
+        check(!shutdownEventExists(repoWork));
+        check(installEventExists(repoWork, maiNew));
+        check(!uninstallEventExists(repoWork, null));
+
         // Since repoTest and repoWork share the same filesytem structures, this
         // works:
         repoTest.reload();
         check(repoTest.find("ModuleJamNew") != null);
+
+        // Only MODULE_INSTALLED event should be fired.
+        check(!initializeEventExists(repoTest));
+        check(!shutdownEventExists(repoTest));
+        check(installEventExists(repoTest, null));
+        check(!uninstallEventExists(repoTest, null));
 
         // (2) Existing module definition removed from source location
         // Uninstall from repoWork...
@@ -109,16 +142,28 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(repoWork.uninstall(maiNew));
         check(repoWork.find("ModuleJamNew") == null);
 
+        // Only MODULE_UNINSTALLED event should be fired.
+        check(!initializeEventExists(repoWork));
+        check(!shutdownEventExists(repoWork));
+        check(!installEventExists(repoWork, null));
+        check(uninstallEventExists(repoWork, maiNew));
+
         // ... and as with case (1), this works due to shared filesystem
         // structures.
         repoTest.reload();
         check(repoTest.find("ModuleJamNew") == null);
 
+        // Only MODULE_UNINSTALLED event should be fired.
+        check(!initializeEventExists(repoTest));
+        check(!shutdownEventExists(repoTest));
+        check(!installEventExists(repoTest, null));
+        check(uninstallEventExists(repoTest, null));
+
         // (3) Existing module definition replaced in source location
         // Create a module in repoTest, make sure it operates as expected
         JamBuilder jb = new JamBuilder(
                 "jamreplace", "JamReplace", "ModuleJamReplace",
-                "2.0", "windows", "i586", false, jamDir);
+                "2.0", null, null, false, jamDir);
         jb.setMethod("foo");
         File jamReplace = jb.createJam();
         ModuleArchiveInfo maiReplace =
@@ -126,14 +171,33 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(repoWork.find("ModuleJamReplace") != null);
         runModule(repoWork, "ModuleJamReplace", "foo");
 
+        // Only MODULE_INSTALLED event should be fired.
+        check(!initializeEventExists(repoWork));
+        check(!shutdownEventExists(repoWork));
+        check(installEventExists(repoWork, maiReplace));
+        check(!uninstallEventExists(repoWork, null));
+
         // Now reload repoTest: as with (1), the module should be available
         repoTest.reload();
         check(repoTest.find("ModuleJamReplace") != null);
         runModule(repoTest, "ModuleJamReplace", "foo");
 
+        // Only MODULE_INSTALLED event should be fired.
+        check(!initializeEventExists(repoTest));
+        check(!shutdownEventExists(repoTest));
+        check(installEventExists(repoTest, null));
+        check(!uninstallEventExists(repoTest, null));
+
         // Now remove ModuleJamReplace from repoWork, create a new JAM for a
         // module of the same name, and install it in repoWork
         check(repoWork.uninstall(maiReplace));
+
+        // Only MODULE_UNINSTALLED event should be fired.
+        check(!initializeEventExists(repoWork));
+        check(!shutdownEventExists(repoWork));
+        check(!installEventExists(repoWork, null));
+        check(uninstallEventExists(repoWork, maiReplace));
+
         check(repoWork.find("ModuleJamReplace") == null);
         jb.setMethod("bar");
         Thread.currentThread().sleep(1000); // make sure repos will see it as updated
@@ -143,18 +207,56 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(repoWork.find("ModuleJamReplace") != null);
         runModule(repoWork, "ModuleJamReplace", "bar");
 
+        // Only MODULE_INSTALLED event should be fired.
+        check(!initializeEventExists(repoWork));
+        check(!shutdownEventExists(repoWork));
+        check(installEventExists(repoWork, maiReplace));
+        check(!uninstallEventExists(repoWork, null));
+
         // Now reload repoTest.  Insofar as it is concerned, ModuleJamReplace has
-        // been replaced; repoTest does not see any install nor uninstall
-        // operations.
+        // been replaced.
         repoTest.reload();
         check(repoTest.find("ModuleJamReplace") != null);
         runModule(repoTest, "ModuleJamReplace", "bar");
 
-        check(repoWork.uninstall(repoWork.list().get(0)));
+        // MODULE_UNINSTALLED and MODULE_INSTALLED event should be fired.
+        check(!initializeEventExists(repoTest));
+        check(!shutdownEventExists(repoTest));
+        check(installEventExists(repoTest, null));
+        check(uninstallEventExists(repoTest, null));
+
+        ModuleArchiveInfo mai = repoWork.list().get(0);
+        check(repoWork.uninstall(mai));
+
+        // MODULE_UNINSTALLED  event should be fired.
+        check(!initializeEventExists(repoWork));
+        check(!shutdownEventExists(repoWork));
+        check(!installEventExists(repoWork, null));
+        check(uninstallEventExists(repoWork, mai));
+
         repoTest.reload();
 
+        // MODULE_UNINSTALLED  event should be fired.
+        check(!initializeEventExists(repoTest));
+        check(!shutdownEventExists(repoTest));
+        check(!installEventExists(repoTest, null));
+        check(uninstallEventExists(repoTest, null));
+
         repoTest.shutdown();
+
+        // REPOSITORY_SHUTDOWN  event should be fired.
+        check(!initializeEventExists(repoTest));
+        check(shutdownEventExists(repoTest));
+        check(!installEventExists(repoTest, null));
+        check(!uninstallEventExists(repoTest, null));
+
         repoWork.shutdown();
+
+        // REPOSITORY_SHUTDOWN  event should be fired.
+        check(!initializeEventExists(repoWork));
+        check(shutdownEventExists(repoWork));
+        check(!installEventExists(repoWork, null));
+        check(!uninstallEventExists(repoWork, null));
     }
 
     //--------------------- Infrastructure ---------------------------

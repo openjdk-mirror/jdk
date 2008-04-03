@@ -36,7 +36,7 @@ m1.MainA
 	
 	// Poll first MODULE_RELEASED event
 	//
-	ModuleSystemEvent evt = eventQueue.poll(20L, java.util.concurrent.TimeUnit.SECONDS);
+	ModuleSystemEvent evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
 	if (evt.getType() != ModuleSystemEvent.Type.MODULE_RELEASED) {
 	    throw new Exception("Unexpected module system event type: " + evt.getType());			
 	}
@@ -47,7 +47,7 @@ m1.MainA
     
 	// Poll second MODULE_RELEASED event
 	//
-	evt = eventQueue.poll(20L, java.util.concurrent.TimeUnit.SECONDS);
+	evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
 	if (evt.getType() != ModuleSystemEvent.Type.MODULE_RELEASED) {
 	    throw new Exception("Unexpected module system event type: " + evt.getType());			
 	}

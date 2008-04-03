@@ -199,6 +199,7 @@ public class BasicLauncherTests {
         out = out.append("package " + pkg + ";\n");
         out = out.append("import java.lang.reflect.Superpackage.*;\n");
         out = out.append("import java.module.annotation.*;\n");
+        out = out.append("@Version(\"" + Version.valueOf(JAM_VERSION) +"\")\n");
         out = out.append("@MainClass(\"" + pkg + "." + klass + "\")\n");
         out = out.append("@ImportModules({\n");
         out = out.append("   @ImportModule(name=\"java.se\"),\n");
@@ -630,8 +631,15 @@ class TestExec {
 
         javaCmdArgs.add(javaCmd);
 
-        javaCmdArgs.add("-Dsun.module.repository.URLRepository.downloadDirectory="
+        javaCmdArgs.add("-Dsun.module.repository.URLRepository.cacheDirectory="
                         + downloadDirName);
+
+        // Enables shadow file copies in the repository if we're running
+        // on Windows. This is to prevent file locking in the
+        // source location.
+        if (System.getProperty("os.platform").equalsIgnoreCase("windows")) {
+            javaCmdArgs.add("-Djava.module.repository.shadowcopyfiles=true");
+        }
 
         if (classpath != null) {
             javaCmdArgs.add("-classpath");

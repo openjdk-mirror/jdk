@@ -38,8 +38,12 @@ import java.module.annotation.NativeLibraryPaths;
 import java.module.annotation.PlatformBinding;
 import java.security.AccessController;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import sun.module.JamUtils;
@@ -104,238 +108,13 @@ public class RepositoryUtils {
         return JamUtils.MODULE_INF + "/bin/" + getPlatform() + "/" + getArch();
     }
 
-    static File getLegacyJarDir(File dir, String name, Version version, String platform, String arch)    {
-        return new File(getModuleDir(dir, name, version, platform, arch), "lib");
-    }
-    static File getNativeLibraryDir(File dir, String name, Version version, String platform, String arch)    {
-        return new File(getModuleDir(dir, name, version, platform, arch), "bin");
-    }
-
-    /**
-     * Creates a {@code ModuleDefinition} for a {@code LocalRepository}
-     *
-     * @param repository LocalRepository in which the module exists
-     * @param file a JAM file
-     * @param expansionDir directory into which JAR files & native libraries
-     * file are expanded.
-     * @return a {@code ModuleDefinition} corresponding to MODULE.METADATA
-     *     from the JAM
-     * @throws IOException if {@code downloadDir} isn't a directory, or if
-     *     there's a problem downloading the module data, etc.
-     */
-    static ModuleDefinition createLocalModuleDefinition(
-            LocalRepository repository,
-            File file,
-            File expansionDir) throws IOException {
-
-        if ((repository == null)
-            || (file  == null)
-            || (expansionDir == null)) {
-            throw new NullPointerException();
-        }
-
-        JarFile jamFile = new JarFile(file, false);
-
-        LocalJamDefinitionContent content = new LocalJamDefinitionContent(
-            jamFile, repository);
-
-        // Extracts module metadata from JAM file.
-        byte[] metadata = JamUtils.getMetadata(jamFile);
-
-        // Constructs a superpackage from module metadata, for extracting the
-        // stock annotations. Note that it is very important to go through
-        // superpackage instead of ModuleDefinition to extract annotations
-        // at this point, as the latter might trigger loading of the JAM file
-        // in some rare cases.
-        java.lang.reflect.Superpackage superPackage = sun.module.JamUtils.getSuperpackage(metadata);
-
-        // Module name
-        String moduleName = superPackage.getName();
-        if (moduleName.startsWith("java.")) {
-            throw new IOException("Non-bootstrap repository could not create " + moduleName + " module definition.");
-        }
-
-        // Module version
-        java.module.annotation.Version aversion = superPackage.getAnnotation
-            (java.module.annotation.Version.class);
-        Version moduleVersion = Version.DEFAULT;
-        if (aversion != null) {
-            try {
-                moduleVersion = Version.valueOf(aversion.value());
-            } catch (IllegalArgumentException e) {
-                // ignore
-            }
-        }
-
-        // Platform Binding
-        java.module.annotation.PlatformBinding platformBinding = superPackage.getAnnotation
-            (java.module.annotation.PlatformBinding.class);
-        String platform = null;
-        String arch = null;
-        if (platformBinding != null) {
-            platform = platformBinding.platform();
-            arch = platformBinding.arch();
-        }
-
-        // JarLibraryPath
-        JarLibraryPath jlp = superPackage.getAnnotation(JarLibraryPath.class);
-        if (jlp != null) {
-            content.setJarLibraryPath(jlp.value());
-        }
-        content.setLegacyJarDir(
-            getLegacyJarDir(expansionDir, moduleName, moduleVersion, platform, arch));
-
-        NativeLibraryPaths nlps = superPackage.getAnnotation(NativeLibraryPaths.class);
-        if (nlps != null) {
-            for (NativeLibraryPath nlp : nlps.value()) {
-                content.setNativeLibraryPath(nlp.platform(), nlp.arch(), nlp.path());
-            }
-        }
-        content.setNativeLibraryDir(
-            getNativeLibraryDir(expansionDir, moduleName, moduleVersion, platform, arch));
-
-        // TODO: moduleReleasable might be false in some cases
-        return Modules.newJamModuleDefinition(metadata, content, repository, true);
-    }
-
-    /**
-     * Creates a {@code ModuleDefinition} for a {@code URLRepository}
-     *
-     * @param repository URLRepository in which the module exists
-     * @param downloadDir Directory into which JAM files are downloaded.  This
-     * is the parent of each JAM-specific {@code baseDir}.
-     * @param moduleInfo {@code ModuleInfo} describing this module
-     * @param metadataFile MODULE.METADATA file for the {@code ModuleDefinition} to
-     *     be returned
-     * @return a {@code ModuleDefinition} corresponding to MODULE.METADATA
-     *     from the JAM
-     * @throws IOException if {@code downloadDir} isn't a directory, or if
-     *     there's a problem downloading the module data, etc.
-     */
-    static ModuleDefinition createURLModuleDefinition(
-            URLRepository repository,
-            File downloadDir,
-            ModuleInfo moduleInfo,
-            File metadataFile) throws IOException {
-
-        if ((repository == null)
-            || (downloadDir == null)
-            || (moduleInfo == null)
-            || (metadataFile == null)) {
-            throw new NullPointerException();
-        }
-
-        if (!downloadDir.isDirectory()) {
-            throw new IOException(downloadDir.getName() + " is not a directory.");
-        }
-        File baseDir = getModuleDir(
-            downloadDir, moduleInfo.getName(), moduleInfo.getVersion(),
-            moduleInfo.getPlatform(), moduleInfo.getArch());
-        if (!baseDir.isDirectory() && !baseDir.mkdirs()) {
-            throw new IOException("Cannot create directory for module "
-                + moduleInfo.getName() + " v" + moduleInfo.getVersion() + " at "
-                + baseDir.getAbsolutePath());
-        }
-
-        URLModuleDefinitionContent content = new URLModuleDefinitionContent(
-            baseDir, repository, moduleInfo, metadataFile);
-
-        // Extracts module metadata from MODULE.METADATA file.
-        byte[] metadata = JamUtils.readFile(metadataFile);
-
-        // Constructs a superpackage from module metadata, for extracting the
-        // stock annotations. Note that it is very important to go through
-        // superpackage instead of ModuleDefinition to extract annotations
-        // at this point, as the latter might trigger loading of the JAM file
-        // in some rare cases.
-        java.lang.reflect.Superpackage superPackage = sun.module.JamUtils.getSuperpackage(metadata);
-
-        // Module name
-        String moduleName = superPackage.getName();
-        if (moduleName.startsWith("java.")) {
-            throw new IOException("Non-bootstrap repository could not create " + moduleName + " module definition.");
-        }
-
-        // Module version
-        java.module.annotation.Version aversion = superPackage.getAnnotation
-            (java.module.annotation.Version.class);
-        Version moduleVersion = Version.DEFAULT;
-        if (aversion != null) {
-            try {
-                moduleVersion = Version.valueOf(aversion.value());
-            } catch (IllegalArgumentException e) {
-                // ignore
-            }
-        }
-
-        // Platform Binding
-        java.module.annotation.PlatformBinding platformBinding = superPackage.getAnnotation
-            (java.module.annotation.PlatformBinding.class);
-        String platform = null;
-        String arch = null;
-        if (platformBinding != null) {
-            platform = platformBinding.platform();
-            arch = platformBinding.arch();
-        }
-
-        // JarLibraryPath
-        JarLibraryPath jlp = superPackage.getAnnotation(JarLibraryPath.class);
-        if (jlp != null) {
-            content.setJarLibraryPath(jlp.value());
-        }
-
-        NativeLibraryPaths nlps = superPackage.getAnnotation(NativeLibraryPaths.class);
-        if (nlps != null) {
-            for (NativeLibraryPath nlp : nlps.value()) {
-                content.setNativeLibraryPath(nlp.platform(), nlp.arch(), nlp.path());
-            }
-        }
-
-        // TODO: moduleReleasable might be false in some cases
-        return Modules.newJamModuleDefinition(metadata, content, repository, true);
-    }
-
-    /**
-     * Finds module definitions in a given cache.
-     *
-     * @param constraint Query to select module definitions
-     * @param cache Cache in which to search
-     * @return module definitions matching {@code constraint} in {@code cache}
-     */
-    static List<ModuleDefinition> findModuleDefinitions(
-            Query constraint, List<ModuleDefinition> cache) {
-        List<ModuleDefinition> rc = new ArrayList<ModuleDefinition>();
-
-        if (constraint == Query.ANY) {
-            rc = cache;
-        } else {
-            for (ModuleDefinition md : cache) {
-                if (constraint.match(md)) {
-                    rc.add(md);
-                }
-            }
-        }
-        return Collections.unmodifiableList(rc);
-    }
-
-    /**
-     * Indicates whether or not the {@code ModuleDefinition} is appropriate
-     * for the given {@code platform} and {@arch}.
-     *
-     * @return true if the given module definition's platform binding is not
-     * given or if it matches the {@code platform} and  {@code platform} given
-     * @param platformBinding Platform binding to check
-     * @param platform name of current platform
-     * @param arch name of current arch
-     * @return true if the md's platform & arch match those given
-     */
-    static boolean bindingMatches(
-            PlatformBinding platformBinding, String platform, String arch)  {
-        if (platformBinding == null) {
-            return true;
-        }
-
-        return (platform.equals(platformBinding.platform()) && arch.equals(platformBinding.arch()));
+    // Determines if the original file should be shadow copied into the cache
+    // before opening it. This is to avoid locking the original file on certain
+    // operating systems, e.g. Windows.
+    public static boolean shouldShadowCopyFiles() {
+        Boolean shadowCopyFiles = java.security.AccessController.doPrivileged(
+              new sun.security.action.GetBooleanAction("java.module.repository.shadowcopyfiles"));
+        return shadowCopyFiles == Boolean.TRUE;
     }
 
     /**
@@ -383,7 +162,7 @@ public class RepositoryUtils {
      * @throws IOException if there are errors accessing the JAM file or in
      * writing jar/lib files.
      */
-    static File[] extractJarsAndLibs(final JarFile jamFile,
+    public static File[] extractJarsAndLibs(final JarFile jamFile,
             final String jarLibraryPath, final File legacyJarDir,
             final String nativeLibraryPath, final File nativeLibraryDir) throws IOException {
 
@@ -399,6 +178,7 @@ public class RepositoryUtils {
                     // Save in nativeLibraryDir using only the last component of
                     // the JAM file's entry name.
                     rc = new File(nativeLibraryDir, new File(name).getName());
+                    nativeLibraryDir.mkdirs();
                     JamUtils.saveStreamAsFile(jamFile.getInputStream(je), rc);
                 }
                 return rc;
@@ -416,10 +196,16 @@ public class RepositoryUtils {
                         name = name.substring(start + 1);
                     }
                     File f = new File(legacyJarDir, name);
+                    legacyJarDir.mkdirs();
                     JamUtils.saveStreamAsFile(jamFile.getInputStream(je), f);
-                    JarFile jf = new JarFile(f);
-                    boolean ok = (jf.getEntry(JamUtils.MODULE_INF_METADATA) == null);
-                    JamUtils.close(jf);
+                    JarFile jf = null;
+                    boolean ok;
+                    try {
+                        jf = new JarFile(f, false);
+                        ok = (jf.getEntry(JamUtils.MODULE_INF_METADATA) == null);
+                    } finally {
+                        JamUtils.close(jf);
+                    }
                     if (ok) {
                         rc = f;
                     } else {
@@ -451,75 +237,5 @@ public class RepositoryUtils {
             throw new IOException("No native libraries found at " + nativeLibraryPath);
         }
         return rc.toArray(new File[0]);
-    }
-
-    /**
-     * Returns the directory where module-specific files are kept based on
-     * information in a {@code ModuleArchiveInfo}.
-     *
-     * @param base directory where information for a repository is kept
-     * @param mai {@code ModuleArchiveInfo} for a module
-     * @return the location under {@code base} where legacy JAR files are kept
-     * for a module with the given {@code ModuleArchiveInfo}
-     */
-    private static File getModuleDir(File base, ModuleArchiveInfo mai) {
-        return getModuleDir(
-            base,
-            mai.getName(), mai.getVersion(),
-            mai.getPlatform(), mai.getArchitecture());
-    }
-
-    /**
-     * Returns the directory where module-specific files are kept based on the
-     * information in a {@code ModuleDefinition}.
-     *
-     * @param base directory where information for a repository is kept
-     * @param md {@code ModuleDefinition} for a module
-     * @return the location under {@code base} where legacy JAR files are kept
-     * for a module with the given {@code ModuleDefinition}
-     */
-    private static File getModuleDir(File base, ModuleDefinition md) {
-        String platform = null;
-        String arch = null;
-        PlatformBinding pb = md.getAnnotation(PlatformBinding.class);
-        if (pb != null) {
-            platform = pb.platform();
-            arch = pb.arch();
-        }
-        return getModuleDir(
-            base,
-            md.getName(), md.getVersion(),
-            platform, arch);
-    }
-
-    /**
-     * Returns the directory where module-specific files are kept.
-     *
-     * @param base directory where information for a repository is kept
-     * @param name module name
-     * @param version module version
-     * @param platform module platform (may be null)
-     * @param arch module arch (may be null if {@code platform} is null)
-     * @return the location under {@code base} where repository-specific files
-     * are kept for a module with the given {@code name} and {@code version}.
-     */
-    private static File getModuleDir(
-            File base, String name, Version version,
-            String platform, String arch) {
-        return new File(
-            base,
-            name + "-" + version
-            + ((platform == null) ? "" : "-" + platform + "-" + arch));
-    }
-
-    /**
-     * @see #getModuleDir(File, ModuleArchiveInfo)
-     * @see #getModuleDir(File, ModuleDefinition)
-     */
-    private static File getModuleDir(
-            File base, String name, Version version,
-            String platform, String arch, String dest) {
-        return new File(
-            getModuleDir(base, name, version, platform, arch), dest);
     }
 }

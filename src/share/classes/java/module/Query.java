@@ -45,6 +45,9 @@ import java.util.Set;
  *                         Query.versionRange("2.0.0+"));
  * </pre>
  *
+ * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
+ * method in this class will cause a {@link NullPointerException} to be thrown.
+ * <p>
  * @see java.module.ModuleDefinition
  * @see java.module.VersionConstraint
  * @since 1.7
@@ -410,7 +413,6 @@ public abstract class Query implements Serializable {
      *
      * @param query the specified query.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if query is null.
      */
     public static Query not(Query query) {
         if (query == null)
@@ -428,7 +430,6 @@ public abstract class Query implements Serializable {
      * @param query1 A query.
      * @param query2 Another query.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if query1 is null or query2 is null.
      */
     public static Query and(Query query1, Query query2)  {
         if (query1 == null)
@@ -457,7 +458,6 @@ public abstract class Query implements Serializable {
      * @param query1 A query.
      * @param query2 Another query.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if query1 is null or query2 is null.
      */
     public static Query or(Query query1, Query query2) {
         if (query1 == null)
@@ -490,7 +490,6 @@ public abstract class Query implements Serializable {
      * @return the <code>Query</code> object.
      * @throws IllegalArgumentException if the string does not follow
      *         the version constraint format.
-     * @throws NullPointerException if source is null.
      */
     public static Query version(String source) {
         if (source == null)
@@ -506,7 +505,6 @@ public abstract class Query implements Serializable {
      *
      * @param versionConstraint the <code>VersionConstraint</code> object.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if versionConstraint is null.
      */
     public static Query version(VersionConstraint versionConstraint) {
         if (versionConstraint == null)
@@ -524,7 +522,6 @@ public abstract class Query implements Serializable {
      *
      * @param name the name of the module definition.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if name is null.
      */
     public static Query name(String name) {
         if (name == null)
@@ -539,7 +536,6 @@ public abstract class Query implements Serializable {
      *
      * @param name the name of the module attribute.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if name is null.
      */
     public static Query attribute(String name)  {
         if (name == null)
@@ -555,7 +551,6 @@ public abstract class Query implements Serializable {
      * @param name  the name of the module attribute.
      * @param value the value of the module attribute.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if name is null or value is null.
      */
     public static Query attribute(String name, String value) {
         if (name == null)
@@ -572,7 +567,6 @@ public abstract class Query implements Serializable {
      *
      * @param annotationClass the Class object corresponding to the annotation type.
      * @return the <code>Query</code> object.
-     * @throws NullPointerException if the annotationClass is null.
      */
     public static Query annotation(Class annotationClass) {
         if (annotationClass == null)

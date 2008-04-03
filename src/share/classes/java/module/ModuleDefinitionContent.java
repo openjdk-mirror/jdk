@@ -35,8 +35,12 @@ import java.security.CodeSigner;
 
 /**
  * This class represents the content of the module definition.
+ *
+ * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
+ * method in this class will cause a {@link NullPointerException} to be thrown.
  * <p>
  * @see java.module.ModuleDefinition
+ * @see java.security.CodeSigner
  *
  * @since 1.7
  */
@@ -50,14 +54,14 @@ public abstract class ModuleDefinitionContent {
     }
 
     /**
-     * Checks if an entry exists in the module definition.
+     * Determines if an entry exists in the module definition.
      * <p>
      * The entry's name is specified as '/' separated paths, with no
      * leading '/'.
      *
      * @param name entry's name.
-     * @return true if entry exists in the module definition;
-     *         otherwise, false is returned.
+     * @return true if entry exists in the module definition; otherwise,
+     *         returns false.
      */
     public abstract boolean hasEntry(String name);
 
@@ -68,8 +72,7 @@ public abstract class ModuleDefinitionContent {
      * leading '/'.
      *
      * @param name entry's name.
-     * @return if entry exists, return input stream; otherwise,
-     *         return null.
+     * @return if entry exists, return input stream; otherwise, return null.
      * @throws IOException if an I/O error occurs.
      */
     public abstract InputStream getEntryAsStream(String name) throws IOException;
@@ -81,8 +84,7 @@ public abstract class ModuleDefinitionContent {
      * leading '/'.
      *
      * @param name entry's name.
-     * @return if entry exists, return byte array; otherwise,
-     *         return null.
+     * @return if an entry exists, return byte array; otherwise, returns null.
      * @throws IOException if an I/O error occurs.
      */
     public byte[] getEntryAsByteArray(String name) throws IOException {
@@ -118,7 +120,7 @@ public abstract class ModuleDefinitionContent {
      * definition.
      *
      * @param libraryName the library name.
-     * @return native library if found; otherwise, null is returned.
+     * @return native library if it is found; otherwise, returns null.
      */
     public abstract File getNativeLibrary(String libraryName);
 
@@ -126,8 +128,9 @@ public abstract class ModuleDefinitionContent {
      * Returns the code signers associated with the module definition.
      *
      * @return code signers of the module definition.
+     * @throws IOException if an I/O error occurs.
      */
-    public abstract CodeSigner[] getCodeSigners();
+    public abstract CodeSigner[] getCodeSigners() throws IOException;
 
 
     /**

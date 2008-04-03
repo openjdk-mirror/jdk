@@ -111,6 +111,11 @@ public final class BootstrapRepository extends Repository {
     }
 
     @Override
+    public boolean supportsReload() {
+        return false;
+    }
+
+    @Override
     public void reload() throws IOException {
         // empty
     }

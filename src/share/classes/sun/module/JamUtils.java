@@ -30,6 +30,7 @@ import java.io.*;
 import java.module.Version;
 import java.net.*;
 import java.security.AccessController;
+import java.security.CodeSigner;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -61,6 +62,20 @@ public final class JamUtils {
     public static final String MODULE_METADATA = "MODULE.METADATA";
 
     public static final String MODULE_INF_METADATA = MODULE_INF + "/" + MODULE_METADATA;
+
+    private static File tempDirectory = null;
+
+    static {
+        // Determines the temp directory.
+        try {
+            File tempFile = File.createTempFile("temp-directory-test-", ".tmp");
+            tempDirectory = tempFile.getParentFile();
+            tempFile.deleteOnExit();
+            tempFile.delete();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     private JamUtils() {
     }
@@ -111,50 +126,12 @@ public final class JamUtils {
     public static File createTempDir() throws IOException {
         File rc = File.createTempFile("jam-" + System.currentTimeMillis(), ".tmp");
         rc.deleteOnExit();
+        rc.delete();
         return rc.getParentFile();
     }
 
-    public static byte[] readFile(File file) throws IOException {
-        if (file.isFile() == false) {
-            throw new IOException("Not a regular file: " + file);
-        }
-        long llen = file.length();
-        if (llen > 64 * 1024 * 1024) { // 64 MB
-            throw new IOException("File too large: " + file);
-        }
-        InputStream in = new FileInputStream(file);
-        int len = (int)llen;
-        byte[] data = new byte[len];
-        int ofs = 0;
-        while (len > 0) {
-            int n = in.read(data, ofs, len);
-            if (n < 0) {
-                break;
-            }
-            len -= n;
-            ofs += n;
-        }
-        in.close();
-        if (len != 0) {
-            throw new IOException("Could not read file");
-        }
-        return data;
-    }
-
-    public static byte[] readStream(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buffer = new byte[BUFFER_SIZE];
-
-        while (true) {
-            int n = in.read(buffer, 0, buffer.length);
-            if (n < 0) {
-                break;
-            }
-            out.write(buffer, 0, n);
-        }
-
-        in.close();
-        return out.toByteArray();
+    public static File getTempDir() {
+        return tempDirectory;
     }
 
     public static void close(Closeable c) {
@@ -256,6 +233,23 @@ public final class JamUtils {
     }
 
     /**
+     * Unpack the source file into the destination file.
+     *
+     * @param sourceJamPackGz .jam.pack.gz file to extract.
+     * @param destJam the unpacked jam file.
+     * @throws IOException if an I/O exception occurs.
+     */
+    public static void unpackJamPackGz(File sourceJamPackGz, File destJam) throws IOException {
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(sourceJamPackGz);
+            unpackStreamAsFile(fis, destJam);
+        } finally {
+            close(fis);
+        }
+    }
+
+    /**
      * Copies {@code src} to {@code dst}
      *
      * @param src File to be copied
@@ -318,15 +312,17 @@ public final class JamUtils {
     }
 
     /**
-     * Gets module metadata from a JAM file.
+     * Returns the module metadata from a JAM file as byte array.
      *
      * @param jamFile JAM file
-     * @return a byte[] of data from the MODULE.METADATA file within a JAM file.
+     * @return a byte array that represents the MODULE.METADATA file in a JAM
+     *         file.
+     * @throws IOException if an I/O exception has occurred.
      */
-    public static byte[] getMetadata(JarFile jamFile) throws IOException {
+    public static byte[] getMetadataBytes(JarFile jamFile) throws IOException {
         JarEntry je = jamFile.getJarEntry("MODULE-INF/MODULE.METADATA");
         if (je == null) {
-            throw new IllegalArgumentException(
+            throw new IOException(
                 jamFile + " does not contain MODULE-INF/MODULE.METADATA");
         }
         InputStream is = jamFile.getInputStream(je);
@@ -341,6 +337,73 @@ public final class JamUtils {
     }
 
     /**
+     * Retrieves the bytes from the input stream.
+     *
+     * @param is input stream
+     * @return a byte array read from the input stream
+     * @throws IOException if an I/O exception occurs.
+     */
+    public static byte[] getInputStreamAsBytes(InputStream is) throws IOException {
+        BufferedInputStream bis = new BufferedInputStream(is);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int len = 0;
+        byte[] buf = new byte[BUFFER_SIZE];
+        while ((len = bis.read(buf, 0, buf.length)) >= 0)  {
+            baos.write(buf, 0, len);
+        }
+        bis.close();
+        return baos.toByteArray();
+    }
+
+    /**
+     * Returns the code signers from the JAM file
+     *
+     * @param jamFile jam file
+     * @return an array of code signers that sign the JAM file.
+     * @throw IOException if the JAM file is not consistently signed by same
+     *        set of signers.
+     */
+    public static CodeSigner[] getCodeSigners(JarFile jamFile) throws IOException {
+        List<CodeSigner> overallCodeSigners = null;
+
+        // Iterate each entry in the JAM file
+        for (JarEntry je : Collections.list(jamFile.entries())) {
+            String s = je.getName();
+
+            // Skip the entry if it is in META-INF directory.
+            if (s.startsWith("META-INF/")) {
+                continue;
+            }
+
+            // Convert entry's code signers into a list
+            CodeSigner[] cs = je.getCodeSigners();
+            List<CodeSigner> entryCodeSigners = null;
+            if (cs == null) {
+                entryCodeSigners = new ArrayList<CodeSigner>();
+            } else {
+                entryCodeSigners = Arrays.asList(cs);
+            }
+
+            // This is the first entry that matters, use it as the overall
+            // JAM code signers
+            if (overallCodeSigners == null) {
+                overallCodeSigners = entryCodeSigners;
+                continue;
+            }
+
+            // Check to see if the entry's signers and the overall JAM signers
+            // are identical.
+            if (!overallCodeSigners.containsAll(entryCodeSigners)
+                || !entryCodeSigners.containsAll(overallCodeSigners))
+                throw new IOException("Not all entries in the JAM file are "
+                    + "signed consistently by the same set of signers: "
+                    + jamFile.getName());
+        }
+
+        return overallCodeSigners.toArray(new CodeSigner[0]);
+    }
+
+    /**
      * Returns jam filename with no file extension, based on module name,
      * version, platform and architecture.
      *
@@ -350,20 +413,7 @@ public final class JamUtils {
      * @param arch target architecture
      * @return jam filename with no file extension
      */
-    public static String getJamFilenameNoExt(String name, Version version, String platform, String arch)   {
+    public static String getJamFilename(String name, Version version, String platform, String arch)   {
         return name + "-" + version + ((platform == null) ? "" : "-" + platform + "-" + arch);
-    }
-
-    /**
-     * Returns jam filename based on module name, version, platform and architecture.
-     *
-     * @param name module name
-     * @param version module version
-     * @param platform target platform
-     * @param arch target architecture
-     * @return jam filename
-     */
-    public static String getJamFilename(String name, Version version, String platform, String arch)  {
-        return getJamFilenameNoExt(name, version, platform, arch) + ".jam";
     }
 }

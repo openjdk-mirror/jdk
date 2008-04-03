@@ -61,6 +61,13 @@ public class LegacyJarTest extends LibraryTest {
     }
 
     private void run(String[] args) throws Throwable {
+        // Enables shadow file copies in the repository if we're running
+        // on Windows. This is to prevent file locking in the
+        // source location.
+        if (System.getProperty("os.platform").equalsIgnoreCase("windows")) {
+            System.setProperty("java.module.repository.shadowcopyfiles", "true");
+        }
+
         // Create, compile, and jar "hello, world" main class
         File testcaseDir = makeTestDir("testcase");
         File testcase = createTestcase(testcaseDir, expectedAnswer);
@@ -143,7 +150,7 @@ public class LegacyJarTest extends LibraryTest {
             try {
                 runModule(repo, modName, expectedAnswer);
                 fail("Run without embedded legacy JAR failed");
-            } catch (ClassNotFoundException cnfe)  {
+            } catch (ModuleInitializationException mie)  {
                 pass();
             } catch (Throwable t) {
                 unexpected(t);

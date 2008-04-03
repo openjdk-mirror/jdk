@@ -45,6 +45,9 @@ import sun.module.repository.URLRepository;
  * addition, it contains methods for setting or getting the system's visibility
  * policy and import override policy.
  *
+ * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
+ * method in this class will cause a {@link NullPointerException} to be thrown.
+ * <p>
  * @see java.module.ImportOverridePolicy
  * @see java.module.Module
  * @see java.module.ModuleDefinition
@@ -94,8 +97,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
-     * @throws NullPointerException if <code>parent</code> is null,
-     *         <code>name</code> is null, or <code>source</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      * @throws IllegalArgumentException if a circularity is detected.
@@ -120,8 +121,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
-     * @throws NullPointerException if <code>name</code> is null,
-     *         or <code>source</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      */
@@ -148,9 +147,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
-     * @throws NullPointerException if <code>parent</code> is null,
-     *         <code>name</code> is null, <code>source</code> is null,
-     *         or <code>config</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      * @throws IllegalArgumentException if a circularity is detected.
@@ -178,8 +174,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
-     * @throws NullPointerException if <code>name</code> is null,
-     *         <code>source</code> is null, or <code>config</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      */
@@ -256,8 +250,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
-     * @throws NullPointerException if <code>parent</code> is null,
-     *         <code>name</code> is null, or <code>codebase</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      * @throws IllegalArgumentException if a circularity is detected.
@@ -282,8 +274,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to create a new
      *         instance of repository.
-     * @throws NullPointerException if <code>name</code> is null, or
-     *         <code>codebase</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      */
@@ -310,9 +300,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
-     * @throws NullPointerException if <code>parent</code> is null,
-     *         <code>name</code> is null, <code>codebase</code> is null,
-     *         or <code>config</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      * @throws IllegalArgumentException if a circularity is detected.
@@ -340,8 +327,6 @@ public class Modules {
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
-     * @throws NullPointerException if <code>name</code> is null,
-     *         <code>codebase</code> is null, or <code>config</code> is null.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      */
@@ -413,7 +398,6 @@ public class Modules {
      * override policy..
      *
      * @param policy the import override policy for module definitions.
-     * @throws NullPointerException if the policy is null.
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to set the
      *         system's default import override policy.
@@ -483,8 +467,8 @@ public class Modules {
     }
 
     /**
-     * Returns a new ModuleDefinition for modules based on the
-     * Java Module System format.
+     * Returns a new {@code ModuleDefinition} for modules based on the Java
+     * Module System format.
      *
      * <p>This method will typically called by repository implementations
      * and not by applications.
@@ -496,13 +480,9 @@ public class Modules {
      * @param repository the repository in which the module archive is stored
      * @param moduleReleasable the module instance instantiated from this module
      *   definition is releasable from the module system
-     *
-     * @throws NullPointerException if one of metadata, content, or repository
-     *   are null
      * @throws ModuleFormatException if the contents of {@code metadata}
      *   are not well formed.
-     *
-     * @return a new ModuleDefinition
+     * @return a new {@code ModuleDefinition}
      */
     public static ModuleDefinition newJamModuleDefinition(byte[] metadata,
             ModuleDefinitionContent content, Repository repository, boolean moduleReleasable)
@@ -525,24 +505,18 @@ public class Modules {
      * Java Module System format.
      *
      * <p>This method will typically called by repository implementations
-     * and not by applications.
-     * It is useful in case the metadata has not yet been retrieved but
-     * the module name and version are available.
+     * and not by applications. It is useful in case the metadata has not
+     * yet been retrieved but the module name and version are available.
      *
      * @param name the name of the module definition
      * @param version the version of the module definition
      * @param metadataHandle a Callable from which the contents of the
-     *   {@code MODULE-INF/METADATA.MODULE} file can be retrieved
+     *        {@code MODULE-INF/METADATA.MODULE} file can be retrieved
      * @param content the ModuleDefinitionContent to be used to access the
-     *   contents of the module archive
+     *        contents of the module archive
      * @param repository the repository in which the module archive is stored
      * @param moduleReleasable the module instance instantiated from this module
-     *   definition is releasable from the module system
-     *
-     * @throws NullPointerException if one of
-     *   name, version, metadataHandle, content, or repository
-     *   are null
-     *
+     *        definition is releasable from the module system
      * @return a new ModuleDefinition
      */
     public static ModuleDefinition newJamModuleDefinition(String name, Version version,

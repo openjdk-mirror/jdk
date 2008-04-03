@@ -91,33 +91,53 @@ public class MetadataCompareTest {
         check(JamUtils.recursiveDelete(repoDownloadDir));
 
         Map<String, String> config = new HashMap<String, String>();
-        config.put("sun.module.repository.URLRepository.downloadDirectory", repoDownloadDir.getCanonicalPath());
+        config.put("sun.module.repository.URLRepository.cacheDirectory", repoDownloadDir.getCanonicalPath());
         urlRepo = Modules.newURLRepository(
             "MDCompareTestURLRepository",
             new URL(urlRepoLocation),
             config);
 
         // Create a JAM file and install it
-        File jamFile = JamBuilder.createJam(
-                "metadatacomparetest", "MDCompare", "MDCompareModule", "3.1", "platform", "arch", false, jamDir);
+        File jamFile;
+        jamFile = JamBuilder.createJam(
+                "metadatacomparetest", "MDCompare", "Bad.MDFile", "3.1", null, null, false, jamDir);
         jamFile.deleteOnExit();
         String path = jamFile.getCanonicalPath();
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
         urlRepo.install(new URL("file://" + path));
-    }
 
-    void createInvalidMetadata() throws Throwable {
-        // Use JamBuilder to create another module.
-        // Extract its MODULE.METADATA, and put that into the repository for
-        // the "main" module, thereby causing a mismatch between the metadata
-        // that is in the repository's JAM.
+        // Create another JAM file and install it
+        jamFile = JamBuilder.createJam(
+                "metadatacomparetest", "MDCompare", "Bad.MDInJam", "2.0", null, null, false, jamDir);
+        jamFile.deleteOnExit();
+        path = jamFile.getCanonicalPath();
+        if (!path.startsWith("/"))  {
+            path = "/" + path;
+        }
+        urlRepo.install(new URL("file://" + path));
 
-        File jamFile = JamBuilder.createJam(
-                "metadatacomparetest", "MDCompare", "MDCompareModule", "2.7", "platform", "arch", false, jamDir);
+        // Create yet another JAM file and install it
+        jamFile = JamBuilder.createJam(
+                "metadatacomparetest", "MDCompare", "OkModule", "2.7", null, null, false, jamDir);
+        jamFile.deleteOnExit();
+        path = jamFile.getCanonicalPath();
+        if (!path.startsWith("/"))  {
+            path = "/" + path;
+        }
+        urlRepo.install(new URL("file://" + path));
+
+        // Create a dummy JAM file for the purpose of using its
+        // MODULE.METADATA and JAM file to setup invalid
+        // module metadata in other modules in the URLRepository.
+        jamFile = JamBuilder.createJam(
+                "metadatacomparetest", "XYZ", "ProblematicModule", "2.7", null, null, false, jamDir);
         jamFile.deleteOnExit();
 
+        // Extract its MODULE.METADATA, and copy it into the repository for
+        // the "Bad.MDFile" module, thereby causing a mismatch
+        // between the metadata that is in the repository's JAM.
         ZipFile zf = new ZipFile(jamFile);
         ZipEntry ze = zf.getEntry("MODULE-INF/MODULE.METADATA");
         InputStream is = zf.getInputStream(ze);
@@ -129,29 +149,36 @@ public class MetadataCompareTest {
         }
         is.close();
         zf.close();
-
         data = baos.toByteArray();
 
         URL u = urlRepo.getSourceLocation();
         File f = JamUtils.getFile(u);
-        // Overwrite MODULE.METADATA created for module installed in setup().
+
+        // Overwrite the MODULE.METADATA for Bad.MDFile v3.1
         File mdFile = new File(f,
-            "MDCompareModule" + File.separator + "3.1" + File.separator + "MODULE.METADATA");
+            "Bad.MDFile" + File.separator + "3.1" + File.separator + "MODULE.METADATA");
         OutputStream os = new FileOutputStream(mdFile);
         os.write(data, 0, data.length);
         os.close();
+
+        // Copy the problematic JAM file into the repository for
+        // the "Bad.MDInJam" module, thereby causing a mismatch
+        // between the metadata that is in the repository's JAM.
+        File jFile = new File(f, "Bad.MDInJam" + File.separator + "2.0" + File.separator + "Bad.MDInJam-2.0.jam");
+        JamUtils.copyFile(jamFile, jFile);
+
+        // Force the repository to reload the repository metadata
+        urlRepo.reload();
     }
 
     void runTest() throws Throwable {
-        createInvalidMetadata();
-
         // Check list()
         List<ModuleArchiveInfo> installed = urlRepo.list();
         debug("### installed.size=" + installed.size());
         for (ModuleArchiveInfo mai : installed) {
             debug("=mai: " + mai.getName() + ", "
                 + mai.getPlatform() + ", "
-                + mai.getArchitecture() + ", "
+                + mai.getArch() + ", "
                 + mai.getVersion() + ", "
                 + mai.getFileName());
         }
@@ -161,27 +188,17 @@ public class MetadataCompareTest {
         debug("### defns.size=" + defns.size());
         for (ModuleDefinition md : defns) {
             debug("=definition: " + md);
-            if ("MDCompareModule".equals(md.getName())) {
+            if ("OkModule".equals(md.getName())) {
+                pass();
+            } else if ("Bad.MDFile".equals(md.getName())) {
+                fail("Module with bad MODULE.METADATA file should not be "
+                    + "loaded by the URLRepository.");
+            } else if ("Bad.MDInJam".equals(md.getName())) {
                 try {
                     Module m = md.getModuleInstance();
-                    String mainClass = md.getAnnotation(java.module.annotation.MainClass.class).value();
-                    debug("=mainclass: " + mainClass);
-                    if (mainClass == null) {
-                        throw new Exception("No Main-Class attribute in the module definition");
-                    }
-
-                    debug("=module: " + m);
-                    ClassLoader loader = m.getClassLoader();
-                    debug("=loader: " + loader);
-
-                    try {
-                        // HERE IS THE REAL CHECK: We've created invalid
-                        // metadata, and this should be caught here.
-                        Class<?> clazz = loader.loadClass(mainClass);
-                    } catch (RuntimeException ex) {
-                        String msg = ex.getMessage();
-                        check(msg.indexOf("does not match the module definition in the corresponding JAM file") > 0);
-                    }
+                } catch (ModuleInitializationException mie) {
+                    mie.printStackTrace();
+                    pass();
                 } catch (Throwable t) {
                     unexpected(t);
                 }

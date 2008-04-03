@@ -84,7 +84,7 @@ public class ModuleInfo {
         name = mai.getName();
         version = mai.getVersion();
         platform = mai.getPlatform();
-        arch = mai.getArchitecture();
+        arch = mai.getArch();
     }
 
     public String getName() {
@@ -111,8 +111,12 @@ public class ModuleInfo {
         if (path != null) {
             return path;
         } else {
-            return getName() + "/" + getVersion() + "/"
-               + (getPlatform() == null ? "" : getPlatform() + "-" + getArch());
+            if (getPlatform() != null && getArch() != null) {
+                return getName() + "/" + getVersion() + "/"
+                   + getPlatform() + "-" + getArch();
+            } else {
+                return getName() + "/" + getVersion();
+            }
         }
     }
 

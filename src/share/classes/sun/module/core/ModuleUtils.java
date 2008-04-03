@@ -44,12 +44,12 @@ public final class ModuleUtils {
     /**
      * Expand reexports of a specified module instance.
      *
-     * @param module module instance
+     * @param m module instance
      * @param modules a list of expanded modules
      * @param includeAll true if the expansion should include all imported modules
      */
-    static void expandReexports(Module module, List<Module> modules, boolean includeAll) {
-        for (ImportDependency dep : module.getModuleDefinition().getImportDependencies()) {
+    public static void expandReexports(Module m, List<Module> modules, boolean includeAll) {
+        for (ImportDependency dep : m.getModuleDefinition().getImportDependencies()) {
             if ((includeAll == false) && (dep.isReexported() == false)) {
                 continue;
             }
@@ -58,8 +58,8 @@ public final class ModuleUtils {
             // name, just comparing names is fine.
             // Note that due to optional imports, we cannot assume
             // that module[i] corresponds to import[i]
-            String name = dep.getModuleName();
-            for (Module importedModule : module.getImportedModules()) {
+            String name = dep.getName();
+            for (Module importedModule : m.getImportedModules()) {
                 if (!importedModule.getModuleDefinition().getName().equals(name)) {
                     continue;
                 }
@@ -80,7 +80,7 @@ public final class ModuleUtils {
      * @param module module instance
      * @return a set of modules in the importing transitive closure
      */
-    static Set<Module> findImportingModulesClosure(Module module) {
+    public static Set<Module> findImportingModulesClosure(Module module) {
         // Determine the transitive closure of the importing modules using
         // BFS (Breadth-First-Search)
         Set<Module> visitedModules = new HashSet<Module>();
@@ -119,7 +119,7 @@ public final class ModuleUtils {
      * @param module module instance
      * @return a set of modules in the imported transitive closure
      */
-    static Set<Module> findImportedModulesClosure(Module module) {
+    public static Set<Module> findImportedModulesClosure(Module module) {
         // Determine the transitive closure of the imported modules using
         // BFS (Breadth-First-Search)
         Set<Module> visitedModules = new HashSet<Module>();

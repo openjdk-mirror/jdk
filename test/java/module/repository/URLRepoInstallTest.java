@@ -31,8 +31,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.*;
 import sun.module.JamUtils;
 import sun.module.repository.RepositoryConfig;
+import sun.module.repository.RepositoryUtils;
 
 /**
  * @summary Test URLRepository.install on a file: - based URLRepository.
@@ -59,6 +61,16 @@ public class URLRepoInstallTest {
     private final File jamDir;
 
     public static final String repoName = "testinstallrepo";
+
+    // Setup repository listener
+    static final BlockingQueue<RepositoryEvent> initEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
+    static final BlockingQueue<RepositoryEvent> shutdownEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
+    static final BlockingQueue<RepositoryEvent> installEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
+    static final BlockingQueue<RepositoryEvent> uninstallEventQueue =
+            new LinkedBlockingQueue<RepositoryEvent>();
 
     private static void println(String s) {
         if (debug) System.err.println(s);
@@ -100,14 +112,40 @@ public class URLRepoInstallTest {
     }
 
     void runTest() throws Throwable {
+
+        // Add repository listener
+        RepositoryListener repositoryListener = new RepositoryListener()  {
+            public void handleEvent(RepositoryEvent e)  {
+                if (e.getType() == RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
+                    initEventQueue.add(e);
+                }
+                if (e.getType() == RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
+                    shutdownEventQueue.add(e);
+                }
+                if (e.getType() == RepositoryEvent.Type.MODULE_INSTALLED) {
+                    installEventQueue.add(e);
+                }
+                if (e.getType() == RepositoryEvent.Type.MODULE_UNINSTALLED)  {
+                    uninstallEventQueue.add(e);
+                }
+            }
+        };
+        Repository.addRepositoryListener(repositoryListener);
+
         Map<String, String> config = new HashMap<String, String>();
-        config.put("sun.module.repository.URLRepository.downloadDirectory", repoDownloadDir.getAbsolutePath());
+        config.put("sun.module.repository.URLRepository.cacheDirectory", repoDownloadDir.getAbsolutePath());
 
         Repository repo = Modules.newURLRepository(
             RepositoryConfig.getSystemRepository(),
             "test",
             repoDir.getCanonicalFile().toURI().toURL(),
             config);
+
+        // Only REPOSITORY_INITIALIZED event should be fired.
+        check(initializeEventExists(repo));
+        check(!shutdownEventExists(repo));
+        check(!installEventExists(repo, null));
+        check(!uninstallEventExists(repo, null));
 
         // Check install
         ModuleArchiveInfo installedMAI = null;
@@ -118,6 +156,12 @@ public class URLRepoInstallTest {
             unexpected(t);
         }
 
+        // Only MODULE_INSTALLED event should be fired.
+        check(!initializeEventExists(repo));
+        check(!shutdownEventExists(repo));
+        check(installEventExists(repo, installedMAI));
+        check(!uninstallEventExists(repo, null));
+
         // Check list(): should contain only the one module just installed
         List<ModuleArchiveInfo> installed = repo.list();
         check(installed.size() == 1);
@@ -125,7 +169,7 @@ public class URLRepoInstallTest {
         for (ModuleArchiveInfo mai : installed) {
             println("=mai: " + mai.getName() + ", "
                 + mai.getPlatform() + ", "
-                + mai.getArchitecture() + ", "
+                + mai.getArch() + ", "
                 + mai.getVersion() + ", "
                 + mai.getFileName());
             names.add(mai.getFileName());
@@ -162,26 +206,199 @@ public class URLRepoInstallTest {
         }
 
         // Check uninstall
-        // XXX Enable on Win32 once Repository.shutdown disposes of all its
-        // Modules (until then, files remain locked).
-        if (!System.getProperty("os.name").startsWith("Windows")) {
-            try {
-                if (repo.uninstall(installedMAI)) {
-                    installed = repo.list();
-                    check(installed.size() == 0);
-                    pass();
-                } else {
-                    fail("Could not uninstall " + installedMAI.getName());
-                }
-            } catch (Throwable t) {
-                unexpected(t);
+        try {
+            if (repo.uninstall(installedMAI)) {
+                installed = repo.list();
+                check(installed.size() == 0);
+                pass();
+
+                // Only MODULE_UNINSTALLED event should be fired.
+                check(!initializeEventExists(repo));
+                check(!shutdownEventExists(repo));
+                check(!installEventExists(repo, null));
+                check(uninstallEventExists(repo, installedMAI));
+            } else {
+                fail("Could not uninstall " + installedMAI.getName());
             }
+        } catch (Throwable t) {
+            unexpected(t);
         }
 
+        // If there are three modules that have the same name and version but
+        // different platform binding:
+        // 1. Specific to xyz platform and arch
+        // 2. Specific to current platform and arch
+        // 3. Platform and arch neutral
+        //
+        // If they are installed in the order of #1, #2, #3, then #2 should
+        // be used to provide the module definition.
+        // Then, if they are uninstalled in the order of #1 and #2, then no
+        // module definition would be returned from the repository even
+        // #3 still exists, because #3 has not been loaded by the repository
+        // before.
+        //
+        // On the other hand, if they are installed in the order of #1, #3,
+        // #2, then #3 should be used to provide the module definition.
+        // Then, if they are uninstalled in the order of #3 and #1, then
+        // no module definition would be returned from the repository even
+        // #2 still exists, because #2 has not been loaded by the repository.
+        //
+        final String platform = RepositoryUtils.getPlatform();
+        final String arch = RepositoryUtils.getArch();
+
+        File jamFile1, jamFile2, jamFile3;
+        ModuleArchiveInfo mai1, mai2, mai3;
+        jamFile1 = JamBuilder.createJam(
+            "urlrepoinstalltest", "URLRepoTestA", "URLRepoModuleA", "7.0",
+            "xyz-platform", "xyz-arch", false, jamDir);
+        jamFile2 = JamBuilder.createJam(
+            "urlrepoinstalltest", "URLRepoTestA", "URLRepoModuleA", "7.0",
+            platform, arch, false, jamDir);
+        jamFile3 = JamBuilder.createJam(
+            "urlrepoinstalltest", "URLRepoTestA", "URLRepoModuleA", "7.0",
+            null, null, false, jamDir);
+
+        // Installs #1, #2, and #3
+        mai1 = repo.install(jamFile1.getCanonicalFile().toURI().toURL());
+        check(mai1 != null);
+        mai2 = repo.install(jamFile2.getCanonicalFile().toURI().toURL());
+        check(mai2 != null);
+        mai3 = repo.install(jamFile3.getCanonicalFile().toURI().toURL());
+        check(mai3 != null);
+
+        ModuleDefinition md = repo.find("URLRepoModuleA", VersionConstraint.valueOf("7.0"));
+        check(md != null);
+        java.module.annotation.PlatformBinding platformBinding = md.getAnnotation
+            (java.module.annotation.PlatformBinding.class);
+        if (platformBinding != null) {
+            if (platformBinding.platform().equals(platform)
+                && platformBinding.arch().equals(arch)) {
+                pass();
+            } else {
+                fail();
+            }
+        } else {
+            fail();
+        }
+
+        // Uninstall #1 and #2
+        check(repo.uninstall(mai1));
+        check(repo.uninstall(mai2));
+
+        md = repo.find("URLRepoModuleA", VersionConstraint.valueOf("7.0"));
+        check (md == null);
+
+        // Uninstall #3
+        check(repo.uninstall(mai3));
+
+        // Installs #1, #3, and #2
+        mai1 = repo.install(jamFile1.getCanonicalFile().toURI().toURL());
+        check(mai1 != null);
+        mai3 = repo.install(jamFile3.getCanonicalFile().toURI().toURL());
+        check(mai3 != null);
+        mai2 = repo.install(jamFile2.getCanonicalFile().toURI().toURL());
+        check(mai2 != null);
+
+        md = repo.find("URLRepoModuleA", VersionConstraint.valueOf("7.0"));
+        check(md != null);
+        platformBinding = md.getAnnotation
+            (java.module.annotation.PlatformBinding.class);
+        if (platformBinding == null) {
+            pass();
+        } else {
+            fail();
+        }
+
+        // Uninstall #3 and #1
+        check(repo.uninstall(mai3));
+        check(repo.uninstall(mai1));
+
+        md = repo.find("URLRepoModuleA", VersionConstraint.valueOf("7.0"));
+        check (md == null);
+
+        // Clear event queues for the tests afterwards
+        initEventQueue.clear();
+        shutdownEventQueue.clear();
+        installEventQueue.clear();
+        uninstallEventQueue.clear();
 
         if (failed == 0) {
             repo.shutdown();
             check(repoDownloadDir.list().length == 0);
+        }
+    }
+
+    static boolean initializeEventExists(Repository repo) throws Exception {
+        // Poll REPOSITORY_INITIALIZED event
+        //
+        RepositoryEvent evt = initEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static boolean shutdownEventExists(Repository repo) throws Exception {
+        // Poll REPOSITORY_SHUTDOWN event
+        //
+        RepositoryEvent evt = shutdownEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static boolean installEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
+        // Poll MODULE_INSTALLED event
+        //
+        RepositoryEvent evt = installEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.MODULE_INSTALLED) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            if (mai != null && evt.getModuleArchiveInfo() != mai) {
+                throw new Exception("Unexpected repository event for: " + evt.getModuleArchiveInfo());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static boolean uninstallEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
+        // Poll MODULE_UNINSTALLED event
+        //
+        RepositoryEvent evt = uninstallEventQueue.poll(2L, TimeUnit.SECONDS);
+        if (evt != null) {
+            if (evt.getType() != RepositoryEvent.Type.MODULE_UNINSTALLED) {
+                throw new Exception("Unexpected repository event type: " + evt.getType());
+            }
+            if (evt.getSource() != repo) {
+                throw new Exception("Unexpected repository event from: " + evt.getSource());
+            }
+            if (mai != null && evt.getModuleArchiveInfo() != mai) {
+                throw new Exception("Unexpected repository event for: " + evt.getModuleArchiveInfo());
+            }
+            return true;
+        } else {
+            return false;
         }
     }
 

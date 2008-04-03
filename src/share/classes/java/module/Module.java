@@ -147,15 +147,7 @@ public abstract class Module
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-
-        /*
-            builder.append("Module[name=");
-            builder.append(getModuleDefinition().getName());
-            builder.append(",version=");
-            builder.append(getModuleDefinition().getVersion());
-            builder.append("]");
-            */
-        builder.append("Module ");
+        builder.append("module ");
         builder.append(getModuleDefinition().getName());
         builder.append(" v");
         builder.append(getModuleDefinition().getVersion());

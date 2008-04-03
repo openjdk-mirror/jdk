@@ -283,7 +283,7 @@ public class JRepo {
             }
             pw.printf(MAIFormatVerbose,
                 mai.getPlatform() == null ? "generic" : mai.getPlatform(),
-                mai.getArchitecture() == null ? "generic" : mai.getArchitecture(),
+                mai.getArch() == null ? "generic" : mai.getArch(),
                 lastMod == null ? "n/a" : lastMod,
                 mai.getFileName() == null ? "n/a" : mai.getFileName()
                 );
@@ -737,7 +737,7 @@ public class JRepo {
                     if (platformBinding == null) {
                         rc = true;
                     } else {
-                        String pb = mai.getPlatform() + "-" + mai.getArchitecture();
+                        String pb = mai.getPlatform() + "-" + mai.getArch();
                         if (platformBinding.equals(pb)) {
                             rc = true;
                         }

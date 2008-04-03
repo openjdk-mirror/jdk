@@ -47,23 +47,28 @@ public class ModuleArchiveInfo {
 
     /**
      * Constructs a new <code>ModuleArchiveInfo</code> instance.
+     * <p>
+     * If the module definition in the module archive is platform and
+     * architecture neutral, both platform and arch must be null.
      *
      * @param repository the repository
      * @param name the name of the module definition in the module archive.
      * @param version the version of the module definition in the module
      *        archive.
-     * @param platform the platform of the module definition in the module
-     *        archive.
-     * @param arch the architecture of the module definition in the module
-     *        archive.
+     * @param platform the platform which the module definition in the module
+     *        archive targets.
+     * @param arch the architecture which the module definition in the module
+     *        archive targets.
      * @param fileName the filename of the module archive.
      * @param lastModified the last modified time of the module archive.
-     * @throws NullPointerException if repository is null, name is null, or
-     *         version is null. It is also thrown if platform or archive is
-     *         provided, they are not provided together, or if the last
-     *         modified time is less than 0.
+     * @throws NullPointerException if repository is null, name is null,
+     *         version is null, or the last modified time is less than 0. It
+     *         is also thrown if platform is null but arch is not null, or
+     *         platform is not null but arch is null.
      */
-    public ModuleArchiveInfo(Repository repository, String name, Version version, String platform, String arch, String fileName, long lastModified) {
+    public ModuleArchiveInfo(Repository repository, String name,
+                             Version version, String platform, String arch,
+                             String fileName, long lastModified) {
         if (repository == null) {
             throw new IllegalArgumentException("repository must not be null.");
         }
@@ -76,7 +81,7 @@ public class ModuleArchiveInfo {
         }
         if ((platform == null ^ arch == null)) {
             throw new IllegalArgumentException(
-                "platform and architecture must be either both provided, or neither provided.");
+                "platform and arch must be either both provided, or neither provided.");
         }
 
         if (lastModified <0) {
@@ -140,8 +145,19 @@ public class ModuleArchiveInfo {
      * @return the name of the architecture. If the module definition has no
      *          platform binding, returns null.
      */
-    public String getArchitecture() {
+    public String getArch() {
         return arch;
+    }
+
+    /**
+     * Determines if the module definition in the module archive is
+     * platform and architecture neutral.
+     *
+     * @return true if the module definition in the module archive is platform
+     *         and architecture neutral; otherwise return false.
+     */
+    public boolean isPlatformArchNeutral() {
+        return (platform == null && arch == null);
     }
 
     /**
@@ -165,31 +181,6 @@ public class ModuleArchiveInfo {
     }
 
     /**
-     * Compare two <code>ModuleArchiveInfo</code> objects for
-     * equality. The result is <code>true</code> if and only if
-     * the argument is not <code>null</code> and is a
-     * <code>ModuleArchiveInfo</code> object that is the same
-     * instance as this <code>ModuleArchiveInfo</code>.
-     *
-     * @param other the object to compare with.
-     * @return whether or not the two objects are equal.
-     */
-    @Override
-    public boolean equals(Object other) {
-        return (this == other);
-    }
-
-    @Override
-    public int hashCode() {
-        int rc = repository.hashCode();
-        rc = 31 * rc + name.hashCode();
-        rc = 31 * rc + version.hashCode();
-        rc = 31 * rc + (platform == null ? 0 : platform.hashCode());
-        rc = 31 * rc + (arch == null ? 0 : arch.hashCode());
-        return rc;
-    }
-
-    /**
      * Returns a <code>String</code> object representing this
      * <code>ModuleArchiveInfo</code>.
      *
@@ -201,16 +192,14 @@ public class ModuleArchiveInfo {
 
         builder.append("ModuleArchiveInfo[repository=");
         builder.append(repository.getName());
-        builder.append(",name=");
+        builder.append(",module=");
         builder.append(name);
-        builder.append(",version=");
+        builder.append(" v");
         builder.append(version);
-        if (platform != null) {
-            builder.append(",platform=");
+        if (!isPlatformArchNeutral()) {
+            builder.append(",platform-arch=");
             builder.append(platform);
-        }
-        if (arch != null) {
-            builder.append(",arch=");
+            builder.append("-");
             builder.append(arch);
         }
         if (fileName != null) {
@@ -219,7 +208,7 @@ public class ModuleArchiveInfo {
         }
         if (lastModified >= 0) {
             builder.append(",lastModified=");
-            builder.append(lastModified);
+            builder.append(new java.util.Date(lastModified));
         }
         builder.append("]");
 

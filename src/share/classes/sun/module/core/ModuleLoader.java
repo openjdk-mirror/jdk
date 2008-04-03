@@ -35,6 +35,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.security.SecureClassLoader;
 
@@ -51,7 +52,7 @@ final class ModuleLoader extends SecureClassLoader {
     final static boolean DEBUG = ModuleImpl.DEBUG;
 
     private final Module module;
-    private final ModuleDefinition definition;
+    private final ModuleDefinition moduleDef;
     private final ModuleDefinitionContent content;
     private final ClassLoader parent;
 
@@ -61,21 +62,21 @@ final class ModuleLoader extends SecureClassLoader {
     private boolean manifestSet = false;
     private String classesDirectoryPath = null;
 
-    ModuleLoader(Module module, final ModuleDefinition definition)
+    ModuleLoader(Module module, final ModuleDefinition moduleDef)
             throws ModuleInitializationException {
         super();
         this.parent = getParent();
         this.module = module;
-        this.definition = definition;
-        Module coreModule = definition.getRepository().find("java.se.core").getModuleInstance();
+        this.moduleDef = moduleDef;
+        Module coreModule = moduleDef.getRepository().find("java.se.core").getModuleInstance();
         importedModules = Collections.singletonList(coreModule);
         content = java.security.AccessController.doPrivileged(
                     new java.security.PrivilegedAction<ModuleDefinitionContent>() {
                         public ModuleDefinitionContent run() {
-                            return definition.getModuleDefinitionContent();
+                            return moduleDef.getModuleDefinitionContent();
                         }
                     });
-        ClassesDirectoryPath classesDirectoryPathAnnotation = definition.getAnnotation(ClassesDirectoryPath.class);
+        ClassesDirectoryPath classesDirectoryPathAnnotation = moduleDef.getAnnotation(ClassesDirectoryPath.class);
         if (classesDirectoryPathAnnotation != null) {
             classesDirectoryPath = classesDirectoryPathAnnotation.value();
             if (classesDirectoryPath.startsWith("/"))  {
@@ -92,19 +93,27 @@ final class ModuleLoader extends SecureClassLoader {
             // constructs module URL and module's code source
             StringBuilder sb = new StringBuilder();
             sb.append("module:");
-            sb.append(definition.getRepository().getName());
-            if (definition.getRepository().getSourceLocation() != null) {
+            sb.append(moduleDef.getRepository().getName());
+            if (moduleDef.getRepository().getSourceLocation() != null) {
                 sb.append("/");
-                sb.append(definition.getRepository().getSourceLocation().toString());
+                sb.append(moduleDef.getRepository().getSourceLocation().toString());
             }
             sb.append("!/");
-            sb.append(definition.getName());
+            sb.append(moduleDef.getName());
             sb.append("/");
-            sb.append(definition.getVersion());
+            sb.append(moduleDef.getVersion());
 
             URL moduleURL = new URL(sb.toString());
-            cs = new CodeSource(moduleURL, content.getCodeSigners());
-        } catch (MalformedURLException e) {
+
+            // This is currently the very first call the module system would
+            // call into ModuleDefinitionContent in a module definition. In the
+            // case of URLRepository, this would trigger the JAM file to be
+            // downloaded and the module metadata is compared (and potentially
+            // throws exception if there is a mismatch between the
+            // MODULE.METADATA file and that in the JAM file.
+            CodeSigner[] codeSigners = content.getCodeSigners();
+            cs = new CodeSource(moduleURL, codeSigners);
+        } catch (IOException e) {
             throw new ModuleInitializationException("cannot construct module's code source", e);
         }
     }
@@ -361,7 +370,7 @@ final class ModuleLoader extends SecureClassLoader {
         try {
             ResourceHandler handler = new ResourceHandler(this, path);
             URL url = new URL("x-module-internal",
-                definition.getName() + "-" + definition.getVersion(),
+                moduleDef.getName() + "-" + moduleDef.getVersion(),
                 -1, "/" + path, handler);
             handler.url = url;
             return url;
@@ -463,18 +472,23 @@ final class ModuleLoader extends SecureClassLoader {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-
-        builder.append("ModuleClassLoader[module-name=");
-        builder.append(definition.getName());
-        builder.append(",module-version=");
-        builder.append(definition.getVersion());
-        builder.append(",imported modules=");
-        for (Module m:importedModules) {
-            builder.append(m);
-            builder.append(",");
+        builder.append("ModuleClassLoader[module=");
+        builder.append(moduleDef.getName());
+        builder.append(" v");
+        builder.append(moduleDef.getVersion());
+        builder.append(", imported-modules=[");
+        boolean first = true;
+        for (Module m : importedModules) {
+            if (!first) {
+                builder.append(", ");
+            }
+            ModuleDefinition md = m.getModuleDefinition();
+            builder.append(md.getName());
+            builder.append(" v");
+            builder.append(md.getVersion());
+            first = false;
         }
-        builder.append("]");
-
+        builder.append("]]");
         return builder.toString();
     }
 }
