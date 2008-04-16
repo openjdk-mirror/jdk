@@ -52,12 +52,12 @@ import sun.module.JamUtils;
 /**
  * Reads from data from a {@code URL} which conforms to the
  * <tt>RepositoryMetadata.xml</tt> schema, providing a set of
- * {@code ModuleInfo} instances.
+ * {@code URLModuleInfo} instances.
  * @since 1.7
  */
 public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
-    /** ModuleInfo corresponding to data read from repository-metadata.xml. */
-    private final Set<ModuleInfo> moduleInfos = new HashSet<ModuleInfo>();
+    /** URLModuleInfo corresponding to data read from repository-metadata.xml. */
+    private final Set<URLModuleInfo> urlModuleInfos = new HashSet<URLModuleInfo>();
 
     /** For handling errors. */
     private Locator locator;
@@ -65,8 +65,8 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
     /** Repository's source location. */
     private final String sourceLocation;
 
-    /** Builds up information used to create elements of {@codemoduleInfos}. */
-    private MutableModuleInfo moduleInfo;
+    /** Builds up information used to create elements of {@codeurlModuleInfos}. */
+    private MutableURLModuleInfo urlModuleInfo;
 
     /**
      * The setting of @{code expect} determines how the next invocation of
@@ -82,19 +82,19 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
 
     /**
      * Returns information from given URL as a set
-     * of ModuleInfo instances.  Validates the data aginst the
+     * of URLModuleInfo instances.  Validates the data aginst the
      * schema in {@code java/module/RepositoryMetadata.xml}.
      *
      * @param source {@code URL} to a file which conforms to
      * the <tt>RepositoryMetadata.xml</tt> schema.
-     * @return a {@code Set<ModuleInfo>}, with one {@code ModuleInfo} for each
+     * @return a {@code Set<URLModuleInfo>}, with one {@code URLModuleInfo} for each
      * <tt>module</tt> entry in the <tt>repository-metadata.xml</tt>.
      * @throws NullPointerException if any argument is null.
      * @throws IllegalArgumentException if the {@code source} has duplicate entries
      * (note that the <tt>path</tt> element is not considered when checking for
      * duplicates, though other elements are).
      */
-    public static Set<ModuleInfo> read(URL source) throws SAXException, IOException {
+    public static Set<URLModuleInfo> read(URL source) throws SAXException, IOException {
         InputStream schemaStream = null;
         InputStream repoStream = null;
 
@@ -126,7 +126,7 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
             is = new ByteArrayInputStream(byteBuffer);
             xmlReader.parse(new InputSource(is));;
 
-            return moduleTypeReader.moduleInfos;
+            return moduleTypeReader.urlModuleInfos;
         } finally {
             JamUtils.close(repoStream);
             JamUtils.close(schemaStream);
@@ -172,7 +172,7 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
     public void startElement(String ns, String name, String qname, Attributes attrs)
             throws SAXException {
         if ("module".equals(name)) {
-            moduleInfo = new MutableModuleInfo();
+            urlModuleInfo = new MutableURLModuleInfo();
         } else if ("name".equals(name)) {
             expect = Kind.NAME;
         } else if ("version".equals(name)) {
@@ -190,12 +190,12 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
     public void endElement(String ns, String name, String qname)
             throws SAXException, IllegalArgumentException {
         if ("module".equals(name)) {
-            ModuleInfo mi = new ModuleInfo(moduleInfo);
-            if (moduleInfos.contains(mi)) {
+            URLModuleInfo mi = new URLModuleInfo(urlModuleInfo);
+            if (urlModuleInfos.contains(mi)) {
                 throw new IllegalArgumentException(
-                    "duplicate ModuleInfo is not allowed in " + sourceLocation);
+                    "duplicate URLModuleInfo is not allowed in " + sourceLocation);
             } else {
-                moduleInfos.add(mi);
+                urlModuleInfos.add(mi);
             }
             expect = Kind.NONE;
         }
@@ -208,19 +208,19 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
         if (!tmp.trim().equals("")) {
             switch (expect) {
                 case NAME:
-                    moduleInfo.setName(tmp);
+                    urlModuleInfo.setName(tmp);
                     break;
                 case VERSION:
-                    moduleInfo.setVersion(Version.valueOf(tmp));
+                    urlModuleInfo.setVersion(Version.valueOf(tmp));
                     break;
                 case PLATFORM:
-                    moduleInfo.setPlatform(tmp);
+                    urlModuleInfo.setPlatform(tmp);
                     break;
                 case ARCH:
-                    moduleInfo.setArch(tmp);
+                    urlModuleInfo.setArch(tmp);
                     break;
                 case PATH:
-                    moduleInfo.setPath(tmp);
+                    urlModuleInfo.setPath(tmp);
                     break;
                 case NONE:
                     break;
@@ -232,7 +232,7 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
     // Local implementation support
     //
 
-    private static class MutableModuleInfo extends ModuleInfo {
+    private static class MutableURLModuleInfo extends URLModuleInfo {
         void setName(String name)         { this.name = name; }
         void setVersion(Version version)   { this.version = version; }
         void setPlatform(String platform) { this.platform = platform; }

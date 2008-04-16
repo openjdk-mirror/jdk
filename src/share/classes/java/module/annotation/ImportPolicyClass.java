@@ -31,28 +31,24 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the class of the import policy of a module definition. Th class
- * must extend the <code>ImportPolicy</code> class; it must also be declared
- * as public, and have a public default constructor. This metadata annotation
- * is applied to the development module, i.e. the <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates the import policy class of a module definition. The class must
+ * extend {@code ImportPolicy}; it must also be  declared as public, and
+ * have a public default constructor. This metadata annotation is applied to
+ * the development module, i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
+ *    &#064;Version("1.0.0")
  *    &#064;ImportPolicyClass("com.wombat.xyz.ImportPolicyImpl")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
- *
  * @see java.module.ImportPolicy
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ImportPolicyClass {
 
     /**
-     * Import policy class.
+     * The name of the import policy class.
      */
     String value();
 }

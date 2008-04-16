@@ -203,11 +203,24 @@ final class ModuleImpl extends Module {
 
     @Override
     public boolean supportsDeepValidation() {
-        return true;
+        try {
+            // In order to support deep validation, member classes and exported
+            // classes must be available.
+            moduleDef.getMemberClasses();
+            moduleDef.getExportedClasses();
+            return true;
+        } catch (UnsupportedOperationException uoe) {
+            return false;
+        }
     }
 
     @Override
     public void deepValidate() throws ModuleInitializationException {
+        if (supportsDeepValidation() == false) {
+            throw new UnsupportedOperationException(moduleDef.getName()
+                                + " module cannot be deep validated.");
+        }
+
         // Find the transitive closure of this module through imported dependency
         Set<Module> importedModulesClosure = ModuleUtils.findImportedModulesClosure(this);
 
@@ -225,7 +238,15 @@ final class ModuleImpl extends Module {
         Set<String> questionableClasses = new HashSet<String>();
 
         for (Module m : importedModulesClosure) {
-            Set<String> memberClasses = m.getModuleDefinition().getMemberClasses();
+            ModuleDefinition md = m.getModuleDefinition();
+
+            // XXX: Workaround for virtual module for now ... until JSR 294
+            // support arrives
+            if (md.getRepository() == Repository.getBootstrapRepository()) {
+                continue;
+            }
+
+            Set<String> memberClasses = md.getMemberClasses();
             for (String clazz : memberClasses) {
                 if (classNamespace.contains(clazz)) {
                     // The member class already exists in the namespace. There is
@@ -446,14 +467,14 @@ final class ModuleImpl extends Module {
         importingModules = new HashSet<Module>();
         loader = new ModuleLoader(this, moduleDef);
 
-        List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
+        List<ModuleDependency> importModuleDependencies = moduleDef.getImportModuleDependencies();
         if (DEBUG) {
-            System.out.println("Import dependency: " + importDependencies);
+            System.out.println("Import dependency: " + importModuleDependencies);
         }
 
         // Build version constraint map from the ImportDependencies
         Map<String,VersionConstraint> versionConstraints = new HashMap<String,VersionConstraint>();
-        for (ImportDependency dep : importDependencies) {
+        for (ModuleDependency dep : importModuleDependencies) {
             if (versionConstraints.put(dep.getName(), dep.getVersionConstraint()) != null) {
                 fail(null, "Module " + moduleString + " imports module "
                      + dep.getName() + " more than once.");
@@ -562,14 +583,14 @@ final class ModuleImpl extends Module {
         // import dependencies in order, name, and version constraints
         // and that no non-optional imports are missing
         int n = importedMDs.size();
-        List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
-        if (n != importDependencies.size()) {
+        List<ModuleDependency> importModuleDependencies = moduleDef.getImportModuleDependencies();
+        if (n != importModuleDependencies.size()) {
             fail(null, "Import policy error in module " + moduleString
                  + ": mismatch in number of imported module definition in the returned list: "
-                 + n + " != " + importDependencies.size());
+                 + n + " != " + importModuleDependencies.size());
         }
         for (int i = 0; i < n; i++) {
-            ImportDependency dep = importDependencies.get(i);
+            ModuleDependency dep = importModuleDependencies.get(i);
             ModuleDefinition md = importedMDs.get(i);
             if (md == null) {
                 if (dep.isOptional() == false) {
@@ -611,8 +632,9 @@ final class ModuleImpl extends Module {
             String moduleString = moduleDef.getName() + " v" + moduleDef.getVersion();
             List<ModuleDefinition> importedMDs = new ArrayList<ModuleDefinition>();
             Repository rep = moduleDef.getRepository();
-            List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
-            for (ImportDependency dep : importDependencies) {
+            List<ModuleDependency> importModuleDependencies = moduleDef.getImportModuleDependencies();
+            for (ModuleDependency dep : importModuleDependencies) {
+
                 String name = dep.getName();
                 VersionConstraint constraint = constraints.get(name);
                 if (constraint == null) {
@@ -705,20 +727,6 @@ final class ModuleImpl extends Module {
         return ready;
     }
 
-    private static Set<String> getPackages(Collection<String> classes) {
-        Set<String> packages = new HashSet<String>();
-        for (String clazz : classes ) {
-            int k = clazz.lastIndexOf('.');
-            if (k == -1) {
-                packages.add("<unnamed package>");
-            } else {
-                String pkg = clazz.substring(0, k);
-                packages.add(pkg);
-            }
-        }
-        return packages;
-    }
-
     private static String toString(ModuleDefinition md) {
         return md.getName() + " v" + md.getVersion();
     }
@@ -734,12 +742,12 @@ final class ModuleImpl extends Module {
             fail(null, "Validation: module " + moduleString + " is not allowed to import itself");
         }
         Set<String> myPackages = (moduleDef.getAnnotation(AllowShadowing.class) != null)
-            ? Collections.<String>emptySet() : getPackages(moduleDef.getMemberClasses());
+            ? Collections.<String>emptySet() : getPackages(moduleDef.getMemberPackageDefinitions());
 
         List<Set<String>> exportedPackages = new ArrayList<Set<String>>();
         for (Module importedModule : importedModules) {
             ModuleDefinition importedMD = importedModule.getModuleDefinition();
-            Set<String> moduleExported = getPackages(importedMD.getExportedClasses());
+            Set<String> moduleExported = getPackages(importedMD.getExportedPackageDefinitions());
             if (Collections.disjoint(myPackages, moduleExported) == false) {
                 moduleExported.retainAll(myPackages);
                 fail(null, "Validation: module " + moduleString + " and imported module "
@@ -762,6 +770,14 @@ final class ModuleImpl extends Module {
             }
             exportedPackages.add(moduleExported);
         }
+    }
+
+    private static Set<String> getPackages(Collection<PackageDefinition> packageDefs) {
+        Set<String> packages = new HashSet<String>();
+        for (PackageDefinition packageDef : packageDefs) {
+            packages.add(packageDef.getName());
+        }
+        return packages;
     }
 
     /**

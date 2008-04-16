@@ -27,7 +27,7 @@ package java.module;
 
 /**
  * This class represents the information of an installed module archive
- * in the repository.
+ * in a repository.
  *
  * @see java.module.Repository
  * @see java.module.Version
@@ -46,10 +46,11 @@ public class ModuleArchiveInfo {
     private long lastModified;
 
     /**
-     * Constructs a new <code>ModuleArchiveInfo</code> instance.
+     * Constructs a new {@code ModuleArchiveInfo} instance.
      * <p>
      * If the module definition in the module archive is platform and
-     * architecture neutral, both platform and arch must be null.
+     * architecture neutral, both {@code platform} and {@code arch} must be
+     * null.
      *
      * @param repository the repository
      * @param name the name of the module definition in the module archive.
@@ -128,7 +129,7 @@ public class ModuleArchiveInfo {
     /**
      * Returns the name of the platform of the module definition in the
      * module archive. The value should be one of the possible values
-     * of the system property "os.platform".
+     * of the system property {@code "os.platform"}.
      *
      * @return the name of the platform. If the module definition has no
      *          platform binding, returns null.
@@ -140,7 +141,7 @@ public class ModuleArchiveInfo {
     /**
      * Returns the name of the architecture of the module definition in the
      * module archive. The value should be one of the possible values of
-     * the system property "os.arch".
+     * the system property {@code "os.arch"}.
      *
      * @return the name of the architecture. If the module definition has no
      *          platform binding, returns null.
@@ -181,10 +182,10 @@ public class ModuleArchiveInfo {
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>ModuleArchiveInfo</code>.
+     * Returns a {@code String} object representing this
+     * {@code ModuleArchiveInfo}.
      *
-     * @return a string representation of the <code>ModuleArchiveInfo</code> object.
+     * @return a string representation of the {@code ModuleArchiveInfo} object.
      */
     @Override
     public String toString()    {

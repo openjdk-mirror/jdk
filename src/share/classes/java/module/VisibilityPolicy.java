@@ -26,8 +26,8 @@
 package java.module;
 
 /**
- * This interface represents the visibility policy of the module definitions in
- * the repository of the module system.
+ * This interface represents the visibility policy for the module definitions in
+ * the repository.
  * <p>
  * @see java.module.ModuleDefinition
  * @see java.module.Repository
@@ -38,12 +38,12 @@ public interface VisibilityPolicy {
 
     /**
      * Returns true if the module definition should be visible in the
-     * repository of the module system. Otherwise, returns false.
+     * repository; otherwise, returns false.
      * <p>
      *
      * @param moduleDef the module definition.
-     * @return true if the module definition should be visible in the
-     *         module system; false otherwise.
+     * @return true if the module definition should be visible from the
+     *         repository; otherwise, returns false.
      */
     public abstract boolean isVisible(ModuleDefinition moduleDef);
 

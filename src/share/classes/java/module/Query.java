@@ -37,12 +37,12 @@ import java.util.Set;
 /**
  * This class represents a query that determines whether or not a particular
  * module definition matches some criteria. The static methods provided return
- * query that may be used in matching <code>ModuleDefinition</code>.
+ * query that may be used in matching {@code ModuleDefinition}.
  * Composition of calls can construct arbitrary nestings of constraints, as
  * the following example illustrates:</p>
  * <pre>
- * Query query = Query.and(Query.name("com.wombat.webservice"),
- *                         Query.versionRange("2.0.0+"));
+ * Query query = Query.and(Query.module("com.wombat.webservice", "2.0.0+"),
+ *                         Query.annotation(ServiceProviders.class));
  * </pre>
  *
  * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
@@ -79,7 +79,10 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef)  {
             return true;
         }
-        public Set<String> getIndexableNames() {
+        public Set<String> getIndexableModuleNames() {
+            return null;
+        }
+        public Set<String> getIndexablePackageNames() {
             return null;
         }
         public boolean equals(Object obj)   {
@@ -101,7 +104,10 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef)  {
             return false;
         }
-        public Set<String> getIndexableNames() {
+        public Set<String> getIndexableModuleNames() {
+            return Collections.emptySet();
+        }
+        public Set<String> getIndexablePackageNames() {
             return Collections.emptySet();
         }
         public boolean equals(Object obj) {
@@ -118,74 +124,118 @@ public abstract class Query implements Serializable {
     /**
      * @serial include
      */
-    private static class NameQuery extends Query {
+    private static class ModuleQuery extends Query {
         private static final long serialVersionUID = 6249315499292409988L;
-        private String name;
-        NameQuery(String name) {
+        private transient String name;
+        private transient VersionConstraint constraint;
+        ModuleQuery(String name, VersionConstraint constraint) {
             this.name = name;
+            this.constraint = constraint;
         }
-        public Set<String> getIndexableNames() {
+        private void writeObject(ObjectOutputStream s) throws IOException {
+            s.defaultWriteObject();
+            s.writeUTF(name);
+            s.writeUTF(constraint.toString());
+        }
+        private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
+            s.defaultReadObject();
+            name = s.readUTF();
+            constraint = VersionConstraint.valueOf(s.readUTF());
+        }
+        public Set<String> getIndexableModuleNames() {
             Set<String> indexableNames = new HashSet<String>();
             indexableNames.add(name);
             return Collections.unmodifiableSet(indexableNames);
         }
+        public Set<String> getIndexablePackageNames() {
+            return null;
+        }
         public boolean match(ModuleDefinition moduleDef)  {
-            return moduleDef.getName().equals(name);
+            return moduleDef.getName().equals(name)
+                   && constraint.contains(moduleDef.getVersion());
         }
         public boolean equals(Object obj)   {
-            if (!(obj instanceof NameQuery))
+            if (!(obj instanceof ModuleQuery))
                 return false;
-            NameQuery query = (NameQuery) obj;
-            return this.name.equals(query.name);
+            ModuleQuery query = (ModuleQuery) obj;
+            return this.name.equals(query.name)
+                   && this.constraint.equals(query.constraint);
         }
         public int hashCode()   {
-            return 37 * 17 + name.hashCode();
+            int result = 17;
+            result = 37 * result + name.hashCode();
+            result = 37 * result + constraint.hashCode();
+            return result;
         }
         public String toString() {
-            return "name=" + name;
+            return "module-name=" + name + ", version=" + constraint;
         }
         public String getName() {
             return name;
+        }
+        public VersionConstraint getVersionConstraint() {
+            return constraint;
         }
     }
 
     /**
      * @serial include
      */
-    private static class VersionConstraintQuery extends Query {
+    private static class ExportedPackageQuery extends Query {
         private static final long serialVersionUID = -1700827011713291084L;
-        private transient VersionConstraint versionConstraint;
-        VersionConstraintQuery(VersionConstraint versionConstraint) {
-            this.versionConstraint = versionConstraint;
-        }
-        public boolean match(ModuleDefinition moduleDef) {
-            return versionConstraint.contains(moduleDef.getVersion());
-        }
-        public Set<String> getIndexableNames()  {
-            return null;
+        private transient String name;
+        private transient VersionConstraint constraint;
+        ExportedPackageQuery(String name, VersionConstraint constraint) {
+            this.name = name;
+            this.constraint = constraint;
         }
         private void writeObject(ObjectOutputStream s) throws IOException {
             s.defaultWriteObject();
-            s.writeUTF(versionConstraint.toString());
+            s.writeUTF(name);
+            s.writeUTF(constraint.toString());
         }
         private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
             s.defaultReadObject();
-            versionConstraint = VersionConstraint.valueOf(s.readUTF());
+            name = s.readUTF();
+            constraint = VersionConstraint.valueOf(s.readUTF());
+        }
+        public Set<String> getIndexableModuleNames() {
+            return null;
+        }
+        public Set<String> getIndexablePackageNames() {
+            Set<String> indexableNames = new HashSet<String>();
+            indexableNames.add(name);
+            return Collections.unmodifiableSet(indexableNames);
+        }
+        public boolean match(ModuleDefinition moduleDef)  {
+            for (PackageDefinition packageDef : moduleDef.getExportedPackageDefinitions()) {
+                if (packageDef.getName().equals(name)
+                    && constraint.contains(packageDef.getVersion()))
+                    return true;
+            }
+            return false;
         }
         public boolean equals(Object obj)   {
-            if (!(obj instanceof VersionConstraintQuery))
+            if (!(obj instanceof ExportedPackageQuery))
                 return false;
-            VersionConstraintQuery query = (VersionConstraintQuery) obj;
-            return this.versionConstraint.equals(query.versionConstraint);
+            ExportedPackageQuery query = (ExportedPackageQuery) obj;
+            return this.name.equals(query.name)
+                   && this.constraint.equals(query.constraint);
         }
         public int hashCode()   {
-            return 37 * 17 + versionConstraint.hashCode();
+            int result = 17;
+            result = 37 * result + name.hashCode();
+            result = 37 * result + constraint.hashCode();
+            return result;
         }
         public String toString() {
-            return "version-constraint=" + versionConstraint;
+            return "exported-package-name=" + name + ", version=" + constraint;
+        }
+        public String getName() {
+            return name;
         }
         public VersionConstraint getVersionConstraint() {
-            return versionConstraint;
+            return constraint;
         }
     }
 
@@ -216,7 +266,10 @@ public abstract class Query implements Serializable {
             else
                 return (v.equals(value));
         }
-        public Set<String> getIndexableNames()  {
+        public Set<String> getIndexableModuleNames()  {
+            return null;
+        }
+        public Set<String> getIndexablePackageNames() {
             return null;
         }
         public boolean equals(Object obj)   {
@@ -259,7 +312,10 @@ public abstract class Query implements Serializable {
             // No match if annotation is not present.
             return (annotation != null);
         }
-        public Set<String> getIndexableNames()  {
+        public Set<String> getIndexableModuleNames()  {
+            return null;
+        }
+        public Set<String> getIndexablePackageNames() {
             return null;
         }
         public boolean equals(Object obj) {
@@ -290,7 +346,10 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef) {
             return !query.match(moduleDef);
         }
-        public Set<String> getIndexableNames()  {
+        public Set<String> getIndexableModuleNames()  {
+            return null;
+        }
+        public Set<String> getIndexablePackageNames() {
             return null;
         }
         public boolean equals(Object obj)   {
@@ -324,9 +383,22 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef) {
             return query1.match(moduleDef) && query2.match(moduleDef);
         }
-        public Set<String> getIndexableNames()  {
-            Set<String> indexableNames1 = query1.getIndexableNames();
-            Set<String> indexableNames2 = query2.getIndexableNames();
+        public Set<String> getIndexableModuleNames()  {
+            Set<String> indexableNames1 = query1.getIndexableModuleNames();
+            Set<String> indexableNames2 = query2.getIndexableModuleNames();
+            if (indexableNames1 == null) {
+                return indexableNames2;
+            } else if (indexableNames2 == null) {
+                return indexableNames1;
+            } else {
+                Set<String> result = new HashSet<String>(indexableNames1);
+                result.retainAll(indexableNames2);
+                return Collections.unmodifiableSet(result);
+            }
+        }
+        public Set<String> getIndexablePackageNames()  {
+            Set<String> indexableNames1 = query1.getIndexablePackageNames();
+            Set<String> indexableNames2 = query2.getIndexablePackageNames();
             if (indexableNames1 == null) {
                 return indexableNames2;
             } else if (indexableNames2 == null) {
@@ -373,9 +445,22 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef) {
             return query1.match(moduleDef) || query2.match(moduleDef);
         }
-        public Set<String> getIndexableNames()  {
-            Set<String> indexableNames1 = query1.getIndexableNames();
-            Set<String> indexableNames2 = query2.getIndexableNames();
+        public Set<String> getIndexableModuleNames()  {
+            Set<String> indexableNames1 = query1.getIndexableModuleNames();
+            Set<String> indexableNames2 = query2.getIndexableModuleNames();
+            if (indexableNames1 == null)  {
+                return indexableNames2;
+            } else if (indexableNames2 == null)  {
+                return indexableNames1;
+            } else {
+                Set<String> result = new HashSet<String>(indexableNames1);
+                result.addAll(indexableNames2);
+                return Collections.unmodifiableSet(result);
+            }
+        }
+        public Set<String> getIndexablePackageNames()  {
+            Set<String> indexableNames1 = query1.getIndexablePackageNames();
+            Set<String> indexableNames2 = query2.getIndexablePackageNames();
             if (indexableNames1 == null)  {
                 return indexableNames2;
             } else if (indexableNames2 == null)  {
@@ -412,7 +497,7 @@ public abstract class Query implements Serializable {
      * Returns a {@code Query} that inverts the specified query.
      *
      * @param query the specified query.
-     * @return the <code>Query</code> object.
+     * @return the {@code Query} object.
      */
     public static Query not(Query query) {
         if (query == null)
@@ -429,7 +514,7 @@ public abstract class Query implements Serializable {
      *
      * @param query1 A query.
      * @param query2 Another query.
-     * @return the <code>Query</code> object.
+     * @return the {@code Query} object.
      */
     public static Query and(Query query1, Query query2)  {
         if (query1 == null)
@@ -457,7 +542,7 @@ public abstract class Query implements Serializable {
      *
      * @param query1 A query.
      * @param query2 Another query.
-     * @return the <code>Query</code> object.
+     * @return the {@code Query} object.
      */
     public static Query or(Query query1, Query query2) {
         if (query1 == null)
@@ -481,53 +566,36 @@ public abstract class Query implements Serializable {
     }
 
     /**
-     * Returns a {@code Query} that requires the version of a module definition
-     * to be contained within any of the ranges known to the specified
-     * version constraint. The string must not contain any leading or trailing
-     * whitespace.
-     *
-     * @param source the string to be parsed.
-     * @return the <code>Query</code> object.
-     * @throws IllegalArgumentException if the string does not follow
-     *         the version constraint format.
-     */
-    public static Query version(String source) {
-        if (source == null)
-            throw new NullPointerException("source must not be null.");
-
-        return version(VersionConstraint.valueOf(source));
-    }
-
-    /**
-     * Returns a {@code Query} that requires the version of a module definition
-     * to be contained within any of the ranges known to the specified
-     * version constraint.
-     *
-     * @param versionConstraint the <code>VersionConstraint</code> object.
-     * @return the <code>Query</code> object.
-     */
-    public static Query version(VersionConstraint versionConstraint) {
-        if (versionConstraint == null)
-            throw new NullPointerException("version constraint must not be null.");
-
-        if (versionConstraint.equals(VersionConstraint.DEFAULT))
-            return MATCH_ALL;
-        else
-            return new VersionConstraintQuery(versionConstraint);
-    }
-
-    /**
      * Returns a {@code Query} that requires the name of a module definition equals
      * to the specified name.
      *
      * @param name the name of the module definition.
-     * @return the <code>Query</code> object.
+     * @return the {@code Query} object.
      */
-    public static Query name(String name) {
+    public static Query module(String name) {
         if (name == null)
             throw new NullPointerException("name must not be null.");
 
-        return new NameQuery(name);
+        return new ModuleQuery(name, VersionConstraint.DEFAULT);
+    }
+
+    /**
+     * Returns a {@code Query} that requires the name of a module definition
+     * equals to the specified name and that the version of a module definition
+     * to be contained within any of the ranges known to the specified version
+     * constraint.
+     *
+     * @param name the name of the module definition.
+     * @param constraint the {@code VersionConstraint} object.
+     * @return the {@code Query} object.
+     */
+    public static Query module(String name, VersionConstraint constraint) {
+        if (name == null)
+            throw new NullPointerException("name must not be null.");
+        if (constraint == null)
+            throw new NullPointerException("version constraint must not be null.");
+
+        return new ModuleQuery(name, constraint);
     }
 
     /**
@@ -535,7 +603,7 @@ public abstract class Query implements Serializable {
      * exists.
      *
      * @param name the name of the module attribute.
-     * @return the <code>Query</code> object.
+     * @return the {@code Query} object.
      */
     public static Query attribute(String name)  {
         if (name == null)
@@ -550,7 +618,7 @@ public abstract class Query implements Serializable {
      *
      * @param name  the name of the module attribute.
      * @param value the value of the module attribute.
-     * @return the <code>Query</code> object.
+     * @return the {@code Query} object.
      */
     public static Query attribute(String name, String value) {
         if (name == null)
@@ -566,7 +634,7 @@ public abstract class Query implements Serializable {
      * for the specified type.
      *
      * @param annotationClass the Class object corresponding to the annotation type.
-     * @return the <code>Query</code> object.
+     * @return the {@code Query} object.
      */
     public static Query annotation(Class annotationClass) {
         if (annotationClass == null)
@@ -576,11 +644,44 @@ public abstract class Query implements Serializable {
     }
 
     /**
+     * Returns a {@code Query} that requires a module definition to have an
+     * exported package definition of the specified name.
+     *
+     * @param name the name of the package definition.
+     * @return the {@code Query} object.
+     */
+    public static Query exportedPackage(String name) {
+        if (name == null)
+            throw new NullPointerException("name must not be null.");
+
+        return new ExportedPackageQuery(name, VersionConstraint.DEFAULT);
+    }
+
+    /**
+     * Returns a {@code Query} that requires a module definition to have an
+     * exported package definition of the specified name and that the version
+     * of the package definition to be contained within any of the ranges known
+     * to the specified version constraint.
+     *
+     * @param name the name of the package definition
+     * @param constraint the {@code VersionConstraint} object.
+     * @return the {@code Query} object.
+     */
+    public static Query exportedPackage(String name, VersionConstraint constraint) {
+        if (name == null)
+            throw new NullPointerException("name must not be null.");
+        if (constraint == null)
+            throw new NullPointerException("version constraint must not be null.");
+
+        return new ExportedPackageQuery(name, constraint);
+    }
+
+    /**
      * Determine if the specified module definition matches this query.
      *
-     * @param target the <code>ModuleDefinition</code> to be matched.
-     * @return true if the <code>ModuleDefinition</code> matches this
-     *         query.
+     * @param target the {@code ModuleDefinition} to be matched.
+     * @return true if the {@code ModuleDefinition} matches this
+     *         query; otherwise returns false.
      */
     public abstract boolean match(ModuleDefinition target);
 
@@ -590,11 +691,26 @@ public abstract class Query implements Serializable {
      *
      * This method is intended to be used by the repository implementation as
      * an optimization to determine a set of module definitions that matches
-     * this query solely based on the requirement on the module names.
+     * this query,  solely based on the requirement on the module names.
      *
      * @return an unmodifiable set of indexable module names if it exists;
      *         returns null otherwise. If the set is empty, no module
      *         definition would match this query.
      */
-    public abstract Set<String> getIndexableNames();
+    public abstract Set<String> getIndexableModuleNames();
+
+    /**
+     * Returns an unmodifiable set of the indexable names of the package
+     * definitions that is represented by this query.
+     *
+     * This method is intended to be used by the repository implementation as
+     * an optimization to determine a set of module definitions that have
+     * exported package definitions which match this query, solely based on
+     * the requirement on the package names.
+     *
+     * @return an unmodifiable set of indexable package names if it exists;
+     *         returns null otherwise. If the set is empty, no module
+     *         definition would match this query.
+     */
+    public abstract Set<String> getIndexablePackageNames();
 }

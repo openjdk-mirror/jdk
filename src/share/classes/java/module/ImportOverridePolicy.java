@@ -45,14 +45,14 @@ import java.util.Map;
 public interface ImportOverridePolicy {
 
     /**
-     * Returns a map of imported module names and overridden version constraints
-     * for the module definition. The returned map contains the same set of
-     * module names as the given map.
+     * Returns a map of imported module names and overridden version
+     * constraints for the module definition. The returned map contains the
+     * same set of module names as the given map.
      * <p>
      * For each import dependency, the overridden version constraint must be
      * within the boundary of the original version constraint that was
-     * specified in the module definition at build time. Otherwise
-     * module initialization will fail.
+     * specified in the module definition at build time. Otherwise, module
+     * initialization will fail.
      *
      * @param importer the importing module definition.
      * @param constraints an unmodifiable map of imported module names and
@@ -62,5 +62,4 @@ public interface ImportOverridePolicy {
      *         given map.
      */
     public abstract Map<String,VersionConstraint> narrow(ModuleDefinition importer, Map<String,VersionConstraint> constraints);
-
 }

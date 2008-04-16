@@ -31,27 +31,27 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the path relative to the root of the module archive for searching
- * classes and resources. This metadata annotation is applied to the
- * development module, i.e. the <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates the path for searching classes and resources in the module
+ * archive. This metadata annotation is applied to the development module,
+ * i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/webapp/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ClassesDirectoryPath("WEB-INF/classes")
- *    superpackage com.wombat.webapp {
- *       ...
- *    }
+ *    module com.wombat.webapp;
  * </pre></blockquote>
- *
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ClassesDirectoryPath {
 
     /**
-     * The path relative to the root of the module archive for searching
-     * classes and resources.
+     * The path for searching classes and resources in the module archive. It
+     * must be a relative path to the root of the module archive, using
+     * {@code '/'} as path separator and no leading {@code '/'}.
      */
     String value();
 }

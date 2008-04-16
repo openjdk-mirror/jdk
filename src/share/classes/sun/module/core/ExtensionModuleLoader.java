@@ -28,7 +28,7 @@ package sun.module.core;
 import java.io.*;
 import java.module.Module;
 import java.module.ModuleDefinition;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
 import java.module.ModuleInitializationException;
 import java.module.Repository;
 import java.net.URL;
@@ -303,19 +303,19 @@ public final class ExtensionModuleLoader extends SecureClassLoader {
         // and find the one that has the specified native library.
         for (Module m : extensionModules)  {
             final ModuleDefinition md = m.getModuleDefinition();
-            ModuleDefinitionContent content = java.security.AccessController.doPrivileged(
-                new java.security.PrivilegedAction<ModuleDefinitionContent>() {
-                    public ModuleDefinitionContent run() {
-                        return md.getModuleDefinitionContent();
+            ModuleContent content = java.security.AccessController.doPrivileged(
+                new java.security.PrivilegedAction<ModuleContent>() {
+                    public ModuleContent run() {
+                        return md.getModuleContent();
                     }
                 });
-            File lib = content.getNativeLibrary(name);
-            if (lib != null) {
-                try {
+            try {
+                File lib = content.getNativeLibrary(name);
+                if (lib != null) {
                     return lib.getCanonicalPath();
-                } catch (IOException ex) {
-                    // ignore exception
                 }
+            } catch (IOException ex) {
+                // ignore exception
             }
         }
 

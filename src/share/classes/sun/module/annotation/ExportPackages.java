@@ -32,7 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the packages a module definition exports. This metadata annotation
- * is applied to the development module, i.e. the <I>superpackage</I> construct.
+ * is applied to the development module, i.e. the <I>module</I> construct.
  * <p>
  * For example,
  * <blockquote><pre>
@@ -42,9 +42,7 @@ import java.lang.annotation.RetentionPolicy;
  *         "javax.lang.model.element",
  *         "javax.lang.model.type",
  *         "javax.lang.model.util"})
- *     superpackage javax.annotation.processing {
- *        ...
- *     }
+ *     module javax.annotation.processing;
  * </pre></blockquote>
  *
  * XXX This annotation is a workaround for building virtual modules for the
@@ -53,7 +51,7 @@ import java.lang.annotation.RetentionPolicy;
  *
  * @since 1.7
  */
-@Target(ElementType.SUPERPACKAGE)
+@Target(ElementType.MODULE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExportPackages {
 

@@ -32,23 +32,22 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates an attribute of a module definition. This metadata annotation
- * is used as nested annotation inside other enclosing annotations.
- * <p>
- * Module attributes are generally defined by higher layers. To
- * minimize the naming conflicts between module attributes, it is
- * recommended that each module attribute should be defined with a
- * fully qualified name.
- * <p>
- * For examples,
+ * is used as nested annotation inside other enclosing annotations. For
+ * example,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ModuleAttributes({
  *       &#064;ModuleAttribute(name="org.opensource.license", value="GPL"),
  *       &#064;ModuleAttribute(name="java.magic.number", value="CAFEBABE")
  *    })
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
+ * Module attributes are generally defined by higher layers. To minimize the
+ * naming conflicts between module attributes, it is recommended that each
+ * module attribute should be defined with a fully qualified name.
  *
  * @see java.module.annotation.ModuleAttributes
  * @since 1.7
@@ -58,12 +57,12 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ModuleAttribute {
 
     /**
-     * Name of the module attribute.
+     * The name of the module attribute.
      */
     String name();
 
     /**
-     * Value of the module attribute.
+     * The value of the module attribute.
      */
     String value();
 }

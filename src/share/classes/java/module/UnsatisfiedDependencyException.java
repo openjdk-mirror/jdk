@@ -26,11 +26,12 @@
 package java.module;
 
 /**
- * Thrown to indicate that there is an unsatisifed import dependency in a
- * module during resolution.
+ * Thrown to indicate that there is an unsatisifed module dependency during
+ * module initialization.
  *
- * @see java.module.ImportDependency
  * @see java.module.ModuleDefinition
+ * @see java.module.ModuleDependency
+ * @see java.module.ImportPolicy
  *
  * @since 1.7
  */
@@ -39,44 +40,46 @@ public class UnsatisfiedDependencyException extends ModuleInitializationExceptio
     static final long serialVersionUID = -3333250440766142016L;
 
     private final transient ModuleDefinition moduleDef;
-    private final transient ImportDependency importDep;
+    private final transient ModuleDependency moduleDependency;
     private final transient VersionConstraint versionConstraint;
 
     /**
-     * Constructs a <code>UnsatisfiedDependencyException</code> with the
-     * detail message, the specified module definition, the import
-     * dependency, and the override version constraint.
+     * Constructs a {@code UnsatisfiedDependencyException} with the detail
+     * message, the specified module definition, the module dependency, and
+     * the override version constraint.
      *
      * @param s the detail message.
      * @param moduleDef the module definition.
-     * @param importDep the unsatisifed import dependency.
+     * @param moduleDependency the unsatisifed module dependency.
      * @param versionConstraint the override version constraint.
      */
     public UnsatisfiedDependencyException(String s, ModuleDefinition moduleDef,
-            ImportDependency importDep, VersionConstraint versionConstraint) {
+            ModuleDependency moduleDependency, VersionConstraint versionConstraint)
+    {
         super(s);
         this.moduleDef = moduleDef;
-        this.importDep = importDep;
+        this.moduleDependency = moduleDependency;
         this.versionConstraint = versionConstraint;
     }
 
     /**
-     * Constructs a <code>UnsatisfiedDependencyException</code> with the
-     * detail message, the cause, the specified module definition, and the
-     * import dependency, and the override version constraint.
+     * Constructs a {@code UnsatisfiedDependencyException} with the detail
+     * message, the cause, the specified module definition, the module
+     * dependency, and the override version constraint.
      *
      * @param s the detail message.
      * @param cause the cause.
      * @param moduleDef the module definition.
-     * @param importDep the unsatisifed import dependency.
+     * @param moduleDependency the unsatisifed module dependency.
      * @param versionConstraint the override version constraint.
      */
     public UnsatisfiedDependencyException(String s, Throwable cause,
-            ModuleDefinition moduleDef, ImportDependency importDep,
+            ModuleDefinition moduleDef,
+            ModuleDependency moduleDependency,
             VersionConstraint versionConstraint) {
         super(s, cause);
         this.moduleDef = moduleDef;
-        this.importDep = importDep;
+        this.moduleDependency = moduleDependency;
         this.versionConstraint = versionConstraint;
     }
 
@@ -88,10 +91,10 @@ public class UnsatisfiedDependencyException extends ModuleInitializationExceptio
     }
 
     /**
-     * Returns the import dependency of the module definition that is unsatisfied.
+     * Returns the module dependency that is unsatisfied.
      */
-    public ImportDependency getImportDependency() {
-        return importDep;
+    public ModuleDependency getModuleDependency() {
+        return moduleDependency;
     }
 
     /**

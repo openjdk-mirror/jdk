@@ -92,8 +92,8 @@ import java.util.StringTokenizer;
  *   update := digit+
  *   qualifier := (alpha | digit | '-' | '_')+
  * </pre></blockquote>
- * where <code>alpha</code> is an alphabetic character, e.g. a-z, A-Z.
- *       <code>digit</code> is a decimal digit, e.g. 0-9.
+ * where {@code alpha} is an alphabetic character, e.g. {@code a-z, A-Z}.
+ *       {@code digit} is a decimal digit, e.g. {@code 0-9}.
  *
  * <p>Applications can obtain {@code VersionConstraint} objects by calling the
  * {@link #valueOf(String) valueOf()} factory method.
@@ -116,12 +116,14 @@ public final class VersionConstraint implements java.io.Serializable {
      */
     public static final VersionConstraint DEFAULT = VersionConstraint.valueOf("0.0.0.0+");
 
-    // A list of versions and version ranges that are part of the version constraint.
-    // Each versions and version ranges have neither been normalized nor combined.
+    // A list of versions and version ranges that are part of the version
+    // constraint. Each versions and version ranges have neither been
+    // normalized nor combined.
     private transient List<Object> constraints;
 
-    // A list of versions and version ranges that are part of the normalized version constraint.
-    // These versions and version ranges have been normalized and combined if possible.
+    // A list of versions and version ranges that are part of the normalized
+    // version constraint. These versions and version ranges have been
+    // normalized and combined if possible.
     private transient List<Object> normalizedConstraints;
 
     /**
@@ -137,7 +139,7 @@ public final class VersionConstraint implements java.io.Serializable {
      * Returns true if the specified {@code Version} is contained within any of
      * the ranges known to this {@code VersionConstraint}.
      *
-     * @param version the <code>Version</code> object.
+     * @param version the {@code Version} object.
      * @return true if the specified version is contained within any of ranges
      *         known to this version constraint. Otherwise, returns false.
      */
@@ -159,12 +161,13 @@ public final class VersionConstraint implements java.io.Serializable {
     }
 
     /**
-     * Returns true if the specified {@code VersionRange} is contained
-     * within any of the ranges known to this {@code VersionConstraint}.
+     * Returns true if the specified {@code VersionRange} is contained within
+     * any of the ranges known to this {@code VersionConstraint}.
      *
-     * @param versionRange the <code>VersionRange</code> object.
+     * @param versionRange the {@code VersionRange} object.
      * @return true if the specified version range is contained within any of
-     *         ranges known to this version constraint. Otherwise, returns false.
+     *         ranges known to this version constraint. Otherwise, returns
+     *         false.
      */
     private boolean contains(VersionRange versionRange) {
         for (Object cs : normalizedConstraints) {
@@ -182,7 +185,7 @@ public final class VersionConstraint implements java.io.Serializable {
      * Returns true if the specified {@code VersionConstraint} is contained
      * within any of the ranges known to this {@code VersionConstraint}.
      *
-     * @param versionConstraint the <code>VersionConstraint</code> object.
+     * @param versionConstraint the {@code VersionConstraint} object.
      * @return true if the specified version constraint is contained within
      *         any of ranges known to this version constraint. Otherwise,
      *         returns false.
@@ -206,14 +209,14 @@ public final class VersionConstraint implements java.io.Serializable {
     }
 
     /**
-     * Determines if the given {@code VersionConstraint} and {@code
-     * VersionRange} intersect, and if so adds that intersection to {@code
-     * VersionConstraintBuilder}.
+     * Determines if the given {@code VersionConstraint} and
+     * {@code VersionRange} intersect, and if so adds that intersection to
+     * {@code VersionConstraintBuilder}.
      *
-     * @param versionConstraint the <code>VersionConstraint</code> object.
-     * @param versionRange the <code>VersionRange</code> object.
-     * @return the true if the specified version range intersects with
-     *         this version constraint. Otherwise, returns false.
+     * @param versionConstraint the {@code VersionConstraint} object.
+     * @param versionRange the {@code VersionRange} object.
+     * @return the true if the specified version range intersects with this
+     *         version constraint. Otherwise, returns false.
      */
     private static boolean intersection(VersionConstraint versionConstraint,
                                         VersionRange versionRange,
@@ -243,12 +246,12 @@ public final class VersionConstraint implements java.io.Serializable {
     }
 
     /**
-     * Returns a VersionConstraint that represents the intersection between
-     * the specified {@code VersionConstraint} and this {@code
-     * VersionConstraint}.
+     * Returns a {@code VersionConstraint} that represents the intersection
+     * between the specified {@code VersionConstraint} and this
+     * {@code VersionConstraint}.
      *
-     * @param versionConstraint the <code>VersionConstraint</code> object.
-     * @return the version constraint of intersection if the specified  version
+     * @param versionConstraint the {@code VersionConstraint} object.
+     * @return the version constraint of intersection if the specified version
      *         constraint and this version constraint intersect. Otherwise,
      *         returns null.
      */
@@ -285,12 +288,11 @@ public final class VersionConstraint implements java.io.Serializable {
 
     /**
      * Returns a {@code VersionConstraint} object holding the value of the
-     * specified string.
-     * The string must be in the version constraint format and must not
-     * contain any leading or trailing whitespace.
+     * specified string. The string must be in the version constraint format
+     * and must not contain any leading or trailing whitespace.
      *
      * @param versionConstraint the string to be parsed.
-     * @return A <code>VersionConstraint</code> parsed from the string.
+     * @return A {@code VersionConstraint} parsed from the string.
      * @throws IllegalArgumentException if the string cannot be parsed.
      */
     public static VersionConstraint valueOf(String versionConstraint) {
@@ -366,11 +368,10 @@ public final class VersionConstraint implements java.io.Serializable {
     }
 
     /**
-     * Compare two <code>VersionConstraint</code> objects for equality. The result
-     * is <code>true</code> if and only if the argument is not
-     * <code>null</code> and is a <code>VersionConstraint</code> object that
-     * it has the same normalized versions and version ranges as those of
-     * this <code>VersionConstraint</code>.
+     * Compare two {@code VersionConstraint} objects for equality. The result
+     * is {@code true} if and only if the argument is not {@code null} and is
+     * a {@code VersionConstraint} object that it has the same normalized
+     * versions and version ranges as those of this {@code VersionConstraint}.
      *
      * @param obj the object to compare with.
      * @return whether or not the two objects are equal
@@ -391,7 +392,7 @@ public final class VersionConstraint implements java.io.Serializable {
     }
 
     /**
-     * Returns a hash code for this <code>VersionConstraint</code>.
+     * Returns a hash code for this {@code VersionConstraint}.
      *
      * @return a hash code value for this object.
      */
@@ -403,9 +404,9 @@ public final class VersionConstraint implements java.io.Serializable {
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>VersionConstraint</code>'s value. The value is converted to the
-     * version constraint format and returned as a string.
+     * Returns a {@code String} object representing this
+     * {@code VersionConstraint}'s value. The value is converted to the version
+     * constraint format and returned as a string.
      *
      * @return a string representation of the value of this object in the
      *         version constraint format.

@@ -25,7 +25,6 @@
 
 package sun.module.repository.cache;
 
-import java.lang.reflect.Superpackage;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -153,9 +152,9 @@ import sun.module.repository.RepositoryUtils;
             byte[] metadataBytes = JamUtils.getMetadataBytes(f);
 
             // Determines if the MODULE.METADATA file is well-formed
-            Superpackage superPackage = JamUtils.getSuperpackage(metadataBytes);
+            ModuleInfo moduleInfo = ModuleInfo.getModuleInfo(metadataBytes);
 
-            return new LocalModuleDefInfo(entryDirectory, metadataBytes, superPackage, jamFile, codeSigners);
+            return new LocalModuleDefInfo(entryDirectory, metadataBytes, moduleInfo, jamFile, codeSigners);
         } catch (ClassFormatError cfe) {
             throw new IOException("MODULE.METADATA is malformed in " + file.getName(), cfe);
         } finally {
@@ -213,20 +212,20 @@ import sun.module.repository.RepositoryUtils;
         metadataBytes = JamUtils.getInputStreamAsBytes(uc.getInputStream());
 
         // Determines if the MODULE.METADATA file is well-formed
-        Superpackage superPackage = null;
+        ModuleInfo moduleInfo = null;
         try  {
-            superPackage = JamUtils.getSuperpackage(metadataBytes);
+            moduleInfo = ModuleInfo.getModuleInfo(metadataBytes);
         } catch (ClassFormatError cfe)  {
             throw new IOException("MODULE.METADATA is malformed: " + metadataUrl, cfe);
         }
 
         // Checks if module's name and version in MODULE.METADATA are the ones
         // expected.
-        if (superPackage.getName().equals(name) == false) {
+        if (moduleInfo.getName().equals(name) == false) {
             throw new IOException("Unexpected module's name in MODULE.METADATA: " +
-                        superPackage.getName() + " != " + name + ", " + metadataUrl);
+                        moduleInfo.getName() + " != " + name + ", " + metadataUrl);
         }
-        java.module.annotation.Version aversion = superPackage.getAnnotation
+        java.module.annotation.Version aversion = moduleInfo.getAnnotation
             (java.module.annotation.Version.class);
         Version v = Version.DEFAULT;
         if (aversion != null) {
@@ -243,7 +242,7 @@ import sun.module.repository.RepositoryUtils;
 
         // Checks if module's platform and arch in MODULE.METADATA are the ones
         // expected.
-        java.module.annotation.PlatformBinding platformBinding = superPackage.getAnnotation
+        java.module.annotation.PlatformBinding platformBinding = moduleInfo.getAnnotation
             (java.module.annotation.PlatformBinding.class);
         if (platformBinding == null) {
             if (platform != null || arch != null) {
@@ -259,7 +258,7 @@ import sun.module.repository.RepositoryUtils;
         }
 
         File entryDirectory = new File(rootDirectory, "url" + "-" + System.currentTimeMillis());
-        return new URLModuleDefInfo(entryDirectory, metadataBytes, superPackage,
+        return new URLModuleDefInfo(entryDirectory, metadataBytes, moduleInfo,
                                     codebase, path);
     }
 

@@ -48,41 +48,41 @@ public interface ImportPolicy {
      * Returns a list of imported module definitions for preparing this module
      * instance.
      * <p>
-     * The list of import dependencies that is returned from the
-     * <code>getImportDependencies()</code> method of the
-     * <code>ModuleDefinition</code> object only reflects the import
+     * The list of import module dependencies that is returned from the
+     * {@code getImportModuleDependencies()} method of the
+     * {@code ModuleDefinition} object only reflects the import module
      * dependencies with the original version constraints that were specified
      * in the module definition at build time. However, it is possible that
      * deployers might have used the system's import override policy to narrow
      * these version constraints at deployment time to control the actual
      * resolution.
      * <p>
-     * Implementation of the import policy may use the map of imported
-     * module names and overridden version constraints to determine if
-     * the version constraint of an imported module has been overridden.
-     * The map is passed in one of the parameters of this method.
+     * Some implementations may use the map of imported module names and
+     * overridden version constraints to determine if the version constraint of
+     * an imported module has been overridden. The map is passed in one of the
+     * parameters of this method.
      * <p>
-     * Implementation of the import policy may use the default import policy
-     * instance for determining the list of default imported module definitions
-     * for resolving, and it is passed in one of the parameters of this method.
+     * Some implementations may use the default import policy instance for
+     * determining the list of default imported module definitions for
+     * resolving, and it is passed in one of the parameters of this method.
      * <p>
-     * Implementation of the import policy should return a list of imported
-     * module definitions after it resolves the imports. The order of the
-     * imported module definitions in the list must follow the exact
-     * declared order of the corresponding imports. If an import cannot
-     * be resolved and the import dependency is mandatory (i.e. non-optional),
-     * <code>UnsatisfiedDependencyException</code> must be thrown. If an
-     * import cannot be resolved and the import dependency is optional,
-     * <code>null</code> must be used to represent the missing imported module
-     * definition in the list.
+     * All implementations should return a list of imported module
+     * definitions after it resolves the imports. The order of the imported
+     * module definitions in the list must follow the exact declared order of
+     * the corresponding imports. If an import cannot be resolved and the
+     * import dependency is mandatory (i.e. non-optional),
+     * {@code UnsatisfiedDependencyException} must be thrown. If an import
+     * cannot be resolved and the import dependency is optional, {@code null}
+     * must be used to represent the missing imported module definition in the
+     * list.
      *
      * @param moduleDef the module definition of this module instance.
      * @param constraints an unmodifiable map of imported module names and
      *        overridden version constraints.
      * @param defaultImportPolicy the default import policy for this module
      *        instance.
-     * @throws UnsatisfiedDependencyException if an import dependency cannot
-     *         be satisfied.
+     * @throws UnsatisfiedDependencyException if an import module dependency
+     *         cannot be satisfied.
      * @return a list of imported module definitions for preparing this module
      *         instance in the resolving process.
      */

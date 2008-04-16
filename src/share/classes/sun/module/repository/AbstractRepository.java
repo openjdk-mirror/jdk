@@ -293,7 +293,7 @@ abstract class AbstractRepository extends Repository {
                 // Constructs a module definition
                 ModuleDefinition md = Modules.newJamModuleDefinition(
                                             mdInfo.getMetadataBytes(),
-                                            mdInfo.getModuleDefinitionContent(),
+                                            mdInfo.getModuleContent(),
                                             this, true);
                 // Add the module definition into the internal data structure
                 moduleDefs.add(md);
@@ -452,7 +452,7 @@ abstract class AbstractRepository extends Repository {
             // Constructs a module definition from the module archive.
             ModuleDefinition md = Modules.newJamModuleDefinition(
                                     mdInfo.getMetadataBytes(),
-                                    mdInfo.getModuleDefinitionContent(),
+                                    mdInfo.getModuleContent(),
                                     this, true);
 
             // Updates the internal data structures so the repository would
@@ -498,7 +498,7 @@ abstract class AbstractRepository extends Repository {
                 // Constructs a module definition
                 ModuleDefinition md = Modules.newJamModuleDefinition(
                                             mdInfo.getMetadataBytes(),
-                                            mdInfo.getModuleDefinitionContent(),
+                                            mdInfo.getModuleContent(),
                                             this, true);
 
                 // Add the module definition into the internal data structure

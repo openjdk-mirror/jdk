@@ -26,7 +26,7 @@
 package java.module;
 
 /**
- * This class represents a repository event that occurs in the repository.
+ * This class represents a repository event that occurs in a repository.
  *
  * @see java.module.ModuleDefinition
  * @see java.module.ModuleArchiveInfo
@@ -53,12 +53,12 @@ public class RepositoryEvent {
         REPOSITORY_SHUTDOWN,
 
         /**
-         * A module definition has been installed successfully in the repository.
+         * A module definition has been installed successfully in a repository.
          */
         MODULE_INSTALLED,
 
         /**
-         * A module definition has been uninstalled successfully in the repository.
+         * A module definition has been uninstalled successfully in a repository.
          */
         MODULE_UNINSTALLED
     };
@@ -68,7 +68,7 @@ public class RepositoryEvent {
     private ModuleArchiveInfo info;
 
     /**
-     * Constructs a RepositoryEvent object with the specified repository,
+     * Constructs a {@code RepositoryEvent} object with the specified repository,
      * and event type.
      *
      * @param source the repository where the event occurs
@@ -88,7 +88,7 @@ public class RepositoryEvent {
     }
 
     /**
-     * Constructs a RepositoryEvent object with the specified repository,
+     * Constructs a {@code RepositoryEvent} object with the specified repository,
      * event type, and module archive information.
      *
      * @param source the repository where the event occurs
@@ -120,7 +120,7 @@ public class RepositoryEvent {
     }
 
     /**
-     * Returns the repository associated with the event.
+     * Returns the repository where the event occurs.
      */
     public Repository getSource() {
         return source;
@@ -134,10 +134,9 @@ public class RepositoryEvent {
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>RepositoryEvent</code>.
+     * Returns a {@code String} object representing this {@code RepositoryEvent}.
      *
-     * @return a string representation of the <code>RepositoryEvent</code> object.
+     * @return a string representation of the {@code RepositoryEvent} object.
      */
     @Override
     public String toString() {

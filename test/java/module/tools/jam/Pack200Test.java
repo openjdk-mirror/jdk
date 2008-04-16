@@ -41,7 +41,7 @@ import sun.module.tools.Jam;
 public class Pack200Test {
     private final static String jamName = "tmp.hello.jam";
     private final static String packgzName = "hello.jam.pack.gz";
-    private final static String superpackageName = "hello";
+    private final static String moduleName = "hello";
     private static File srcDir;
     private static File scratchDir;
 
@@ -55,30 +55,30 @@ public class Pack200Test {
 
         try {
             // Compile the source files
-            File modSrcFile = new File(srcDir, superpackageName + File.separator + "super_package.java");
-            File classSrcFile = new File(srcDir, superpackageName + File.separator + "Main.java");
+            File modSrcFile = new File(srcDir, moduleName + File.separator + "module_info.java");
+            File classSrcFile = new File(srcDir, moduleName + File.separator + "Main.java");
             JamBuilder.compileFile(modSrcFile, scratchDir);
             JamBuilder.compileFile(classSrcFile, scratchDir);
 
-            // Create a pack200-gzipped jam file from the superpackage and
+            // Create a pack200-gzipped jam file from the module-info and
             // the classes. The command is equivalent to:
             //
             //    jam cfsS {test.scratch}/hello.jam.pack.gz hello {test.scratch} \
             //             -C {test.scratch} hello/Main.class \
-            //             -C {test.scratch} hello/super_package.class
+            //             -C {test.scratch} hello/module_info.class
             //
             List<String> argList = new ArrayList<String>();
             argList = new ArrayList<String>();
             argList.add("cfsS");
             argList.add(new File(scratchDir, packgzName).getCanonicalPath());
-            argList.add(superpackageName);
+            argList.add(moduleName);
             argList.add(scratchDir.getCanonicalPath());
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
-            argList.add(superpackageName + File.separator + "Main.class");
+            argList.add(moduleName + File.separator + "Main.class");
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
-            argList.add(superpackageName + File.separator + "super_package.class");
+            argList.add(moduleName + File.separator + "module_info.class");
 
             String jamArgs[] = new String[argList.size()];
             jamArgs = argList.toArray(jamArgs);
@@ -117,7 +117,7 @@ public class Pack200Test {
                     || name.equals("MODULE-INF/")
                     || name.equals("MODULE-INF/MODULE.METADATA")
                     || name.equals("hello/Main.class")
-                    || name.equals("hello/super_package.class")) == false) {
+                    || name.equals("hello/module_info.class")) == false) {
                     fail("Unexpected entry: " + name);
                 }
                 if (je.isDirectory() == false && je.getSize() <= 0) {

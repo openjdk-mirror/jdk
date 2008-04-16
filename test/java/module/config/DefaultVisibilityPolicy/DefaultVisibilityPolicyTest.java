@@ -27,7 +27,9 @@ import java.io.FileNotFoundException;
 import java.module.ImportDependency;
 import java.module.Modules;
 import java.module.ModuleDefinition;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
+import java.module.ModuleSystem;
+import java.module.PackageDefinition;
 import java.module.Repository;
 import java.module.Version;
 import java.module.VersionConstraint;
@@ -87,6 +89,16 @@ public class DefaultVisibilityPolicyTest {
         }
 
         @Override
+        public Set<PackageDefinition> getMemberPackageDefinitions() {
+            return Collections.unmodifiableSet(new HashSet<PackageDefinition>());
+        }
+
+        @Override
+        public Set<PackageDefinition> getExportedPackageDefinitions() {
+            return Collections.unmodifiableSet(new HashSet<PackageDefinition>());
+        }
+
+        @Override
         public Set<String> getMemberClasses() {
             return Collections.unmodifiableSet(new HashSet<String>());
         }
@@ -116,7 +128,12 @@ public class DefaultVisibilityPolicyTest {
         }
 
         @Override
-        public ModuleDefinitionContent getModuleDefinitionContent() {
+        public ModuleSystem getModuleSystem() {
+            return null;
+        }
+
+        @Override
+        public ModuleContent getModuleContent() {
             return null;
         }
 

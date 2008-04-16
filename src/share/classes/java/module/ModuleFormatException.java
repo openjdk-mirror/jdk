@@ -28,8 +28,8 @@ package java.module;
 import java.io.IOException;
 
 /**
- * Thrown to indicate that the format of the module archive is not recognized
- * or supported.
+ * Thrown to indicate that the format of the module archive is neither
+ * recognized nor supported.
  *
  * @since 1.7
  */
@@ -38,8 +38,8 @@ public class ModuleFormatException extends java.io.IOException {
     private static final long serialVersionUID = 3913242042315331551L;
 
     /**
-     * Constructs a <code>ModuleFormatException</code> the
-     * specified detail message.
+     * Constructs a {@code ModuleFormatException} with the specified detail
+     * message.
      *
      * @param s the detail message.
      */
@@ -48,8 +48,8 @@ public class ModuleFormatException extends java.io.IOException {
     }
 
     /**
-     * Constructs a <code>ModuleFormatException</code> the
-     * specified detail message and cause.
+     * Constructs a {@code ModuleFormatException} with the specified detail
+     * message and cause.
      *
      * @param s the detail message.
      * @param cause the cause.

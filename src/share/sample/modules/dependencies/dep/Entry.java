@@ -41,7 +41,7 @@ import hello.Main;
  *
  * This causes the module and its dependencies to be downloaded and executed.
  * Note that the module system automatically determines from the information
- * declared in the superpackage file that the "hello" module is a dependency
+ * declared in the module info file that the "hello" module is a dependency
  * and downloads and initializes it as well.
  *
  * (Note: running with a security manager is not yet supported. Execute

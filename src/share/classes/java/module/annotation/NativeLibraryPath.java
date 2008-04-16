@@ -31,22 +31,21 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the path relative to the root of the module archive for searching
- * native libraries for a particular platform and architecture. This metadata
- * annotation is used as nested annotation inside other enclosing annotations.
- * <p>
- * For example,
+ * Indicates the path for searching native libraries in the module archive for
+ * a particular platform and architecture. This metadata annotation is used as
+ * nested annotation inside other enclosing annotations. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/sun/java3d/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;NativeLibraryPaths({
  *       &#064;NativeLibraryPath(platform="windows", arch="x86", path="native/windows-x86"),
  *       &#064;NativeLibraryPath(platform="linux", arch="x86", path="native/linux-x86"),
  *       &#064;NativeLibraryPath(platform="solaris", arch="sparc", path="native/solaris-sparc"),
  *    })
- *    superpackage com.sun.java3d {
- *       ...
- *    }
+ *    module com.sun.java3d;
  * </pre></blockquote>
- *
  * @see java.module.annotation.NativeLibraryPaths
  * @since 1.7
  */
@@ -55,20 +54,21 @@ import java.lang.annotation.RetentionPolicy;
 public @interface NativeLibraryPath {
 
     /**
-    * Name of the platform. It should be one of the possible values
-     * of the system property "os.platform".
+     * The name of the platform. It should be one of the possible values of the
+     * system property {@code "os.platform"}.
      */
     String platform();
 
     /**
-     * Name of the architecture. It should be one of the possible
-     * values of the system property "os.arch".
+     * The name of the architecture. It should be one of the possible values of
+     * the system property {@code "os.arch"}.
      */
     String arch();
 
     /**
-     * The path relative to the root of the module archive for searching native
-     * library.
+     * The path for searching native libraries in the module archive. It must
+     * be a relative path to the root of the module archive, using {@code '/'}
+     * as path separator and no leading {@code '/'}.
      */
     String path();
 }

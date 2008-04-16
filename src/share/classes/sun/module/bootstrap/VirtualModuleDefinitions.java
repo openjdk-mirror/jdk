@@ -33,7 +33,7 @@ import java.io.InputStream;
 import java.io.File;
 import java.module.Modules;
 import java.module.ModuleDefinition;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
 import java.module.annotation.ImportModule;
 import java.module.annotation.ImportModules;
 import java.module.annotation.Version;
@@ -368,7 +368,7 @@ public final class VirtualModuleDefinitions {
             byte[] metadata = getBytes(clazz);
             try {
                 moduleDefs.add(Modules.newJamModuleDefinition(metadata,
-                    new DummyModuleDefinitionContent(),
+                    new DummyModuleContent(),
                     BootstrapRepository.getInstance(),
                     false));
             } catch (Exception e) {
@@ -409,24 +409,24 @@ public final class VirtualModuleDefinitions {
     }
 
     /**
-     * Dummy module definition content.
+     * Dummy module content.
      *
      * This class is never used during normal operation (the ClassLoader of the
      * virtual module), so it is currently a dummy implementation that does
      * nothing.
      *
-     * XXX It should probably be fixed later on when we have superpackages in
+     * XXX It should probably be fixed later on when we have real modules in
      * place.
      */
-    private static final class DummyModuleDefinitionContent extends ModuleDefinitionContent {
+    private static final class DummyModuleContent extends ModuleContent {
 
-        DummyModuleDefinitionContent() {
+        DummyModuleContent() {
             // empty
         }
 
         @Override
-        public boolean hasEntry(String name) {
-            return false;
+        public boolean hasEntry(String name) throws IOException {
+            throw new IOException();
         }
 
         @Override
@@ -435,8 +435,8 @@ public final class VirtualModuleDefinitions {
         }
 
         @Override
-        public Set<String> getEntryNames() {
-            return Collections.emptySet();
+        public Set<String> getEntryNames() throws IOException {
+            throw new IOException();
         }
 
         @Override

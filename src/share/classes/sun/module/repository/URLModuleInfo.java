@@ -33,10 +33,10 @@ import java.module.Version;
  * <tt>java.module.RepositoryMetada.xml</tt>.
  * @since 1.7
  */
-public class ModuleInfo {
+public class URLModuleInfo {
     // These fields are a reflection of the information in a
     // repository-metadata.xml file.  They're not private so they can
-    // be accessed by subclasses e.g. {@code ModuleInfoXMLReader.MutableModuleInfo}.
+    // be accessed by subclasses e.g. {@code MetadataXMLReader.MutableURLModuleInfo}.
     String name;
     Version version;
     String platform;
@@ -45,11 +45,11 @@ public class ModuleInfo {
 
     /**
      * Having this constructor restricts its use to subclasses in this package,
-     * specifically to {@code MetadataXMLReader.MutableModuleInfo}.
+     * specifically to {@code MetadataXMLReader.MutableURLModuleInfo}.
      **/
-    ModuleInfo() { }
+    URLModuleInfo() { }
 
-    ModuleInfo(ModuleInfo other) {
+    URLModuleInfo(URLModuleInfo other) {
         this.name = other.name;
         this.version = other.version;
         this.platform = other.platform;
@@ -57,7 +57,7 @@ public class ModuleInfo {
         this.path = other.path;
     }
 
-    ModuleInfo(String name, Version version, String platform, String arch, String path) {
+    URLModuleInfo(String name, Version version, String platform, String arch, String path) {
         if ((platform == null ^ arch == null)) {
             throw new IllegalArgumentException(
                 "module platform and name must be either both provided, or neither provided");
@@ -80,7 +80,7 @@ public class ModuleInfo {
         this.path = path;
     }
 
-    ModuleInfo(ModuleArchiveInfo mai) {
+    URLModuleInfo(ModuleArchiveInfo mai) {
         name = mai.getName();
         version = mai.getVersion();
         platform = mai.getPlatform();
@@ -120,13 +120,13 @@ public class ModuleInfo {
         }
     }
 
-    /** Two ModuleInfo's are equal iff all fields are equal. */
+    /** Two URLModuleInfo's are equal iff all fields are equal. */
     public boolean equals(Object other) {
-        if (other == null || !(other instanceof ModuleInfo)) {
+        if (other == null || !(other instanceof URLModuleInfo)) {
             return false;
         }
 
-        ModuleInfo mi = (ModuleInfo) other;
+        URLModuleInfo mi = (URLModuleInfo) other;
         if (!name.equals(mi.name) || !version.equals(mi.version)) {
             return false;
         }
@@ -154,7 +154,7 @@ public class ModuleInfo {
         return true;
     }
 
-    /** A ModuleInfo's hash code is based on all fields except {@code path}. */
+    /** A URLModuleInfo's hash code is based on all fields except {@code path}. */
     public int hashCode() {
         int rc = name.hashCode();
         rc = 31 * rc + version.hashCode();
@@ -171,7 +171,7 @@ public class ModuleInfo {
     public String toString() {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("ModuleInfo[name=");
+        builder.append("URLModuleInfo[name=");
         builder.append(name);
         builder.append(",version=");
         builder.append(version);

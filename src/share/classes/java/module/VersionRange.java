@@ -67,7 +67,7 @@ class VersionRange implements Comparable<VersionRange>  {
     private final Version normalizedUpperBound;
 
     /**
-     * Constructs a new <code>VersionRange</code> instance.
+     * Constructs a new {@code VersionRange} instance.
      * <p>
      * The qualifiers in the lower bound and the upper bound are ignored.
      * <pre>
@@ -82,7 +82,8 @@ class VersionRange implements Comparable<VersionRange>  {
      * @param upperBound the upper bound version in the version range.
      * @param upperBoundInclusive the inclusiveness of the upper bound version.
      * @throws NullPointerException if lowerBound is null or upperBound is null.
-     * @throws IllegalArgumentException if the lowerBound is greater than the upperBound.
+     * @throws IllegalArgumentException if the lowerBound is greater than the
+     *         upperBound.
      */
     private VersionRange(Version lowerBound, boolean lowerBoundInclusive,
             Version upperBound, boolean upperBoundInclusive) {
@@ -140,11 +141,11 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Constructs a new <code>VersionRange</code> instance.
+     * Constructs a new {@code VersionRange} instance.
      * <p>
-     * The lower bound is assumed to be inclusive, and the upper bound is assumed
-     * to be infinity and exclusive. The qualifiers in the lower bound and the
-     * upper bound are ignored.
+     * The lower bound is assumed to be inclusive, and the upper bound is
+     * assumed to be infinity and exclusive. The qualifiers in the lower
+     * bound and the upper bound are ignored.
      * <pre>
      *      a.b.c.d+    ~   [a.b.c.d, infinity)   ~   a.b.c.d <= x < infinity
      * </pre>
@@ -170,19 +171,21 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Constructs a new <code>VersionRange</code> instance.
+     * Constructs a new {@code VersionRange} instance.
      * <p>
-     * The lower bound is assumed to be inclusive, and the upper bound is assumed
-     * to be exclusive. The qualifiers in the lower bound and the upper bound
-     * are ignored.
+     * The lower bound is assumed to be inclusive, and the upper bound is
+     * assumed to be exclusive. The qualifiers in the lower bound and the
+     * upper bound are ignored.
      * <pre>
      *      [a.b.c.d, p.q.r.s)    ~   a.b.c.d <= x < p.q.r.s
      * </pre>
      *
      * @param lowerBound the lower bound version in the version range.
      * @param upperBound the upper bound version in the version range.
-     * @throws NullPointerException if lowerBound is null or upperBound is null.
-     * @throws IllegalArgumentException if the lowerBound is greater than the upperBound.
+     * @throws NullPointerException if lowerBound is null or upperBound is
+     *         null.
+     * @throws IllegalArgumentException if the lowerBound is greater than
+     *         the upperBound.
      */
     private VersionRange(Version lowerBound, Version upperBound) {
         this(lowerBound, true, upperBound, false);
@@ -201,17 +204,16 @@ class VersionRange implements Comparable<VersionRange>  {
      * Returns true if the lower bound version in the version range is
      * inclusive.
      *
-     * @return true if the lower bound version is inclusive. Otherwise, returns
-     *         false.
+     * @return true if the lower bound version is inclusive. Otherwise,
+     *         returns false.
      */
     boolean isLowerBoundInclusive() {
         return lowerBoundInclusive;
     }
 
     /**
-     * Returns the upper bound version in the version range.
-     *
-     * If upper bound version is <code>null</code>, the upper bound is infinity.
+     * Returns the upper bound version in the version range. If upper bound
+     * version is {@code null}, the upper bound is infinity.
      *
      * @return the upper bound version.
      */
@@ -268,13 +270,12 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Parses a string according to the version range format. The string
-     * must not contain any leading or trailing whitespace.
+     * Parses a string according to the version range format. The string must
+     * not contain any leading or trailing whitespace.
      *
      * @param versionRange the string to be parsed.
-     * @return A <code>Version</code> parsed from the string.
-     * @throws IllegalArgumentException if the string cannot be
-     *         parsed.
+     * @return A {@code Version} parsed from the string.
+     * @throws IllegalArgumentException if the string cannot be parsed.
      */
     static VersionRange parse(String versionRange) {
 
@@ -357,7 +358,7 @@ class VersionRange implements Comparable<VersionRange>  {
     /**
      * Returns true if the specified version range is within this version range.
      *
-     * @param versionRange the <code>VersionRange</code> object.
+     * @param versionRange the {@code VersionRange} object.
      * @return true if the specified version range is within this version
      *         range. Otherwise, returns false.
      */
@@ -385,7 +386,7 @@ class VersionRange implements Comparable<VersionRange>  {
     /**
      * Returns true if the specified version is within this version range.
      *
-     * @param version the <code>Version</code> object.
+     * @param version the {@code Version} object.
      * @return true if the specified version is within this version range.
      *         Otherwise, returns false.
      */
@@ -408,9 +409,10 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Returns true if the specified version range intersects with this version range.
+     * Returns true if the specified version range intersects with this version
+     * range.
      *
-     * @param versionRange the <code>VersionRange</code> object.
+     * @param versionRange the {@code VersionRange} object.
      * @return true if the specified version range intersects with this version
      *         range. Otherwise, returns false.
      */
@@ -430,8 +432,8 @@ class VersionRange implements Comparable<VersionRange>  {
      * Intersects two version ranges and returns the version range of
      * intersection.
      *
-     * @param versionRange1 the <code>VersionRange</code> object.
-     * @param versionRange2 another <code>VersionRange</code> object.
+     * @param versionRange1 the {@code VersionRange} object.
+     * @param versionRange2 another {@code VersionRange} object.
      * @return the version range of intersection between two version ranges.
      *         Otherwise, returns null.
      */
@@ -451,7 +453,8 @@ class VersionRange implements Comparable<VersionRange>  {
         Version upperBound = null;
 
         // The version ranges overlap, so the largest of the two lower bounds
-        // of the version ranges is the lower bound of the intersecting version range.
+        // of the version ranges is the lower bound of the intersecting version
+        // range.
         //
         if (versionRange1.getNormalizedLowerBound().compareTo
             (versionRange2.getNormalizedLowerBound()) <= 0) {
@@ -461,7 +464,8 @@ class VersionRange implements Comparable<VersionRange>  {
         }
 
         // The version ranges overlap, so the smallest of the two upper bounds
-        // of the version ranges is the upper bound of the intersecting version range.
+        // of the version ranges is the upper bound of the intersecting version
+        // range.
         //
         if (versionRange1.getNormalizedUpperBound() != null
             && versionRange2.getNormalizedUpperBound() != null) {
@@ -487,10 +491,11 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Merges two version ranges together and returns the combined version range.
+     * Merges two version ranges together and returns the combined version
+     * range.
      *
-     * @param versionRange1 the <code>VersionRange</code> object.
-     * @param versionRange2 another <code>VersionRange</code> object.
+     * @param versionRange1 the {@code VersionRange} object.
+     * @param versionRange2 another {@code VersionRange} object.
      * @return the merged version range.
      * @throws IllegalArgumentException if two version ranges have no
      *   intersection or are not contiguous.
@@ -581,7 +586,7 @@ class VersionRange implements Comparable<VersionRange>  {
     /**
      * Returns a normalized version range.
      *
-     * This method is used by java.module.VersionConstraint.
+     * This method is used by {code java.module.VersionConstraint}.
      */
     VersionRange normalize() {
 
@@ -599,9 +604,10 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Return a <code>VersionConstraint</code> object that represents this version range.
+     * Return a {@code VersionConstraint} object that represents this version
+     * range.
      *
-     * @return a <code>VersionConstraint</code> object.
+     * @return a {@code VersionConstraint} object.
      */
     VersionConstraint toVersionConstraint() {
         VersionConstraintBuilder builder = new VersionConstraintBuilder();
@@ -610,17 +616,17 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Compare two <code>VersionRange</code> objects.
+     * Compare two {@code VersionRange} objects.
      *
-     * @param versionRange the <code>VersionRange</code> to be compared.
-     * @return the value 0 if the argument <code>Version</code> is equal to
-     *         this <code>VersionRange</code>; a value less than 0 if this
-     *         <code>VersionRange</code> is less than the
-     *         <code>VersionRange</code> argument; and a value greater than 0
-     *         if this <code>VersionRange</code> is greater than the
-     *         <code>VersionRange</code> argument.
+     * @param versionRange the {@code VersionRange} to be compared.
+     * @return the value 0 if the argument {@code Version} is equal to this
+     *         {@code VersionRange}; a value less than 0 if this
+     *         {@code VersionRange} is less than the {@code VersionRange}
+     *         argument; and a value greater than 0 if this
+     *         {@code VersionRange} is greater than the
+     *         {@code VersionRange} argument.
      */
-    // @Override // javac 5.0 bug
+    @Override
     public int compareTo(VersionRange versionRange)   {
         if (this == versionRange)
             return 0;
@@ -644,11 +650,11 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Compare two <code>VersionRange</code> objects for equality. The result
-     * is <code>true</code> if and only if the argument is not
-     * <code>null</code> and is a <code>VersionRange</code> object that
-     * lowerBound, lowerBoundInclusive, upperBound, and upperBoundInclusive
-     * the same as those of this <code>VersionRange</code>.
+     * Compare two {@code VersionRange} objects for equality. The result is
+     * {@code true} if and only if the argument is not {@code null} and is a
+     * {@code VersionRange} object that lowerBound, lowerBoundInclusive,
+     * upperBound, and upperBoundInclusive the same as those of this
+     * {@code VersionRange}.
      *
      * @param obj the object to compare with.
      * @return whether or not the two objects are equal
@@ -677,7 +683,7 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Returns a hash code for this <code>VersionRange</code>.
+     * Returns a hash code for this {@code VersionRange}.
      *
      * @return a hash code value for this object.
      */
@@ -690,9 +696,9 @@ class VersionRange implements Comparable<VersionRange>  {
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>VersionRange</code>'s value. The value is converted to
-     * the version range format and returned as a string.
+     * Returns a {@code String} object representing this {@code VersionRange}'s
+     * value. The value is converted to the version range format and returned
+     * as a string.
      *
      * @return a string representation of the value of this object in the
      *         version range format.

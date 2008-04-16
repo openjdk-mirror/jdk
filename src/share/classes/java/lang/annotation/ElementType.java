@@ -61,6 +61,10 @@ public enum ElementType {
     /** Package declaration */
     PACKAGE,
 
-    /** Superpackage declaration */
-    SUPERPACKAGE
+    /**
+     * Module declaration
+     *
+     * @since 1.7
+     */
+    MODULE
 }

@@ -31,22 +31,21 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the classes in the legacy JAR libraries embedded in a module
- * definition are exported. This metadata annotation is applied to
- * the development module, i.e. the <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates the legacy classes are exported from a module definition. A legacy
+ * class is exportable if it is a public class that does not have any module
+ * membership. This metadata annotation is applied to the development module,
+ * i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
+ *     //
+ *     // com/wombat/xyz/module-info.java
+ *     //
+ *     &#064;Version("1.0.0")
  *     &#064;ExportLegacyClasses
- *     superpackage com.wombat.xyz {
- *        ...
- *     }
+ *     module com.wombat.xyz;
  * </pre></blockquote>
- *
- * @see java.module.annotation.LegacyClasses
  * @since 1.7
  */
-@Target(ElementType.SUPERPACKAGE)
+@Target(ElementType.MODULE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExportLegacyClasses {
 }

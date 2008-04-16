@@ -79,7 +79,7 @@ public class BasicLauncherTests {
     final static String JAM_VERSION = "1.0.0.0";
     final static String JAM_SEP     = "-";
     final static String REPO_XML    = "repository-metadata.xml";
-    final static String SP_NAME     = "super_package";
+    final static String SP_NAME     = "module_info";
     final static String REPODIRNAME = "repodir";
     final static String T1_JAM      = "t1" + JAM_EXT;
     final static String T1_PACK     = "t1" + JAM_EXT + PACK_EXT;
@@ -197,7 +197,7 @@ public class BasicLauncherTests {
         out = new StringBuilder();
         out = out.append(WARNING_HEADER);
         out = out.append("package " + pkg + ";\n");
-        out = out.append("import java.lang.reflect.Superpackage.*;\n");
+        out = out.append("import java.lang.ModuleInfo.*;\n");
         out = out.append("import java.module.annotation.*;\n");
         out = out.append("@Version(\"" + Version.valueOf(JAM_VERSION) +"\")\n");
         out = out.append("@MainClass(\"" + pkg + "." + klass + "\")\n");

@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.FilePermission;
 import java.module.Module;
 import java.module.ModuleDefinition;
-import java.module.ModuleDefinitionContent;
 import java.module.ModuleInitializationException;
 import java.module.Repository;
 import java.net.URL;

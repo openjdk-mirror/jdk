@@ -33,35 +33,37 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Indicates the version of a module definition. The version format must follow the
  * one described in the {@link java.module.Version} class. This metadata annotation
- * is applied to the development module, i.e. the <I>superpackage</I> construct.
- * <p>
+ * is applied to the development module, i.e. the <I>module</I> construct.
  * For examples,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/xyz/module-info.java
+ *    //
  *    &#064;Version("1.0.0")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  *
+ *    //
+ *    // org/foo/bar/module-info.java
+ *    //
  *    &#064;Version("2.3.4-b17-beta")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module org.foo.bar;
  *
+ *    //
+ *    // p/q/r/module-info.java
+ *    //
  *    &#064;Version("3.4.5.6-b44-rc")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module p.q.r;
  * </pre></blockquote>
  *
  * @see java.module.Version
  * @since 1.7
  */
-@Target({ElementType.TYPE, ElementType.SUPERPACKAGE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Version {
 
     /**
-     * Version of the module definition.
+     * The version of the module definition.
      */
     String value();
 }

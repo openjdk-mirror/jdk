@@ -23,21 +23,21 @@
 
 package hello;
 
-import java.lang.reflect.Superpackage.*;
+import java.lang.ModuleInfo.*;
 import java.module.annotation.*;
 
 /**
- * Declare the superpackage "hello" with its exported class "hello.Main".
+ * Declare the module "hello" with its exported class "hello.Main".
  *
- * <p>This is a emulation of a superpackage definition. It will be changed to
- * the proper format once superpackages are supported by javac.
+ * <p>This is a emulation of a module definition. It will be changed to
+ * the proper format once modules are supported by javac.
  */
 @MainClass("hello.Main")
-@Version("1.0")
 @ImportModules({
     @ImportModule(name="java.se")
 })
-// XXX: Syntax will be replaced by JSR 294
-class super_package {
+@Version("1.0")
+class module_info {
+
     exports hello$Main;
 }

@@ -28,6 +28,9 @@ package java.module;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,8 +63,8 @@ import java.util.regex.Pattern;
  *    update := digit+
  *    qualifier := (alpha | digit | '-' | '_')+
  * </pre></blockquote>
- * where <code>alpha</code> is an alphabetic character, e.g. a-z, A-Z.
- *       <code>digit</code> is a decimal digit, e.g. 0-9.
+ * where {@code alpha} is an alphabetic character, e.g. {@code a-z, A-Z}.
+ *       {@code digit} is a decimal digit, e.g. {@code 0-9}.
  *
  * <p>Instances of this class are immutable and safe for concurrent use by
  * multiple threads.
@@ -95,23 +98,19 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      * A {@code Version} object that represents the default version
      * "0.0.0.0-default".
      */
-    public static final Version DEFAULT = new Version(0, 0, 0, 0, "default");
+    public static final Version DEFAULT = new Version(new int[4], "default");
 
-    private int major;
-    private int minor;
-    private int micro;
-    private int update;
-    private String qualifier;
+    private transient int[] components;
+    private transient String qualifier;
 
     /**
-     * Returns a {@code Version} object holding the value of the specified string.
-     * The string must be in the version format and must not
-     * contain any leading or trailing whitespace.
+     * Returns a {@code Version} object holding the value of the specified
+     * string. The string must be in the version format and must not contain
+     * any leading or trailing whitespace.
      *
      * @param version the string to be parsed.
-     * @return a <code>Version</code> parsed from the string.
-     * @throws IllegalArgumentException if
-     *      the string cannot be parsed.
+     * @return a {@code Version} parsed from the string.
+     * @throws IllegalArgumentException if the string cannot be parsed.
      */
     public static Version valueOf(String version) {
         // we could add a basic caching scheme here to reuse Version objects
@@ -131,22 +130,21 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
             version = version.substring(0, qualifierIndex);
         }
 
-        // Parse major, minor, micro, update versions
+        // Parse major, minor, micro, update versions ...
         StringTokenizer st = new StringTokenizer(version, ".");
-        int major = convertVersionNumber(st.nextToken());
-        int minor = 0;
-        int micro = 0;
-        int update = 0;
-        if (st.hasMoreTokens())
-            minor = convertVersionNumber(st.nextToken());
+        List<Integer> numberList = new ArrayList<Integer>();
+        while (st.hasMoreTokens()) {
+            numberList.add(convertVersionNumber(st.nextToken()));
+        }
 
-        if (st.hasMoreTokens())
-            micro = convertVersionNumber(st.nextToken());
+        // Copy the version numbers into an array of int
+        Integer[] numbers = numberList.toArray(new Integer[0]);
+        int[] components = new int[numbers.length > 4 ? numbers.length : 4];
+        for (int i=0; i < numbers.length; i++) {
+            components[i] = numbers[i];
+        }
 
-        if (st.hasMoreTokens())
-            update = convertVersionNumber(st.nextToken());
-
-        return Version.valueOf(major, minor, micro, update, qualifier);
+        return new Version(components, qualifier);
     }
 
     /**
@@ -157,8 +155,8 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      * @param major the major version number.
      * @param minor the minor version number.
      * @param micro the micro version number.
-     * @throws IllegalArgumentException if major, minor, or micro
-     *         is negative.
+     * @throws IllegalArgumentException if major, minor, or micro is
+     *         negative.
      */
     public static Version valueOf(int major, int minor, int micro) {
         return Version.valueOf(major, minor, micro, 0, null);
@@ -173,8 +171,8 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      * @param minor the minor version number.
      * @param micro the micro version number.
      * @param qualifier the qualifier
-     * @throws IllegalArgumentException if major or minor or micro
-     *         is negative, or qualifier contains illegal character.
+     * @throws IllegalArgumentException if major or minor or micro is
+     *         negative, or qualifier contains illegal character.
      */
     public static Version valueOf(int major, int minor, int micro, String qualifier) {
         return Version.valueOf(major, minor, micro, 0, qualifier);
@@ -189,8 +187,8 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      * @param minor the minor version number.
      * @param micro the micro version number.
      * @param update the update version number.
-     * @throws IllegalArgumentException if major or minor or micro
-     *         or update is negative.
+     * @throws IllegalArgumentException if major or minor or micro or update is
+     *         negative.
      */
     public static Version valueOf(int major, int minor, int micro, int update) {
         return Version.valueOf(major, minor, micro, update, null);
@@ -204,85 +202,84 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      * @param micro the micro version number.
      * @param update the update version number.
      * @param qualifier the qualifier
-     * @throws IllegalArgumentException if major, minor, micro,
-     *         or update is negative, or if qualifier contains illegal characters.
+     * @throws IllegalArgumentException if major, minor, micro, or update is
+     *         negative, or if qualifier contains illegal characters.
      */
     public static Version valueOf(int major, int minor, int micro, int update, String qualifier) {
         // we could add a basic caching scheme here to reuse Version objects
-        return new Version(major, minor, micro, update, qualifier);
+        int[] components = new int[4];
+        components[0] = major;
+        components[1] = minor;
+        components[2] = micro;
+        components[3] = update;
+
+        return new Version(components, qualifier);
     }
 
     /**
-     * Constructs a new <code>Version</code> instance.
-     * This constructor is for use by subclasses. Applications should use
-     * one of the {@link #valueOf(int,int,int) valueOf()} factory methods to
-     * obtain {@code Version} instances.
+     * Constructs a new {@code Version} instance.
      *
-     * @param major the major version number.
-     * @param minor the minor version number.
-     * @param micro the micro version number.
-     * @param update the update version number.
+     * @param components an array of version number
      * @param qualifier the qualifier
-     * @throws IllegalArgumentException if major, minor, micro,
-     *         or update are negative, or if qualifier contains illegal character.
+     * @throws IllegalArgumentException if any version number is negative, or
+     *         if qualifier contains illegal character.
      */
-    protected Version(int major, int minor, int micro, int update, String qualifier) {
-        if (major < 0)
-            throw new IllegalArgumentException("Major version number must not be negative: " + major);
+    private Version(int[] components, String qualifier) {
+        if (components[0] < 0)
+            throw new IllegalArgumentException("Major version number must not be negative: " + components[0]);
 
-        if (minor < 0)
-            throw new IllegalArgumentException("Minor version number must not be negative: " + minor);
+        if (components[1] < 0)
+            throw new IllegalArgumentException("Minor version number must not be negative: " + components[1]);
 
-        if (micro < 0)
-            throw new IllegalArgumentException("Micro version number must not be negative: " + micro);
+        if (components[2] < 0)
+            throw new IllegalArgumentException("Micro version number must not be negative: " + components[2]);
 
-        if (update < 0)
-            throw new IllegalArgumentException("Update version number must not be negative: " + update);
+        if (components[3] < 0)
+            throw new IllegalArgumentException("Update version number must not be negative: " + components[3]);
 
         if (qualifier != null && qualifierPattern.matcher(qualifier).matches() == false)
             throw new IllegalArgumentException("qualifier must contain only legal character: " + qualifier);
 
-        this.major = major;
-        this.minor = minor;
-        this.micro = micro;
-        this.update = update;
+        // this constructor is private, and it claims the ownership of
+        // the components that was passed in.
+        this.components = components;
         this.qualifier = qualifier;
     }
 
     /**
-     * Returns the major number in the version.
+     * Returns the major version number.
      *
-     * @return the major version.
+     * @return the major version number.
      */
     public int getMajorNumber() {
-        return major;
+        return components[0];
     }
 
     /**
-     * Returns the minor number in the version.
+     * Returns the minor version number.
      *
-     * @return the minor version.
+     * @return the minor version number.
      */
     public int getMinorNumber() {
-        return minor;
+        return components[1];
     }
 
     /**
-     * Returns the micro number in the version.
+     * Returns the micro version number.
      *
-     * @return the micro version.
+     * @return the micro version number.
      */
     public int getMicroNumber() {
-        return micro;
+        return components[2];
     }
 
     /**
-     * Returns the update number in the version.
+     * Returns the update version number.
      *
-     * @return the update version.
+     * @return the update version number.
      */
     public int getUpdateNumber() {
-        return update;
+        return components[3];
     }
 
     /**
@@ -297,10 +294,11 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     /**
      * Returns true if the string is a version in valid format.
      *
-     * @return true if the string is a version in valid format.
-     *         Otherwise, returns false.
+     * @return true if the string is a version in valid format. Otherwise,
+     *         returns false.
      */
-    public static boolean isVersion(String source) {
+    /** package private */
+    static boolean isVersion(String source) {
         return versionPattern.matcher(source).matches();
     }
 
@@ -320,9 +318,9 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     }
 
     /**
-     * Return a <code>VersionConstraint</code> object that represents this version.
+     * Return a {@code VersionConstraint} object that represents this version.
      *
-     * @return a <code>VersionConstraint</code> object.
+     * @return a {@code VersionConstraint} object.
      */
     public VersionConstraint toVersionConstraint() {
         VersionConstraintBuilder builder = new VersionConstraintBuilder();
@@ -349,10 +347,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
         } catch (IllegalArgumentException e) {
             throw new IOException("Serialized format of version is invalid for de-serialization.");
         }
-        this.major = version.major;
-        this.minor = version.minor;
-        this.micro = version.micro;
-        this.update = version.update;
+        this.components = Arrays.copyOf(version.components, version.components.length);
         this.qualifier = version.qualifier;
     }
 
@@ -369,40 +364,41 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     }
 
     /**
-     * Compare two <code>Version</code> objects.
+     * Compare two {@code Version} objects.
      *
-     * @param version the <code>Version</code> to be compared.
-     * @return the value 0 if the argument <code>Version</code>
-     *      is equal to this <code>Version</code>; a value
-     *      less than 0 if this <code>Version</code> is less
-     *      than the <code>Version</code> argument; and a
-     *      value greater than 0 if this <code>Version</code>
-     *      is greater than the <code>Version</code> argument.
+     * @param version the {@code Version} to be compared.
+     * @return the value 0 if the this {@code Version} is equal to the
+     *         {@code Version} argument; a value less than 0 if this
+     *         {@code Version} is less than the {@code Version} argument; and a
+     *         value greater than 0 if this {@code Version} is greater than the
+     *         {@code Version} argument.
+     * @throws NullPointerException if the {@code Version} argument is null.
      */
-    // @Override // javac 5.0 bug
+    @Override
     public int compareTo(Version version)   {
+        if (version == null) {
+            throw new NullPointerException("version must not be null.");
+        }
+
         if (this == version)
             return 0;
 
-        // Compare major version
-        int result = major - version.getMajorNumber();
-        if (result != 0)
-            return result;
+        // Resize components from both Version objects to be the
+        // same size before comparison
+        int[] components1 = this.components;
+        int[] components2 = version.components;
+        if (components1.length > components2.length) {
+            components2 = Arrays.copyOf(components2, components1.length);
+        } else if (components1.length < components2.length) {
+            components1 = Arrays.copyOf(components1, components2.length);
+        }
 
-        // Compare minor version
-        result = minor - version.getMinorNumber();
-        if (result != 0)
-            return result;
-
-        // Compare micro version
-        result = micro - version.getMicroNumber();
-        if (result != 0)
-            return result;
-
-        // Compare update version
-        result = update - version.getUpdateNumber();
-        if (result != 0)
-            return result;
+        // Compare major, minor, micro, update version ...
+        for (int i = 0 ; i < components1.length; i++) {
+            int result = components1[i] - components2[i];
+            if (result != 0)
+                return result;
+        }
 
         // Is there a qualifier?
         String qualifier2 = version.getQualifier();
@@ -416,26 +412,24 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     }
 
     /**
-     * Returns a <code>Version</code> instance, with the qualifier omitted.
+     * Returns a {@code Version} instance, with the qualifier omitted.
      */
-    public Version trimQualifier() {
+    Version trimQualifier() {
         if (getQualifier() == null)
             return this;
         else
             return Version.valueOf(getMajorNumber(), getMinorNumber(),
-                               getMicroNumber(), getUpdateNumber());
+                                   getMicroNumber(), getUpdateNumber());
     }
 
     /**
-     * Compare two <code>Version</code> objects for equality.
-     * The result is <code>true</code> if and only if the
-     * argument is not <code>null</code> and is a
-     * <code>Version</code> object that the major, minor,
-     * micro, update, and qualifier the same as those of this
-     * <code>Version</code>.
+     * Compare two {@code Version} objects for equality. The result is
+     * {@code true} if and only if the argument is not {@code null} and is a
+     * {@code Version} object that the major, minor, micro, update, and
+     * qualifier are the same as those of this {@code Version}.
      *
      * @param obj the object to compare with.
-     * @return whether or not the two objects are equal
+     * @return whether or not two {@code Version} objects are equal
      */
     @Override
     public boolean equals(Object obj)   {
@@ -449,17 +443,16 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     }
 
     /**
-     * Returns a hash code for this <code>Version</code>.
+     * Returns a hash code for this {@code Version}.
      *
-     * @return a hash code value for this object.
+     * @return a hash code value for this {@code Version}.
      */
     @Override
     public int hashCode()   {
         int result = 17;
-        result = 37 * result + major;
-        result = 37 * result + minor;
-        result = 37 * result + micro;
-        result = 37 * result + update;
+        for (int n : components) {
+            result = 37 * result + n;
+        }
         result = 37 * result + (qualifier != null ? qualifier.hashCode() : 0);
         return result;
     }
@@ -469,20 +462,24 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     // If shortForm is false, the minor number is always displayed.
     private String toString(boolean shortForm) {
         StringBuilder buffer = new StringBuilder();
-        buffer.append(major);
+        buffer.append(components[0]);   // major number
 
-        if ((shortForm == false) || (minor != 0) || (update != 0) || (micro != 0)) {
+        // Finds the last component that is not zero
+        int lastIndex = 0;
+        for (int i=components.length-1; i > 0; i--) {
+            if (components[i] != 0) {
+                lastIndex = i;
+                break;
+            }
+        }
+
+        if (shortForm == false || lastIndex != 0) {
             buffer.append('.');
-            buffer.append(minor);
+            buffer.append(components[1]);
 
-            if (micro != 0 || update != 0) {
+            for (int i=2; i <= lastIndex; i++) {
                 buffer.append('.');
-                buffer.append(micro);
-
-                if (update != 0) {
-                    buffer.append('.');
-                    buffer.append(update);
-                }
+                buffer.append(components[i]);
             }
         }
 
@@ -500,12 +497,12 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>Version</code>'s value. The value is converted to the version
-     * format and returned as a string.
+     * Returns a {@code String} object representing this {@code Version}'s
+     * value. The value is converted to the version format and returned as a
+     * string.
      *
-     * @return a string representation of the value of this object in the
-     *         version format.
+     * @return a string representation of the value of this {@code Version} in
+     *         the version format.
      */
     @Override
     public String toString() {

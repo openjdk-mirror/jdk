@@ -31,20 +31,20 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an import of a module definition.  This metadata annotation
- * is used as nested annotation inside other enclosing annotations.
- * <p>
- * For example,
+ * Indicates the module definition to import. This metadata annotation is used
+ * as nested annotation inside other enclosing annotations. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ImportModules({
  *       &#064;ImportModule(name="org.xml.foo", version="[1.0, 1.1)"),
- *       &#064;ImportModule(name="com.sun.zombie", version="[2.0, 3.0)", optional=false, reexport=true)
+ *       &#064;ImportModule(name="com.sun.zombie", version="[2.0, 3.0)", optional=true)
  *    })
- *    superpackage com.wombat.xyz {
- *        ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
- *
+ * @see java.module.VersionConstraint
  * @see java.module.annotation.ImportModules
  * @since 1.7
  */
@@ -58,26 +58,23 @@ public @interface ImportModule {
     String name();
 
     /**
-     * Version constraint of the imported module definition.
-     * <p>
-     * The version constraint is either a version, a version range, or a
-     * combination of both, following the format described in the
+     * Version constraint of the imported module definition. The version
+     * constraint is either a version, a version range, or a combination of
+     * both, following the format described in the
      * {@link java.module.VersionConstraint} class. If the version constraint
      * is not specified, the default is the highest version available.
      */
     String version() default "0.0.0.0+";
 
     /**
-     * Optionality of the import module definition at runtime.
-     * <p>
-     * If the optionality is not specified, the default is false.
+     * Optionality of the imported module definition. If optionality is not
+     * specified, the default is false.
      */
     boolean optional() default false;
 
     /**
-     * Re-export the import module definition.
-     * <p>
-     * If the re-export is not specified, the default is false.
+     * Re-export the imported module definition. If re-export is not specified,
+     * the default is false.
      */
     boolean reexport() default false;
 }

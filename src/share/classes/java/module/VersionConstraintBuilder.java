@@ -36,8 +36,8 @@ import java.util.StringTokenizer;
 /**
  * This class provides an API for building version constraint.
  *
- * <p>The principal operation on a <code>VersionConstraintBuilder</code> is the
- * <code>add</code> method, which is overloaded so as to accept version and
+ * <p>The principal operation on a {@code VersionConstraintBuilder} is the
+ * {@code add} method, which is overloaded so as to accept version and
  * version range. Each effectively converts a version or a version range
  * and normalizes it in the version constraint builder.
  * <p>
@@ -46,7 +46,7 @@ import java.util.StringTokenizer;
  * while adding a new version range [3.0, 3.6) would alter the version
  * constraint builder to contain "1.3;[2.0, 3.6)" as the version constraints.
  * <p>
- * <p>Instances of <code>VersionConstraintBuilder</code> are not safe for
+ * <p>Instances of {@code VersionConstraintBuilder} are not safe for
  * use by multiple threads.
  *
  * @see java.module.Version

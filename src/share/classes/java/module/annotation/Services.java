@@ -31,45 +31,35 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an array of services that the module definition defines. This
- * metadata annotation is applied to the development module, i.e. the
- *<I>superpackage</I> construct.
- * <p>
+ * Indicates an array of services that a module definition defines.
  * A service is a well-known set of interfaces and (usually abstract) classes.
  * A service-provider is a specific implementation of a service. The classes
  * in a service-provider typically implement the interfaces and subclass the
- * classes defined in the service itself.
- * <p>
- * If a module definition defines a service, it should contain and export the
- * set of interfaces and classes that are part of the service.
- * <p>
- * For example,
+ * classes defined in the service itself. If a module definition defines a
+ * service, it should contain and export the set of interfaces and classes
+ * that are part of the service. This metadata annotation is applied to the
+ * development module, i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
+ *    //
+ *    // javax/xml/parsers/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;Services({
  *       "javax.xml.parsers.DocumentBuilderFactory",
  *       "javax.xml.parsers.SAXParserFactory"
  *    })
- *    superpackage javax.xml.parsers {
- *       //
- *       // Exports service types.
- *       //
- *       export javax.xml.parsers.DocumentBuilderFactory.class;
- *       export javax.xml.parsers.SAXParserFactory.class;
- *       ...
- *    }
+ *    module javax.xml.parsers;
  * </pre></blockquote>
- *
- * @see java.lang.module.annotation.ServiceProvider
- * @see java.lang.module.annotation.ServiceProviders
- *
+ * @see java.module.annotation.ServiceProvider
+ * @see java.module.annotation.ServiceProviders
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Services {
 
     /**
-    * Array of the names of the services.
+    * An array of the names of the services.
     */
     String[] value();
 }

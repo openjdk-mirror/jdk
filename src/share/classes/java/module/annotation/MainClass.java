@@ -31,37 +31,26 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the main class of a module definition. The main class name
- * must not have the .class extension appended. This metadata
- * annotation is applied to the development module, i.e. the
- * <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates the main class of a module definition. The main class name must
+ * not have the {@code .class} extension appended. This metadata annotation is
+ * applied to the module, i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;MainClass("com.wombat.xyz.Main")
- *    superpackage com.wombat.xyz {
- *        ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
- * <p>
- * Note that being a main class does not imply the class is exported
- * from the module definition. The main class must be declared as
- * exported separately. For example,
- * <blockquote><pre>
- *    &#064;MainClass("com.wombat.xyz.Main")
- *    superpackage com.wombat.xyz {
- *       export com.wombat.xyz.*;
- *       ...
- *    }
- * </pre></blockquote>
- *
+ * Being a main class does not imply the class is exported from the module
+ * definition; the main class must be declared as exported separately.
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MainClass {
     /**
-     * Main class name.
+     * The name of the main class.
      */
     String value();
 }

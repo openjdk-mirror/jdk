@@ -26,7 +26,7 @@
 package java.module;
 
 /**
- * This class represents a module system event that occurs in the module
+ * This class represents a module system event that occurs in a module
  * system.
  *
  * @see java.module.Module
@@ -70,15 +70,16 @@ public class ModuleSystemEvent {
     private ModuleInitializationException exception;
 
     /**
-     * Constructs a ModuleSystemEvent object with event type MODULE_INITIALIZED,
-     * or MODULE_RELEASED, using the specified module system, event type, and
-     * module instance.
+     * Constructs a {@code ModuleSystemEvent} object with event type
+     * {@code MODULE_INITIALIZED} or {@code MODULE_RELEASED}, using the
+     * specified module system, event type, and module instance.
      *
      * @param source the module system where the event occurs
      * @param type the event type
      * @param module the module instance that the event applies to
      * @throws IllegalArgumentException if type is
-     *         MODULE_INITIALIZATION_EXCEPTION or MODULE_DEFINITION_DISABLED
+     *         {@code MODULE_INITIALIZATION_EXCEPTION} or
+     *         {@code MODULE_DEFINITION_DISABLED}
      * @throws NullPointerException if source is null, type is null,
      *         or module is null.
      *
@@ -104,8 +105,8 @@ public class ModuleSystemEvent {
     }
 
     /**
-     * Constructs a ModuleSystemEvent object with event type
-     * MODULE_DEFINITION_DISABLED, using the specified module system
+     * Constructs a {@code ModuleSystemEvent} object with event type
+     * {@code MODULE_DEFINITION_DISABLED}, using the specified module system
      * and module definition.
      *
      * @param source the module system where the event occurs
@@ -128,9 +129,9 @@ public class ModuleSystemEvent {
     }
 
     /**
-     * Constructs a ModuleSystemEvent object with event type
-     * MODULE_INITIALIZATION_EXCEPTION, using the specified module system,
-     * module definition, and module initialization exception.
+     * Constructs a {@code ModuleSystemEvent} object with event type
+     * {@code MODULE_INITIALIZATION_EXCEPTION}, using the specified module
+     * system, module definition, and module initialization exception.
      *
      * @param source the module system where the event occurs
      * @param moduleDef the module definition that the event applies to
@@ -191,10 +192,10 @@ public class ModuleSystemEvent {
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>ModuleSystemEvent</code>.
+     * Returns a {@code String} object representing this
+     * {@code ModuleSystemEvent}.
      *
-     * @return a string representation of the <code>ModuleSystemEvent</code> object.
+     * @return a string representation of the {@code ModuleSystemEvent} object.
      */
     @Override
     public String toString() {

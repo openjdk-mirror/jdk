@@ -34,12 +34,13 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicLong;
 import sun.module.bootstrap.BootstrapRepository;
 import sun.module.repository.RepositoryConfig;
 
 /**
- * This class represents the repository in the module system.
+ * This class represents a repository. A repository is a mechanism for storing,
+ * discovering, and retrieving module definitions that can be used by a module
+ * system.
  *
  * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
  * method in this class will cause a {@link NullPointerException} to be thrown.
@@ -78,26 +79,22 @@ public abstract class Repository {
     /** Shuts down the repository upon JVM exit; see {@link #shutdownOnExit}. */
     private Thread shutdownThread;
 
-    /** Counter for generating Id for repository instances. */
-    private static final AtomicLong idCounter = new AtomicLong();
-
-    /** Id for this repository instance. */
-    private final long id = idCounter.incrementAndGet();
-
     /**
-     * Creates a repository instance.
+     * Creates a {@code Repository} instance.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
-     * ensure it's ok to create a repository.
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createRepository")} permission to ensure
+     * it's ok to create a repository.
      *
      * @param parent the parent repository for delegation.
      * @param name the repository name.
      * @param source the source location.
+     * @param system the module system the module definitions in the repository
+     *        associated with.
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to create a new
-     *         instance of repository.
+     *         {@code checkPermission} method denies access to create a new
+     *         repository instance.
      * @throws IllegalArgumentException if a circularity is detected.
      */
     protected Repository(Repository parent, String name, URL source, ModuleSystem system) {
@@ -137,17 +134,19 @@ public abstract class Repository {
     }
 
     /**
-     * Creates a repository instance.
+     * Creates a {@code Repository} instance.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
-     * ensure it's ok to create a repository.
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createRepository")} permission to ensure
+     * it's ok to create a repository.
      *
      * @param name the repository name.
      * @param source the source location.
+     * @param system the module system the module definitions in the repository
+     *        associated with.
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to create a new
+     *         {@code checkPermission} method denies access to create a new
      *         instance of repository.
      * @throws IllegalArgumentException if a circularity is detected.
      */
@@ -156,19 +155,7 @@ public abstract class Repository {
     }
 
     /**
-     * Returns a long value that represents the unique identifier assigned to
-     * this repository instance. The identifier is assigned by the JVM and is
-     * JVM implementation dependent.
-     *
-     * @return a long value that represents the unique identifier assigned to
-     *         this repository instance.
-     */
-    public final long getId() {
-        return id;
-    }
-
-    /**
-     * Returns the name of this repository.
+     * Returns the name of this {@code Repository}.
      *
      * @return the name.
      */
@@ -177,7 +164,7 @@ public abstract class Repository {
     }
 
     /**
-     * Returns the source location of this repository.
+     * Returns the source location of this {@code Repository}.
      *
      * @return the source location.
      */
@@ -186,82 +173,83 @@ public abstract class Repository {
     }
 
     /**
-     * Returns the parent repository for delegation. If this
-     * is the bootstrap repository, its parent is null.
+     * Returns the parent repository for delegation. If this is the bootstrap
+     * repository, its parent is null.
      *
-     * @return the parent <code>Repository.</code>.
+     * @return the parent {@code Repository}.
      */
     public final Repository getParent() {
         return parent;
     }
 
     /**
-     * Returns this Repository's {@code ModuleSystem}.
+     * Returns the {@code ModuleSystem} associated with the module definitions
+     * in this {@code Repository}.
      *
-     * @return this repository's {@code ModuleSystem}
+     * @return the {@code ModuleSystem} associated with the module definitions
+     *         in this {@code Repository}.
      */
     public final ModuleSystem getModuleSystem() {
         return system;
     }
 
     /**
-     * Returns the bootstrap repository for delegation. This
-     * the repository provided by the Java Runtime.
+     * Returns the bootstrap repository. This is the repository provided by
+     * the Java Runtime.
      */
     public static Repository getBootstrapRepository()   {
         return BootstrapRepository.getInstance();
     }
 
     /**
-     * Returns the system repository for delegation. This is
-     * the default delegation parent for new Repository
-     * instances.
+     * Returns the system repository. This is the default delegation parent
+     * for new {@code Repository} instances.
      */
     public static Repository getSystemRepository()  {
         return RepositoryConfig.getSystemRepository();
     }
 
     /**
-     * Initializes the repository using the default configuration.
+     * Initializes this {@code Repository}.
      *
      * @throws IOException if an I/O error occurs.
-     * @throws IllegalStateException if the repository instance has been
+     * @throws IllegalStateException if this {@code Repository} has been
      *         initialized or has been shutdown.
      */
     public abstract void initialize() throws IOException;
 
     /**
-     * Shutdown the repository.
-     *
+     * Shutdown this {@code Repository}.
+     * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("shutdownRepository")</code> permission
-     * to ensure it's ok to shutdown a repository.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("shutdownRepository")} permission to
+     * ensure it's ok to shutdown this {@code Repository}.
      *
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to shutdown the
-     *         repository.
+     *         {@code checkPermission} method denies access to shutdown this
+     *         {@code Repository}.
      * @throws IOException if an I/O error occurs.
-     * @throws IllegalStateException if the repository instance has not been
+     * @throws IllegalStateException if this {@code Repository} has not been
      *         initialized or has been shutdown.
      */
     public abstract void shutdown() throws IOException;
 
     /**
-     * Enable or disable that the repository is shutdown when the module
-     * system terminates. Shutdown will be attempted only during the normal
-     * termination of the virtual machine, as defined by the Java Language
-     * Specification. By default, shutdown on exit is disabled.
-     *
+     * Enable or disable that this {@code Repository} is shutdown when the
+     * module system terminates. Shutdown will be attempted only during the
+     * normal termination of the virtual machine, as defined by the Java
+     * Language Specification. By default, shutdown on exit is disabled.
+     * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("shutdownRepository")</code> permission
-     * to ensure it's ok to shutdown a repository.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("shutdownRepository")} permission
+     * to ensure it's ok to shutdown this {@code Repository}.
      *
      * @param value indicating enabling or disabling of shutdown.
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to shutdown the
-     *         repository.
+     *         {@code checkPermission} method denies access to shutdown this
+     *         {@code Repository}.
      */
     public final synchronized void shutdownOnExit(final boolean value) {
         SecurityManager sm = System.getSecurityManager();
@@ -302,26 +290,28 @@ public abstract class Repository {
     }
 
     /**
-     * Returns whether or not the repository instance is active.
-     * <p>
-     * A repository instance is active if it has been initialized but has not
-     * been shutdown.
+     * Returns whether or not this {@code Repository} is active. A repository
+     * instance is active if it has been initialized but has not been shutdown.
      *
-     * @return true if this repository instance is active.
+     * @return true if this repository instance is active; otherwise, returns
+     *         false.
      */
     public abstract boolean isActive();
 
     /**
-     * Returns whether or not this repository is read-only.
+     * Returns whether or not this {@code Repository} is read-only.
      *
-     * @return true if this repository is read-only.
+     * @return true if this {@code Repository} is read-only; otherwise, returns
+     *         false.
      */
     public abstract boolean isReadOnly();
 
     /**
-     * Returns whether or not this repository supports reloading.
+     * Returns whether or not this {@code Repository} supports reload
+     * of module definitions.
      *
-     * @return true if this repository supports reloading.
+     * @return true if this {@code Repository} supports reload; otherwise,
+     *         returns false.
      * @see #reload()
      */
     public abstract boolean supportsReload();
@@ -331,17 +321,12 @@ public abstract class Repository {
      * <pre>
      *      find(moduleName, VersionConstraint.DEFAULT);
      * </pre>
-     *
-     * If this repository instance has not been initialized when this method
-     * is called, it will be initialized automatically by calling the
-     * {@link #initialize} method with no argument.
-     *
      * @param name the module definition's name.
      * @return the module definition or null if not found. If more than one
      *         module definition matches the specified name, the highest
      *         version is returned.
-     * @throws IllegalStateException if the repository instance has been
-     *         shutdown.
+     * @throws IllegalStateException if this {@code Repository} has not been
+     *         initialized or if it has been shutdown.
      */
     public final ModuleDefinition find(String name) {
         assertActive();
@@ -351,21 +336,17 @@ public abstract class Repository {
     /**
      * Find a module definition.
      *
-     * If this repository instance has not been initialized when this method
-     * is called, it will be initialized automatically by calling the
-     * {@link #initialize} method with no argument.
-     *
      * @param name the module definition's name.
      * @param versionConstraint the version constraint.
      * @return the module definition or null if not found. If more than one
      *         module definition matches the specified name and version
      *         constraint, the highest version is returned.
-     * @throws IllegalStateException if the repository instance has been
-     *         shutdown.
+     * @throws IllegalStateException if this {@code Repository} has not been
+     *         initialized or if it has been shutdown.
      */
     public final ModuleDefinition find(String name, VersionConstraint versionConstraint) {
         assertActive();
-        List<ModuleDefinition> moduleDefs = find(Query.and(Query.name(name), Query.version(versionConstraint)));
+        List<ModuleDefinition> moduleDefs = find(Query.module(name, versionConstraint));
 
         if (moduleDefs.isEmpty()) {
             return null;
@@ -390,14 +371,9 @@ public abstract class Repository {
      * <pre>
      *      find(Query.ANY);
      * </pre>
-     *
-     * If this repository instance has not been initialized when this
-     * method is called, it will be initialized automatically by
-     * calling the {@link #initialize} method with no argument.
-     *
-     * @return the result list.
-     * @throws IllegalStateException if the repository instance has been
-     *         shutdown.
+     * @return the list of matching module definitions.
+     * @throws IllegalStateException if this {@code Repository} has not been
+     *         initialized or if it has been shutdown.
      */
     public final List<ModuleDefinition> findAll() {
         assertActive();
@@ -407,14 +383,10 @@ public abstract class Repository {
     /**
      * Find all matching module definitions that match the specified constraint.
      *
-     * If this repository instance has not been initialized when this
-     * method is called, it will be initialized automatically by
-     * calling the {@link #initialize} method with no argument.
-     *
      * @param constraint the constraint.
-     * @return the result list.
-     * @throws IllegalStateException if the repository instance has been
-     *         shutdown.
+     * @return the list of matching module definitions.
+     * @throws IllegalStateException if this {@code Repository} has not been
+     *         initialized or if it has been shutdown.
      */
     public final List<ModuleDefinition> find(Query constraint) {
         assertActive();
@@ -466,108 +438,111 @@ public abstract class Repository {
     }
 
     /**
-     * Find all matching module definitions in the repository. This method
-     * should be overridden by repository implementations for finding
+     * Find all matching module definitions in this {@code Repository}. This
+     * method should be overridden by repository implementations for finding
      * matching module definitions, and will be invoked by the
      * {@link #find} method after checking the parent repository for the
      * requested module definitions.
-     * <p>
-     * If this repository instance has not been initialized when this method
-     * is called, it will be initialized automatically by calling the
-     * {@link #initialize} method with no argument.
      *
      * @param constraint the constraint.
-     * @return the collection of matching module definitions.
-     * @throws IllegalStateException if the repository instance has not been
+     * @return the list of matching module definitions.
+     * @throws IllegalStateException if this {@code Repository} has not been
      *         initialized or has been shutdown.
      */
     protected abstract List<ModuleDefinition> findModuleDefinitions(Query constraint);
 
     /**
      * Returns an unmodifiable list of the installed module archives'
-     * information in the repository. The list will contain a snapshot of the
-     * installed module archives in the repository at the time of the given
-     * invocation of this method.
+     * information in this {@code Repository}. The list will contain a snapshot
+     * of the installed module archives in this {@code Repository} at the time
+     * of the given invocation of this method.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("listModuleArchive")</code> permission to
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("listModuleArchive")} permission to
      * ensure it's ok to return the information of the installed module
-     * archives in a repository.
+     * archives in this {@code Repository}.
      *
      * @return an unmodifiable list of the installed module archives'
      *         information.
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to return the
      *         information of the installed module archives.
-     * @throws IllegalStateException if the repository instance has not been
+     * @throws IllegalStateException if this {@code Repository} has not been
      *         initialized or it has been shutdown.
      */
     public abstract List<ModuleArchiveInfo> list();
 
     /**
-     * Install a module archive with the module definition into the repository.
+     * Install a module archive with the module definition into this
+     * {@code Repository}.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("installModuleArchive")</code> permission
-     * to ensure it's ok to install a module archive into a repository.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("installModuleArchive")} permission
+     * to ensure it's ok to install a module archive into this
+     * {@code Repository}.
      *
      * @param url the URL to the module archive.
-     * @return the <code>ModuleArchiveInfo</code> object that represents the
+     * @return the {@code ModuleArchiveInfo} object that represents the
      *         installed module archive.
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to install a
-     *         module archive in the repository.
-     * @throws UnsupportedOperationException if the repository is read-only.
-     * @throws IOException if an error occurs while installing the module archive.
+     *         {@code checkPermission} method denies access to install a
+     *         module archive in this {@code Repository}.
+     * @throws UnsupportedOperationException if {@code Repository} is
+     *         read-only.
+     * @throws IOException if an error occurs while installing the module
+     *         archive.
      * @throws ModuleFormatException if the module archive format is not
      *         supported by this implementation.
      * @throws IllegalStateException if a module definition with the same name,
-     *         version and platform binding is already installed, or if the
-     *         repository instance has not been initialized or it has been
+     *         version and platform binding is already installed, or if this
+     *         {@code Repository} has not been initialized or it has been
      *         shutdown.
      */
     public abstract ModuleArchiveInfo install(URL url) throws IOException;
 
     /**
-     * Uninstall a module archive from the repository.
+     * Uninstall a module archive from this {@code Repository}.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("uninstallModuleArchive")</code>
-     * permission to ensure it's ok to uninstall a module archive from a
-     * repository.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("uninstallModuleArchive")}
+     * permission to ensure it's ok to uninstall a module archive from this
+     * {@code Repository}.
      *
      * @param m the module archive to be uninstalled.
      * @return true if the module archive is found and uninstalled, returns
      *         false otherwise.
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to uninstall the
-     *         module archive in the repository.
-     * @throws UnsupportedOperationException if the repository is read-only.
+     *         {@code checkPermission} method denies access to uninstall the
+     *         module archive in this {@code Repository}.
+     * @throws UnsupportedOperationException if this {@code Repository} is
+     *         read-only.
      * @throws IllegalStateException if the module definition in the specified
-     *         specified module archive is in use, or if the repository
-     *         instance has not been initialized or it has been shutdown.
+     *         specified module archive is in use, or if this
+     *         {@code Repository} has not been initialized or it has been
+     *         shutdown.
      * @throws IOException If an error occurs while uninstalling the module
      *         archive.
      */
     public abstract boolean uninstall(ModuleArchiveInfo m) throws IOException;
 
     /**
-     * Reload the repository. The behavior of this method depends on the
-     * implementation.
+     * Reload this {@code Repository}. The behavior of this method depends on
+     * the implementation.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("reloadRepository")</code> permission
-     * to ensure it's ok to reload module definitions in a repository.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("reloadRepository")} permission
+     * to ensure it's ok to reload module definitions in this
+     * {@code Repository}.
      *
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to reload module
-     *         definitions in the repository.
-     * @throws UnsupportedOperationException if the repository does not
-     *         support reload.
+     *         {@code checkPermission} method denies access to reload module
+     *         definitions in this {@code Repository}.
+     * @throws UnsupportedOperationException if this {@code Repository}
+     *         does not support reload.
      * @throws IllegalStateException if a module definition is in use thus
      *         cannot be reloaded.
      * @throws IOException If an error occurs while reloading the module
@@ -580,13 +555,13 @@ public abstract class Repository {
      * the repositories.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a
-     * <code>ModuleSystemPermission("addRepositoryListener")</code> permission
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("addRepositoryListener")} permission
      * to ensure it's ok to add a repository listener to the repositories.
      *
      * @param listener the repository listener
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to add a
+     *         {@code checkPermission} method denies access to add a
      *         repository listener to the repositories.
      */
     public static final void addRepositoryListener(RepositoryListener listener) {
@@ -609,14 +584,14 @@ public abstract class Repository {
      * repository events from the repositories.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a
-     * <code>ModuleSystemPermission("removeModuleSystemListener")</code>
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("removeModuleSystemListener")}
      * permission to ensure it's ok to remove a repository listener from the
      * repositories.
      *
      * @param listener the repository listener
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to remove a
+     *         {@code checkPermission} method denies access to remove a
      *         repository listener from the repositories.
      */
     public static final void removeRepositoryListener(RepositoryListener listener) {
@@ -661,8 +636,8 @@ public abstract class Repository {
     }
 
     /**
-     * Processes repository event occuring in this repository by dispatching
-     * them to any registered RepositoryListener objects.
+     * Processes repository event occuring in this {@code Repository} by
+     * dispatching them to any registered {@code RepositoryListener} objects.
      *
      * @param event the repository event
      */
@@ -697,10 +672,12 @@ public abstract class Repository {
     /**
      * Compares the specified object with this {@code Repository} for equality.
      * Returns {@code true} if and only if {@code obj} is the same object as
-     * this object.
+     * this {@code Repository}.
      *
-     * @param obj the object to be compared for equality with this repository.
-     * @return {@code true} if the specified object is equal to this repository
+     * @param obj the object to be compared for equality with this
+     *        {@code Repository}.
+     * @return {@code true} if the specified object is equal to this
+     *         {@code Repository}
      */
     @Override
     public final boolean equals(Object obj)   {
@@ -710,7 +687,7 @@ public abstract class Repository {
     /**
      * Returns a hash code for this {@code Repository}.
      *
-     * @return a hash code value for this object.
+     * @return a hash code value for this {@code Repository}.
      */
     @Override
     public final int hashCode()   {
@@ -718,10 +695,9 @@ public abstract class Repository {
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>Repository</code>.
+     * Returns a {@code String} object representing this {@code Repository}.
      *
-     * @return a string representation of the <code>Repository</code> object.
+     * @return a string representation of the {@code Repository} object.
      */
     @Override
     public String toString() {

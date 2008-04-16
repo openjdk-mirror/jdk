@@ -32,14 +32,12 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the name of a module definition. This metadata annotation is
- * applied to the development module, i.e. the <I>superpackage</I> construct.
+ * applied to the module.
  * <p>
  * For example,
  * <blockquote><pre>
  *     &#064;ModuleName("java.se")
- *     superpackage sun.java.se {
- *        ...
- *     }
+ *     module sun.java.se;
  * </pre></blockquote>
  *
  * XXX This annotation is a workaround for building virtual modules for the
@@ -48,7 +46,7 @@ import java.lang.annotation.RetentionPolicy;
  *
  * @since 1.7
  */
-@Target(ElementType.SUPERPACKAGE)
+@Target(ElementType.MODULE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ModuleName {
 

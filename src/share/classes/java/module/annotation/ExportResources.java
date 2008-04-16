@@ -31,56 +31,51 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the exported resources of a module definition. Each
- * export is the corresponding path of the resource within the
- * module archive that is exported. This metadata annotation is
- * applied to the development module, i.e. the <I>superpackage</I>
+ * Indicates the exported resources in a module definition. This metadata
+ * annotation is applied to the development module, i.e. the <I>module</I>
  * construct.
  * <p>
- * The string that specifies the exported file may contain wildcard:<p>
- * 1. '?' matches a single character.<p>
- * 2. '*' matches zero or more characters.<p>
- * 3. '**' matches zero or more directories.<p>
- * There is also a shorthand. If the string ends with '/', it is treated as
- * if '**' has been appended.
+ * The string that specifies the exported resource may contain wildcard:<p>
+ * 1. {@code '?'} matches a single character.<p>
+ * 2. {@code '*'} matches zero or more characters.<p>
+ * 3. {@code '**'} matches zero or more directories.<p>
+ * There is also a shorthand. If the string ends with {@code '/'}, it is
+ * treated as if {@code '**'} has been appended.
  * <p>
  * For examples,
  * <blockquote><pre>
  *    //
- *    // Exports resources one-by-one.
+ *    // com/wombat/xyz/module-info.java
  *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ExportResources({
- *       "icons/graphics1.jpg",
+ *       "icons/graphics1.jpg",     // exports individual resource
  *       "icons/graphics2.jpg"
  *    })
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  *
  *    //
- *    // Exports resources using wildcards, including
- *    // - all files under icons directory, and
- *    // - all files under META-INF and its sub-directories
- *    // - all files under resources and its sub-directories
+ *    // org/foo/abc/module-info.java
  *    //
+ *    &#064;Version("2.0.0")
  *    &#064;ExportResources({
- *       "icons/*",
+ *       "icons/*",                 // exports resources using wildcards
  *       "META-INF/**"
  *       "resources/"
  *    })
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module org.foo.abc;
  * </pre></blockquote>
  *
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExportResources {
 
     /**
-     * Exported resources of the module definition.
+     * The exported resources in a module definition. Each exported resource
+     * must be a relative path to the root of the module archive, using
+     * {@code '/'} as path separator and no leading {@code '/'}.
      */
     String[] value();
 }

@@ -23,22 +23,22 @@
 
 package dep;
 
-import java.lang.reflect.Superpackage.*;
+import java.lang.ModuleInfo.*;
 import java.module.annotation.*;
 
 /**
- * Declare the superpackage "dep" with its exported class "dep.Entry".
+ * Declare the module "dep" with its exported class "dep.Entry".
  *
- * <p>This is a emulation of a superpackage definition. It will be changed to 
- * the proper format once superpackages are supported by javac.
+ * <p>This is a emulation of a module definition. It will be changed to
+ * the proper format once modules are supported by javac.
  */
 @MainClass("dep.Entry")
 @Version("1.0")
 @ImportModules({
     @ImportModule(name="java.se"),
-    @ImportModule(name="hello")  
-})    
-class super_package {
-    
+    @ImportModule(name="hello")
+})
+// XXX: Syntax will be replaced by JSR 294
+class module_info {
     exports dep$Entry;
 }

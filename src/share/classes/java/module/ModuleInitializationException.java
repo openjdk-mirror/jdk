@@ -26,7 +26,7 @@
 package java.module;
 
 /**
- * Thrown to indicate that the initialization of a Module failed.
+ * Thrown to indicate that the initialization of a module instance has failed.
  *
  * @since 1.7
  */
@@ -35,8 +35,8 @@ public class ModuleInitializationException extends Exception {
     private static final long serialVersionUID = 2254350161991536852L;
 
     /**
-     * Constructs a <code>ModuleInitializationException</code> with
-     * the specified detail message.
+     * Constructs a {@code ModuleInitializationException} with the specified
+     * detail message.
      *
      *
      * @param s the detail message.
@@ -46,8 +46,8 @@ public class ModuleInitializationException extends Exception {
     }
 
     /**
-     * Constructs a <code>ModuleInitializationException</code> with
-     * the specified detail message and cause.
+     * Constructs a {@code ModuleInitializationException} with the specified
+     * detail message and cause.
      *
      *
      * @param s the detail message.

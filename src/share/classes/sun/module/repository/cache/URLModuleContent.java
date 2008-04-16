@@ -25,13 +25,12 @@
 
 package sun.module.repository.cache;
 
-import java.lang.reflect.Superpackage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
 import java.net.URL;
 import java.security.CodeSigner;
 import java.util.jar.JarFile;
@@ -39,13 +38,13 @@ import sun.module.JamUtils;
 import sun.module.repository.RepositoryUtils;
 
 /**
- * URL module definition content.
+ * URL module content.
  *
  * @since 1.7
  */
-final class URLModuleDefinitionContent extends CacheModuleDefinitionContent {
+final class URLModuleContent extends CacheModuleContent {
 
-    // URLModuleDefInfo which this module definition content belongs
+    // URLModuleDefInfo which this module content belongs
     private final URLModuleDefInfo mdInfo;
 
     // Jam file
@@ -58,10 +57,10 @@ final class URLModuleDefinitionContent extends CacheModuleDefinitionContent {
     private boolean downloaded = false;
 
     /**
-     * Constructs a new URL module definition content.
+     * Constructs a new URL module content.
      */
-    URLModuleDefinitionContent(URLModuleDefInfo mdInfo) {
-        super(mdInfo.getEntryDirectory(), mdInfo.getMetadataBytes(), mdInfo.getSuperpackage());
+    URLModuleContent(URLModuleDefInfo mdInfo) {
+        super(mdInfo.getEntryDirectory(), mdInfo.getMetadataBytes(), mdInfo.getModuleInfo());
         this.mdInfo = mdInfo;
     }
 

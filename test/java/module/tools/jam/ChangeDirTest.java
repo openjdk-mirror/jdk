@@ -39,7 +39,7 @@ import sun.module.tools.Jam;
 
 public class ChangeDirTest {
     private final static String jamName = "hello.jam";
-    private final static String superpackageName = "hello";
+    private final static String moduleName = "hello";
     private final static String fileName = "hello.txt";
     private static File srcDir;
     private static File scratchDir;
@@ -50,8 +50,8 @@ public class ChangeDirTest {
         scratchDir = new File(
             System.getProperty("test.scratch", ".")).getCanonicalFile();
 
-        File modSrcFile = new File(srcDir, superpackageName + File.separator + "super_package.java");
-        File classSrcFile = new File(srcDir, superpackageName + File.separator + "Main.java");
+        File modSrcFile = new File(srcDir, moduleName + File.separator + "module_info.java");
+        File classSrcFile = new File(srcDir, moduleName + File.separator + "Main.java");
 
         // Compile the source files
         JamBuilder.compileFile(modSrcFile, scratchDir);
@@ -73,25 +73,25 @@ public class ChangeDirTest {
     static void doTest(String sep) throws Throwable {
         JarFile jf = null;
         try {
-            // Create a jam file from the superpackage and the classes, and the
+            // Create a jam file from the module-info and the classes, and the
             // hello.txt file in the subdirectory. The command is equivalent to:
             //
             //    jam cfsS {test.scratch}/hello.jam hello {test.scratch} \
             //             -C {test.scratch} hello/Main.class \
-            //             -C {test.scratch} hello/super_package.class \
+            //             -C {test.scratch} hello/module_info.class \
             //             -C {test.src}/a/b hello.txt
             //
             List<String> argList = new ArrayList<String>();
             argList.add("cfsS");
             argList.add(new File(scratchDir, jamName).getCanonicalPath());
-            argList.add(superpackageName);
+            argList.add(moduleName);
             argList.add(scratchDir.getCanonicalPath());
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
-            argList.add(superpackageName + sep + "Main.class");
+            argList.add(moduleName + sep + "Main.class");
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
-            argList.add(superpackageName + sep + "super_package.class");
+            argList.add(moduleName + sep + "module_info.class");
             argList.add("-C");
             argList.add(new File(srcDir, "a" + sep + "b").getCanonicalPath());
             argList.add(fileName);

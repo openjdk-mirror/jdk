@@ -31,29 +31,28 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an array of imported module definitions. This metadata
- * annotation is applied to the development module, i.e. the
- * <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates an array of module definitions to import. This metadata annotation
+ * is applied to the development module, i.e. the <I>module</I> construct. For
+ * example,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ImportModules({
  *       &#064;ImportModule(name="org.xml.foo", version="[1.0, 1.1)"),
- *       &#064;ImportModule(name="com.sun.zombie", version="[2.0, 3.0)", optional=false, reexport=true)
+ *       &#064;ImportModule(name="com.sun.zombie", version="[2.0, 3.0)", reexport=true)
  *    })
- *    superpackage com.wombat.xyz {
- *        ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
- *
  * @see java.module.annotation.ImportModule
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ImportModules {
     /**
-     * Array of imported module definitions.
+     * An array of imported module definitions.
      */
     ImportModule[] value();
 }

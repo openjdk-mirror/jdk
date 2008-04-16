@@ -31,22 +31,20 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates a service-provider that the module definition defines. This
- * metadata annotation is used as nested annotation inside other enclosing
- * annotations.
- * <p>
+ * Indicates a service-provider that a module definition defines.
  * A service is a well-known set of interfaces and (usually abstract) classes.
  * A service-provider is a specific implementation of a service. The classes
  * in a service-provider typically implement the interfaces and subclass the
- * classes defined in the service itself.
- * <p>
- * If a module definition defines a service-provider, it should import the
- * module definition which defines the service. It should also contain and
- * export the set of interfaces and classes that are part of the
- * service-provider.
- * <p>
- * For example,
+ * classes defined in the service itself. If a module definition defines a
+ * service-provider, it should import the module definition which defines
+ * the service. It should also contain and export the set of interfaces and
+ * classes that are part of the service-provider. This metadata annotation is
+ * used as nested annotation inside other enclosing annotations. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/xyz/xmlparser/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ServiceProviders({
  *       &#064;ServiceProvider(service="javax.xml.parsers.DocumentBuilderFactory",
  *                         providerClass="com.xyz.xmlparser.DocumentBuilderFactoryImpl"),
@@ -54,24 +52,13 @@ import java.lang.annotation.RetentionPolicy;
  *                         providerClass="com.xyz.xmlparser.SAXParserFactoryImpl")
  *    })
  *    &#064;ImportModules({
- *       //
- *       // Imports service module.
- *       //
- *       &#064;ImportModule(name="javax.xml.parsers", version="[1.0, 2.0)")
+ *       &#064;ImportModule(name="javax.xml.parsers",   // service module
+ *                      version="[1.0, 2.0)")
  *    })
- *    superpackage com.xyz.xmlparser {
- *       //
- *       // Exports service-provider classes.
- *       //
- *       export com.xyz.xmlparser.DocumentBuilderFactoryImpl.class;
- *       export com.xyz.xmlparser.SAXParserFactoryImpl.class;
- *           ...
- *    }
+ *    module com.xyz.xmlparser;
  * </pre></blockquote>
- *
- * @see java.lang.module.annotation.ServiceProviders
- * @see java.lang.module.annotation.Services
- *
+ * @see java.module.annotation.ServiceProviders
+ * @see java.module.annotation.Services
  * @since 1.7
  */
 @Target({})

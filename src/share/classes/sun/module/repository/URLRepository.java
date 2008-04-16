@@ -36,7 +36,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.module.ModuleArchiveInfo;
 import java.module.ModuleDefinition;
-import java.module.ModuleDefinitionContent;
 import java.module.ModuleFormatException;
 import java.module.ModuleSystem;
 import java.module.ModuleSystemPermission;
@@ -330,14 +329,14 @@ public final class URLRepository extends AbstractRepository {
             arch = v;
         }
 
-        Set<ModuleInfo> moduleInfoSet = null;
+        Set<URLModuleInfo> urlModuleInfoSet = null;
         try {
             URL repoMD = new URL(canonicalizedCodebase + "repository-metadata.xml");
-            moduleInfoSet = MetadataXMLReader.read(repoMD);
+            urlModuleInfoSet = MetadataXMLReader.read(repoMD);
 
             // Initializes the internal data structures based on the module
             // info set.
-            doInitialize(moduleInfoSet);
+            doInitialize(urlModuleInfoSet);
         } catch (IOException ex) {
             // no-op
         } catch (Exception ex) {
@@ -351,11 +350,11 @@ public final class URLRepository extends AbstractRepository {
      * modules information in the module info set. Creates the appropriate
      * module definitions if necessary.
      */
-    private void doInitialize(Set<ModuleInfo> moduleInfoSet) throws IOException {
-        if (moduleInfoSet != null) {
+    private void doInitialize(Set<URLModuleInfo> urlModuleInfoSet) throws IOException {
+        if (urlModuleInfoSet != null) {
             Map<ModuleArchiveInfo, ModuleDefInfo> mdInfoMap =
                                         new HashMap<ModuleArchiveInfo, ModuleDefInfo>();
-            for (ModuleInfo mi : moduleInfoSet) {
+            for (URLModuleInfo mi : urlModuleInfoSet) {
                 try {
                     // Retrieves the module metadata
                     ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(
@@ -658,7 +657,7 @@ public final class URLRepository extends AbstractRepository {
              * the information to determine if a module has been updated.
              */
             URL repoMD = new URL(canonicalizedCodebase + "repository-metadata.xml");
-            Set<ModuleInfo> moduleInfoSet = MetadataXMLReader.read(repoMD);
+            Set<URLModuleInfo> urlModuleInfoSet = MetadataXMLReader.read(repoMD);
 
             // Uninstall all existing module archives and module definitions
             for (ModuleArchiveInfo mai : new ArrayList<ModuleArchiveInfo>(moduleArchiveInfos)) {
@@ -671,7 +670,7 @@ public final class URLRepository extends AbstractRepository {
 
             // Initializes the internal data structures based on the module
             // info set again.
-            doInitialize(moduleInfoSet);
+            doInitialize(urlModuleInfoSet);
 
             for (ModuleArchiveInfo mai : moduleArchiveInfos) {
                 RepositoryEvent evt = new RepositoryEvent(

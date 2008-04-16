@@ -25,11 +25,10 @@
 
 package java.module;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.List;
 
 /**
- * This class represents the reified module instance in the module system.
+ * This class represents a reified module instance in a module system.
  * <p>
  * @see java.lang.ClassLoader
  * @see java.module.ModuleDefinition
@@ -40,56 +39,35 @@ public abstract class Module
 {
     private static ModuleSystem defaultImpl = null;
 
-    /** Counter for generating Id for module instances. */
-    private static final AtomicLong idCounter = new AtomicLong();
-
-    /** Id for this module instance. */
-    private final long id = idCounter.incrementAndGet();
-
     /**
-     * Creates a new <code>Module</code> instance.
+     * Creates a new {@code Module} instance.
      */
     protected Module()  {
             // empty
     }
 
     /**
-     * Returns a long value that represents the unique identifier assigned to
-     * this module instance. The identifier is assigned by the JVM and is JVM
-     * implementation dependent.
-     *
-     * @return a long value that represents the unique identifier assigned to
-     *         this module instance.
-     */
-    public final long getId()  {
-            return id;
-    }
-
-    /**
-        * Returns the <code>ModuleDefinition</code> of the module instance.
+        * Returns the {@code ModuleDefinition} of this {@code Module}.
         *
-        * @return the <code>ModuleDefinition</code> object.
+        * @return the {@code ModuleDefinition} object.
         */
     public abstract ModuleDefinition getModuleDefinition();
 
     /**
-     * Returns the classloader associated with the module instance.
+     * Returns the classloader associated with this {@code Module}.
      * <p>
-     * If a security manager is present, and the caller's
-     * class loader is not null and the caller's class loader
-     * is not the same as or an ancestor of the class loader
-     * for the module instance whose class loader is
-     * requested, then this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>RuntimePermission("getClassLoader")</code>
-     * permission to ensure it's ok to access the class
-     * loader for the module instance.
+     * If a security manager is present, and the caller's class loader is not
+     * null and the caller's class loader is not the same as or an ancestor of
+     * the class loader for the module instance whose class loader is
+     * requested, then this method calls the security manager's
+     * {@code checkPermission} method with a
+     * {@code RuntimePermission("getClassLoader")} permission to ensure it's
+     * ok to access the class loader for this {@code Module}.
      *
-     * @return the classloader object of the module.
-     *  @throws SecurityException if a security manager
-     *         exists and its <code>checkPermission</code>
-     *         method denies access to the class loader for
-     *         the module instance.
+     * @return the {@code ClassLoader} object for this {@code Module}.
+     * @throws SecurityException if a security manager exists and its
+     *         {@code checkPermission} method denies access to the class loader
+     *         for this {@code Module}.
      */
     public abstract ClassLoader getClassLoader();
 
@@ -101,14 +79,14 @@ public abstract class Module
     public abstract List<Module> getImportedModules();
 
     /**
-     * Check if deep validation is supported.
+     * Check if deep validation is supported on this {@code Module}.
      *
-     * @return true if deep validation is supported.
+     * @return true if deep validation is supported; otherwise, returns false.
      */
     public abstract boolean supportsDeepValidation();
 
     /**
-     * Perform deep validation on the module instance.
+     * Perform deep validation on this {@code Module}.
      *
      * @throws UnsupportedOperationException if deep validation is not supported.
      * @throws ModuleInitializationException if deep validation fails.
@@ -118,10 +96,12 @@ public abstract class Module
     /**
      * Compares the specified object with this {@code Module} for equality.
      * Returns {@code true} if and only if {@code obj} is the same object as
-     * this object.
+     * this {@code Module}.
      *
-     * @param obj the object to be compared for equality with this module.
-     * @return {@code true} if the specified object is equal to this module
+     * @param obj the object to be compared for equality with this
+     *        {@code Module}.
+     * @return {@code true} if the specified object is equal to this
+     *         {@code Module}.
      */
     @Override
     public final boolean equals(Object obj)   {
@@ -131,7 +111,7 @@ public abstract class Module
     /**
      * Returns a hash code for this {@code Module}.
      *
-     * @return a hash code value for this object.
+     * @return a hash code value for this {@code Module}.
      */
     @Override
     public final int hashCode()   {
@@ -139,15 +119,14 @@ public abstract class Module
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>Module</code>.
+     * Returns a {@code String} object representing this {@code Module}.
      *
-     * @return a string representation of the <code>Module</code> object.
+     * @return a string representation of the {@code Module} object.
      */
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("module ");
+        builder.append("module instance ");
         builder.append(getModuleDefinition().getName());
         builder.append(" v");
         builder.append(getModuleDefinition().getVersion());

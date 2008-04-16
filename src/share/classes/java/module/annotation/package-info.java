@@ -24,7 +24,7 @@
  */
 
 /**
- * Provides metadata annotations for the development module.
+ * Provides metadata annotations for the development module, i.e. the <I>module</I> construct.
  *
  * @since 1.7
  */

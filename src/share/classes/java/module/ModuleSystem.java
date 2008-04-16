@@ -25,14 +25,14 @@
 
 package java.module;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * This class represents the module system which constructs a module
- * instance from a module definition.
+ * This class represents a module system. A module system is responsible for
+ * instantiating a module instance from a module definition, and managing its
+ * lifetime.
  * <p>
  * @see java.module.Module
  * @see java.module.ModuleDefinition
@@ -46,12 +46,6 @@ public abstract class ModuleSystem {
 
     private static ModuleSystem defaultImpl = null;
 
-    /** Counter for generating Ids for module systems. */
-    private static final AtomicLong idCounter = new AtomicLong();
-
-    /** Id for this module system. */
-    private final long id = idCounter.incrementAndGet();
-
     /**
      * Constructor used by subclasses.
      */
@@ -60,101 +54,90 @@ public abstract class ModuleSystem {
     }
 
     /**
-     * Returns a long value that represents the unique identifier assigned to
-     * this module system. The identifier is assigned by the JVM and is JVM
-     * implementation dependent.
-     *
-     * @return a long value that represents the unique identifier assigned to
-     *         this module system.
-     */
-    public final long getId() {
-        return id;
-    }
-
-    /**
-     * Returns a {@code Module} instance for the specified {@code ModuleDefinition}
-     * in the {@code ModuleSystem}. The module is initialized and ready to use.
+     * Returns a {@code Module} instance for the specified
+     * {@code ModuleDefinition} in this {@code ModuleSystem}. The returned
+     * {@code Module} is fully initialized and ready to use.
      * <p>
-     * If there is an existing module instance for the specified
-     * {@code ModuleDefinition}, that instance is returned.  Otherwise, a new module
-     * instance is instantiated and returned.
+     * If there is an existing {@code Module} instance for the specified
+     * {@code ModuleDefinition}, that instance is returned.  Otherwise, a new
+     * {@code Module} instance is instantiated, initialized, and returned.
      *
-     * @param moduleDef a {@code ModuleDefinition}
+     * @param moduleDef a {@code ModuleDefinition} object
      * @return a {@code Module} instance of the {@code ModuleDefinition}.
-     * @throws ModuleInitializationException if the module instance cannot be initialized.
-     * @throws IllegalStateException if the specified module definition
+     * @throws ModuleInitializationException if the {@code Module} instance
+     *         cannot be initialized.
+     * @throws IllegalStateException if the specified {@code ModuleDefinition}
      *         has already been disabled.
      */
     public abstract Module getModule(ModuleDefinition moduleDef) throws ModuleInitializationException;
 
     /**
      * Releases an existing {@code Module} instance corresponding to the
-     * specified {@code ModuleDefinition} in the {@code ModuleSystem}.
+     * specified {@code ModuleDefinition} in this {@code ModuleSystem}.
      * <p>
-     * If there is an existing module instance for the specified module
-     * definition, it will never be returned by the {@code ModuleSystem}
-     * after this method returns. Further, if that module instance is
-     * imported by other module instances, each of these importing module
-     * instance will also be released.
+     * If there is an existing {@code Module} instance for the specified
+     * {@code ModuleDefinition}, it will never be returned by this
+     * {@code ModuleSystem} after this method returns. Further, if that
+     * {@code Module} instance is imported by other {@code Module}
+     * instances, each of these importing {@code Module} instance will
+     * also be released.
      * <p>
-     * If there is no module instance corresponding to the module
-     * definition, calling this method has no effect.
+     * If there is no {@code Module} instance corresponding to the
+     * {@code ModuleDefinition}, calling this method has no effect.
      * <p>
      * {@code Module} instances corresponding to the {@code ModuleDefinition}
      * with name that begins with "java.", or from the bootstrap repository
      * cannot be released. {@code Module} instances corresponding to the
-     * {@code ModuleDefinition} that its <code>isModuleReleasable</code>
-     * method returns false also cannot be released.
+     * {@code ModuleDefinition} that its {@code isModuleReleasable} method
+     * returns false also cannot be released.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a <code>
-     * ModuleSystemPermission("releaseModule")</code> permission to ensure
-     * it's ok to release the existing module instance of the specified
-     * module definition.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("releaseModule")} permission to ensure
+     * it's ok to release the existing {@code Module} instance of the
+     * specified {@code ModuleDefinition} in this {@code ModuleSystem}.
      *
-     * @param moduleDef a {@code ModuleDefinition}.
+     * @param moduleDef a {@code ModuleDefinition} object.
      * @throws SecurityException if a security manager exists and its
-     *         checkPermission method denies access to release the
-     *         module instance of the specified module definition.
+     *         {@code checkPermission} method denies access to release the
+     *         {@code Module} instance of the specified
+     *         {@code ModuleDefinition}.
      * @throws UnsupportedOperationException if the existing module
      *         instance cannot be released.
      */
     public abstract void releaseModule(ModuleDefinition moduleDef);
 
     /**
-     * Disables the specified {@code ModuleDefinition} in the
+     * Disables the specified {@code ModuleDefinition} in this
      * {@code ModuleSystem}.
      * <p>
-     * The ModuleDefinition is {@link #releaseModule released} and marked to
-     * disallow creation of new {@code Module} instances. Subsequent calls
-     * to {@link #getModule getModule} with this ModuleDefinition throw an
-     * IllegalStateException.
+     * The {@code ModuleDefinition} is {@link #releaseModule released} and
+     * marked to disallow creation of new {@code Module} instances. Subsequent
+     * calls to {@link #getModule getModule} with this
+     * {@code ModuleDefinition} throw an IllegalStateException.
      * <p>
-     * {@code ModuleDefinition} with name that begins with "java.",
-     * or from the bootstrap repository cannot be disabled.
+     * {@code ModuleDefinition} with name that begins with "java.", or from
+     * the bootstrap repository cannot be disabled.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a <code>
-     * ModuleSystemPermission("disableModuleDefinition")</code> permission to
-     * ensure it's ok to disable the specified module definition in the
-     * module system.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("disableModuleDefinition")} permission to
+     * ensure it's ok to disable the specified {@code ModuleDefinition} in this
+     * {@code ModuleSystem}.
      *
-     * @param moduleDef a {@code ModuleDefinition}.
+     * @param moduleDef a {@code ModuleDefinition} object.
      * @throws SecurityException if a security manager exists and its
-     *         checkPermission method denies access to disable the
-     *         specified module definition in the module system.
-     * @throws UnsupportedOperationException if the specified module
-     *         definition cannot be disabled.
-     * @throws IllegalStateException if the specified module definition
+     *         {@code checkPermission} method denies access to disable the
+     *         specified {@code ModuleDefinition} in this {@code ModuleSystem}.
+     * @throws UnsupportedOperationException if the specified
+     *         {@code ModuleDefinition} cannot be disabled.
+     * @throws IllegalStateException if the specified {@code ModuleDefinition}
      *         has already been disabled.
      */
     public abstract void disableModuleDefinition(ModuleDefinition moduleDef);
 
     /**
      * Returns the system's default module system.
-     * <p>
-     * The default class of the module system can be overridden using the
-     * <code>java.module.ModuleSystem</code> system property.
      *
      * @return the system's default module system.
      */
@@ -175,8 +158,8 @@ public abstract class ModuleSystem {
      * events from the module systems.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a <code>
-     * ModuleSystemPermission("addModuleSystemListener")</code> permission to
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("addModuleSystemListener")} permission to
      * ensure it's ok to add a module system listener to the module systems.
      *
      * @param listener the module system listener
@@ -205,8 +188,8 @@ public abstract class ModuleSystem {
      * receives module system events from the module systems.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's checkPermission method with a <code>
-     * ModuleSystemPermission("removeModuleSystemListener")</code> permission
+     * manager's {@code checkPermission} method with a {@code
+     * ModuleSystemPermission("removeModuleSystemListener")} permission
      * to ensure it's ok to remove a module system listener from the module
      * systems.
      *
@@ -267,8 +250,8 @@ public abstract class ModuleSystem {
     private static ExecutorService executorService = null;
 
     /**
-     * Processes module system event occuring in this module system by
-     * dispatching them to any registered ModuleSystemListener objects.
+     * Processes module system event occuring in this {@code ModuleSystem} by
+     * dispatching them to any registered {@code ModuleSystemListener} objects.
      *
      * @param event the module system event
      */

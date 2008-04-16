@@ -53,7 +53,7 @@ final class ModuleLoader extends SecureClassLoader {
 
     private final Module module;
     private final ModuleDefinition moduleDef;
-    private final ModuleDefinitionContent content;
+    private final ModuleContent content;
     private final ClassLoader parent;
 
     private List<Module> importedModules;
@@ -71,9 +71,9 @@ final class ModuleLoader extends SecureClassLoader {
         Module coreModule = moduleDef.getRepository().find("java.se.core").getModuleInstance();
         importedModules = Collections.singletonList(coreModule);
         content = java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction<ModuleDefinitionContent>() {
-                        public ModuleDefinitionContent run() {
-                            return moduleDef.getModuleDefinitionContent();
+                    new java.security.PrivilegedAction<ModuleContent>() {
+                        public ModuleContent run() {
+                            return moduleDef.getModuleContent();
                         }
                     });
         ClassesDirectoryPath classesDirectoryPathAnnotation = moduleDef.getAnnotation(ClassesDirectoryPath.class);
@@ -106,7 +106,7 @@ final class ModuleLoader extends SecureClassLoader {
             URL moduleURL = new URL(sb.toString());
 
             // This is currently the very first call the module system would
-            // call into ModuleDefinitionContent in a module definition. In the
+            // call into ModuleContent in a module definition. In the
             // case of URLRepository, this would trigger the JAM file to be
             // downloaded and the module metadata is compared (and potentially
             // throws exception if there is a mismatch between the
@@ -178,11 +178,12 @@ final class ModuleLoader extends SecureClassLoader {
         if (classesDirectoryPath != null) {
             path = classesDirectoryPath + '/' + path;
         }
-        if (content.hasEntry(path) == false) {
-            throw new ClassNotFoundException(name);
-        }
 
         try {
+            if (content.hasEntry(path) == false) {
+                throw new ClassNotFoundException(name);
+            }
+
             // module's code source URL is the sealed URL
             URL sealBase = cs.getLocation();
 
@@ -312,12 +313,12 @@ final class ModuleLoader extends SecureClassLoader {
         if (classesDirectoryPath != null) {
             path = classesDirectoryPath + '/' + name;
         }
-        if (content.hasEntry(path)) {
-            try {
+        try {
+            if (content.hasEntry(path)) {
                 return content.getEntryAsStream(path);
-            } catch (IOException e) {
-                return null;
             }
+        } catch (IOException e) {
+            // fallback to next return
         }
         return null;
     }
@@ -364,10 +365,10 @@ final class ModuleLoader extends SecureClassLoader {
         if (classesDirectoryPath != null) {
             path = classesDirectoryPath + '/' + name;
         }
-        if (content.hasEntry(path) == false) {
-            return null;
-        }
         try {
+            if (content.hasEntry(path) == false) {
+                return null;
+            }
             ResourceHandler handler = new ResourceHandler(this, path);
             URL url = new URL("x-module-internal",
                 moduleDef.getName() + "-" + moduleDef.getVersion(),
@@ -457,16 +458,15 @@ final class ModuleLoader extends SecureClassLoader {
 
     @Override
     protected String findLibrary(String libname) {
-        File lib = content.getNativeLibrary(libname);
-        if (lib == null) {
-            return null;
-        } else {
-            try {
+        try {
+            File lib = content.getNativeLibrary(libname);
+            if (lib != null) {
                 return lib.getCanonicalPath();
-            } catch (IOException ex) {
-                return null;
             }
+        } catch (IOException ex) {
+            // ignore exception
         }
+        return null;
     }
 
     @Override

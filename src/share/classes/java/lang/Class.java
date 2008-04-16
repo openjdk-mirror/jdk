@@ -1,5 +1,5 @@
 /*
- * Copyright 1994-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,7 +36,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Superpackage;
 import java.lang.ref.SoftReference;
 import java.io.InputStream;
 import java.io.ObjectStreamField;
@@ -618,6 +617,47 @@ public final
     // Package-private to allow ClassLoader access
     native ClassLoader getClassLoader0();
 
+    /**
+     * Returns the actual class loader for the class. If the class appeared to
+     * be loaded by the boostrap classloader (i.e. {@link #getClassLoader()}
+     * returns {@code null}), some implementations may actually use module
+     * class loader internally to load the class. This method will return the
+     * actual module class loader in such implementations. If the class is
+     * loaded by non-bootstrap classloader, this method will simply return the
+     * same class loader that is returned by calling {@link #getClassLoader()}.
+     *
+     * <p> If a security manager is present, and the caller's class loader is
+     * not null and the caller's class loader is not the same as or an ancestor
+     * of the class loader for the class whose class loader is requested, then
+     * this method calls the security manager's {@code checkPermission} method
+     * with a {@code RuntimePermission("getClassLoader")} permission to ensure
+     * it's ok to access the actual class loader for the class.
+     *
+     * @return  the actual class loader that loaded the class or interface
+     *          represented by this object.
+     * @throws SecurityException if a security manager exists and its
+     *         {@code checkPermission} method denies access to the actual class
+     *         loader for the class.
+     * @see java.lang.ClassLoader
+     * @see SecurityManager#checkPermission
+     * @see java.lang.RuntimePermission
+     * @since 1.7
+     */
+    public ClassLoader getActualClassLoader() {
+        ClassLoader cl = getClassLoader0();
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            ClassLoader ccl = ClassLoader.getCallerClassLoader();
+            if (ccl != null && ccl != cl && (cl == null || !cl.isAncestor(ccl))) {
+                sm.checkPermission(SecurityConstants.GET_CLASSLOADER_PERMISSION);
+            }
+        }
+        if (cl != null) {
+            return cl;
+        } else {
+            throw new UnsupportedOperationException("Not implemented yet");
+        }
+    }
 
     /**
      * Returns an array of {@code TypeVariable} objects that represent the
@@ -698,13 +738,14 @@ public final
     }
 
     /**
-     * Returns the superpackage this class is a member of,
-     * or null if it is not a member of a superpackage.
+     * Returns the information of the module that this class is a member of,
+     * or null if this class is not a member of any module.
      *
-     * @return the superpackage this class is a member of,
-     * or null if it is not a member of a superpackage.
+     * @return the information of the module this class is a member of,
+     *         or null if this class is not a member of any module.
+     * @since 1.7
      */
-    public Superpackage getSuperpackage() {
+    public ModuleInfo getModuleInfo() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

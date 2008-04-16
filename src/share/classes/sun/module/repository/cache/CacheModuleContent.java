@@ -25,11 +25,10 @@
 
 package sun.module.repository.cache;
 
-import java.lang.reflect.Superpackage;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
 import java.module.annotation.JarLibraryPath;
 import java.module.annotation.NativeLibraryPath;
 import java.module.annotation.NativeLibraryPaths;
@@ -47,11 +46,11 @@ import sun.module.repository.RepositoryUtils;
 
 
 /**
- * Base class to implement ModuleDefinitionContent in the repository cache.
+ * Base class to implement ModuleContent in the repository cache.
  *
  * @since 1.7
  */
-abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
+abstract class CacheModuleContent extends ModuleContent {
 
     // Entry directory
     private final File entryDirectory;
@@ -59,8 +58,8 @@ abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
     // Metadata bytes
     private final byte[] metadataBytes;
 
-    // Superpackage that represents the metadata
-    private final Superpackage superPackage;
+    // ModuleInfo that represents the metadata
+    private final ModuleInfo moduleInfo;
 
     // Classpaths searched for classes & resources.
     private final List<JarFile> classPaths = new ArrayList<JarFile>();
@@ -75,19 +74,19 @@ abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
     private IOException initializationException = null;
 
     /**
-     * Constructs a new cache module definition content.
+     * Constructs a new cache module content.
      */
-    CacheModuleDefinitionContent(File entryDirectory, byte[] metadataBytes, Superpackage superPackage) {
+    CacheModuleContent(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo) {
         this.entryDirectory = entryDirectory;
         this.metadataBytes = metadataBytes;
-        this.superPackage = superPackage;
+        this.moduleInfo = moduleInfo;
     }
 
     /**
-     * Returns the JAM file that this module definition content represents.
+     * Returns the JAM file that this module content represents.
      *
      * @return the JAM file.
-     * @throw IOException if an I/O exception has occurred.
+     * @throws IOException if an I/O exception has occurred.
      */
     protected abstract File getJamFile() throws IOException;
 
@@ -107,7 +106,7 @@ abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
     }
 
     /**
-     * Initialize the module definition content if necessary, e.g. extract
+     * Initialize the module content if necessary, e.g. extract
      * embedded JAR and native library files if not done already/
      */
     private boolean initializeIfNecessary() {
@@ -120,7 +119,7 @@ abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
 
         // Determines if jar library path has been overridden by @JarLibraryPath
         String jarLibraryPath = JamUtils.MODULE_INF + "/lib";
-        JarLibraryPath jarLibraryPathAnnotation = superPackage.getAnnotation(JarLibraryPath.class);
+        JarLibraryPath jarLibraryPathAnnotation = moduleInfo.getAnnotation(JarLibraryPath.class);
         if (jarLibraryPathAnnotation != null) {
             jarLibraryPath = jarLibraryPathAnnotation.value();
         }
@@ -129,7 +128,7 @@ abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
         String nativeLibraryPath = JamUtils.MODULE_INF + "/bin/"
                                     + RepositoryUtils.getPlatform() + "/"
                                     + RepositoryUtils.getArch();
-        NativeLibraryPaths nativeLibraryPathsAnnotation = superPackage.getAnnotation(NativeLibraryPaths.class);
+        NativeLibraryPaths nativeLibraryPathsAnnotation = moduleInfo.getAnnotation(NativeLibraryPaths.class);
         if (nativeLibraryPathsAnnotation != null) {
             for (NativeLibraryPath nlp : nativeLibraryPathsAnnotation.value()) {
                 // Retrieves native library path that matches the current
@@ -207,9 +206,9 @@ abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
     }
 
     @Override
-    public final File getNativeLibrary(String libraryName) {
+    public final File getNativeLibrary(String libraryName) throws IOException {
         if (initializeIfNecessary() == false) {
-            return null;
+            throw initializationException;
         }
         File nativeLibrary = new File(new File(entryDirectory, "bin"), libraryName);
         if (nativeLibrary.exists() && nativeLibrary.isFile()) {
@@ -220,14 +219,14 @@ abstract class CacheModuleDefinitionContent extends ModuleDefinitionContent {
     }
 
     @Override
-    public final boolean hasEntry(String name) {
+    public final boolean hasEntry(String name) throws IOException {
         return getEntryNames().contains(name);
     }
 
     @Override
-    public final Set<String> getEntryNames() {
+    public final Set<String> getEntryNames() throws IOException {
         if (initializeIfNecessary() == false) {
-            return Collections.unmodifiableSet(new HashSet<String>());
+            throw initializationException;
         }
         if (entryNames == null) {
             Set<String> names = new HashSet<String>();

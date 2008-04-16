@@ -25,9 +25,8 @@
 
 package sun.module.repository.cache;
 
-import java.lang.reflect.Superpackage;
 import java.io.File;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
 import java.module.Version;
 import java.net.URL;
 import java.util.jar.JarFile;
@@ -43,32 +42,32 @@ import java.util.jar.JarFile;
     private final String path;
 
     // Module's content
-    private ModuleDefinitionContent content = null;
+    private ModuleContent content = null;
 
     /**
      * Constructs a new URL module definition info.
      *
      * @param entryDirectory directory where this object will live.
      * @param metadataBytes byte array that represents the module metadata
-     * @param superPackage superpackage recified from the module metadata
+     * @param moduleInfo ModuleInfo recified from the module metadata
      * @param codebase codebase of the module definition
      * @param path path to the module definition relative to the codebase
      */
-     URLModuleDefInfo(File entryDirectory, byte[] metadataBytes, Superpackage superPackage,
+     URLModuleDefInfo(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo,
                      URL codebase, String path) {
-        super(entryDirectory, metadataBytes, superPackage);
+        super(entryDirectory, metadataBytes, moduleInfo);
         this.codebase = codebase;
         this.path = path;
     }
 
      /**
-      * Returns the module definition content that represents the
-      * exposed contents in the jam file.
+      * Returns the module content that represents the exposed contents
+      * in the jam file.
       */
-     public ModuleDefinitionContent getModuleDefinitionContent() {
-        // Creates the module definition content lazily.
+     public ModuleContent getModuleContent() {
+        // Creates the module content lazily.
         if (content == null) {
-            content = new URLModuleDefinitionContent(this);
+            content = new URLModuleContent(this);
         }
         return content;
      }

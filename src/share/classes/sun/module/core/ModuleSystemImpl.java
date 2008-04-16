@@ -64,7 +64,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
     private final List<ModuleImpl> newErrorModules;
 
     // Module definitions that have been disabled.
-    private final Set<Long> disabledModuleDefinitionIds = new HashSet<Long>();
+    private final WeakHashMap<ModuleDefinition, Boolean> disabledModuleDefs = new WeakHashMap<ModuleDefinition, Boolean>();
 
     private ModuleSystemImpl() {
         modules = new IdentityHashMap<ModuleDefinition,ModuleImpl>();
@@ -182,11 +182,11 @@ public final class ModuleSystemImpl extends ModuleSystem {
         if (moduleDef.getRepository().getModuleSystem() != this) {
             throw new UnsupportedOperationException("Cannot disable module definition in a different module system..");
         }
-        synchronized(disabledModuleDefinitionIds) {
-            if (disabledModuleDefinitionIds.contains(new Long(moduleDef.getId()))) {
+        synchronized(disabledModuleDefs) {
+            if (disabledModuleDefs.containsKey(moduleDef)) {
                 throw new IllegalStateException("Cannot disable module definition which has already been disabled.");
             }
-            disabledModuleDefinitionIds.add(new Long(moduleDef.getId()));
+            disabledModuleDefs.put(moduleDef, Boolean.TRUE);
         }
 
         // Send MODULE_DEFINITION_DISABLED event
@@ -198,8 +198,8 @@ public final class ModuleSystemImpl extends ModuleSystem {
     public Module getModule(ModuleDefinition moduleDef) throws ModuleInitializationException {
         // Check if the module definition has been disabled.
         //
-        synchronized(disabledModuleDefinitionIds) {
-            if (disabledModuleDefinitionIds.contains(new Long(moduleDef.getId()))) {
+        synchronized(disabledModuleDefs) {
+            if (disabledModuleDefs.containsKey(moduleDef)) {
                 throw new IllegalStateException("Cannot instantiate new module instance from a disabled module definition.");
             }
         }

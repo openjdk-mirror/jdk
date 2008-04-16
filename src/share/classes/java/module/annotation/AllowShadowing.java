@@ -31,43 +31,28 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates that the shadowing check is disabled on the module instance of
- * the corresponding module definition when shallow validation is performed
- * initialization. This metadata annotation is applied to the development
- * module, i.e. the <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates that the shadowing check is disabled on a module instance when
+ * shallow validation is performed during module initialization. If the
+ * shadowing check is disabled, it would be possible for classes from the
+ * imported modules to shadow classes in the module. This metadata annotation is
+ * applied to the development module, i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
- *    &#064;Version("1.7.0")
- *    superpackage opensource.utils {
- *       // Exports classes
- *       export org.foo.utils.*;
- *
- *       // Membership - all classes in the listed package
- *       member package org.foo.utils;
- *       ....
- *    }
- *
- *    // Uses @AllowShadowing to mark a module to explicitly allow
- *    // shadowing of classes from its imported modules. Otherwise,
- *    // shallow validation would fail.
- *    &#064;Version("1.0")
+ *    //
+ *    // com/wombat/webservice/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;AllowShadowing
  *    &#064;ImportModules({
- *       // The imported module is optional.
+ *       // The imported module is optional, but it has classes that could shadow
+ *       // classes in the module, so shadowing check needs to be disabled.
  *       &#064;ImportModule(name="opensource.utils", version="[1.0, 2.0)", optional=true)
  *    })
- *    superpackage com.wombat.webservice {
- *           // Membership - all classes in the listed package
- *       member package org.foo.utils.;
- *           ....
- *    }
+ *    module com.wombat.webservice;
  * </pre></blockquote>
  * <p>
- *
  * @since 1.7
  */
-@Target(ElementType.SUPERPACKAGE)
+@Target(ElementType.MODULE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AllowShadowing {
 }

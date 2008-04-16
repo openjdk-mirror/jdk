@@ -27,9 +27,10 @@ import java.module.VersionConstraint;
 import java.module.Query;
 import java.module.ImportDependency;
 import java.module.ModuleDefinition;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
+import java.module.ModuleSystem;
+import java.module.PackageDefinition;
 import java.module.Repository;
-import java.module.annotation.LegacyClasses;
 import java.module.annotation.ImportPolicyClass;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import sun.module.annotation.LegacyClasses;
 
 /*
  * @test QueryTest.java
@@ -94,6 +96,16 @@ public class QueryTest {
         }
 
         @Override
+        public Set<PackageDefinition> getMemberPackageDefinitions() {
+            return Collections.unmodifiableSet(new HashSet<PackageDefinition>());
+        }
+
+        @Override
+        public Set<PackageDefinition> getExportedPackageDefinitions() {
+            return Collections.unmodifiableSet(new HashSet<PackageDefinition>());
+        }
+
+        @Override
         public Set<String> getMemberClasses() {
             return Collections.unmodifiableSet(new HashSet<String>());
         }
@@ -127,12 +139,17 @@ public class QueryTest {
         }
 
         @Override
+        public ModuleSystem getModuleSystem() {
+            return null;
+        }
+
+        @Override
         public boolean isModuleReleasable() {
             return true;
         }
 
         @Override
-        public ModuleDefinitionContent getModuleDefinitionContent() {
+        public ModuleContent getModuleContent() {
             return null;
         }
     }
@@ -140,8 +157,7 @@ public class QueryTest {
     public static void realMain(String[] args) throws Throwable {
         testAllQuery();
         testNoneQuery();
-        testNameQuery();
-        testVersionConstraintQuery();
+        testModuleQuery();
         testAttributeQuery();
         testAnnotationQuery();
         testNotQuery();
@@ -164,7 +180,7 @@ public class QueryTest {
             check(query2.equals(query2) == true);
             check(query.toString().equals(query2.toString()) == true);
 
-            check(query.getIndexableNames() == null);
+            check(query.getIndexableModuleNames() == null);
 
             check(query.hashCode() == query2.hashCode());
         } catch (Throwable ex) {
@@ -181,7 +197,7 @@ public class QueryTest {
             check(query.match(moduleDef1) == false);
             check(query.match(moduleDef2) == false);
 
-            Set<String> indexableNames = query.getIndexableNames();
+            Set<String> indexableNames = query.getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 0);
 
             Query query2 = cloneQueryBySerialization(query);
@@ -196,10 +212,20 @@ public class QueryTest {
         }
     }
 
-    static public void testNameQuery() throws Exception {
-        // Test NameQuery
+    static public void testModuleQuery() throws Exception {
+        // Test ModuleQuery
         try {
-            Query query = Query.name(null);
+            Query query = Query.module(null);
+            fail();
+        } catch (NullPointerException npe) {
+            pass();
+        } catch (Throwable ex) {
+            unexpected(ex);
+        }
+
+        // Test ModuleQuery
+        try {
+            Query query = Query.module("javax.swing", null);
             fail();
         } catch (NullPointerException npe) {
             pass();
@@ -209,113 +235,49 @@ public class QueryTest {
 
         try {
             ModuleDefinition moduleDef = new MockModuleDefinition("javax.swing", Version.valueOf(1, 0, 0), new HashMap<String, String>());
-            Query query = Query.name("javax.swing");
+            Query query = Query.module("javax.swing");
+            Query query2 = Query.module("javax.swing", VersionConstraint.valueOf("2.0+"));
             check(query.match(moduleDef) == true);
+            check(query2.match(moduleDef) == false);
 
             moduleDef = new MockModuleDefinition("java.swing", Version.valueOf(1, 0, 0), new HashMap<String, String>());
             check(query.match(moduleDef) == false);
+            check(query2.match(moduleDef) == false);
 
             moduleDef = new MockModuleDefinition(" java.swing", Version.valueOf(1, 0, 0), new HashMap<String, String>());
             check(query.match(moduleDef) == false);
+            check(query2.match(moduleDef) == false);
 
             moduleDef = new MockModuleDefinition("java.swing ", Version.valueOf(1, 0, 0), new HashMap<String, String>());
             check(query.match(moduleDef) == false);
+            check(query2.match(moduleDef) == false);
 
             moduleDef = new MockModuleDefinition("JAVAX.SWING", Version.valueOf(1, 0, 0), new HashMap<String, String>());
             check(query.match(moduleDef) == false);
+            check(query2.match(moduleDef) == false);
 
             moduleDef = new MockModuleDefinition("org.foo.xml", Version.valueOf(1, 0, 0), new HashMap<String, String>());
             check(query.match(moduleDef) == false);
+            check(query2.match(moduleDef) == false);
 
             check(query.equals(query) == true);
-            check(query.equals(Query.name("javax.swing")) == true);
-            check(query.equals(Query.name("org.foo.xml")) == false);
-            check(query.equals(Query.version("1.1.0")) == false);
+            check(query.equals(query2) == false);
+            check(query.equals(Query.module("javax.swing")) == true);
+            check(query.equals(Query.module("org.foo.xml")) == false);
+            check(query.equals(Query.module("x.y.z", VersionConstraint.valueOf("1.1.0"))) == false);
             check(query.equals(Query.attribute("my.name")) == false);
 
-            Set<String> indexableNames = Query.name("javax.swing").getIndexableNames();
+            Set<String> indexableNames = Query.module("javax.swing").getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
 
-            Query query2 = cloneQueryBySerialization(query);
-            check(query.equals(query2) == true);
-            check(query2.equals(query) == true);
-            check(query2.equals(query2) == true);
-            check(query.toString().equals(query2.toString()) == true);
+            Query query3 = cloneQueryBySerialization(query);
+            check(query.equals(query3) == true);
+            check(query3.equals(query) == true);
+            check(query3.equals(query3) == true);
+            check(query.toString().equals(query3.toString()) == true);
 
-            check(query.hashCode() == query2.hashCode());
-            check(query.hashCode() != Query.name("org.foo.xml").hashCode());
-        } catch (Throwable ex) {
-            unexpected(ex);
-        }
-    }
-
-    static public void testVersionConstraintQuery() throws Exception {
-        // Test VersionConstraintQuery
-        try {
-            Query query = Query.version((String)null);
-            fail();
-        } catch (NullPointerException npe) {
-            pass();
-        } catch (Throwable ex) {
-            unexpected(ex);
-        }
-
-        try {
-            Query query = Query.version((VersionConstraint)null);
-            fail();
-        } catch (NullPointerException npe) {
-            pass();
-        } catch (Throwable ex) {
-            unexpected(ex);
-        }
-
-        try {
-            Query query = Query.version("1.x.y");
-            fail();
-        } catch (IllegalArgumentException iae) {
-            pass();
-        } catch (Throwable ex) {
-            unexpected(ex);
-        }
-
-        try {
-            ModuleDefinition moduleDef1 = new MockModuleDefinition("javax.swing", Version.valueOf(1, 0, 0), new HashMap<String, String>());
-            ModuleDefinition moduleDef2 = new MockModuleDefinition("org.foo.xml", Version.valueOf(2, 0, 0), new HashMap<String, String>());
-            Query query = Query.version("1.0.0");
-            check(query.match(moduleDef1) == true);
-            check(query.match(moduleDef2) == false);
-
-            query = Query.version("2.0.0");
-            check(query.match(moduleDef1) == false);
-            check(query.match(moduleDef2) == true);
-
-            query = Query.version("[1.0.0, 2.0.0)");
-            check(query.match(moduleDef1) == true);
-            check(query.match(moduleDef2) == false);
-
-            query = Query.version("[2.0.0, 3.0.0)");
-            check(query.match(moduleDef1) == false);
-            check(query.match(moduleDef2) == true);
-
-            query = Query.version("1.0.0");
-            check(query.equals(query) == true);
-            check(query.equals(Query.name("org.foo.xml")) == false);
-            check(query.equals(Query.version("1.0.0")) == true);
-            check(query.equals(Query.version("1.1.0")) == false);
-            check(query.equals(Query.version("1.0.0+")) == false);
-            check(query.equals(Query.version("[1.0.0, 2.0.0)")) == false);
-            check(query.equals(Query.attribute("my.name")) == false);
-
-            check(query.getIndexableNames() == null);
-
-            Query query2 = cloneQueryBySerialization(query);
-            check(query.equals(query2) == true);
-            check(query2.equals(query) == true);
-            check(query2.equals(query2) == true);
-            check(query.toString().equals(query2.toString()) == true);
-
-            check(query.hashCode() == query2.hashCode());
-            check(query.hashCode() != Query.version("[1.0.0, 2.0.0)").hashCode());
+            check(query.hashCode() == query3.hashCode());
+            check(query.hashCode() != Query.module("org.foo.xml").hashCode());
         } catch (Throwable ex) {
             unexpected(ex);
         }
@@ -397,8 +359,8 @@ public class QueryTest {
 
             query = Query.attribute("x.y.z");
             check(query.equals(query) == true);
-            check(query.equals(Query.name("org.foo.xml")) == false);
-            check(query.equals(Query.version("1.0.0")) == false);
+            check(query.equals(Query.module("org.foo.xml")) == false);
+            check(query.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0"))) == false);
             check(query.equals(Query.attribute("my.name")) == false);
             check(query.equals(Query.attribute("x.y.z")) == true);
             check(query.equals(Query.attribute("x.y.z", HELLO_WORLD)) == false);
@@ -411,14 +373,14 @@ public class QueryTest {
 
             query = Query.attribute("x.y.z", HELLO_WORLD);
             check(query.equals(query) == true);
-            check(query.equals(Query.name("org.foo.xml")) == false);
-            check(query.equals(Query.version("1.0.0")) == false);
+            check(query.equals(Query.module("org.foo.xml")) == false);
+            check(query.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0"))) == false);
             check(query.equals(Query.attribute("my.name")) == false);
             check(query.equals(Query.attribute("x.y.z")) == false);
             check(query.equals(Query.attribute("x.y.z", HELLO_WORLD)) == true);
             check(query.equals(Query.attribute("x.y.z", RANDOM_VALUE)) == false);
 
-            check(query.getIndexableNames() == null);
+            check(query.getIndexableModuleNames() == null);
 
             query2 = cloneQueryBySerialization(query);
             check(query.equals(query2) == true);
@@ -466,12 +428,12 @@ public class QueryTest {
             check(query.match(moduleDef2) == true);
 
             check(query.equals(query) == true);
-            check(query.equals(Query.name("org.foo.xml")) == false);
-            check(query.equals(Query.version("1.0.0")) == false);
+            check(query.equals(Query.module("org.foo.xml")) == false);
+            check(query.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0"))) == false);
             check(query.equals(Query.attribute("my.name")) == false);
             check(query.equals(Query.annotation(LegacyClasses.class)) == true);
 
-            check(query.getIndexableNames() == null);
+            check(query.getIndexableModuleNames() == null);
 
             Query query2 = cloneQueryBySerialization(query);
             check(query.equals(query2) == true);
@@ -511,21 +473,21 @@ public class QueryTest {
             ModuleDefinition moduleDef1 = new MockModuleDefinition("javax.swing", Version.valueOf(1, 0, 0), attributes);
             ModuleDefinition moduleDef2 = new MockModuleDefinition("org.foo.xml", Version.valueOf(2, 0, 0), new HashMap<String, String>());
 
-            Query query1 = Query.name("javax.swing");
+            Query query1 = Query.module("javax.swing");
             Query query2 = Query.not(query1);
             check(query1.match(moduleDef1) == true);
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableNames() == null);
+            check(query2.getIndexableModuleNames() == null);
 
-            query1 = Query.version("1.0.0");
+            query1 = Query.module("javax.swing", VersionConstraint.valueOf("1.0.0"));
             query2 = Query.not(query1);
             check(query1.match(moduleDef1) == true);
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableNames() == null);
+            check(query2.getIndexableModuleNames() == null);
 
             query1 = Query.attribute(KEY1);
             query2 = Query.not(query1);
@@ -533,7 +495,7 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableNames() == null);
+            check(query2.getIndexableModuleNames() == null);
 
             query1 = Query.attribute(KEY1, HELLO_WORLD);
             query2 = Query.not(query1);
@@ -541,7 +503,7 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableNames() == null);
+            check(query2.getIndexableModuleNames() == null);
 
             query1 = Query.attribute(KEY1, RANDOM_VALUE);
             query2 = Query.not(query1);
@@ -549,17 +511,17 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == true);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableNames() == null);
+            check(query2.getIndexableModuleNames() == null);
 
-            query1 = Query.not(Query.name("javax.swing"));
+            query1 = Query.not(Query.module("javax.swing"));
             check(query1.equals(query1) == true);
-            check(query1.equals(Query.name("javax.swing")) == false);
-            check(query1.equals(Query.not(Query.name("javax.swing"))) == true);
-            check(query1.equals(Query.name("org.foo.xml")) == false);
-            check(query1.equals(Query.version("1.1.0")) == false);
+            check(query1.equals(Query.module("javax.swing")) == false);
+            check(query1.equals(Query.not(Query.module("javax.swing"))) == true);
+            check(query1.equals(Query.module("org.foo.xml")) == false);
+            check(query1.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.1.0"))) == false);
             check(query1.equals(Query.attribute("my.name")) == false);
-            check(query1.hashCode() == Query.not(Query.name("javax.swing")).hashCode());
-            check(query1.getIndexableNames() == null);
+            check(query1.hashCode() == Query.not(Query.module("javax.swing")).hashCode());
+            check(query1.getIndexableModuleNames() == null);
 
             query2 = cloneQueryBySerialization(query1);
             check(query1.equals(query2) == true);
@@ -568,9 +530,9 @@ public class QueryTest {
             check(query1.toString().equals(query2.toString()) == true);
 
             check(query1.hashCode() == query2.hashCode());
-            check(query1.hashCode() == Query.not(Query.name("javax.swing")).hashCode());
-            check(query1.hashCode() != Query.not(Query.name("org.foo.xml")).hashCode());
-            check(query1.hashCode() != Query.not(Query.version("1.1.0")).hashCode());
+            check(query1.hashCode() == Query.not(Query.module("javax.swing")).hashCode());
+            check(query1.hashCode() != Query.not(Query.module("org.foo.xml")).hashCode());
+            check(query1.hashCode() != Query.not(Query.module("a.b.c.", VersionConstraint.valueOf("1.1.0"))).hashCode());
             check(query1.hashCode() != Query.not(Query.attribute("my.name")).hashCode());
         } catch (Throwable ex) {
             unexpected(ex);
@@ -618,59 +580,60 @@ public class QueryTest {
             ModuleDefinition moduleDef1 = new MockModuleDefinition("javax.swing", Version.valueOf(1, 0, 0), attributes);
             ModuleDefinition moduleDef2 = new MockModuleDefinition("org.foo.xml", Version.valueOf(2, 0, 0), new HashMap<String, String>());
 
-            Query query1 = Query.and(Query.name("javax.swing"), Query.version("1.0.0"));
-            Query query2 = Query.and(Query.name("org.foo.xml"), Query.version("1.0.0"));
+            Query query1 = Query.module("javax.swing", VersionConstraint.valueOf("1.0.0"));
+            Query query2 = Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0"));
             check(query1.match(moduleDef1) == true);
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == false);
 
-            Set<String> indexableNames = query1.getIndexableNames();
+            Set<String> indexableNames = query1.getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = query2.getIndexableNames();
+            indexableNames = query2.getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("org.foo.xml"));
 
-            query1 = Query.and(Query.name("javax.swing"), Query.attribute(KEY1));
-            query2 = Query.and(Query.name("javax.swing"), Query.attribute(KEY1, RANDOM_VALUE));
+            query1 = Query.and(Query.module("javax.swing"), Query.attribute(KEY1));
+            query2 = Query.and(Query.module("javax.swing"), Query.attribute(KEY1, RANDOM_VALUE));
             check(query1.match(moduleDef1) == true);
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == false);
 
-            indexableNames = query1.getIndexableNames();
+            indexableNames = query1.getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = query2.getIndexableNames();
+            indexableNames = query2.getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
 
-            query1 = Query.and(Query.name("javax.swing"), Query.attribute(KEY2));
-            query2 = Query.and(Query.name("javax.swing"), Query.attribute(KEY2, RANDOM_VALUE));
+            query1 = Query.and(Query.module("javax.swing"), Query.attribute(KEY2));
+            query2 = Query.and(Query.module("javax.swing"), Query.attribute(KEY2, RANDOM_VALUE));
             check(query1.match(moduleDef1) == false);
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == false);
 
-            indexableNames = query1.getIndexableNames();
+            indexableNames = query1.getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = query2.getIndexableNames();
+            indexableNames = query2.getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
 
-            query1 = Query.and(Query.name("javax.swing"), Query.version("1.0.0"));
+            query1 = Query.and(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")),
+                               Query.annotation(java.module.annotation.MainClass.class));
             check(query1.equals(query1) == true);
-            check(query1.equals(Query.name("javax.swing")) == false);
-            check(query1.equals(Query.not(Query.name("javax.swing"))) == false);
-            check(query1.equals(Query.version("1.0.0")) == false);
+            check(query1.equals(Query.module("javax.swing")) == false);
+            check(query1.equals(Query.not(Query.module("javax.swing"))) == false);
             check(query1.equals(Query.attribute("my.name")) == false);
-            check(query1.equals(Query.and(Query.name("javax.swing"), Query.version("1.0.0"))) == true);
-            check(query1.equals(Query.and(Query.name("javax.swing"), Query.version("2.0.0"))) == false);
-            check(query1.equals(Query.and(Query.name("org.foo.xml"), Query.version("1.0.0"))) == false);
-            check(query1.equals(Query.and(Query.name("org.foo.xml"), Query.version("2.0.0"))) == false);
-            check(query1.equals(Query.and(Query.version("1.0.0"), Query.name("javax.swing"))) == true);
+            check(query1.equals(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")))== false);
+            check(query1.equals(Query.and(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")),
+                                          Query.annotation(java.module.annotation.MainClass.class))) == true);
+            check(query1.equals(Query.module("javax.swing", VersionConstraint.valueOf("2.0.0"))) == false);
+            check(query1.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0"))) == false);
+            check(query1.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("2.0.0"))) == false);
 
-            indexableNames = Query.and(Query.version("1.0.0"), Query.attribute("my.name")).getIndexableNames();
+            indexableNames = Query.and(Query.attribute("hello"), Query.attribute("my.name")).getIndexableModuleNames();
             check(indexableNames == null);
-            indexableNames = Query.and(Query.name("javax.swing"), Query.attribute("my.name")).getIndexableNames();
+            indexableNames = Query.and(Query.module("javax.swing"), Query.attribute("my.name")).getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = Query.and(Query.name("javax.swing"), Query.name("org.xml.foo")).getIndexableNames();
+            indexableNames = Query.and(Query.module("javax.swing"), Query.module("org.xml.foo")).getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 0);
 
             query2 = cloneQueryBySerialization(query1);
@@ -680,10 +643,14 @@ public class QueryTest {
             check(query1.toString().equals(query2.toString()) == true);
 
             check(query1.hashCode() == query2.hashCode());
-            check(query1.hashCode() == Query.and(Query.name("javax.swing"), Query.version("1.0.0")).hashCode());
-            check(query1.hashCode() == Query.and(Query.version("1.0.0"), Query.name("javax.swing")).hashCode());
-            check(query1.hashCode() != Query.and(Query.name("org.foo.xml"), Query.version("1.0.0")).hashCode());
-            check(query1.hashCode() != Query.and(Query.name("org.foo.xml"), Query.version("2.0.0")).hashCode());
+            check(query1.hashCode() == Query.and(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")),
+                                                 Query.annotation(java.module.annotation.MainClass.class)).hashCode());
+            check(query1.hashCode() == Query.and(Query.annotation(java.module.annotation.MainClass.class),
+                                                 Query.module("javax.swing", VersionConstraint.valueOf("1.0.0"))).hashCode());
+            check(query1.hashCode() != Query.and(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0")),
+                                                 Query.annotation(java.module.annotation.MainClass.class)).hashCode());
+            check(query1.hashCode() != Query.and(Query.annotation(java.module.annotation.MainClass.class),
+                                                 Query.module("org.foo.xml", VersionConstraint.valueOf("2.0.0"))).hashCode());
         } catch (Throwable ex) {
             unexpected(ex);
         }
@@ -733,19 +700,20 @@ public class QueryTest {
             attributes.put(KEY2, HELLO_WORLD);
             ModuleDefinition moduleDef2 = new MockModuleDefinition("org.foo.xml", Version.valueOf(2, 0, 0), attributes);
 
-            Query query1 = Query.or(Query.name("javax.swing"), Query.version("1.0.0"));
-            Query query2 = Query.or(Query.name("org.foo.xml"), Query.version("1.0.0"));
-            Query query3 = Query.or(Query.name("com.wombat.soap"), Query.version("3.0.0"));
+            Query query1 = Query.or(Query.module("javax.swing"), Query.annotation(java.module.annotation.MainClass.class));
+            Query query2 = Query.or(Query.module("org.foo.xml", VersionConstraint.valueOf("2.0.0")),
+                                    Query.annotation(java.module.annotation.MainClass.class));
+            Query query3 = Query.or(Query.module("com.wombat.soap"), Query.annotation(java.module.annotation.MainClass.class));
             check(query1.match(moduleDef1) == true);
             check(query1.match(moduleDef2) == false);
-            check(query2.match(moduleDef1) == true);
+            check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
             check(query3.match(moduleDef1) == false);
             check(query3.match(moduleDef2) == false);
 
-            query1 = Query.or(Query.name("javax.swing"), Query.attribute(KEY1));
-            query2 = Query.or(Query.name("org.foo.xml"), Query.attribute(KEY1, RANDOM_VALUE));
-            query3 = Query.or(Query.name("com.wombat.soap"), Query.attribute(KEY2, HELLO_WORLD));
+            query1 = Query.or(Query.module("javax.swing"), Query.attribute(KEY1));
+            query2 = Query.or(Query.module("org.foo.xml"), Query.attribute(KEY1, RANDOM_VALUE));
+            query3 = Query.or(Query.module("com.wombat.soap"), Query.attribute(KEY2, HELLO_WORLD));
             check(query1.match(moduleDef1) == true);
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
@@ -753,23 +721,24 @@ public class QueryTest {
             check(query3.match(moduleDef1) == false);
             check(query3.match(moduleDef2) == true);
 
-            query1 = Query.or(Query.name("javax.swing"), Query.version("1.0.0"));
+            query1 = Query.or(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")),
+                              Query.annotation(java.module.annotation.MainClass.class));
             check(query1.equals(query1) == true);
-            check(query1.equals(Query.name("javax.swing")) == false);
-            check(query1.equals(Query.not(Query.name("javax.swing"))) == false);
-            check(query1.equals(Query.version("1.0.0")) == false);
+            check(query1.equals(Query.module("javax.swing")) == false);
+            check(query1.equals(Query.not(Query.module("javax.swing"))) == false);
             check(query1.equals(Query.attribute("my.name")) == false);
-            check(query1.equals(Query.or(Query.name("javax.swing"), Query.version("1.0.0"))) == true);
-            check(query1.equals(Query.or(Query.name("javax.swing"), Query.version("2.0.0"))) == false);
-            check(query1.equals(Query.or(Query.name("org.foo.xml"), Query.version("1.0.0"))) == false);
-            check(query1.equals(Query.or(Query.name("org.foo.xml"), Query.version("2.0.0"))) == false);
-            check(query1.equals(Query.or(Query.version("1.0.0"), Query.name("javax.swing"))) == true);
+            check(query1.equals(Query.or(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")),
+                                         Query.annotation(java.module.annotation.MainClass.class))) == true);
+            check(query1.equals(Query.or(Query.annotation(java.module.annotation.MainClass.class),
+                                         Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")))) == true);
+            check(query1.equals(Query.or(Query.module("org.foo.xml", VersionConstraint.valueOf("2.0.0")),
+                                         Query.annotation(java.module.annotation.MainClass.class))) == false);
 
-            Set<String> indexableNames = Query.or(Query.version("1.0.0"), Query.attribute("my.name")).getIndexableNames();
+            Set<String> indexableNames = Query.or(Query.annotation(java.module.annotation.MainClass.class), Query.attribute("my.name")).getIndexableModuleNames();
             check(indexableNames == null);
-            indexableNames = Query.or(Query.name("javax.swing"), Query.attribute("my.name")).getIndexableNames();
+            indexableNames = Query.or(Query.module("javax.swing"), Query.attribute("my.name")).getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = Query.or(Query.name("javax.swing"), Query.name("org.xml.foo")).getIndexableNames();
+            indexableNames = Query.or(Query.module("javax.swing"), Query.module("org.xml.foo")).getIndexableModuleNames();
             check(indexableNames != null && indexableNames.size() == 2
                   && indexableNames.contains("javax.swing") && indexableNames.contains("org.xml.foo"));
 
@@ -780,11 +749,12 @@ public class QueryTest {
             check(query1.toString().equals(query2.toString()) == true);
 
             check(query1.hashCode() == query2.hashCode());
-            check(query1.hashCode() == Query.or(Query.name("javax.swing"), Query.version("1.0.0")).hashCode());
-            check(query1.hashCode() == Query.or(Query.version("1.0.0"), Query.name("javax.swing")).hashCode());
-            check(query1.hashCode() != Query.or(Query.name("javax.swing"), Query.version("2.0.0")).hashCode());
-            check(query1.hashCode() != Query.or(Query.name("org.foo.xml"), Query.version("1.0.0")).hashCode());
-            check(query1.hashCode() != Query.or(Query.name("org.foo.xml"), Query.version("2.0.0")).hashCode());
+            check(query1.hashCode() == Query.or(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")),
+                                                Query.annotation(java.module.annotation.MainClass.class)).hashCode());
+            check(query1.hashCode() == Query.or(Query.annotation(java.module.annotation.MainClass.class),
+                                                Query.module("javax.swing", VersionConstraint.valueOf("1.0.0"))).hashCode());
+            check(query1.hashCode() != Query.or(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0")),
+                                                Query.annotation(java.module.annotation.MainClass.class)).hashCode());
         } catch (Throwable ex) {
             unexpected(ex);
         }

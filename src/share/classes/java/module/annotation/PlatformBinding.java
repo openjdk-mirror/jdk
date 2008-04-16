@@ -31,43 +31,46 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the platform binding of a module definition. This
- * metadata annotation is applied to the development module, i.e. the
- * <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates the platform binding of a module definition. This metadata
+ * annotation is applied to the development module, i.e. the <I>module</I>
+ * construct. For example,
  * <blockquote><pre>
+ *    //
+ *    // src/win32/x86/com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;PlatformBinding(platform="win32", arch="x86")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  *
+ *    //
+ *    // src/linux/x86/com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;PlatformBinding(platform="linux", arch="x86")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  *
+ *    //
+ *    // src/solaris/sparc/com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;PlatformBinding(platform="solaris", arch="sparc")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
- *
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PlatformBinding {
 
     /**
-     * Name of the platform. It should be one of the possible values
-     * of the system property "os.platform".
+     * The name of the platform. It should be one of the possible values of the
+     * system property {@code "os.platform"}.
      */
     String platform();
 
     /**
-     * Name of the architecture. It should be one of the possible
-     * values of the system property "os.arch".
+     * The name of the architecture. It should be one of the possible values of
+     * the system property {@code "os.arch"}.
      */
     String arch();
 }

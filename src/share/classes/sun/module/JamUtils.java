@@ -25,7 +25,6 @@
 
 package sun.module;
 
-import java.lang.reflect.Superpackage;
 import java.io.*;
 import java.module.Version;
 import java.net.*;
@@ -294,23 +293,6 @@ public final class JamUtils {
 
     private static void println(String s) { System.out.println(s); }
 
-    private static final class Loader extends ClassLoader {
-        Loader() {
-            super(null);
-        }
-        Superpackage doDefineSuperPackage(byte[] data) throws ClassFormatError {
-            return defineSuperpackage(null, data, 0, data.length);
-        }
-    }
-
-    public static Superpackage getSuperpackage(byte[] data) throws ClassFormatError {
-        // we use a new ClassLoader for each Superpackage object so that we
-        // can support multiple Superpackages of the same name.
-        // The final API will work differently.
-        Loader loader = new Loader();
-        return loader.doDefineSuperPackage(data);
-    }
-
     /**
      * Returns the module metadata from a JAM file as byte array.
      *
@@ -360,8 +342,8 @@ public final class JamUtils {
      *
      * @param jamFile jam file
      * @return an array of code signers that sign the JAM file.
-     * @throw IOException if the JAM file is not consistently signed by same
-     *        set of signers.
+     * @throws IOException if the JAM file is not consistently signed by same
+     *         set of signers.
      */
     public static CodeSigner[] getCodeSigners(JarFile jamFile) throws IOException {
         List<CodeSigner> overallCodeSigners = null;

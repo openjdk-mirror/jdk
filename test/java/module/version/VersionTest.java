@@ -43,12 +43,11 @@ public class VersionTest {
         testConstructor02();
         testQualifier01();
         testQualifier02();
-        testIsVersion01();
+//        testIsVersion01();
         testEqual01();
         testHashCode01();
         testParse01();
         testParse02();
-        testTrimQualifier01();
         testCompareTo01();
         testToString01();
         testSerialization();
@@ -420,7 +419,7 @@ public class VersionTest {
     }
 
     /** Checks isVersion method.  No errors. */
-    static public void testIsVersion01() throws Exception {
+/*    static public void testIsVersion01() throws Exception {
 
         try {
             check(Version.isVersion("1") == true);
@@ -526,7 +525,7 @@ public class VersionTest {
             unexpected(ex);
         }
     }
-
+*/
     /** Checks equals method.  No errors. */
     static public void testEqual01() throws Exception {
         Version[] array = new Version[6];
@@ -786,30 +785,6 @@ public class VersionTest {
         }
     }
 
-    /** Checks trimQualifier method.  No errors. */
-    static public void testTrimQualifier01() throws Exception {
-        try {
-            Version version = Version.valueOf(1, 2, 3, "xyz").trimQualifier();
-            check(version.getMajorNumber() == 1);
-            check(version.getMinorNumber() == 2);
-            check(version.getMicroNumber() == 3);
-            check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
-            pass();
-
-            version = Version.valueOf(1, 2, 3, 4, "xyz").trimQualifier();
-            check(version.getMajorNumber() == 1);
-            check(version.getMinorNumber() == 2);
-            check(version.getMicroNumber() == 3);
-            check(version.getUpdateNumber() == 4);
-            check(version.getQualifier() == null);
-            pass();
-        }
-        catch (Throwable ex) {
-            unexpected(ex);
-        }
-    }
-
     /** Checks compareTo method.  No errors. */
     static public void testCompareTo01() throws Exception {
         try {
@@ -900,6 +875,9 @@ public class VersionTest {
             pass();
 
             version = Version.valueOf(1, 2, 3);
+
+            System.out.println(version.toString());
+
             check(version.toString().equals("1.2.3"));
             pass();
 

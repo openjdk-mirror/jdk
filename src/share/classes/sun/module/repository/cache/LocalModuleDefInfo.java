@@ -25,10 +25,9 @@
 
 package sun.module.repository.cache;
 
-import java.lang.reflect.Superpackage;
 import java.io.File;
 import java.io.IOException;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
 import java.security.CodeSigner;
 import java.util.jar.JarFile;
 
@@ -46,31 +45,33 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
     private final CodeSigner[] codeSigners;
 
     // Module's content
-    private ModuleDefinitionContent content = null;
+    private ModuleContent content = null;
 
     /**
      * Constructs a new local module definition info.
      *
      * @param entryDirectory directory where the object will live.
      * @param metadataBytes byte array that represents the module metadata
-     * @param superPackage superpackage recified from the module metadata
+     * @param moduleInfo ModuleInfo recified from the module metadata
      * @param jamFile jam file
      * @param codeSigners an array of code signers who signed the JAM file
      */
-     LocalModuleDefInfo(File entryDirectory, byte[] metadataBytes, Superpackage superPackage, File jamFile, CodeSigner[] codeSigners) {
-        super(entryDirectory, metadataBytes, superPackage);
+    LocalModuleDefInfo(File entryDirectory, byte[] metadataBytes,
+                       ModuleInfo moduleInfo, File jamFile,
+                       CodeSigner[] codeSigners)  {
+        super(entryDirectory, metadataBytes, moduleInfo);
         this.jamFile = jamFile;
         this.codeSigners = codeSigners;
     }
 
      /**
-      * Returns the module definition content that represents the
-      * exposed contents in the jam file.
+      * Returns the module content that represents the exposed contents in the
+      * jam file.
       */
-     public ModuleDefinitionContent getModuleDefinitionContent() {
-        // Creates the module definition content lazily.
+     public ModuleContent getModuleContent() {
+        // Creates the module content lazily.
         if (content == null) {
-            content = new LocalModuleDefinitionContent(this);
+            content = new LocalModuleContent(this);
         }
         return content;
      }

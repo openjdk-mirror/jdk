@@ -26,166 +26,26 @@
 package java.module;
 
 /**
- * This class represents an import dependency of the module definition.
+ * A tagging interface that all import dependencies must extend.
  * <p>
- * @see java.module.VersionConstraint
- * @see java.io.Serializable
+ * @see java.module.ModuleDependency
  *
  * @since 1.7
- * @serial include
  */
-public class ImportDependency implements java.io.Serializable {
-
-    private static final long serialVersionUID = -4888614342905988975L;
-
-    private final String name;
-    private final VersionConstraint constraint;
-    private final boolean reexport;
-    private final boolean optional;
+public interface ImportDependency {
 
     /**
-     * Constructs a <code>ImportDependency</code>.
-     * <p>
-     * The imported module definition is assumed to be neither re-exported
-     * nor optional.
+     * Returns true if the import dependency is optional. Otherwise, returns
+     * false.
      *
-     * @param name the name of the imported module definition.
-     * @param constraint the version constraint of the import dependency.
-     * @throws NullPointerException if name is null or constraint is null.
+     * @return true if the import dependency is optional; false otherwise.
      */
-    public ImportDependency(String name, VersionConstraint constraint) {
-        this(name, constraint, false, false);
-    }
+    public boolean isOptional();
 
     /**
-     * Constructs a <code>ImportDependency</code>.
+     * Returns the granularity of the import dependency.
      *
-     * @param name the name of the imported module definition.
-     * @param constraint the version constraint of the import dependency.
-     * @param reexport true if the imported module definition is re-exported;
-     *                 otherwise, false.
-     * @param optional true if the imported module definition is optional;
-     *                 otherwise, false.
-     * @throws NullPointerException if name is null or constraint is null.
+     * @return the granularity of the import dependency.
      */
-    public ImportDependency(String name, VersionConstraint constraint, boolean reexport, boolean optional)  {
-
-        if (name == null)
-            throw new NullPointerException("name must not be null.");
-
-        if (constraint == null)
-            throw new NullPointerException("constraint must not be null.");
-
-        this.name = name;
-        this.constraint = constraint;
-        this.reexport = reexport;
-        this.optional = optional;
-    }
-
-    /**
-     * Returns the name of the imported module definition in an import
-     * dependency.
-     *
-     * @return the name of the imported module definition.
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Returns the version constraint of the import dependency.
-     *
-     * @return the version constraint of the import dependency.
-     */
-    public VersionConstraint getVersionConstraint() {
-        return constraint;
-    }
-
-    /**
-     * Returns true if the imported module definition is re-exported. Otherwise,
-     * returns false.
-     *
-     * @return true if the imported module definition is re-exported; false
-     *         otherwise.
-     */
-    public boolean isReexported() {
-        return reexport;
-    }
-
-    /**
-     * Returns true if the imported module definition is optional. Otherwise,
-     * returns false.
-     *
-     * @return true if the imported module definition is optional; false
-     *         otherwise.
-     */
-    public boolean isOptional() {
-        return optional;
-    }
-
-    /**
-     * Compare two <code>ImportDependency</code> objects for equality. The
-     * result is <code>true</code> if and only if the argument is not
-     * <code>null</code> and is a <code>ImportDependency</code> object that
-     * imported module name, version constraint, reexport, and optional the
-     * same as those of this <code>ImportDependency</code>.
-     *
-     * @param obj the object to compare with.
-     * @return whether or not the two objects are equal
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (!(obj instanceof ImportDependency))
-            return false;
-
-        ImportDependency importDep = (ImportDependency) obj;
-
-        return (name.equals(importDep.getName())
-                && constraint.equals(importDep.getVersionConstraint())
-                && reexport == importDep.isReexported()
-                && optional == importDep.isOptional());
-    }
-
-    /**
-     * Returns a hash code for this <code>ImportDependency</code>.
-     *
-     * @return a hash code value for this object.
-     */
-    @Override
-    public int hashCode() {
-        int result = 17;
-        result = 37 * result + name.hashCode();
-        result = 37 * result + constraint.hashCode();
-        result = 37 * result + (reexport ? 0 : 1);
-        result = 37 * result + (optional ? 0 : 1);
-        return result;
-    }
-
-    /**
-     * Returns a <code>String</code> object representing this
-     * <code>ImportDependency</code>.
-     *
-     * @return a string representation of this object.
-     */
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("ImportDependency[module ");
-        builder.append(name);
-        builder.append(" ");
-        builder.append(constraint.toString());
-        if (reexport) {
-            builder.append(",re-export");
-        }
-        if (optional) {
-            builder.append(",optional");
-        }
-        builder.append("]");
-
-        return builder.toString();
-    }
+    public String getGranularity();
 }

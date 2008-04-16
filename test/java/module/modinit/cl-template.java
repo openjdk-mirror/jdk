@@ -27,7 +27,6 @@ package ${pkg};
 
 import java.io.*;
 import java.util.*;
-
 import java.module.*;
 import java.module.annotation.MainClass;
 

@@ -26,7 +26,6 @@
 package java.module;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Superpackage;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -42,15 +41,13 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.module.annotation.ExportLegacyClasses;
 import java.module.annotation.ExportResources;
 import java.module.annotation.ImportModule;
 import java.module.annotation.ImportModules;
 import java.module.annotation.MainClass;
 import java.module.annotation.ModuleAttribute;
 import java.module.annotation.ModuleAttributes;
-import java.module.annotation.LegacyClasses;
-import sun.module.annotation.ExportPackages;
+import sun.module.annotation.LegacyClasses;
 import sun.module.JamUtils;
 
 /**
@@ -58,7 +55,7 @@ import sun.module.JamUtils;
  * <code>MODULE-INF/MODULE.METADATA</code> file.
  * <p>
  * @see java.module.ModuleDefinition
- * @see java.module.ModuleDefinitionContent
+ * @see java.module.ModuleContent
  *
  * @since 1.7
  */
@@ -68,16 +65,22 @@ final class JamModuleDefinition extends ModuleDefinition {
     private final Version version;
     private byte[] metadata;
     private final Callable<byte[]> metadataHandle;
-    private final ModuleDefinitionContent content;
+    private final ModuleContent content;
     private final Repository repository;
     private final boolean moduleReleasable;
     private volatile Set<String> memberClasses;
     private volatile Set<String> exportedClasses;
     private volatile Set<String> exportedResources;
-    private Map<Class,Annotation> annotations = null;
+    private volatile boolean memberClassesNotAvailable = false;
+    private volatile boolean exportedResourcesNotAvailable = false;
+    private volatile Set<PackageDefinition> memberPackageDefs;
+    private volatile Set<PackageDefinition> exportedPackageDefs;
+    private volatile Map<Class,Annotation> annotations = null;
+    private volatile List<ImportDependency> importDependencies = null;
+    private volatile List<ModuleDependency> importModuleDependencies = null;
 
     JamModuleDefinition(String name, Version version, byte[] metadata,
-            Callable<byte[]> metadataHandle, ModuleDefinitionContent content,
+            Callable<byte[]> metadataHandle, ModuleContent content,
             Repository repository, boolean moduleReleasable) {
         this.name = name;
         this.version = version;
@@ -89,7 +92,7 @@ final class JamModuleDefinition extends ModuleDefinition {
     }
 
     //
-    // The metadata/superpackage arrangement below is temporary until the
+    // The module metadata arrangement below is temporary until the
     // full JSR 294 reflective APIs are in place
     //
 
@@ -115,23 +118,23 @@ final class JamModuleDefinition extends ModuleDefinition {
         }
     }
 
-    private volatile Superpackage superpackage;
+    private volatile ModuleInfo moduleInfo;
 
-    private Superpackage getSuperpackage() {
-        if (superpackage == null) {
+    private ModuleInfo getModuleInfo() {
+        if (moduleInfo == null) {
             synchronized (this) {
-                if (superpackage == null) {
+                if (moduleInfo == null) {
                     // XXX check name and version against metadata
-                    superpackage = JamUtils.getSuperpackage(getMetadata());
+                    moduleInfo = ModuleInfo.getModuleInfo(getMetadata());
                 }
             }
         }
-        return superpackage;
+        return moduleInfo;
     }
 
     @Override
     public String getName() {
-        return (name != null) ? name : getSuperpackage().getName();
+        return (name != null) ? name : getModuleInfo().getName();
     }
 
     @Override
@@ -154,19 +157,32 @@ final class JamModuleDefinition extends ModuleDefinition {
 
     @Override
     public List<ImportDependency> getImportDependencies() {
-        List<ImportDependency> dependencies = new ArrayList<ImportDependency>();
-        Superpackage sp = getSuperpackage();
-        ImportModules importModules = sp.getAnnotation(ImportModules.class);
-        if (importModules != null) {
-            for (ImportModule importModule : Arrays.asList(importModules.value())) {
-                String name = importModule.name();
-                VersionConstraint constraint = VersionConstraint.valueOf(importModule.version());
-                boolean reexport = importModule.reexport();
-                boolean optional = importModule.optional();
-                dependencies.add(new ImportDependency(name, constraint, reexport, optional));
-            }
+        if (importDependencies == null) {
+            List<ImportDependency> dependencies = new ArrayList<ImportDependency>();
+            dependencies.addAll(getImportModuleDependencies());
+            importDependencies = Collections.unmodifiableList(dependencies);
         }
-        return Collections.unmodifiableList(dependencies);
+        return importDependencies;
+    }
+
+    @Override
+    public List<ModuleDependency> getImportModuleDependencies() {
+        if (importModuleDependencies == null) {
+            List<ModuleDependency> dependencies = new ArrayList<ModuleDependency>();
+            ModuleInfo mInfo = getModuleInfo();
+            ImportModules importModules = mInfo.getAnnotation(ImportModules.class);
+            if (importModules != null) {
+                for (ImportModule importModule : Arrays.asList(importModules.value())) {
+                    String name = importModule.name();
+                    VersionConstraint constraint = VersionConstraint.valueOf(importModule.version());
+                    boolean reexport = importModule.reexport();
+                    boolean optional = importModule.optional();
+                    dependencies.add(new ModuleDependency(name, constraint, reexport, optional));
+                }
+            }
+            importModuleDependencies = Collections.unmodifiableList(dependencies);
+        }
+        return importModuleDependencies;
     }
 
     @Override
@@ -199,16 +215,41 @@ final class JamModuleDefinition extends ModuleDefinition {
 
     @Override
     public Set<String> getMemberClasses() {
+        if (memberClassesNotAvailable) {
+            throw new UnsupportedOperationException();
+        }
+
         if (memberClasses == null) {
-            // Member classes consist of classes in the superpackage
-            Set<String> s = new HashSet<String>
-                            (Arrays.asList(getSuperpackage().getMemberTypes()));
-            // As well as classes in the embedded legacy jars
-            LegacyClasses legacyClassesAnnotation = getAnnotation(LegacyClasses.class);
-            if (legacyClassesAnnotation != null) {
-                s.addAll(Arrays.asList(legacyClassesAnnotation.value()));
+            try {
+                // Member classes consist of all types in the module
+                Set<String> s = new HashSet<String>();
+
+                for (String className : content.getEntryNames()) {
+                    // Skip classes in META-INF/ or MODULE-INF/
+                    if (className.startsWith("META-INF/")
+                        || className.startsWith("MODULE-INF/")) {
+                        continue;
+                    }
+
+                    if (className.endsWith(".class")) {
+                        className = className.substring(0, className.length() - 6).replace('/', '.');
+                        s.add(className);
+                    }
+                }
+
+                // XXX hack to support legacy classes, will remove once JSR 294
+                // arrives.
+                LegacyClasses legacyClassesAnno = getAnnotation(LegacyClasses.class);
+                if (legacyClassesAnno != null) {
+                    // Adds legacy classes as members
+                    s.addAll(Arrays.asList(legacyClassesAnno.value()));
+                }
+
+                memberClasses = Collections.unmodifiableSet(s);
+            } catch (IOException ioe) {
+                memberClassesNotAvailable = true;
+                throw new UnsupportedOperationException();
             }
-            memberClasses = Collections.unmodifiableSet(s);
         }
         return memberClasses;
     }
@@ -216,52 +257,87 @@ final class JamModuleDefinition extends ModuleDefinition {
     @Override
     public Set<String> getExportedClasses() {
         if (exportedClasses == null) {
-            // Exported classes consist of exported classes in the superpackage
-            Set<String> s = new HashSet<String>
-                            (Arrays.asList(getSuperpackage().getExportedTypes()));
-            // As well as exported legacy classes in the embedded jars
-            ExportLegacyClasses exportLegacyClassesAnnotation = getAnnotation(ExportLegacyClasses.class);
-            if (exportLegacyClassesAnnotation != null) {
-                LegacyClasses legacyClassesAnnotation = getAnnotation(LegacyClasses.class);
-                if (legacyClassesAnnotation != null) {
-                    s.addAll(Arrays.asList(legacyClassesAnnotation.value()));
+            // Exported classes consist of all exported types in the module
+            Set<String> s = new HashSet<String>();
+
+            for (String className : getMemberClasses()) {
+                // XXX: determines if a type is exported by checking if it
+                // is part of the exported packages. This is just an
+                // approximation for now, and should be updated when we have
+                // the exported type attribute in the module metadata.
+                for (PackageDefinition packageDef : getExportedPackageDefinitions()) {
+                    if (className.startsWith(packageDef.getName() + ".")) {
+                        s.add(className);
+                    }
                 }
             }
+
             exportedClasses = Collections.unmodifiableSet(s);
         }
         return exportedClasses;
     }
 
     @Override
+    public Set<PackageDefinition> getMemberPackageDefinitions() {
+        if (memberPackageDefs == null) {
+            List<String> memberPackages = Arrays.asList(getModuleInfo().getMemberPackages());
+
+            HashSet<PackageDefinition> packageDefs = new HashSet<PackageDefinition>();
+            for (String s : memberPackages) {
+                packageDefs.add(new JamPackageDefinition(s, Version.DEFAULT, this));
+            }
+            memberPackageDefs = packageDefs;
+        }
+        return memberPackageDefs;
+    }
+
+    @Override
+    public Set<PackageDefinition> getExportedPackageDefinitions()  {
+        if (exportedPackageDefs == null) {
+            List<String> exportedPackages = Arrays.asList(getModuleInfo().getExportedPackages());
+
+            HashSet<PackageDefinition> packageDefs = new HashSet<PackageDefinition>();
+            for (String s : exportedPackages) {
+                packageDefs.add(new JamPackageDefinition(s, Version.DEFAULT, this));
+            }
+            exportedPackageDefs = packageDefs;
+        }
+        return exportedPackageDefs;
+    }
+
+    @Override
     public boolean isClassExported(String className) {
         // XXX convert class name?
 
-        // XXX @ExportPackages is a workaround for building virtual modules
-        // for the Java SE platform. It should be replaced after the
-        // actual JSR 294 support arrives in javac.
-        //
-        ExportPackages exportPackages = getAnnotation(ExportPackages.class);
-        if (exportPackages != null) {
-            String[] p = exportPackages.value();
-            if (p.length == 1 && p[0].equals("*")) {
+        // Use exported classes if available
+        if (memberClassesNotAvailable == false) {
+            try {
+                return getExportedClasses().contains(className);
+            } catch (UnsupportedOperationException uoe) {
+            }
+        }
+
+        for (PackageDefinition packageDef : getExportedPackageDefinitions()) {
+            String packageName = packageDef.getName();
+            if (packageName.equals("*")) {
                 // "*" is exported by the "java.classpath" module.
                 return true;
             }
 
-            for (String s : p) {
-                // Checks if the specified class is exported from this module.
-                if (className.startsWith(s + ".")) {
-                    return true;
-                }
+            // Checks if the specified class is exported from this module.
+            if (className.startsWith(packageName + ".")) {
+                return true;
             }
-            return false;
-        } else {
-            return getExportedClasses().contains(className);
         }
+        return false;
     }
 
     @Override
     public Set<String> getExportedResources() {
+        if (exportedResourcesNotAvailable) {
+            throw new UnsupportedOperationException();
+        }
+
         if (exportedResources == null) {
             Set<String> s = new HashSet<String>();
 
@@ -367,6 +443,9 @@ final class JamModuleDefinition extends ModuleDefinition {
                     System.err.println("Warning: Unrecognized filter in @ExportResources: "
                                         + filters[i] + ", filter is ignored.");
                     pse.printStackTrace();
+                } catch (IOException ioe) {
+                    exportedResourcesNotAvailable = true;
+                    throw new UnsupportedOperationException();
                 }
             }
             exportedResources = Collections.unmodifiableSet(s);
@@ -392,95 +471,12 @@ final class JamModuleDefinition extends ModuleDefinition {
         if (annotationClass == null)  {
             throw new NullPointerException();
         }
-        return getSuperpackage().getAnnotation(annotationClass);
-
-    /*
-        // XXX: Loading side files to synthetize annotaions would have
-        // the side effect of downloading the JAM file eagerly in some
-        // cases. This is undesirable, and thus the code is commented out
-        // for now.
-
-        // Determines if requested annotation is a stock annotation.
-        if (annotationClass.equals(LegacyClasses.class) == false)  {
-            return getSuperpackage().getAnnotation(annotationClass);
-        }
-
-        // Determines if requested annotation is a synthetic annotation.
-        initAnnotationsIfNecessary();
-        for (Class c : annotations.keySet()) {
-            if (annotationClass.isAssignableFrom(c))
-                return (T) annotations.get(c);
-        }
-        return null;
-    */
+        return getModuleInfo().getAnnotation(annotationClass);
     }
-
 
     @Override
     public synchronized List<Annotation> getAnnotations() {
-        return Collections.unmodifiableList(Arrays.asList(getSuperpackage().getAnnotations()));
-        /*
-        // XXX: See comments in getAnnotation(Class<T>)
-
-        initAnnotationsIfNecessary();
-        return Collections.unmodifiableList(new ArrayList<Annotation>(annotations.values()));
-        */
-    }
-
-    private void initAnnotationsIfNecessary() {
-        if (annotations == null) {
-            Map<Class, Annotation> annotationMap = new HashMap<Class, Annotation>();
-
-            for (Annotation a : Arrays.asList(getSuperpackage().getAnnotations()))  {
-                // Skips over LegacyClasses annotation if it exists in the superpackage
-                if (a instanceof LegacyClasses)  {
-                    continue;
-                }
-                else {
-                    annotationMap.put(a.getClass(), a);
-                }
-            }
-
-            // Constructs a legacy classes annotation on the fly based on the
-            // content of MODULE-INF/legacy-classes.list
-            final String legacyClassesEntry = "MODULE-INF/legacy-classes.list";
-            try {
-                if (content.hasEntry(legacyClassesEntry)) {
-                    BufferedReader r = new BufferedReader(new InputStreamReader(content.getEntryAsStream(legacyClassesEntry)));
-                    Set<String> rc = new HashSet<String>();
-                    String s;
-                    while ((s = r.readLine()) != null) {
-                        s = s.trim();
-                        if (!s.equals("") && !s.startsWith("#")) {
-                            rc.add(s);
-                        }
-                    }
-                    r.close();
-
-                    final String[] legacyClasses = new String[rc.size()];
-                    int i = 0;
-                    for (String lc : rc) {
-                        legacyClasses[i++] = lc;
-                    }
-
-                    LegacyClasses legacyClassesAnnotation = new LegacyClasses() {
-                        public String[] value() {
-                            return legacyClasses;
-                        }
-                        public Class<? extends Annotation> annotationType() {
-                            return LegacyClasses.class;
-                        }
-                    };
-                    annotationMap.put(LegacyClasses.class, legacyClassesAnnotation);
-                }
-            } catch (IOException ioe) {
-                // TODO: use logging
-                System.err.println("Warning: Unrecognized file format in MODULE-INF/legacy-classes.list, "
-                                    + "legacy classes list is ignored.");
-                ioe.printStackTrace();
-            }
-            annotations = annotationMap;
-        }
+        return Collections.unmodifiableList(Arrays.asList(getModuleInfo().getAnnotations()));
     }
 
     @Override
@@ -494,10 +490,15 @@ final class JamModuleDefinition extends ModuleDefinition {
     }
 
     @Override
-    public ModuleDefinitionContent getModuleDefinitionContent() {
+    public ModuleSystem getModuleSystem() {
+        return repository.getModuleSystem();
+    }
+
+    @Override
+    public ModuleContent getModuleContent() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
-            sm.checkPermission(new ModuleSystemPermission("accessModuleDefinitionContent"));
+            sm.checkPermission(new ModuleSystemPermission("accessModuleContent"));
         }
         return content;
     }

@@ -235,7 +235,7 @@ public class JamBuilder {
         File modDir = new File(tmpDir, modName);
         JamUtils.recursiveDelete(modDir);
         modDir.mkdirs();
-        File modFile = new File(modDir, "super_package.java");
+        File modFile = new File(modDir, "module_info.java");
 
         File srcDir = new File(tmpDir, srcPkgName);
         JamUtils.recursiveDelete(srcDir);
@@ -348,7 +348,7 @@ public class JamBuilder {
         File contentDir = new File(tmpDir, "JamBuilderContent");
 
         debug("content dir.mkdirs returns " + contentDir.mkdirs());
-        File spFile = new File(modFile.getParent(), "super_package.class");
+        File spFile = new File(modFile.getParent(), "module_info.class");
         JamUtils.copyFile(spFile,
                  new File(contentDir, "MODULE.METADATA"));
 
@@ -370,7 +370,6 @@ public class JamBuilder {
 
         pw = new PrintWriter(new FileWriter(modFile));
         pw.printf("package %s;\n\n", modName);
-        pw.printf("import java.lang.reflect.Superpackage.*;\n");
         pw.printf("import java.module.annotation.*;\n\n");
         pw.printf("@Version(\"%s\")\n", version);
         pw.printf("@MainClass(\"%s.%s\")\n", srcPkgName, srcName);
@@ -383,11 +382,11 @@ public class JamBuilder {
         pw.printf("@ImportModules({\n");
         pw.printf("\t@ImportModule(name=\"java.se\")\n");
         pw.printf("})\n");
-        pw.printf("class super_package {\n");
+        pw.printf("class module_info {\n");
         pw.printf("}\n");
         pw.close();
         if (pw.checkError()) {
-            throw new Exception("Failed to write super package");
+            throw new Exception("Failed to write module");
         }
 
         pw = new PrintWriter(new FileWriter(srcFile));

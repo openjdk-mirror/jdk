@@ -26,27 +26,23 @@
 package java.module;
 
 import java.lang.annotation.Annotation;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 /**
-* This class represents the reified module definition in the
-* module system.
+* This class represents a reified module definition in a module system.
 * <p>
 * @see java.lang.ClassLoader
+* @see java.module.Module
+* @see java.module.ModuleSystem
 * @see java.module.Repository
 * @see java.module.Version
 *
 * @since 1.7
 */
 public abstract class ModuleDefinition {
-
-    /** Counter for generating Id for module definitions. */
-    private static final AtomicLong idCounter = new AtomicLong();
-
-    /** Id for this module definition. */
-    private final long id = idCounter.incrementAndGet();
 
     /**
      * Constructor used by subclasses.
@@ -56,34 +52,22 @@ public abstract class ModuleDefinition {
     }
 
     /**
-     * Returns a long value that represents the unique identifier assigned to
-     * this module definition. The identifier is assigned by the JVM and is JVM
-     * implementation dependent.
+     * Returns the name of this {@code ModuleDefinition}.
      *
-     * @return a long value that represents the unique identifier assigned to
-     *         this module definition.
-     */
-    public final long getId() {
-        return id;
-    }
-
-    /**
-     * Returns the name of the module definition.
-     *
-     * @return the name of the module definition.
+     * @return the name of this {@code ModuleDefinition}.
      */
     public abstract String getName();
 
     /**
-     * Returns the version of the module definition.
+     * Returns the version of this {@code ModuleDefinition}.
      *
-     * @return the <code>Version</code> object.
+     * @return the {@code Version} object.
      */
     public abstract Version getVersion();
 
     /**
      * Returns an unmodifiable set of the names of the attributes
-     * associated with the module definition.
+     * associated with this {@code ModuleDefinition}.
      *
      * @return an unmodifiable set of the names of the attributes.
      */
@@ -91,9 +75,9 @@ public abstract class ModuleDefinition {
 
     /**
      * Returns the value corresponding to the specified attribute name that is
-     * associated with the module definition. If the module definition has
-     * attributes with duplicate names, the value of the attribute in the last
-     * occurrence is returned.
+     * associated with this {@code ModuleDefinition}. If this
+     * {@code ModuleDefinition} has attributes with duplicate names, the value
+     * of the attribute in the last occurrence is returned.
      *
      * @param name the name of the attribute.
      * @return the value of the attribute. Returns null if the specified
@@ -102,121 +86,185 @@ public abstract class ModuleDefinition {
     public abstract String getAttribute(String name);
 
     /**
-     * Returns an unmodifiable list of import dependency. The order
-     * of the import dependency in the list follows the declared
-     * import order in the module definition.
+     * Returns an unmodifiable list of all kinds of import dependencies. The
+     * order of the import dependency in the list follows the declared import
+     * order in the {@code ModuleDefinition}.
      *
-     * @return an unmodifiable list of import dependency.
+     * @return an unmodifiable list of all kinds of import dependencies.
      */
     public abstract List<ImportDependency> getImportDependencies();
 
     /**
-     * Returns repository that is associated with the module
-     * definition.
+     * Returns an unmodifiable list of import module dependencies. The order of
+     * the import dependency in the list follows the declared import order in
+     * the {@code ModuleDefinition}.
      *
-     * @return the <code>Repository</code> object.
+     * @return an unmodifiable list of import module dependencies .
+     */
+    public List<ModuleDependency> getImportModuleDependencies() {
+        List<ModuleDependency> moduleDependencies = new ArrayList<ModuleDependency>();
+        for (ImportDependency impDep : getImportDependencies()) {
+            if (impDep instanceof ModuleDependency) {
+                moduleDependencies.add((ModuleDependency) impDep);
+            }
+        }
+        return Collections.unmodifiableList(moduleDependencies);
+    }
+
+    /**
+     * Returns the repository that is associated with this
+     * {@code ModuleDefinition}.
+     *
+     * @return the {@code Repository} object.
      */
     public abstract Repository getRepository();
 
     /**
-     * Returns an unmodifiable set of the names of the classes
-     * that a member of this module definition.
+     * Returns the module system that is associated with this
+     * {@code ModuleDefinition}. Equivalent to:
+     * <pre>
+     *      getRepository().getModuleSystem();
+     * </pre>
+     * @return the {@code ModuleSystem} object.
+     */
+    public abstract ModuleSystem getModuleSystem();
+
+
+    /**
+     * Returns an unmodifiable set of the names of the classes that are members
+     * of this {@code ModuleDefinition}.
      *
      * @return The unmodifiable set of the names of the member classes.
+     * @throws UnsupportedOperationException if the set of member classes
+     *         in this {@code ModuleDefinition} cannot be determined.
      */
     public abstract Set<String> getMemberClasses();
 
     /**
-     * Returns an unmodifiable set of the names of the classes
-     * that are exported by this module definition.
-     * This is a subset of the classes returned by
-     * {@link #getMemberClasses}.
+     * Returns an unmodifiable set of the package definitions that represents
+     * the member packages in this {@code ModuleDefinition}.
+     *
+     * @return The unmodifiable set of the member package definitions.
+     */
+    public abstract Set<PackageDefinition> getMemberPackageDefinitions();
+
+    /**
+     * Returns an unmodifiable set of the names of the classes that are
+     * exported by this {@code ModuleDefinition}. This is a subset of the
+     * classes returned by {@link #getMemberClasses() getMemberClasses()}.
      *
      * @return The unmodifiable set of the names of the exported classes.
+     * @throws UnsupportedOperationException if the set of exported classes
+     *         in this {@code ModuleDefinition} cannot be determined.
      */
     public abstract Set<String> getExportedClasses();
 
     /**
-     * Check if the specified class is exported by this module definition.
+     * Returns an unmodifiable set of the package definitions that represents
+     * the exported packages in this {@code ModuleDefinition}. This is a subset
+     * of the package definitions returned by
+     * {@link #getMemberPackageDefinitions() getMemberPackageDefinitions()}.
+     *
+     * @return The unmodifiable set of the exported package definitions.
+     */
+    public abstract Set<PackageDefinition> getExportedPackageDefinitions();
+
+    /**
+     * Check if the specified class is exported by this
+     * {@code ModuleDefinition}.
      *
      * @param name the name of the class.
-     * @return true if the class is exported.
+     * @return true if the class is exported; otherwise, returns false.
      */
     public boolean isClassExported(String name) {
-        // TODO: convert class name?
-        Set<String> exportedClasses = getExportedClasses();
-        return exportedClasses.contains(name);
+        try {
+            // TODO: convert class name?
+            Set<String> exportedClasses = getExportedClasses();
+            return exportedClasses.contains(name);
+        } catch (UnsupportedOperationException uoe) {
+            return false;
+        }
     }
 
     /**
      * Returns an unmodifiable set of the path of the resources exported by
-     * this module definition.
+     * this {@code ModuleDefinition}.
      * <p>
      * Resources are specified as '/' separated paths, with no leading '/'.
      *
      * @return The unmodifiable set of the path of the exported resources.
+     * @throws UnsupportedOperationException if the set of exported resources
+     *         in this {@code ModuleDefinition} cannot be determined.
      */
     public abstract Set<String> getExportedResources();
 
     /**
-     * Check if the specified resource is exported by this module definition.
+     * Check if the specified resource is exported by this
+     * {@code ModuleDefinition}.
      *
      * @param path A '/' delimited path (e.g. x/y/Z.class")
      * @return true if the resource in the path is exported.
      */
     public boolean isResourceExported(String path) {
-        Set<String> exportedResources = getExportedResources();
-        return exportedResources.contains(path);
+        try {
+            Set<String> exportedResources = getExportedResources();
+            return exportedResources.contains(path);
+        } catch (UnsupportedOperationException uoe) {
+            return false;
+        }
     }
 
     /**
-     * Returns a {@code Module} instance for the specified {@code ModuleDefinition}
-     * in the {@code ModuleSystem}. The module is initialized and ready to use.
-     * Equivalent to:
+     * Returns a {@code Module} instance for the specified
+     * {@code ModuleDefinition} in the {@code ModuleSystem}. The {@code Module}
+     * is initialized and ready to use. Equivalent to:
      * <pre>
-     *      getRepository().getModuleSystem().getModule(this);
+     *      getModuleSystem().getModule(this);
      * </pre>
      *
      * @return a {@code Module} instance of the {@code ModuleDefinition}.
      * @throws ModuleInitializationException if the module instance cannot be initialized.
-     * @throws IllegalStateException if the specified module definition
-     *         has already been disabled.
+     * @throws IllegalStateException if this {@code ModuleDefinition} has
+     *         already been disabled.
      */
     public final Module getModuleInstance() throws ModuleInitializationException {
-        return getRepository().getModuleSystem().getModule(this);
+        return getModuleSystem().getModule(this);
     }
 
     /**
-     * Returns this element's annotation for the specified type or
-     * the value of the specified attribute as an annotation.
+     * Returns this {@code ModuleDefinition}'s annotation for the specified
+     * type or the value of the specified attribute as an annotation.
      *
      * @param annotationClass the Class object corresponding to the
      *        annotation type
-     * @return this element's annotation for the specified annotation type if
-     *     present on this element, else null
+     * @return this {@code ModuleDefinition}'s annotation for the specified
+     *         annotation type if present, else null
      * @throws NullPointerException if the given annotation class is null
      */
     public abstract <T extends Annotation> T getAnnotation(Class<T> annotationClass);
 
     /**
-     * Returns an unmodifiable list of all annotations present on this element.
-     * If no annotations are present, an empty list is returned.
+     * Returns an unmodifiable list of all annotations present on this
+     * {@code ModuleDefinition}. If no annotations are present, an empty list
+     * is returned.
      *
-     * @return an unmodifiable list of all annotations present on this element
+     * @return an unmodifiable list of all annotations present on this
+     *         {@code ModuleDefinition}
      */
     public abstract List<Annotation> getAnnotations();
 
     /**
-     * Checks if the entire content of this module definition is stored locally.
+     * Checks if the entire content of this {@code ModuleDefinition} is stored
+     * locally.
      *
-     * @return true if the entire content of this module definition is stored
-     *         locally. Otherwise, returns false.
+     * @return true if the entire content of this {@code ModuleDefinition} is
+     *         stored locally; otherwise, returns false.
      */
     public boolean isDownloaded() {
         Boolean local = java.security.AccessController.doPrivileged(
                     new java.security.PrivilegedAction<Boolean>() {
                         public Boolean run() {
-                            return getModuleDefinitionContent().isDownloaded();
+                            return getModuleContent().isDownloaded();
                         }
                     });
 
@@ -224,30 +272,30 @@ public abstract class ModuleDefinition {
     }
 
     /**
-     * Check if the {@code Module} instance for this module definition can be
-     * released from the {@code ModuleSystem}.
+     * Check if the {@code Module} instances instantiated from this
+     * {@code ModuleDefinition} can be released from its {@code ModuleSystem}.
      *
-     * @return true if {@code Module} instance of this {@code ModuleDefinition}
-     *         can be released. Otherwise, returns false.
+     * @return true if {@code Module} instances can be released; otherwise,
+     *         returns false.
      */
     public abstract boolean isModuleReleasable();
 
     /**
-     * Returns a <code>ModuleDefinitionContent</code> instance which
-     * represents the content of this module definition.
+     * Returns a {@code ModuleContent} instance which represents the content
+     * of this {@code ModuleDefinition}.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("accessModuleDefinitionContent")</code>
-     * permission to ensure it's ok to access the content of this module
-     * definition.
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("accessModuleContent")}
+     * permission to ensure it's ok to access the content of this
+     * {@code ModuleDefinition}.
      *
-     * @return the <code>ModuleDefinitionContent</code> instance.
+     * @return the {@code ModuleContent} instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to the content of this module definition.
+     *         its {@code checkPermission} method denies access
+     *         to the content of this {@code ModuleDefinition}.
      */
-    public abstract ModuleDefinitionContent getModuleDefinitionContent();
+    public abstract ModuleContent getModuleContent();
 
     /**
      * Compares the specified object with this {@code ModuleDefinition} for
@@ -255,8 +303,10 @@ public abstract class ModuleDefinition {
      * Returns {@code true} if and only if {@code obj} is the same object as
      * this object.
      *
-     * @param obj the object to be compared for equality with this module definition.
-     * @return {@code true} if the specified object is equal to this module definition
+     * @param obj the object to be compared for equality with this
+     *        {@code ModuleDefinition}.
+     * @return {@code true} if the specified object is equal to this
+     *         {@code ModuleDefinition}; otherwise, returns false.
      */
     @Override
     public final boolean equals(Object obj)   {
@@ -266,7 +316,7 @@ public abstract class ModuleDefinition {
     /**
      * Returns a hash code for this {@code ModuleDefinition}.
      *
-     * @return a hash code value for this object.
+     * @return a hash code value for this {@code ModuleDefinition}.
      */
     @Override
     public final int hashCode()   {
@@ -274,11 +324,10 @@ public abstract class ModuleDefinition {
     }
 
     /**
-     * Returns a <code>String</code> object representing this
-     * <code>ModuleDefinition</code>.
+     * Returns a {@code String} object representing this
+     * {@code ModuleDefinition}.
      *
-     * @return a string representation of the
-     *          <code>ModuleDefinition</code> object.
+     * @return a string representation of the {@code ModuleDefinition} object.
      */
     @Override
     public String toString() {

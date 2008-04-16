@@ -31,22 +31,21 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an array of service-providers that the module definition defines.
- * This metadata annotation is applied to the development module, i.e. the
- * <I>superpackage</I> construct.
- * <p>
+ * Indicates an array of service-providers that a module definition defines.
  * A service is a well-known set of interfaces and (usually abstract) classes.
  * A service-provider is a specific implementation of a service. The classes
  * in a service-provider typically implement the interfaces and subclass the
- * classes defined in the service itself.
+ * classes defined in the service itself. If a module definition defines a
+ * service-provider, it should import the module definition which defines the
+ * service. It should also contain and export the set of interfaces and classes
+ * that are part of the service-provider. This metadata annotation is applied
+ * to the development module, i.e. the <I>module</I> construct. For example,
  * <p>
- * If a module definition defines a service-provider, it should import the
- * module definition which defines the service. It should also contain and
- * export the set of interfaces and classes that are part of the
- * service-provider.
- * <p>
- * For example,
  * <blockquote><pre>
+ *    //
+ *    // com/xyz/xmlparser/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ServiceProviders({
  *       &#064;ServiceProvider(service="javax.xml.parsers.DocumentBuilderFactory",
  *                        providerClass="com.xyz.xmlparser.DocumentBuilderFactoryImpl")
@@ -54,32 +53,21 @@ import java.lang.annotation.RetentionPolicy;
  *                        providerClass="com.xyz.xmlparser.SAXParserFactoryImpl")
  *    })
  *    &#064;ImportModules({
- *       //
- *       // Imports service module.
- *       //
- *       &#064;ImportModule(name="javax.xml.parsers", version="[1.0, 2.0)")
+ *       &#064;ImportModule(name="javax.xml.parsers",   // service module
+ *                      version="[1.0, 2.0)")
  *    })
- *    superpackage com.xyz.xmlparser {
- *       //
- *       // Exports service-provider classes.
- *       //
- *       export com.xyz.xmlparser.DocumentBuilderFactoryImpl;
- *       export com.xyz.xmlparser.SAXParserFactoryImpl;
- *       ...
- *    }
+ *    module com.xyz.xmlparser;
  * </pre></blockquote>
- *
  * @see java.module.annotation.ServiceProvider
  * @see java.module.annotation.Services
- *
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ServiceProviders {
 
     /**
-     * Array of service-providers.
+     * An array of service-providers.
      */
     ServiceProvider[] value();
 }

@@ -31,29 +31,28 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an array of attributes of a module definition. This
- * metadata annotation is applied to the development module, i.e.
- * the <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates an array of attributes of a module definition. This metadata
+ * annotation is applied to the development module, i.e. the <I>module</I>
+ * construct. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ModuleAttributes({
  *       &#064;ModuleAttribute(name="org.opensource.license", value="GPL"),
  *       &#064;ModuleAttribute(name="java.magic.number", value="CAFEBABE")
  *    })
- *    superpackage com.wombat.xyz {
- *        ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
- *
  * @see java.module.annotation.ModuleAttribute
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ModuleAttributes {
     /**
-     * Array of module attributes.
+     * An array of module attributes.
      */
     ModuleAttribute[] value();
 }

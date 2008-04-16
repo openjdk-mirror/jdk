@@ -31,32 +31,30 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the paths relative to the root of the module archive for
- * searching native libraries for different platforms and architectures. This
- * metadata annotation is applied to the development module, i.e. the
- * <I>superpackage</I> construct.
- * <p>
- * For example,
+ * Indicates the paths for searching native libraries in the module archive for
+ * different platforms and architectures. This metadata annotation is applied
+ * to the development module, i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/sun/java3d/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;NativeLibraryPaths({
  *       &#064;NativeLibraryPath(platform="windows", arch="x86", path="native/windows-x86"),
  *       &#064;NativeLibraryPath(platform="linux", arch="x86", path="native/linux-x86"),
  *       &#064;NativeLibraryPath(platform="solaris", arch="sparc", path="native/solaris-sparc"),
  *    })
- *    superpackage com.sun.java3d {
- *       ...
- *    }
+ *    module com.sun.java3d;
  * </pre></blockquote>
- *
  * @see java.module.annotation.NativeLibraryPath
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NativeLibraryPaths {
 
     /**
-     * Array of paths within the module archive for searching native libraries
+     * An array of paths for searching native libraries in the module archive
      * for different platforms and architectures.     .
      */
     NativeLibraryPath[] value();

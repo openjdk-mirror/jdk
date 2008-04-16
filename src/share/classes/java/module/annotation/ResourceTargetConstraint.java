@@ -31,33 +31,29 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the version constraint of the target module definition that this
- * resource module definition requires. The version constraint is either a
+ * Indicates the version constraint that a resource module definition
+ * requires its target module to satisfy. The version constraint is either a
  * version, a version range, or a combination of both, following the format
  * described in the {@link java.module.VersionConstraint} class. This metadata
- * annotation is applied to the development module, i.e. the <I>superpackage</I>
- * construct.
- * <p>
- * For example,
+ * annotation is applied to the development module, i.e. the <I>module</I>
+ * construct. For example,
  * <blockquote><pre>
  *    //
- *    // The version of the target module (i.e. org.foo.xml) that can use this
- *    // resource module is 1.0 <= x < 2.0.
+ *    // org/foo/xml/locale_fr/module-info.java
  *    //
- *    &#064;ResourceTargetConstraint("[1.0, 2.0)")
- *    superpackage org.foo.xml_fr {
- *          ...
- *    }
+ *    &#064;Version("1.0.0")
+ *    &#064;ResourceTargetConstraint("[1.0, 2.0)")  // the version of the target module (i.e. org.foo.xml) must be 1.0 <= x < 2.0
+ *    module org.foo.xml.locale_fr;
  * </pre></blockquote>
- *
  * @see java.module.VersionConstraint
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ResourceTargetConstraint {
     /**
-     * Version constraint of the target module definition.
+     * The version constraint that this resource module definition requires its
+     * target module to satisfy.
      */
     String value() default "0.0.0.0+";
 }

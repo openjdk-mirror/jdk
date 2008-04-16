@@ -50,11 +50,11 @@ import sun.tools.jar.CommandLine;
  * Prototype of the Jam packaging tool.
  *
  * So far, the only feature of 'jam' not supported by the 'jar' tool is the
- * copying of the compiled superpackage file to MODULE-INF/MODULE.METADATA.
+ * copying of the compiled module-info file to MODULE-INF/MODULE.METADATA.
  * This will likely change in the full implementation.
  *
  * This prototype implementation consists of some command line parsing code
- * (copied from jar), plus a bit of code to deal with the superpackage file
+ * (copied from jar), plus a bit of code to deal with the module-info file
  * and to call jar. This may have to be refactored.
  *
  * @since 1.7
@@ -64,8 +64,8 @@ public final class Jam {
     private final PrintStream out, err;
     private final String program;
 
-    private String superpackageName;
-    private File superpackageDir;
+    private String moduleName;
+    private File moduleInfoDir;
     private String fname, tfname;
     private List<String> jarArgs;
 
@@ -82,8 +82,8 @@ public final class Jam {
 
         // initialize instance variables - to avoid side
         // effects if run is executed more than once.
-        superpackageName = null;
-        superpackageDir = null;
+        moduleName = null;
+        moduleInfoDir = null;
         fname = null;
         tfname = null;
         jarArgs = null;
@@ -91,25 +91,24 @@ public final class Jam {
         if (!parseArgs(args)) {
             return false;
         }
-        // generate superpackage filename if not specified
-        File superpackageFile = null;
-        if (superpackageDir == null) {
-            superpackageFile = new File(
-                                    superpackageName.replace('.', File.separatorChar)
-                                    + File.separatorChar + "super_package.class");
+        // generate module filename if not specified
+        File moduleInfoFile = null;
+        if (moduleInfoDir == null) {
+            moduleInfoFile = new File(moduleName.replace('.', File.separatorChar)
+                                  + File.separatorChar + "module_info.class");
         }
         else {
-            superpackageFile = new File(superpackageDir,
-                                    superpackageName.replace('.', File.separatorChar)
-                                    + File.separatorChar + "super_package.class");
+            moduleInfoFile = new File(moduleInfoDir,
+                                    moduleName.replace('.', File.separatorChar)
+                                    + File.separatorChar + "module_info.class");
         }
 
-        // verify the specified superpackage exists
-        if (superpackageFile.isFile() == false) {
-            error("Superpackage not found: " + superpackageFile);
+        // verify the specified module exists
+        if (moduleInfoFile.isFile() == false)  {
+            error("Module not found: " + moduleInfoFile);
             return false;
         }
-        // copy superpackage file to MODULE-INF/MODULE.METADATA
+        // copy module-info file to MODULE-INF/MODULE.METADATA
         InputStream fin = null;
         OutputStream fout = null;
         File tmpDir;
@@ -131,12 +130,12 @@ public final class Jam {
                         }
                     }));
 
-            // copy superpackage file into MODULE-INF/MODULE.METADATA
-            fin = new FileInputStream(superpackageFile);
-            File moduleDir = new File(tmpDir, "MODULE-INF");
-            moduleDir.mkdirs();
-            moduleDir.deleteOnExit();
-            File metadataFile = new File(moduleDir, "MODULE.METADATA");
+            // copy module-info file into MODULE-INF/MODULE.METADATA
+            fin = new FileInputStream(moduleInfoFile);
+            File moduleInfoDir = new File(tmpDir, "MODULE-INF");
+            moduleInfoDir.mkdirs();
+            moduleInfoDir.deleteOnExit();
+            File metadataFile = new File(moduleInfoDir, "MODULE.METADATA");
             fout = new FileOutputStream(metadataFile);
             metadataFile.deleteOnExit();
             byte[] buffer = new byte[2048];
@@ -216,10 +215,9 @@ public final class Jam {
             fatalError(e);
             return false;
         }
-        // Parse the args to make sure that the superpackage is specified
-        // and only 'jar' options supported by 'jam' are listed.
-        // Also, build the arguments to pass to 'jar' by filtering out the
-        // superpackage arguments.
+        // Parse the args to make sure that the module is specified and only
+        // 'jar' options supported by 'jam' are listed. Also, build the
+        // arguments to pass to 'jar' by filtering out the mdoule arguments.
         jarArgs = new ArrayList<String>();
         StringBuilder jarFlags = new StringBuilder();
         int count = 1;
@@ -241,11 +239,11 @@ public final class Jam {
                     fname = args[count++];
                     break;
                 case 's':
-                    superpackageName = args[count++];
+                    moduleName = args[count++];
                     ch = '\0';
                     break;
                 case 'S':
-                    superpackageDir = new File(args[count++]);
+                    moduleInfoDir = new File(args[count++]);
                     ch = '\0';
                     break;
                 case '0':
@@ -265,13 +263,13 @@ public final class Jam {
             usageError();
             return false;
         }
-        if (fname == null || superpackageName == null) {
+        if (fname == null || moduleName == null) {
             usageError();
             return false;
         }
-        // superpackage name must not contain file separator
-        if (superpackageName.indexOf('/') != -1 || superpackageName.indexOf('\\') != -1) {
-            error(program + ": superpackage name must not contain \\ or / character.");
+        // module name must not contain file separator
+        if (moduleName.indexOf('/') != -1 || moduleName.indexOf('\\') != -1) {
+            error(program + ": module name must not contain \\ or / character.");
             return false;
         }
         // checks file extensions
@@ -310,15 +308,15 @@ public final class Jam {
      * Print usage message.
      */
     private void usageError() {
-        error("Usage: jam cfs[v0S] jam-file superpackage-name [superpackage-dir] [-C dir] files ...");
+        error("Usage: jam cfs[v0S] jam-file module-name [module-info-dir] [-C dir] files ...");
         error("Options:");
 
         error("    -c  create new module archive");
         error("    -v  generate verbose output on standard output");
         error("    -0  store only; use no ZIP compression");
         error("    -f  specify module archive file name");
-        error("    -s  specify superpackage name");
-        error("    -S  specify where to find superpackage file");
+        error("    -s  specify module name");
+        error("    -S  specify where to find module-info file");
         error("    -C  change to the specified directory and include the following file");
         error("If any file is a directory then it is processed recursively.");
         error("");
@@ -330,7 +328,7 @@ public final class Jam {
         error("           the foo/ directory into a module archive called 'hello.jam':");
         error("       jam cvfs hello.jam hello hello/*.class -C foo/ .");
         error("");
-        error("Example 3: to find the superpackage file from the foo/ directory and to");
+        error("Example 3: to find the module-info file from the foo/ directory and to");
         error("           archive the hello module and its class files into a module archive");
         error("           called 'hello.jam':");
         error("       jam cvfsS hello.jam hello foo/ hello/*.class");

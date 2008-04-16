@@ -25,7 +25,6 @@
 
 package sun.module.bootstrap;
 
-import java.lang.reflect.Superpackage;
 import java.net.URL;
 import java.io.IOException;
 import java.util.ArrayList;

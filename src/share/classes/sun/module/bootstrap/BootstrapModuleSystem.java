@@ -28,6 +28,7 @@ package sun.module.bootstrap;
 import java.module.ImportDependency;
 import java.module.Module;
 import java.module.ModuleDefinition;
+import java.module.ModuleDependency;
 import java.module.ModuleInitializationException;
 import java.module.ModuleSystem;
 import java.module.ModuleSystemEvent;
@@ -84,10 +85,10 @@ public final class BootstrapModuleSystem extends ModuleSystem {
 
         // Based on the import dependency, set up the appropriate imported
         // modules for a virtual module.
-        for (ImportDependency imp : moduleDef.getImportDependencies()) {
+        for (ModuleDependency dep : moduleDef.getImportModuleDependencies()) {
 
             // Find the imported module only through the bootstrap repository.
-            ModuleDefinition md = Repository.getBootstrapRepository().find(imp.getName(), imp.getVersionConstraint());
+            ModuleDefinition md = Repository.getBootstrapRepository().find(dep.getName(), dep.getVersionConstraint());
 
             // Instantiate a new module instance of the imported module
             Module importedModule = getModuleInternal(md);

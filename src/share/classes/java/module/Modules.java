@@ -39,8 +39,8 @@ import sun.module.repository.URLRepository;
 
 /**
  * This class consists exclusively of static methods that are specifically for
- * the Java Module System. It contains methods which constructs module
- * definition that are defined by the system's module system. It also contains
+ * the default module system. It contains methods which constructs module
+ * definition that are defined by the default module system. It also contains
  * methods that constructs the local repository and URL repository. In
  * addition, it contains methods for setting or getting the system's visibility
  * policy and import override policy.
@@ -82,24 +82,24 @@ public class Modules {
     }
 
     /**
-     * Constructs and initializes a new repository instance that loads
+     * Constructs and initializes a new {@code Repository} instance that loads
      * module definitions from a directory on the file system.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createRepository")} permission to
      * ensure it's ok to create a repository.
      *
      * @param parent the parent repository for delegation.
      * @param name the repository name.
      * @param source the directory on the file system.
-     * @return a new repository instance.
+     * @return a new {@coder Repository} instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
+     *         its {@code checkPermission} method denies access
+     *         to create a new {@code Repository} instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
-     * @throws IllegalArgumentException if a circularity is detected.
+     * @throws IllegalArgumentException if circularity is detected.
      */
     public static Repository newLocalRepository(Repository parent, String name, File source)
             throws IOException {
@@ -107,49 +107,52 @@ public class Modules {
     }
 
     /**
-     * Constructs and initializes a new repository instance that loads
-     * module definitions from a directory on the file system.
-     * <p>
+     * Constructs and initializes a new {@code Repository} instance that loads
+     * module definitions from a directory on the file system. Equivalent to:
+     * <pre>
+     *      newLocalRepository(Repository.getSystemRepository(), name, source);
+     * </pre>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createRepository")} permission to
      * ensure it's ok to create a repository.
      *
      * @param name the repository name.
      * @param source the directory on the file system.
-     * @return a new repository instance.
+     * @return a new {@code Repository} instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
+     *         its {@code checkPermission} method denies access
+     *         to create a new repository instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      */
     public static Repository newLocalRepository(String name, File source)
             throws IOException {
-        return new LocalRepository(name, source.toURI().toURL());
+        return new LocalRepository(Repository.getSystemRepository(), name,
+                                   source.toURI().toURL());
     }
 
     /**
-     * Constructs a new repository instance that loads module definitions
-     * from a directory on the file system, and initializes using information
-     * from the given {@code config}.
+     * Constructs a new {@code Repository} instance that loads module
+     * definitions from a directory on the file system, and initializes
+     * using information from the given {@code config}.
      * <p>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createRepository")} permission to
      * ensure it's ok to create a repository.
      *
      * @param parent the parent repository for delegation.
      * @param name the repository name.
      * @param source the directory on the file system.
      * @param config Map of configuration names to their values
-     * @return a new repository instance.
+     * @return a new {@code Repository} instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
+     *         its {@code checkPermission} method denies access
+     *         to create a new repository instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
-     * @throws IllegalArgumentException if a circularity is detected.
+     * @throws IllegalArgumentException if circularity is detected.
      */
     public static Repository newLocalRepository(Repository parent, String name,
             File source, Map<String, String> config)
@@ -158,29 +161,32 @@ public class Modules {
     }
 
     /**
-     * Constructs a new repository instance that loads module definitions
-     * from a directory on the file system, and initializes using information
-     * from the given {@code config}.
-     * <p>
+     * Constructs a new {@code Repository} instance that loads module
+     * definitions from a directory on the file system, and initializes
+     * using information from the given {@code config}. Equivalent to:
+     * <pre>
+     *      newLocalRepository(Repository.getSystemRepository(), name, source, config);
+     * </pre>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createRepository")} permission to
      * ensure it's ok to create a repository.
      *
      * @param name the repository name.
      * @param source the directory on the file system.
      * @param config Map of configuration names to their values
-     * @return a new repository instance.
+     * @return a new {@code Repository} instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
+     *         its {@code checkPermission} method denies access
+     *         to create a new repository instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      */
     public static Repository newLocalRepository(String name, File source,
             Map<String, String> config)
             throws IOException {
-        return new LocalRepository(name, source.toURI().toURL(), config);
+        return new LocalRepository(Repository.getSystemRepository(), name,
+                                   source.toURI().toURL(), config);
     }
 
     /**
@@ -190,7 +196,7 @@ public class Modules {
      * Information about the module definitions available from the
      * codebase URL must be published in a repository metadata file. The
      * contents of the file must follow the schema of the URL Repository
-     * metadata for the Java Module System.
+     * metadata described in the Java Module System specification.
      * <p><i>
      *  {codebase}/repository-metadata.xml
      * <p></i>
@@ -206,8 +212,8 @@ public class Modules {
      * path is not specified and the module definition has platform
      * binding, the default path is "{name}/{version}/{platform}-{arch}".
      * <p>
-     * After the URL repository instance successfully downloads the
-     * repository metadata file, the module file of each module definition
+     * After the repository instance successfully downloads the repository
+     * metadata file, the module file of each module definition
      * (i.e. MODULE.METADATA file) in the repository is downloaded based on
      * the information in the repository metadata file:
      * <p><i>
@@ -218,10 +224,10 @@ public class Modules {
      * repository metadata file matches the platform and the architecture
      * of the system.
      * <p>
-     * Module definitions are available for searches after the URL
-     * repository instance is initialized. If a module instance is
-     * instantiated from a module definition that has no platform binding,
-     * the module archive is downloaded by probing in the following order:
+     * Module definitions are available for searches after the repository
+     * instance is initialized. If a module instance is instantiated from a
+     * module definition that has no platform binding, the module archive is
+     * downloaded by probing in the following order:
      * <p><i>
      *  {codebase}/{path}/{name}-{version}.jam.pack.gz<p>
      *  {codebase}/{path}/{name}-{version}.jam
@@ -238,21 +244,21 @@ public class Modules {
      * they are compared bit-wise against each other after the module
      * archive is downloaded.
      * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("createRepository")</code>
-     * permission to ensure it's ok to create a repository.
+     * If a security manager is present, this method calls the security
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("createRepository")} permission to ensure
+     * it's ok to create a repository.
      *
      * @param parent the parent repository for delegation.
      * @param name the repository name.
      * @param codebase the source location.
-     * @return a new repository instance.
+     * @return a new {@code Repository} instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
+     *         its {@code checkPermission} method denies access
+     *         to create a new repository instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
-     * @throws IllegalArgumentException if a circularity is detected.
+     * @throws IllegalArgumentException if circularity is detected.
      */
     public static Repository newURLRepository(Repository parent, String name, URL codebase)
             throws IOException {
@@ -260,26 +266,28 @@ public class Modules {
     }
 
     /**
-     * Constructs and initializes a new repository instance that loads
-     * module definitions from a codebase URL.
-     * <p>
+     * Constructs and initializes a new {@code Repository} instance that loads
+     * module definitions from a codebase URL. Equivalent to:
+     * <pre>
+     *      newURLRepository(Repository.getSystemRepository(), name, codebase);
+     * </pre>
      * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createRepository")} permission to
      * ensure it's ok to create a repository.
      *
      * @param name the repository name.
      * @param codebase the source location.
-     * @return a new repository instance.
+     * @return a new {@code Repository} instance.
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to create a new
-     *         instance of repository.
+     *         {@code checkPermission} method denies access to create a new
+     *         repository instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
      */
     public static Repository newURLRepository(String name, URL codebase)
             throws IOException {
-        return new URLRepository(name, codebase);
+        return new URLRepository(Repository.getSystemRepository(), name, codebase);
     }
 
     /**
@@ -288,8 +296,8 @@ public class Modules {
      * given {@code config}.
      * <p>
      * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("createRepository")</code>
+     * security manager's {@code checkPermission} method with
+     * a {@code ModuleSystemPermission("createRepository")}
      * permission to ensure it's ok to create a repository.
      *
      * @param parent the parent repository for delegation.
@@ -298,7 +306,7 @@ public class Modules {
      * @param config Map of configuration names to their values
      * @return a new repository instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
+     *         its {@code checkPermission} method denies access
      *         to create a new instance of repository.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
@@ -313,11 +321,13 @@ public class Modules {
     /**
      * Constructs a new repository instance that loads module definitions
      * from a codebase URL, and initializes using information from the
-     * given {@code config}.
-     * <p>
+     * given {@code config}. Equivalent to:
+     * <pre>
+     *      newURLRepository(Repository.getSystemRepository(), name, codebase, config);
+     * </pre>
      * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("createRepository")</code>
+     * security manager's {@code checkPermission} method with
+     * a {@code ModuleSystemPermission("createRepository")}
      * permission to ensure it's ok to create a repository.
      *
      * @param name the repository name.
@@ -325,7 +335,7 @@ public class Modules {
      * @param config Map of configuration names to their values
      * @return a new repository instance.
      * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
+     *         its {@code checkPermission} method denies access
      *         to create a new instance of repository.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
@@ -333,14 +343,14 @@ public class Modules {
     public static Repository newURLRepository(String name, URL codebase,
             Map<String, String> config)
             throws IOException {
-        return new URLRepository(name, codebase, config);
+        return new URLRepository(Repository.getSystemRepository(), name, codebase, config);
     }
 
     /**
      * Returns the system's import override policy for module definitions.
      * <p>
      * The default class of the override policy can be changed using the
-     * <code>java.module.import.override.policy.classname</code> system property.
+     * {@code java.module.import.override.policy.classname} system property.
      *
      * @return the system's default import override policy for module definitions.
      */
@@ -391,15 +401,15 @@ public class Modules {
     /**
      * Set the system's import override policy for module definitions.
      * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("setImportOverridePolicy")</code>
+     * If a security manager is present, this method calls the security
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("setImportOverridePolicy")}
      * permission to ensure it's ok to set the system's default import
      * override policy..
      *
      * @param policy the import override policy for module definitions.
      * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to set the
+     *         {@code checkPermission} method denies access to set the
      *         system's default import override policy.
      */
     public synchronized static void setImportOverridePolicy(ImportOverridePolicy policy) {
@@ -415,10 +425,10 @@ public class Modules {
 
     /**
      * Returns the system's default visibility policy for module definitions
-     * in the repository of the module system.
+     * in the repositories..
      * <p>
      * The default class of the visibility policy can be overridden using the
-     * <code>java.module.visibility.policy.classname</code> system property.
+     * {@code java.module.visibility.policy.classname} system property.
      *
      * @return the system's default visibility policy for module definitions.
      */
@@ -468,24 +478,26 @@ public class Modules {
 
     /**
      * Returns a new {@code ModuleDefinition} for modules based on the Java
-     * Module System format.
+     * Module System's module metadata file format described in the Java
+     * Module System specification.
      *
-     * <p>This method will typically called by repository implementations
+     * <p>This method will typically be called by repository implementations
      * and not by applications.
      *
      * @param metadata the contents of the {@code MODULE-INF/METADATA.MODULE}
      *   file
-     * @param content the ModuleDefinitionContent to be used to access the
+     * @param content the {@code ModuleContent} to be used to access the
      *   contents of the module archive
-     * @param repository the repository in which the module archive is stored
-     * @param moduleReleasable the module instance instantiated from this module
-     *   definition is releasable from the module system
+     * @param repository the {@code Repository} in which the module archive is
+     *        stored
+     * @param moduleReleasable the module instance instantiated from this
+     *        {@code ModuleDefinition} is releasable from its module system
      * @throws ModuleFormatException if the contents of {@code metadata}
-     *   are not well formed.
-     * @return a new {@code ModuleDefinition}
+     *         are not recognized or well formed.
+     * @return a new {@code ModuleDefinition}.
      */
     public static ModuleDefinition newJamModuleDefinition(byte[] metadata,
-            ModuleDefinitionContent content, Repository repository, boolean moduleReleasable)
+            ModuleContent content, Repository repository, boolean moduleReleasable)
             throws ModuleFormatException {
         if (metadata == null) {
             throw new NullPointerException("metadata must not be null.");
@@ -501,26 +513,28 @@ public class Modules {
     }
 
     /**
-     * Returns a new ModuleDefinition for modules based on the
-     * Java Module System format.
+     * Returns a new {@code ModuleDefinition} for modules based on the Java
+     * Module System's module metadata file format described in the Java
+     * Module System specification.
      *
-     * <p>This method will typically called by repository implementations
+     * <p>This method will typically be called by repository implementations
      * and not by applications. It is useful in case the metadata has not
      * yet been retrieved but the module name and version are available.
      *
-     * @param name the name of the module definition
-     * @param version the version of the module definition
+     * @param name the name of the {@code ModuleDefinition}
+     * @param version the version of the {@code ModuleDefinition}
      * @param metadataHandle a Callable from which the contents of the
      *        {@code MODULE-INF/METADATA.MODULE} file can be retrieved
-     * @param content the ModuleDefinitionContent to be used to access the
+     * @param content the {@code ModuleContent} to be used to access the
      *        contents of the module archive
-     * @param repository the repository in which the module archive is stored
-     * @param moduleReleasable the module instance instantiated from this module
-     *        definition is releasable from the module system
-     * @return a new ModuleDefinition
+     * @param repository the {@code Repository} in which the module archive is
+     *        stored
+     * @param moduleReleasable the module instance instantiated from this
+     *        {@code ModuleDefinition} is releasable from the module system
+     * @return a new {@code ModuleDefinition}.
      */
     public static ModuleDefinition newJamModuleDefinition(String name, Version version,
-            Callable<byte[]> metadataHandle, ModuleDefinitionContent content,
+            Callable<byte[]> metadataHandle, ModuleContent content,
             Repository repository, boolean moduleReleasable) {
         if (name == null) {
             throw new NullPointerException("name must not be null.");

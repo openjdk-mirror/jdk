@@ -27,8 +27,7 @@ package sun.module.repository.cache;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Superpackage;
-import java.module.ModuleDefinitionContent;
+import java.module.ModuleContent;
 import java.module.Version;
 import java.module.annotation.PlatformBinding;
 import java.util.jar.JarEntry;
@@ -47,8 +46,8 @@ import sun.module.repository.RepositoryUtils;
     // Byte array that represents the module metadata
     private final byte[] metadataBytes;
 
-    // Superpackage rectified from the module metadata
-    private final Superpackage superPackage;
+    // ModuleInfo rectified from the module metadata
+    private final ModuleInfo moduleInfo;
 
     // Module name
     private String moduleName;
@@ -63,26 +62,26 @@ import sun.module.repository.RepositoryUtils;
     private String arch = null;
 
     // Module's content
-    private ModuleDefinitionContent content = null;
+    private ModuleContent content = null;
 
     /**
      * Constructs a new module definition info.
      *
      * @param entryDirectory directory where the object will live.
      * @param metadataBytes byte array that represents the module metadata
-     * @param superPackage superpackage recified from the module metadata
+     * @param moduleInfo ModuleInfo recified from the module metadata
      */
-     ModuleDefInfo(File entryDirectory, byte[] metadataBytes, Superpackage superPackage) {
+     ModuleDefInfo(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo) {
         this.entryDirectory = entryDirectory;
         this.metadataBytes = metadataBytes;
-        this.superPackage = superPackage;
+        this.moduleInfo = moduleInfo;
 
         // Module name
-        this.moduleName = superPackage.getName();
+        this.moduleName = moduleInfo.getName();
 
         // Module version
         java.module.annotation.Version versionAnnotation =
-                superPackage.getAnnotation(java.module.annotation.Version.class);
+                moduleInfo.getAnnotation(java.module.annotation.Version.class);
         if (versionAnnotation != null)  {
             try {
                 moduleVersion = Version.valueOf(versionAnnotation.value());
@@ -93,7 +92,7 @@ import sun.module.repository.RepositoryUtils;
 
         // Platform Binding
         PlatformBinding platformBinding =
-                superPackage.getAnnotation(PlatformBinding.class);
+                moduleInfo.getAnnotation(PlatformBinding.class);
         if (platformBinding != null) {
             platform = platformBinding.platform();
             arch = platformBinding.arch();
@@ -160,10 +159,10 @@ import sun.module.repository.RepositoryUtils;
      }
 
      /**
-      * Returns the module definition content that represents the
-      * exposed contents in the jam file.
+      * Returns the module content that represents the exposed contents in the
+      * jam file.
       */
-     public abstract ModuleDefinitionContent getModuleDefinitionContent();
+     public abstract ModuleContent getModuleContent();
 
      /**
       * Returns the entry directory for this object.
@@ -174,10 +173,10 @@ import sun.module.repository.RepositoryUtils;
      }
 
      /**
-      * Returns the superpackage that represents the module in this object.
+      * Returns the ModuleInfo that represents the module in this object.
       */
      /* package-private */
-     Superpackage getSuperpackage()  {
-        return superPackage;
+     ModuleInfo getModuleInfo()  {
+        return moduleInfo;
      }
  }

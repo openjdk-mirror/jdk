@@ -30,7 +30,6 @@ import java.io.File;
 import java.module.Module;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Superpackage;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.AccessController;
@@ -197,6 +196,10 @@ public abstract class ClassLoader {
     // to its corresponding Package object.
     private HashMap<String, Package> packages = new HashMap<String, Package>();
 
+    // The modules defined in this class loader.  Each module name is mapped
+    // to its corresponding ModuleInfo object.
+    private HashMap<String, ModuleInfo> moduleInfos = new HashMap<String, ModuleInfo>();
+
     /**
      * Creates a new class loader using the specified parent class loader for
      * delegation.
@@ -250,13 +253,16 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Returns the Module this ClassLoader is associated with.
+     * Returns the {@code Module} instance this {@code ClassLoader} is
+     * associated with.
      *
      * <p>If this class loader is the module class loader of a
-     * {@link Module}, this method returns that Module object. Otherwise
-     * it returns null.
+     * {@link Module}, this method returns that {@code Module} object.
+     * Otherwise, it returns null.
      *
-     * @return the Module this ClassLoader is associated with or null.
+     * @return the {@code Module} instance this {@code ClassLoader} is
+     *         associated with or null.
+     * @since 1.7
      */
     public Module getModule() {
         return null;
@@ -393,83 +399,55 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Finds the superpackage with the specified fully qualified name.
-     * This method is invoked by the Java virtual machine to resolve superpackage
+     * Finds the module information with the specified fully qualified name.
+     * This method is invoked by the Java virtual machine to resolve module
      * references. Typically, it should not be called by application code.
      *
      * <p>The default implementation of this method calls
      * {@link #findResource findResource()} to obtain the contents of the
-     * superpackage file and {@link #defineSuperpackage defineSuperpackage()}
-     * to construct the {@code Superpackage} object.
+     * module file and {@link #defineModuleInfo defineModuleInfo()}
+     * to construct the {@code ModuleInfo} object.
 
-     * @param  name
-     *         The fully qualified name of the superpackage
-     *
-     * @return  The resulting <tt>Superpackage</tt> object
-     *
-     * @throws  ClassNotFoundException
-     *          If the superpackage could not be found
+     * @param name The fully qualified name of the module
+     * @return The resulting <tt>ModuleInfo</tt> object
+     * @throws ClassNotFoundException if the module could not be found.
+     * @since 1.7
      */
-    protected Superpackage findSuperpackage(String name) throws ClassNotFoundException {
+    protected ModuleInfo findModuleInfo(String name) throws ClassNotFoundException {
         throw new ClassNotFoundException(name);
     }
 
     /**
-     * Converts an array of bytes into an instance of class <tt>Superpackage</tt>.
+     * Converts an array of bytes into an instance of class <tt>ModuleInfo</tt>.
      * Typically this method will only invoked by a class loader's
-     * {@link #findSuperpackage findSuperpackage()} method.
+     * {@link #findModuleInfo findModuleInfo()} method.
      *
      * @param  name
-     *         The expected fully qualified name of the superpackage, or
+     *         The expected fully qualified name of the module, or
      *         <tt>null</tt> if not known
-     *
      * @param  b
-     *         The bytes that make up the superpackage data.  The bytes in positions
+     *         The bytes that make up the module data.  The bytes in positions
      *         <tt>off</tt> through <tt>off+len-1</tt> should have the format
-     *         of a valid superpackage file as defined by the <a
+     *         of a valid module file as defined by the <a
      *         href="http://java.sun.com/docs/books/vmspec/">Java Virtual
      *         Machine Specification</a>.
-     *
      * @param  off
-     *         The start offset in <tt>b</tt> of the superpackage data
-     *
+     *         The start offset in <tt>b</tt> of the module data
      * @param  len
-     *         The length of the superpackage data
-     *
-     * @return  The <tt>Superpackage</tt> object that was created from the specified
-     *          superpackage data.
-     *
+     *         The length of the module data
+     * @return  The <tt>ModuleInfo</tt> object that was created from the specified
+     *          module data.
      * @throws  ClassFormatError
-     *          If the data did not contain a valid superpackage
-     *
+     *          If the data did not contain a valid module
      * @throws  IndexOutOfBoundsException
      *          If either <tt>off</tt> or <tt>len</tt> is negative, or if
      *          <tt>off+len</tt> is greater than <tt>b.length</tt>.
-     *
+     * @since 1.7
      */
-    protected final Superpackage defineSuperpackage(String name, byte[] b, int off, int len)
-        throws ClassFormatError
-    {
+    protected final ModuleInfo defineModuleInfo(String name, byte[] b, int off, int len)
+        throws ClassFormatError     {
         Class<?> clazz = defineClass(name, b, off, len);
-        try {
-            return getSuperpackageConstructor().newInstance(clazz);
-        } catch (Exception e) {
-            throw (ClassFormatError)new ClassFormatError
-                ("Could not construct superpackage").initCause(e);
-        }
-    }
-
-    private static volatile Constructor<Superpackage> superpackageConstructor;
-
-    private static Constructor<Superpackage> getSuperpackageConstructor() throws NoSuchMethodException {
-        Constructor<Superpackage> c = superpackageConstructor;
-        // XXX add doPrivileged()
-        if (c == null) {
-            c = Superpackage.class.getDeclaredConstructor(Class.class);
-            c.setAccessible(true);
-            superpackageConstructor = c;
-        }
-        return c;
+        return new ModuleInfo(clazz);
     }
 
     /**
@@ -1598,6 +1576,32 @@ public abstract class ClassLoader {
             }
         }
         return map.values().toArray(new Package[map.size()]);
+    }
+
+    /**
+     * Returns a <tt>ModuleInfo</tt> that has been defined by this class loader
+     * or any of its ancestors.  </p>
+     *
+     * @param  name
+     *         The module name
+     * @return  The <tt>ModuleInfo</tt> corresponding to the given name, or
+     *          <tt>null</tt> if not found
+     * @since  1.7
+     */
+    protected ModuleInfo getModuleInfo(String name) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    /**
+     * Returns all of the <tt>ModuleInfo</tt> defined by this class loader and
+     * its ancestors.  </p>
+     *
+     * @return  The array of <tt>ModuleInfo</tt> objects defined by this
+     *          <tt>ClassLoader</tt>
+     * @since  1.7
+     */
+    protected ModuleInfo[] getModuleInfos() {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
 

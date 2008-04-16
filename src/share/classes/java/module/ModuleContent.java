@@ -34,7 +34,7 @@ import java.util.Set;
 import java.security.CodeSigner;
 
 /**
- * This class represents the content of the module definition.
+ * This class represents the content of a module definition.
  *
  * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
  * method in this class will cause a {@link NullPointerException} to be thrown.
@@ -44,32 +44,33 @@ import java.security.CodeSigner;
  *
  * @since 1.7
  */
-public abstract class ModuleDefinitionContent {
+public abstract class ModuleContent {
 
     /**
      * Constructor used by subclasses.
      */
-    protected ModuleDefinitionContent() {
+    protected ModuleContent() {
         // empty
     }
 
     /**
      * Determines if an entry exists in the module definition.
      * <p>
-     * The entry's name is specified as '/' separated paths, with no
-     * leading '/'.
+     * The entry's name is specified as {@code '/'} separated paths, with no
+     * leading {@code '/'}.
      *
      * @param name entry's name.
      * @return true if entry exists in the module definition; otherwise,
      *         returns false.
+     * @throws IOException if an I/O error occurs.
      */
-    public abstract boolean hasEntry(String name);
+    public abstract boolean hasEntry(String name) throws IOException;
 
     /**
      * Returns an entry in the module definition as an input stream.
      * <p>
-     * The entry's name is specified as '/' separated paths, with no
-     * leading '/'.
+     * The entry's name is specified as {@code '/'} separated paths, with no
+     * leading {@code '/'}.
      *
      * @param name entry's name.
      * @return if entry exists, return input stream; otherwise, return null.
@@ -80,8 +81,8 @@ public abstract class ModuleDefinitionContent {
     /**
      * Returns an entry in the module definition as byte array.
      * <p>
-     * The entry's name is specified as '/' separated paths, with no
-     * leading '/'.
+     * The entry's name is specified as {@code '/'} separated paths, with no
+     * leading {@code '/'}.
      *
      * @param name entry's name.
      * @return if an entry exists, return byte array; otherwise, returns null.
@@ -108,12 +109,13 @@ public abstract class ModuleDefinitionContent {
     /**
      * Returns the set of the names of the entries in the module definition.
      * <p>
-     * Each entry's name is in the form of '/' separated paths, with no
-     * leading '/'.
+     * Each entry's name is in the form of {@code '/'} separated paths, with no
+     * leading {@code '/'}.
      *
      * @return the set of the names of the entries in the module definition.
+     * @throws IOException if an I/O error occurs.
      */
-    public abstract Set<String> getEntryNames();
+    public abstract Set<String> getEntryNames() throws IOException;
 
     /**
      * Returns the path of the native library associated with the module
@@ -121,8 +123,9 @@ public abstract class ModuleDefinitionContent {
      *
      * @param libraryName the library name.
      * @return native library if it is found; otherwise, returns null.
+     * @throws IOException if an I/O error occurs.
      */
-    public abstract File getNativeLibrary(String libraryName);
+    public abstract File getNativeLibrary(String libraryName) throws IOException;
 
     /**
      * Returns the code signers associated with the module definition.
@@ -134,7 +137,7 @@ public abstract class ModuleDefinitionContent {
 
 
     /**
-     * Check if the entire content of the module definition is stored locally.
+     * Determines if the entire content of the module definition is stored locally.
      *
      * @return true if the entire content of the module definition is stored
      *         locally. Otherwise, returns false.

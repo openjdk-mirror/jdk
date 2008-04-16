@@ -32,27 +32,26 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the class of the initializer of a module definition. The class
- * must extend the <code>ModuleInitializer</code> class; it must also be
- * declared as public, and have a public constructor. This metadata annotation
- * is applied to the development module, i.e. the <I>superpackage</I> construct.
- * <p>
- * For example,
+ * must extend {@code ModuleInitializer}; it must also be declared as public,
+ * and have a public constructor. This metadata annotation is applied to the
+ * development module, i.e. the <I>module</I> construct. For example,
  * <blockquote><pre>
+ *    //
+ *    // com/wombat/xyz/module-info.java
+ *    //
+ *    &#064;Version("1.0.0")
  *    &#064;ModuleInitializerClass("com.wombat.xyz.Initializer")
- *    superpackage com.wombat.xyz {
- *       ...
- *    }
+ *    module com.wombat.xyz;
  * </pre></blockquote>
- *
  * @see java.module.ModuleInitializer
  * @since 1.7
  */
-@Target({ElementType.SUPERPACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ModuleInitializerClass {
 
     /**
-     * Initializer class.
+     * The name of the initializer class.
      */
     String value();
 }

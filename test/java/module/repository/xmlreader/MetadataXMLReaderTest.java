@@ -27,7 +27,7 @@ import java.module.Version;
 import java.net.URL;
 import java.util.Set;
 import org.xml.sax.SAXException;
-import sun.module.repository.ModuleInfo;
+import sun.module.repository.URLModuleInfo;
 import sun.module.repository.MetadataXMLReader;
 
 /**
@@ -57,10 +57,10 @@ public class MetadataXMLReaderTest {
 
     /** Checks basics of construction, optional platform-arch.  No errors. */
     static public void testRead01() throws Exception {
-        Set<ModuleInfo> result = MetadataXMLReader.read(
+        Set<URLModuleInfo> result = MetadataXMLReader.read(
             getURL("repository-metadata-01.xml"));
         check(result.size() == 3);
-        for (ModuleInfo mt : result) {
+        for (URLModuleInfo mt : result) {
             if (mt.getName().equals("org.foo.xml")) {
                 check(mt.getVersion().equals(Version.valueOf("1.3")));
                 check(mt.getPlatform() == null);
@@ -87,10 +87,10 @@ public class MetadataXMLReaderTest {
 
     /** Checks that all optional elements can really be optional. */
     static public void testRead02() throws Exception {
-        Set<ModuleInfo> result = MetadataXMLReader.read(
+        Set<URLModuleInfo> result = MetadataXMLReader.read(
             getURL("repository-metadata-02.xml"));
         check(result.size() == 1);
-        ModuleInfo mt = result.iterator().next();
+        URLModuleInfo mt = result.iterator().next();
         check(mt.getName().equals("org.foo.xml"));
         check(mt.getVersion().equals(Version.valueOf("1.3")));
         check(mt.getPlatform() == null);
@@ -100,7 +100,7 @@ public class MetadataXMLReaderTest {
 
     /** Checks error: platform but no arch. */
     static public void testRead03() throws Exception {
-        Set<ModuleInfo> result = null;
+        Set<URLModuleInfo> result = null;
         try {
             result = MetadataXMLReader.read(
                 getURL("repository-metadata-03.xml"));
@@ -116,7 +116,7 @@ public class MetadataXMLReaderTest {
 
     /** Checks error: arch but no platform. */
     static public void testRead04() throws Exception {
-        Set<ModuleInfo> result = null;
+        Set<URLModuleInfo> result = null;
         try {
             result = MetadataXMLReader.read(
                 getURL("repository-metadata-04.xml"));
@@ -132,7 +132,7 @@ public class MetadataXMLReaderTest {
 
     /** Checks error: empty <platform-binding> element. */
     static public void testRead05() throws Exception {
-        Set<ModuleInfo> result = null;
+        Set<URLModuleInfo> result = null;
         try {
             result = MetadataXMLReader.read(
                 getURL("repository-metadata-05.xml"));
@@ -148,7 +148,7 @@ public class MetadataXMLReaderTest {
 
     /** Checks that duplicates are not allowed. */
     static public void testRead06() throws Exception {
-        Set<ModuleInfo> result = null;
+        Set<URLModuleInfo> result = null;
         try {
             result = MetadataXMLReader.read(
                 getURL("repository-metadata-06.xml"));
@@ -160,10 +160,10 @@ public class MetadataXMLReaderTest {
 
     /** Checks that XML-specified path, platform & arch work. */
     static public void testRead07() throws Exception {
-        Set<ModuleInfo> result = MetadataXMLReader.read(
+        Set<URLModuleInfo> result = MetadataXMLReader.read(
             getURL("repository-metadata-07.xml"));
         check(result.size() == 1);
-        ModuleInfo mt = result.iterator().next();
+        URLModuleInfo mt = result.iterator().next();
         check(mt.getName().equals("org.foo.xml"));
         check(mt.getVersion().equals(Version.valueOf("1.3")));
         check(mt.getPlatform().equals(platform));

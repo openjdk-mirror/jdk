@@ -46,7 +46,7 @@ public class RunMTest {
         "// Created by RunMTest v0.5\n";
 
     private final static String[] SP_HEADER = new String[] {
-        "import java.lang.reflect.Superpackage.*;",
+        "import java.lang.ModuleInfo.*;",
         "import java.module.annotation.*;",
         "",
     };
@@ -213,7 +213,7 @@ public class RunMTest {
             File dir = new File(moduleDir, name.replace('.', SEP));
             dir.mkdirs();
             String mangledName = getMangledName();
-            File spfile = new File(dir, "super_package.java");
+            File spfile = new File(dir, "module_info.java");
             PrintWriter writer = new PrintWriter(spfile);
             writer.println(WARNING_HEADER);
             writer.println("package " + mangledName + ";");
@@ -224,7 +224,7 @@ public class RunMTest {
             for (String s : annotations) {
                 writer.println(s);
             }
-            writer.println("class super_package {");
+            writer.println("class module_info {");
             writer.println();
             for (String s : exports) {
                 writer.println("    exports " + s.replace(".", "$") + ";");
