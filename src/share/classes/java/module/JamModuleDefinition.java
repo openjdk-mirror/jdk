@@ -41,12 +41,12 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.module.annotation.Attribute;
+import java.module.annotation.Attributes;
 import java.module.annotation.ExportResources;
 import java.module.annotation.ImportModule;
 import java.module.annotation.ImportModules;
 import java.module.annotation.MainClass;
-import java.module.annotation.ModuleAttribute;
-import java.module.annotation.ModuleAttributes;
 import sun.module.annotation.LegacyClasses;
 import sun.module.JamUtils;
 
@@ -77,7 +77,6 @@ final class JamModuleDefinition extends ModuleDefinition {
     private volatile Set<PackageDefinition> exportedPackageDefs;
     private volatile Map<Class,Annotation> annotations = null;
     private volatile List<ImportDependency> importDependencies = null;
-    private volatile List<ModuleDependency> importModuleDependencies = null;
 
     JamModuleDefinition(String name, Version version, byte[] metadata,
             Callable<byte[]> metadataHandle, ModuleContent content,
@@ -159,16 +158,6 @@ final class JamModuleDefinition extends ModuleDefinition {
     public List<ImportDependency> getImportDependencies() {
         if (importDependencies == null) {
             List<ImportDependency> dependencies = new ArrayList<ImportDependency>();
-            dependencies.addAll(getImportModuleDependencies());
-            importDependencies = Collections.unmodifiableList(dependencies);
-        }
-        return importDependencies;
-    }
-
-    @Override
-    public List<ModuleDependency> getImportModuleDependencies() {
-        if (importModuleDependencies == null) {
-            List<ModuleDependency> dependencies = new ArrayList<ModuleDependency>();
             ModuleInfo mInfo = getModuleInfo();
             ImportModules importModules = mInfo.getAnnotation(ImportModules.class);
             if (importModules != null) {
@@ -177,20 +166,27 @@ final class JamModuleDefinition extends ModuleDefinition {
                     VersionConstraint constraint = VersionConstraint.valueOf(importModule.version());
                     boolean reexport = importModule.reexport();
                     boolean optional = importModule.optional();
-                    dependencies.add(new ModuleDependency(name, constraint, reexport, optional));
+                    Attribute[] attributes = importModule.attributes();
+                    Map<String, String> attrs = new HashMap<String, String>();
+                    if (attributes != null) {
+                        for (Attribute a : attributes) {
+                            attrs.put(a.name(), a.value());
+                        }
+                    }
+                    dependencies.add(new ImportDependency("module", name, constraint, reexport, optional, attrs));
                 }
             }
-            importModuleDependencies = Collections.unmodifiableList(dependencies);
+            importDependencies = dependencies;
         }
-        return importModuleDependencies;
+        return importDependencies;
     }
 
     @Override
     public Set<String> getAttributeNames() {
         HashSet<String> names = new HashSet<String>();
-        ModuleAttributes attrs = getAnnotation(ModuleAttributes.class);
+        Attributes attrs = getAnnotation(Attributes.class);
         if (attrs != null) {
-            for (ModuleAttribute attr : attrs.value()) {
+            for (Attribute attr : attrs.value()) {
                 names.add(attr.name());
             }
         }
@@ -202,9 +198,9 @@ final class JamModuleDefinition extends ModuleDefinition {
         if (name == null) {
             throw new NullPointerException("name must not be null.");
         }
-        ModuleAttributes attrs = getAnnotation(ModuleAttributes.class);
+        Attributes attrs = getAnnotation(Attributes.class);
         if (attrs != null) {
-            for (ModuleAttribute attr : attrs.value()) {
+            for (Attribute attr : attrs.value()) {
                 if (name.equals(attr.name())) {
                     return attr.value();
                 }

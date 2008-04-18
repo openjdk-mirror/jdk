@@ -599,6 +599,26 @@ public abstract class Query implements Serializable {
     }
 
     /**
+     * Returns a {@code Query} that requires the name of a module definition
+     * equals to the specified name and that the version of a module definition
+     * to be contained within any of the ranges known to the specified version
+     * constraint.
+     *
+     * @param name the name of the module definition.
+     * @param constraint the string to be parsed as version constraint.
+     * @return the {@code Query} object.
+     * @throws IllegalArgumentException if the string cannot be parsed.
+     */
+    public static Query module(String name, String constraint) {
+        if (name == null)
+            throw new NullPointerException("name must not be null.");
+        if (constraint == null)
+            throw new NullPointerException("version constraint must not be null.");
+
+        return module(name, VersionConstraint.valueOf(constraint));
+    }
+
+    /**
      * Returns a {@code Query} that requires the specified name of a module attribute
      * exists.
      *
@@ -674,6 +694,26 @@ public abstract class Query implements Serializable {
             throw new NullPointerException("version constraint must not be null.");
 
         return new ExportedPackageQuery(name, constraint);
+    }
+
+    /**
+     * Returns a {@code Query} that requires a module definition to have an
+     * exported package definition of the specified name and that the version
+     * of the package definition to be contained within any of the ranges known
+     * to the specified version constraint.
+     *
+     * @param name the name of the package definition
+     * @param constraint the string to be parsed as version constraint.
+     * @return the {@code Query} object.
+     * @throws IllegalArgumentException if the string cannot be parsed.
+     */
+    public static Query exportedPackage(String name, String constraint) {
+        if (name == null)
+            throw new NullPointerException("name must not be null.");
+        if (constraint == null)
+            throw new NullPointerException("version constraint must not be null.");
+
+        return exportedPackage(name, VersionConstraint.valueOf(constraint));
     }
 
     /**

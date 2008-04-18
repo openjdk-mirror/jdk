@@ -184,6 +184,8 @@ public final class ModuleInfo implements AnnotatedElement {
      * the module has no members.
      *
      * @return an array of the names of all member packages
+     * @throws UnsupporterOperationException if the packages cannot be
+     *         determined.
      */
     public String[] getMemberPackages() {
         return members.toArray(S0);
@@ -200,6 +202,8 @@ public final class ModuleInfo implements AnnotatedElement {
      * the module has no members that are exported types.
      *
      * @return an array of the names of all packages that have exported types.
+     * @throws UnsupporterOperationException if the packages cannot be
+     *         determined.
      */
     public String[] getExportedPackages() {
         return exported.toArray(S0);

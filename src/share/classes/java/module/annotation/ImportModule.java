@@ -77,4 +77,9 @@ public @interface ImportModule {
      * the default is false.
      */
     boolean reexport() default false;
+
+    /**
+     * Other attributes. If no attributes is specified, the default is {}.
+     */
+    Attribute[] attributes() default {};
 }

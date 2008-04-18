@@ -92,6 +92,24 @@ public abstract class PackageDefinition {
     public abstract List<Annotation> getAnnotations();
 
     /**
+     * Returns an unmodifiable set of the names of the attributes associated
+     * with this {@code PackageDefinition}.
+     *
+     * @return an unmodifiable set of the names of the attributes.
+     */
+    public abstract Set<String> getAttributeNames();
+
+    /**
+     * Returns the value corresponding to the specified attribute name that is
+     * associated with this {@code PackageDefinition}.
+     *
+     * @param name the name of the attribute.
+     * @return the value of the attribute. Returns null if the specified
+     *         attribute name is not found.
+     */
+    public abstract String getAttribute(String name);
+
+    /**
      * Compares the specified object with this {@code PackageDefinition} for
      * equality.
      * Returns {@code true} if and only if {@code obj} is the same object as

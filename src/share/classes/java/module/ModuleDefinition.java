@@ -95,23 +95,6 @@ public abstract class ModuleDefinition {
     public abstract List<ImportDependency> getImportDependencies();
 
     /**
-     * Returns an unmodifiable list of import module dependencies. The order of
-     * the import dependency in the list follows the declared import order in
-     * the {@code ModuleDefinition}.
-     *
-     * @return an unmodifiable list of import module dependencies .
-     */
-    public List<ModuleDependency> getImportModuleDependencies() {
-        List<ModuleDependency> moduleDependencies = new ArrayList<ModuleDependency>();
-        for (ImportDependency impDep : getImportDependencies()) {
-            if (impDep instanceof ModuleDependency) {
-                moduleDependencies.add((ModuleDependency) impDep);
-            }
-        }
-        return Collections.unmodifiableList(moduleDependencies);
-    }
-
-    /**
      * Returns the repository that is associated with this
      * {@code ModuleDefinition}.
      *

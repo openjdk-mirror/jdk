@@ -467,14 +467,14 @@ final class ModuleImpl extends Module {
         importingModules = new HashSet<Module>();
         loader = new ModuleLoader(this, moduleDef);
 
-        List<ModuleDependency> importModuleDependencies = moduleDef.getImportModuleDependencies();
+        List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
         if (DEBUG) {
-            System.out.println("Import dependency: " + importModuleDependencies);
+            System.out.println("Import dependency: " + importDependencies);
         }
 
         // Build version constraint map from the ImportDependencies
         Map<String,VersionConstraint> versionConstraints = new HashMap<String,VersionConstraint>();
-        for (ModuleDependency dep : importModuleDependencies) {
+        for (ImportDependency dep : importDependencies) {
             if (versionConstraints.put(dep.getName(), dep.getVersionConstraint()) != null) {
                 fail(null, "Module " + moduleString + " imports module "
                      + dep.getName() + " more than once.");
@@ -583,14 +583,14 @@ final class ModuleImpl extends Module {
         // import dependencies in order, name, and version constraints
         // and that no non-optional imports are missing
         int n = importedMDs.size();
-        List<ModuleDependency> importModuleDependencies = moduleDef.getImportModuleDependencies();
-        if (n != importModuleDependencies.size()) {
+        List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
+        if (n != importDependencies.size()) {
             fail(null, "Import policy error in module " + moduleString
                  + ": mismatch in number of imported module definition in the returned list: "
-                 + n + " != " + importModuleDependencies.size());
+                 + n + " != " + importDependencies.size());
         }
         for (int i = 0; i < n; i++) {
-            ModuleDependency dep = importModuleDependencies.get(i);
+            ImportDependency dep = importDependencies.get(i);
             ModuleDefinition md = importedMDs.get(i);
             if (md == null) {
                 if (dep.isOptional() == false) {
@@ -632,8 +632,8 @@ final class ModuleImpl extends Module {
             String moduleString = moduleDef.getName() + " v" + moduleDef.getVersion();
             List<ModuleDefinition> importedMDs = new ArrayList<ModuleDefinition>();
             Repository rep = moduleDef.getRepository();
-            List<ModuleDependency> importModuleDependencies = moduleDef.getImportModuleDependencies();
-            for (ModuleDependency dep : importModuleDependencies) {
+            List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
+            for (ImportDependency dep : importDependencies) {
 
                 String name = dep.getName();
                 VersionConstraint constraint = constraints.get(name);

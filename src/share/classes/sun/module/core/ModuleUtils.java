@@ -28,7 +28,6 @@ package sun.module.core;
 import java.module.ImportDependency;
 import java.module.Module;
 import java.module.ModuleDefinition;
-import java.module.ModuleDependency;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,7 +49,7 @@ public final class ModuleUtils {
      * @param includeAll true if the expansion should include all imported modules
      */
     public static void expandReexports(Module m, List<Module> modules, boolean includeAll) {
-        for (ModuleDependency dep : m.getModuleDefinition().getImportModuleDependencies()) {
+        for (ImportDependency dep : m.getModuleDefinition().getImportDependencies()) {
             if ((includeAll == false) && (dep.isReexported() == false)) {
                 continue;
             }

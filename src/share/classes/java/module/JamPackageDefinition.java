@@ -27,6 +27,8 @@ package java.module;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -53,44 +55,22 @@ class JamPackageDefinition extends PackageDefinition {
         this.moduleDef = moduleDef;
     }
 
-    /**
-     * Returns the name of the package definition.
-     *
-     * @return the name of the package definition.
-     */
+    @Override
     public String getName() {
         return packageName;
     }
 
-    /**
-     * Returns the version of the package definition.
-     *
-     * @return the {@code Version} object.
-     */
+    @Override
     public Version getVersion() {
         return version;
     }
 
-    /**
-     * Returns the module definition that is associated with this package
-     * definition.
-     *
-     * @return the {@code ModuleDefinition} object.
-     */
+    @Override
     public ModuleDefinition getModuleDefinition() {
         return moduleDef;
     }
 
-    /**
-     * Returns this element's annotation for the specified type or
-     * the value of the specified attribute as an annotation.
-     *
-     * @param annotationClass the Class object corresponding to the
-     *        annotation type
-     * @return this element's annotation for the specified annotation type if
-     *     present on this element, else null
-     * @throws NullPointerException if the given annotation class is null
-     */
+    @Override
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         if (annotationClass == null)
             throw new NullPointerException();
@@ -98,14 +78,25 @@ class JamPackageDefinition extends PackageDefinition {
         return null;
     }
 
-    /**
-     * Returns an unmodifiable list of all annotations present on this element.
-     * If no annotations are present, an empty list is returned.
-     *
-     * @return an unmodifiable list of all annotations present on this element
-     */
+    @Override
     public List<Annotation> getAnnotations() {
         // XXX: not yet implemented
         return new ArrayList<Annotation>();
+    }
+
+    @Override
+    public Set<String> getAttributeNames() {
+        HashSet<String> names = new HashSet<String>();
+        // XXX: not yet implemented
+        return Collections.unmodifiableSet(names);
+    }
+
+    @Override
+    public String getAttribute(String name) {
+        if (name == null) {
+            throw new NullPointerException("name must not be null.");
+        }
+        // XXX: not yet implemented
+        return null;
     }
 }

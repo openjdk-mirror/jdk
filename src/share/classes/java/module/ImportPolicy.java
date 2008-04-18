@@ -33,7 +33,6 @@ import java.util.Map;
  * import policy is used to determine the list of imported module definitions
  * in the resolving process to prepare the module instance.
  * <p>
- * @see java.module.ImportDependency
  * @see java.module.ImportOverridePolicy
  * @see java.module.Module
  * @see java.module.ModuleDefinition
@@ -49,7 +48,7 @@ public interface ImportPolicy {
      * instance.
      * <p>
      * The list of import module dependencies that is returned from the
-     * {@code getImportModuleDependencies()} method of the
+     * {@code getImportDependencies()} method of the
      * {@code ModuleDefinition} object only reflects the import module
      * dependencies with the original version constraints that were specified
      * in the module definition at build time. However, it is possible that
@@ -83,6 +82,7 @@ public interface ImportPolicy {
      *        instance.
      * @throws UnsatisfiedDependencyException if an import module dependency
      *         cannot be satisfied.
+     * @throws ModuleInitializationException if there is other error.
      * @return a list of imported module definitions for preparing this module
      *         instance in the resolving process.
      */

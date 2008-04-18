@@ -31,38 +31,38 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an attribute of a module definition. This metadata annotation
- * is used as nested annotation inside other enclosing annotations. For
- * example,
+ * Indicates an array of attributes. This metadata annotation can be applied
+ * to the development module, i.e. the <I>module</I> construct, or a Java
+ * package. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java
  *    //
  *    &#064;Version("1.0.0")
- *    &#064;ModuleAttributes({
- *       &#064;ModuleAttribute(name="org.opensource.license", value="GPL"),
- *       &#064;ModuleAttribute(name="java.magic.number", value="CAFEBABE")
+ *    &#064;Attributes({
+ *       &#064;Attribute(name="org.opensource.license", value="GPL"),
+ *       &#064;Attribute(name="java.magic.number", value="CAFEBABE")
  *    })
  *    module com.wombat.xyz;
- * </pre></blockquote>
- * Module attributes are generally defined by higher layers. To minimize the
- * naming conflicts between module attributes, it is recommended that each
- * module attribute should be defined with a fully qualified name.
  *
- * @see java.module.annotation.ModuleAttributes
+ *    //
+ *    // org/foo/util/package-info.java
+ *    //
+ *    &#064;Version("1.0.0")
+ *    &#064;Attributes({
+ *       &#064;Attribute(name="vendor.name", value="Foo, Inc."),
+ *    })
+ *    package org.foo.util;
+ *
+ * </pre></blockquote>
+ * @see java.module.annotation.Attribute
  * @since 1.7
  */
-@Target({})
+@Target({ElementType.MODULE, ElementType.PACKAGE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ModuleAttribute {
-
+public @interface Attributes {
     /**
-     * The name of the module attribute.
+     * An array of attributes.
      */
-    String name();
-
-    /**
-     * The value of the module attribute.
-     */
-    String value();
+    Attribute[] value();
 }
