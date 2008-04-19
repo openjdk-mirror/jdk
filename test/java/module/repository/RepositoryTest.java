@@ -24,34 +24,17 @@
 import java.io.*;
 import java.module.*;
 import java.net.URL;
-import java.util.concurrent.*;
 import sun.module.repository.RepositoryConfig;
 
 /**
  * @test RepositoryTest
  * @summary Test various Repository methods
- * @compile -XDignore.symbol.file RepositoryTest.java
+ * @compile -XDignore.symbol.file RepositoryTest.java EventChecker.java
  * @run main RepositoryTest
  */
 public class RepositoryTest  {
     public static void realMain(String args[]) throws Throwable {
-
-        // Setup repository listener
-        final BlockingQueue<RepositoryEvent> initEventQueue =
-                new LinkedBlockingQueue<RepositoryEvent>();
-        final BlockingQueue<RepositoryEvent> shutdownEventQueue =
-                new LinkedBlockingQueue<RepositoryEvent>();
-        RepositoryListener repositoryListener = new RepositoryListener()  {
-            public void handleEvent(RepositoryEvent e)  {
-                if (e.getType() == RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
-                    initEventQueue.add(e);
-                }
-                if (e.getType() == RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
-                        shutdownEventQueue.add(e);
-                }
-            }
-        };
-        Repository.addRepositoryListener(repositoryListener);
+        EventChecker ec = new EventChecker();
 
         // Create a new repository.
         File src = new File(".").getCanonicalFile();
@@ -64,20 +47,7 @@ public class RepositoryTest  {
         check(rep.getSourceLocation().equals(src.toURI().toURL()));
         check(rep.getModuleSystem() == ModuleSystem.getDefault());
 
-        // Poll REPOSITORY_INITIALIZED event
-        //
-        RepositoryEvent evt = initEventQueue.poll(5L, TimeUnit.SECONDS);
-        if (evt != null) {
-            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
-                throw new Exception("Unexpected repository event type: " + evt.getType());
-            }
-            if (evt.getSource() != rep) {
-                throw new Exception("Unexpected repository event from: " + evt.getSource());
-            }
-            pass();
-        } else {
-            fail();
-        }
+        check(ec.initializeEventExists(rep));
 
         Repository bsRep = Repository.getBootstrapRepository();
         check(bsRep.getParent() == null);
@@ -90,23 +60,9 @@ public class RepositoryTest  {
 
         rep.shutdown();
 
-        // Poll REPOSITORY_SHUTDOWN event
-        //
-        evt = shutdownEventQueue.poll(5L, TimeUnit.SECONDS);
-        if (evt != null)  {
-            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_SHUTDOWN)  {
-                throw new Exception("Unexpected repository event type: " + evt.getType());
-            }
-            if (evt.getSource() != rep) {
-                throw new Exception("Unexpected repository event from: " + evt.getSource());
-            }
-            pass();
-        } else {
-            fail();
-        }
+        check(ec.shutdownEventExists(rep));
 
-        initEventQueue.clear();
-        shutdownEventQueue.clear();
+        ec.clear();
 
         // Verify null arg checking
         try {
@@ -119,8 +75,8 @@ public class RepositoryTest  {
         }
 
         // No event should be fired
-        check(initEventQueue.size() == 0);
-        check(shutdownEventQueue.size() == 0);
+        check(!ec.initializeEventExists(rep));
+        check(!ec.shutdownEventExists(rep));
 
         try {
             rep = Modules.newLocalRepository(null, src);
@@ -132,8 +88,8 @@ public class RepositoryTest  {
         }
 
         // No event should be fired
-        check(initEventQueue.size() == 0);
-        check(shutdownEventQueue.size() == 0);
+        check(!ec.initializeEventExists(rep));
+        check(!ec.shutdownEventExists(rep));
 
         try {
             rep = Modules.newLocalRepository(name, null);
@@ -145,33 +101,23 @@ public class RepositoryTest  {
         }
 
         // No event should be fired
-        check(initEventQueue.size() == 0);
-        check(shutdownEventQueue.size() == 0);
+        check(!ec.initializeEventExists(rep));
+        check(!ec.shutdownEventExists(rep));
 
         // Remove repository listener
-        Repository.removeRepositoryListener(repositoryListener);
+        ec.end();
 
         // Creates a new repository
         rep = Modules.newLocalRepository(
             RepositoryConfig.getSystemRepository(), name, src);
 
         // No event should be sent to an already-removed repository listener
-        evt = initEventQueue.poll(5L, TimeUnit.SECONDS);
-        if (evt != null) {
-            throw new Exception("Unexpected repository event: " + evt);
-        } else {
-            pass();
-        }
+        check(!ec.initializeEventExists(rep));
 
         rep.shutdown();
 
         // No event should be sent to an already-removed repository listener
-        evt = shutdownEventQueue.poll(5L, TimeUnit.SECONDS);
-        if (evt != null) {
-            throw new Exception("Unexpected repository event: " + evt);
-        } else {
-            pass();
-        }
+        check(!ec.shutdownEventExists(rep));
     }
 
 

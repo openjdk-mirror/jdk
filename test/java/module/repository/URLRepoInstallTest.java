@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.*;
 import sun.module.JamUtils;
 import sun.module.repository.RepositoryConfig;
 import sun.module.repository.RepositoryUtils;
@@ -39,7 +38,7 @@ import sun.module.repository.RepositoryUtils;
 /**
  * @summary Test URLRepository.install on a file: - based URLRepository.
  * @library ../tools
- * @compile -XDignore.symbol.file URLRepoInstallTest.java ../tools/JamBuilder.java
+ * @compile -XDignore.symbol.file URLRepoInstallTest.java EventChecker.java ../tools/JamBuilder.java
  * @run main URLRepoInstallTest
  */
 public class URLRepoInstallTest {
@@ -62,15 +61,7 @@ public class URLRepoInstallTest {
 
     public static final String repoName = "testinstallrepo";
 
-    // Setup repository listener
-    static final BlockingQueue<RepositoryEvent> initEventQueue =
-            new LinkedBlockingQueue<RepositoryEvent>();
-    static final BlockingQueue<RepositoryEvent> shutdownEventQueue =
-            new LinkedBlockingQueue<RepositoryEvent>();
-    static final BlockingQueue<RepositoryEvent> installEventQueue =
-            new LinkedBlockingQueue<RepositoryEvent>();
-    static final BlockingQueue<RepositoryEvent> uninstallEventQueue =
-            new LinkedBlockingQueue<RepositoryEvent>();
+    static final EventChecker ec = new EventChecker();
 
     private static void println(String s) {
         if (debug) System.err.println(s);
@@ -112,26 +103,6 @@ public class URLRepoInstallTest {
     }
 
     void runTest() throws Throwable {
-
-        // Add repository listener
-        RepositoryListener repositoryListener = new RepositoryListener()  {
-            public void handleEvent(RepositoryEvent e)  {
-                if (e.getType() == RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
-                    initEventQueue.add(e);
-                }
-                if (e.getType() == RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
-                    shutdownEventQueue.add(e);
-                }
-                if (e.getType() == RepositoryEvent.Type.MODULE_INSTALLED) {
-                    installEventQueue.add(e);
-                }
-                if (e.getType() == RepositoryEvent.Type.MODULE_UNINSTALLED)  {
-                    uninstallEventQueue.add(e);
-                }
-            }
-        };
-        Repository.addRepositoryListener(repositoryListener);
-
         Map<String, String> config = new HashMap<String, String>();
         config.put("sun.module.repository.URLRepository.cacheDirectory", repoDownloadDir.getAbsolutePath());
 
@@ -142,10 +113,10 @@ public class URLRepoInstallTest {
             config);
 
         // Only REPOSITORY_INITIALIZED event should be fired.
-        check(initializeEventExists(repo));
-        check(!shutdownEventExists(repo));
-        check(!installEventExists(repo, null));
-        check(!uninstallEventExists(repo, null));
+        check(ec.initializeEventExists(repo));
+        check(!ec.shutdownEventExists(repo));
+        check(!ec.installEventExists(repo, null));
+        check(!ec.uninstallEventExists(repo, null));
 
         // Check install
         ModuleArchiveInfo installedMAI = null;
@@ -157,10 +128,10 @@ public class URLRepoInstallTest {
         }
 
         // Only MODULE_INSTALLED event should be fired.
-        check(!initializeEventExists(repo));
-        check(!shutdownEventExists(repo));
-        check(installEventExists(repo, installedMAI));
-        check(!uninstallEventExists(repo, null));
+        check(!ec.initializeEventExists(repo));
+        check(!ec.shutdownEventExists(repo));
+        check(ec.installEventExists(repo, installedMAI));
+        check(!ec.uninstallEventExists(repo, null));
 
         // Check list(): should contain only the one module just installed
         List<ModuleArchiveInfo> installed = repo.list();
@@ -213,10 +184,10 @@ public class URLRepoInstallTest {
                 pass();
 
                 // Only MODULE_UNINSTALLED event should be fired.
-                check(!initializeEventExists(repo));
-                check(!shutdownEventExists(repo));
-                check(!installEventExists(repo, null));
-                check(uninstallEventExists(repo, installedMAI));
+                check(!ec.initializeEventExists(repo));
+                check(!ec.shutdownEventExists(repo));
+                check(!ec.installEventExists(repo, null));
+                check(ec.uninstallEventExists(repo, installedMAI));
             } else {
                 fail("Could not uninstall " + installedMAI.getName());
             }
@@ -317,88 +288,11 @@ public class URLRepoInstallTest {
         check (md == null);
 
         // Clear event queues for the tests afterwards
-        initEventQueue.clear();
-        shutdownEventQueue.clear();
-        installEventQueue.clear();
-        uninstallEventQueue.clear();
+        ec.clear();
 
         if (failed == 0) {
             repo.shutdown();
             check(repoDownloadDir.list().length == 0);
-        }
-    }
-
-    static boolean initializeEventExists(Repository repo) throws Exception {
-        // Poll REPOSITORY_INITIALIZED event
-        //
-        RepositoryEvent evt = initEventQueue.poll(2L, TimeUnit.SECONDS);
-        if (evt != null) {
-            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_INITIALIZED) {
-                throw new Exception("Unexpected repository event type: " + evt.getType());
-            }
-            if (evt.getSource() != repo) {
-                throw new Exception("Unexpected repository event from: " + evt.getSource());
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    static boolean shutdownEventExists(Repository repo) throws Exception {
-        // Poll REPOSITORY_SHUTDOWN event
-        //
-        RepositoryEvent evt = shutdownEventQueue.poll(2L, TimeUnit.SECONDS);
-        if (evt != null) {
-            if (evt.getType() != RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
-                throw new Exception("Unexpected repository event type: " + evt.getType());
-            }
-            if (evt.getSource() != repo) {
-                throw new Exception("Unexpected repository event from: " + evt.getSource());
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    static boolean installEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
-        // Poll MODULE_INSTALLED event
-        //
-        RepositoryEvent evt = installEventQueue.poll(2L, TimeUnit.SECONDS);
-        if (evt != null) {
-            if (evt.getType() != RepositoryEvent.Type.MODULE_INSTALLED) {
-                throw new Exception("Unexpected repository event type: " + evt.getType());
-            }
-            if (evt.getSource() != repo) {
-                throw new Exception("Unexpected repository event from: " + evt.getSource());
-            }
-            if (mai != null && evt.getModuleArchiveInfo() != mai) {
-                throw new Exception("Unexpected repository event for: " + evt.getModuleArchiveInfo());
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    static boolean uninstallEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
-        // Poll MODULE_UNINSTALLED event
-        //
-        RepositoryEvent evt = uninstallEventQueue.poll(2L, TimeUnit.SECONDS);
-        if (evt != null) {
-            if (evt.getType() != RepositoryEvent.Type.MODULE_UNINSTALLED) {
-                throw new Exception("Unexpected repository event type: " + evt.getType());
-            }
-            if (evt.getSource() != repo) {
-                throw new Exception("Unexpected repository event from: " + evt.getSource());
-            }
-            if (mai != null && evt.getModuleArchiveInfo() != mai) {
-                throw new Exception("Unexpected repository event for: " + evt.getModuleArchiveInfo());
-            }
-            return true;
-        } else {
-            return false;
         }
     }
 
