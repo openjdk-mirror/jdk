@@ -282,7 +282,7 @@ final class JamModuleDefinition extends ModuleDefinition {
             for (String s : memberPackages) {
                 packageDefs.add(new JamPackageDefinition(s, Version.DEFAULT, this));
             }
-            memberPackageDefs = packageDefs;
+            memberPackageDefs = Collections.unmodifiableSet(packageDefs);
         }
         return memberPackageDefs;
     }
@@ -296,7 +296,7 @@ final class JamModuleDefinition extends ModuleDefinition {
             for (String s : exportedPackages) {
                 packageDefs.add(new JamPackageDefinition(s, Version.DEFAULT, this));
             }
-            exportedPackageDefs = packageDefs;
+            exportedPackageDefs = Collections.unmodifiableSet(packageDefs);
         }
         return exportedPackageDefs;
     }

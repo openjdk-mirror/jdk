@@ -33,10 +33,10 @@ m.Class1
 m2.MainB
 m.Class1
 >> begin class m2.MainB
-	if (m.Class1.V != 2) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        if (m.Class1.V != 2) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
 >> end class
 >> begin class m.Class1
 > body

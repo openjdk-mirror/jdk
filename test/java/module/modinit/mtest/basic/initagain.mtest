@@ -13,36 +13,38 @@
 > export
 m0.Main
 >> begin class m0.Main
-	ImportOverridePolicy oldPolicy = Modules.getImportOverridePolicy();
-	ModuleDefinition md;
-	try {
-	    Modules.setImportOverridePolicy(new OverridePolicyImpl());
-	    md = repository.find("m1");
-	    try {
-		Module m = md.getModuleInstance();
-		throw new Exception("Module not in error state: m1");
-	    } catch (ModuleInitializationException e) {
-		System.out.println("OK: " + e);
-	    }
-	} finally {
-	    Modules.setImportOverridePolicy(oldPolicy);
-	}
-	// give the module initialization thread a chance to run
-	Thread.sleep(250);
-	Module m = md.getModuleInstance();
-	runOtherModule(m);
+        ImportOverridePolicy oldPolicy = Modules.getImportOverridePolicy();
+        ModuleDefinition md;
+        try {
+            Modules.setImportOverridePolicy(new OverridePolicyImpl());
+            md = repository.find("m1");
+            try {
+                Module m = md.getModuleInstance();
+                throw new Exception("Module not in error state: m1");
+            } catch (ModuleInitializationException e) {
+                System.out.println("OK: " + e);
+            }
+        } finally {
+            Modules.setImportOverridePolicy(oldPolicy);
+        }
+        // give the module initialization thread a chance to run
+        Thread.sleep(250);
+        Module m = md.getModuleInstance();
+        runOtherModule(m);
 > body
     static class OverridePolicyImpl implements ImportOverridePolicy {
-	public Map<String,VersionConstraint> narrow(ModuleDefinition importer, 
-		Map<String,VersionConstraint> constraints) {
-	    if (constraints.get("m2") == null) {
-		return constraints;
-	    }
-	    // use ImportOverridePolicy to make sure no match version of m2 is available
-	    Map<String,VersionConstraint> newConstraints = new HashMap<String,VersionConstraint>(constraints);
-	    newConstraints.put("m2", VersionConstraint.valueOf("2.0+"));
-	    return newConstraints;
-	}
+        public Map<ImportDependency,VersionConstraint> narrow(ModuleDefinition importer,
+                Map<ImportDependency,VersionConstraint> constraints) {
+            for (ImportDependency dep : constraints.keySet()) {
+                if (dep.getName().equals("m2")) {
+                    // use ImportOverridePolicy to make sure no match version of m2 is available
+                    Map<ImportDependency,VersionConstraint> newConstraints = new HashMap<ImportDependency,VersionConstraint>(constraints);
+                    newConstraints.put(dep, VersionConstraint.valueOf("2.0+"));
+                    return newConstraints;
+                }
+            }
+            return constraints;
+        }
     }
 >> end class
 >>> end module

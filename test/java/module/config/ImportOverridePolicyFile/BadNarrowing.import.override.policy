@@ -1,8 +1,8 @@
 
-importer a.b.c @ 1.0 {
-    p.q.r @ 1.7.0;
+module a.b.c @ 1.0 {
+    import module p.q.r @ 1.7.0;
     
     // original constraint is 1+. Error!
-    x.y.z @ [0.2, 4.0);
+    import module x.y.z @ [0.2, 4.0);
 };
 

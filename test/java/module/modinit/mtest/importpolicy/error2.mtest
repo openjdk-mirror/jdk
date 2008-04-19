@@ -13,10 +13,10 @@
 > export
 m1.Main
 >> begin class m1.MainA
-	if (ImportPolicyImpl.CALLED == false) {
-	    throw new Exception("Import policy not called");
-	}
-	new m2.MainB().run("from m1");
+        if (ImportPolicyImpl.CALLED == false) {
+            throw new Exception("Import policy not called");
+        }
+        new m2.MainB().run("from m1");
 >> end class
 >> begin class m1.ImportPolicyImpl
 > super
@@ -24,11 +24,11 @@ implements ImportPolicy
 > body
     static volatile boolean CALLED;
 
-    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
-	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
-	    throws ModuleInitializationException {
-	CALLED = true;
-	throw new ModuleInitializationException("aborted");
+    public Map<ImportDependency,VersionConstraint> getImports(ModuleDefinition moduleDef,
+            Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+            throws ModuleInitializationException {
+        CALLED = true;
+        throw new ModuleInitializationException("aborted");
     }
 >> end class
 >>> end module

@@ -31,13 +31,12 @@ import java.util.EventListener;
  * The listener interface for receiving module system events.
  * <p>
  * The class that is interested in processing module system events implements
- * this interface, and the object created with that class is registered with a
- * module system, using the module system's {@code addModuleSystemListener}
- * method.
+ * this interface. Instances of that class register with a module system,
+ * using the module system's {@code addModuleSystemListener} static method.
  * <p>
- * The object that is no longer interested in processing any module system event is
- * unregistered with the module system, using the module system's
- * {@code removedModuleSystemListener} method.
+ * Listeners that are no longer interested in processing any module system
+ * events can be unregistered with the module system, using the module system's
+ * {@code removedModuleSystemListener} static method.
  *
  * @see java.module.ModuleSystem
  * @see java.module.ModuleSystemEvent

@@ -36,6 +36,7 @@ import java.util.Map;
  * The import override policy is invoked before the default or custom
  * import policy of the module instance is executed during initialization.
  * <p>
+ * @see java.module.ImportDependency;
  * @see java.module.ImportPolicy
  * @see java.module.ModuleDefinition
  * @see java.module.VersionConstraint
@@ -45,9 +46,9 @@ import java.util.Map;
 public interface ImportOverridePolicy {
 
     /**
-     * Returns a map of imported module names and overridden version
-     * constraints for the module definition. The returned map contains the
-     * same set of module names as the given map.
+     * Returns a map of import dependencies and overridden version constraints
+     * for the module definition. The returned map contains the same set of
+     * import dependencies as in the given map.
      * <p>
      * For each import dependency, the overridden version constraint must be
      * within the boundary of the original version constraint that was
@@ -55,11 +56,12 @@ public interface ImportOverridePolicy {
      * initialization will fail.
      *
      * @param importer the importing module definition.
-     * @param constraints an unmodifiable map of imported module names and
+     * @param constraints an unmodifiable map of import dependencies and
      *        overridden version constraints.
-     * @return the map of imported module names and overridden version
-     *         constraints. It contains the same set of module names as the
-     *         given map.
+     * @return the map of import dependencies and overridden version
+     *         constraints. It contains the same set of import dependencies as
+     *         in the given map.
      */
-    public abstract Map<String,VersionConstraint> narrow(ModuleDefinition importer, Map<String,VersionConstraint> constraints);
+    public abstract Map<ImportDependency, VersionConstraint> narrow(ModuleDefinition importer,
+                Map<ImportDependency, VersionConstraint> constraints);
 }

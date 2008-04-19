@@ -1,11 +1,11 @@
 
 // no-op 
 
-importer a.b.c.* {
+module a.b.c.* {
 };
 
-importer a.b.* {
+module a.b.* {
 };
 
-importer * {
+module * {
 };

@@ -1,5 +1,5 @@
 #
-# Verify that getMemberClasses() and getExportedClasses return the 
+# Verify that getMemberClasses() and getExportedClasses return the
 # correct information for the module when legacy classes are involved.
 #
 >>> begin module m1
@@ -17,28 +17,28 @@ m1.MainA
     // m1 should only export m1.MainA
     Set<String> memberClasses = module.getModuleDefinition().getMemberClasses();
     if (memberClasses == null) {
-	throw new Exception("getMemberClasses() should never return null.");
-    }	
+        throw new Exception("getMemberClasses() should never return null.");
+    }
     // Workaround until JSR 294 support arrives
     // if (memberClasses.size() != 3) {
-    //	   throw new Exception("m1 should have three member classes.");
+    //     throw new Exception("m1 should have three member classes.");
     // }
-    if (memberClasses.contains("m1.MainA") == false 
+    if (memberClasses.contains("m1.MainA") == false
         || memberClasses.contains("a.b.c") == false
         || memberClasses.contains("x.y.z") == false) {
-        throw new Exception("Missing member classes in m1.");		
-    }		
+        throw new Exception("Missing member classes in m1.");
+    }
     Set<String> exportedClasses = module.getModuleDefinition().getExportedClasses();
     if (exportedClasses == null) {
         throw new Exception("getExportedClasses() should never return null.");
-    }	
+    }
     // Workaround until JSR 294 support arrives
     // if (exportedClasses.size() != 1) {
     //     throw new Exception("m1 should have one exported class.");
     // }
     if (exportedClasses.contains("m1.MainA") == false) {
-        throw new Exception("Missing exported classes in m1.");		
-    }		
+        throw new Exception("Missing exported classes in m1.");
+    }
 
     Module m2;
     try {
@@ -47,7 +47,7 @@ m1.MainA
     }
     catch (ModuleInitializationException mie) {
         throw new Exception("Unable to instantiate m2.");
-    }						
+    }
 
 for (PackageDefinition pd : m2.getModuleDefinition().getExportedPackageDefinitions()) {
     System.out.println("exported package: " + pd.getName());
@@ -57,7 +57,7 @@ for (PackageDefinition pd : m2.getModuleDefinition().getExportedPackageDefinitio
     memberClasses = m2.getModuleDefinition().getMemberClasses();
     if (memberClasses == null) {
         throw new Exception("getMemberClasses() should never return null.");
-    }	
+    }
     // Workaround until JSR 294 support arrives
     // if (memberClasses.size() != 3) {
     //     throw new Exception("m2 should have three member classes.");
@@ -65,16 +65,16 @@ for (PackageDefinition pd : m2.getModuleDefinition().getExportedPackageDefinitio
     for (String s : memberClasses) {
     System.out.println("Member class: " + s);
     }
-    
-    if (memberClasses.contains("m2.MainB") == false 
+
+    if (memberClasses.contains("m2.MainB") == false
         || memberClasses.contains("a.b.c") == false
         || memberClasses.contains("x.y.z") == false) {
-        throw new Exception("Missing member classes in m2.");		
-    }		
+        throw new Exception("Missing member classes in m2.");
+    }
     exportedClasses = m2.getModuleDefinition().getExportedClasses();
     if (exportedClasses == null) {
         throw new Exception("getExportedClasses() should never return null.");
-    }	
+    }
     // Workaround until JSR 294 support arrives
     // if (exportedClasses.size() != 3) {
     //     throw new Exception("m2 should have three exported classes.");
@@ -82,8 +82,8 @@ for (PackageDefinition pd : m2.getModuleDefinition().getExportedPackageDefinitio
     if (exportedClasses.contains("m2.MainB") == false
         || exportedClasses.contains("a.b.c") == false
         || exportedClasses.contains("x.y.z") == false) {
-        throw new Exception("Missing exported classes in m2.");		
-    }		
+        throw new Exception("Missing exported classes in m2.");
+    }
 >> end class
 >>> end module
 >>> begin module m2

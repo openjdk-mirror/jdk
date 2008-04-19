@@ -33,6 +33,7 @@ import java.io.StreamTokenizer;
 import java.module.ModuleDefinition;
 import java.module.Version;
 import java.module.VersionConstraint;
+import java.module.ImportDependency;
 import java.module.ImportOverridePolicy;
 import java.net.URL;
 import java.util.ArrayList;
@@ -45,24 +46,24 @@ import sun.module.Debug;
  * This class represents an import override policy file. It consists of zero
  * or more entries in the following format:
  *
- *   importer <importer-module-name> [@ <version-constraint>] {
- *        <imported-module-name> @ <overridden-version-constraint>;
+ *   module <importer-module-name> [@ <version-constraint>] {
+ *        import <type> <imported-name> @ <overridden-version-constraint>;
  *        ...
  *   };
  *
  * For example,
- *   importer x.y.z @ [1.0, 1.1) {
- *        a.b.c @ 1.7.1;
- *        p.q.r @ 2.3.4;
+ *   module x.y.z @ [1.0, 1.1) {
+ *        import module a.b.c @ 1.7.1;
+ *        import module p.q.r @ 2.3.4;
  *   };
  *   ....
  *
- * Each entry must begin with "importer", followed by the module name and the
- * version constraint for the importer. If the version constraint is not present,
- * the default version constraint is assumed.
+ * Each entry must begin with "module", followed by the module name and the
+ * version constraint for the importer. If the version constraint is not
+ * present, the default version constraint is assumed.
  *
  * Inside each entry, it contains zero or more sub-entry. Each sub-entry begins
- * with the imported module name, followed by the overridden version constraint.
+ * with the import type, name, followed by the overridden version constraint.
  *
  * The importer module name may be set to the wildcard value, "*", which allows
  * it to match any importer module. In addition, the module name may be suffixed
@@ -70,18 +71,18 @@ import sun.module.Debug;
  * has the module name's prefix.
  *
  * For example,
- *   importer * {
- *        a.b.c @ [1.7, 1.8);
- *        p.q.r @ [2.3, 2.4);
+ *   module * {
+ *        import module a.b.c @ [1.7, 1.8);
+ *        import module p.q.r @ [2.3, 2.4);
  *   };
  *
- *   importer x.y.* @ [1.0, 1.1) {
- *        a.b.c @ [1.7, 1.8);
- *        p.q.r @ [2.3, 2.4);
+ *   module x.y.* @ [1.0, 1.1) {
+ *        import module a.b.c @ [1.7, 1.8);
+ *        import module p.q.r @ [2.3, 2.4);
  *   };
  *
- * When setting the <importer-module-name>, <version-constraint>,
- * <imported-module-name>, or <overridden-version-constraint>, do not surround
+ * When setting the <importer-module-name>, <version-constraint>, <type>,
+ * <imported-name>, or <overridden-version-constraint>, do not surround
  * it with quotes.
  *
  * When determining the import overridden constraints for a module, each entry
@@ -169,18 +170,18 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
     }
 
     /**
-     * Returns a map of imported module names and overridden version constraints
+     * Returns a map of import dependencies and overridden version constraints
      * for the module definition. The returned map contains the same set of
-     * module names as the given map.
+     * import dependencies as in the given map.
      *
      * @param importer the importing module definition.
-     * @param constraints an unmodifiable map of imported module names and
+     * @param constraints an unmodifiable map of import dependencies and
      *        overridden version constraints.
-     * @return the map of imported module names and overridden version
-     *         constraints. It contains the same set of module names as the
-     *         given map.
+     * @return the map of import dependencies and overridden version
+     *         constraints. It contains the same set of import dependencies as
+     *         in the given map.
      */
-    public Map<String,VersionConstraint> narrow(ModuleDefinition importer, Map<String,VersionConstraint> originalConstraints) {
+    public Map<ImportDependency,VersionConstraint> narrow(ModuleDefinition importer, Map<ImportDependency,VersionConstraint> originalConstraints) {
         String name = importer.getName();
         Version version = importer.getVersion();
 
@@ -192,18 +193,18 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
             if (entry.contains(name, version) == false)
                 continue;
 
-            Map<String,VersionConstraint> result = null;
-            Map<String,VersionConstraint> newConstraints = entry.getOverriddenVersionConstraint();
+            Map<ImportDependency,VersionConstraint> result = null;
+            Map<String,VersionConstraint> newConstraintsInPolicyFile = entry.getOverriddenVersionConstraint();
 
-            for (Map.Entry<String,VersionConstraint> originalEntry : originalConstraints.entrySet()) {
-
-                String key = originalEntry.getKey();
+            for (Map.Entry<ImportDependency,VersionConstraint> originalEntry : originalConstraints.entrySet()) {
+                ImportDependency dep = originalEntry.getKey();
+                String key = dep.getType() + ":" + dep.getName();
 
                 // Original version constraint
                 VersionConstraint originalvcs = originalEntry.getValue();
 
                 // Overridden version constraint
-                VersionConstraint overriddenvcs = newConstraints.get(key);
+                VersionConstraint overriddenvcs = newConstraintsInPolicyFile.get(key);
 
                 // The overridden version constraint must be within the known range of the
                 // original version constraint.
@@ -214,10 +215,10 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
                                 + " is outside the known range of the original version constraint " + originalvcs);
 
                     if (result == null) {
-                        result = new HashMap<String,VersionConstraint>(originalConstraints);
+                        result = new HashMap<ImportDependency,VersionConstraint>(originalConstraints);
                     }
 
-                    result.put(key, overriddenvcs);
+                    result.put(dep, overriddenvcs);
                 }
             }
 
@@ -424,15 +425,15 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
         /**
          * Parses an importer entry. Each entry is in the following format:
          *
-         *   importer <importer-name> [@ <importer-version-constraint>] {
-         *        <imported-name> @ <overridden-version-constraint>;
+         *   module <importer-name> [@ <importer-version-constraint>] {
+         *        import <type> <imported-name> @ <overridden-version-constraint>;
          *        ...
          *   };
          */
         private void parseImporterEntry() throws IOException {
 
-            // "importer"
-            match("importer");
+            // "module"
+            match("module");
 
             // <importer-name>
             String name = match(STRING_TOKEN);
@@ -482,12 +483,18 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
             Map<String, VersionConstraint> overriddenConstraints = new HashMap<String, VersionConstraint>();
             while(peek("}") == false) {
 
-                // <imported-module-name>
-                String importedModule = match(STRING_TOKEN);
+                // "import"
+                match("import");
+
+                // <type>
+                String importedType = match(STRING_TOKEN);
+
+                // <imported-name>
+                String importedName = match(STRING_TOKEN);
 
                 // No wildcard in <imported-module-name>
-                if (importedModule.indexOf("*") != -1)
-                    throw new ParsingException(st.lineno(), "no wildcard in <imported-module-name>", importedModule);
+                if (importedName.indexOf("*") != -1)
+                    throw new ParsingException(st.lineno(), "no wildcard in <imported-name>", importedName);
 
                 match("@");
 
@@ -504,10 +511,12 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
                     throw new ParsingException(st.lineno(), "missing <overridden-version-constraint>");
 
                 VersionConstraint overriddenVersionConstraint = VersionConstraint.valueOf(vcsBuffer.toString());
-                overriddenConstraints.put(importedModule, overriddenVersionConstraint);
+
+                String key = importedType + ":" + importedName;
+                overriddenConstraints.put(key, overriddenVersionConstraint);
 
                 if (mdebug != null)
-                    mdebug.println("   imported-module-name=" + importedModule
+                    mdebug.println("   type=" + importedType + ", imported-name=" + importedName
                                    + ", overridden-version-constraint=" + overriddenVersionConstraint);
 
                 match(";");

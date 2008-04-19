@@ -15,8 +15,8 @@ m1.MainA
 >> begin class m1.MainA
 > run
         new m2.MainB().run("from m1");
-	System.out.println("m1 calling m3: " + new m3.MainC());
-	System.out.println("m1 calling m5: " + new m5.MainE());
+        System.out.println("m1 calling m3: " + new m3.MainC());
+        System.out.println("m1 calling m5: " + new m5.MainE());
         new m3.MainC().run("from m1");
         new m5.MainE().run("from m1");
         new m4.MainD().run("from m1");
@@ -33,9 +33,9 @@ m1.MainA
 > export
 m2.MainB
 >> begin class m2.MainB
-	System.out.println("m2 calling m3: " + new m3.MainC());
-	new m4.MainD().run("from m2");
-	System.out.println("m2 calling m5: " + new m5.MainE());
+        System.out.println("m2 calling m3: " + new m3.MainC());
+        new m4.MainD().run("from m2");
+        System.out.println("m2 calling m5: " + new m5.MainE());
 >> end class
 >>> end module
 >>> begin module m3
@@ -49,8 +49,8 @@ m2.MainB
 > export
 m3.MainC
 >> begin class m3.MainC
-	new m4.MainD().run("from m3");
-	new m5.MainE().run("from m3");
+        new m4.MainD().run("from m3");
+        new m5.MainE().run("from m3");
 >> end class
 >>> end module
 >>> begin module m4

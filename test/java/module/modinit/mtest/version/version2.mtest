@@ -26,9 +26,9 @@ m1.MainA
 m2.MainB
 >> begin class m2.MainB
         System.out.println("m2 v1.0: " + module);
-	if (version.equals("1.0") == false) {
-	    throw new RuntimeException("Version in moduleDefinition does not match: " + version);
-	}
+        if (version.equals("1.0") == false) {
+            throw new RuntimeException("Version in moduleDefinition does not match: " + version);
+        }
 >> end class
 >>> end module
 >>> begin module m2
@@ -42,10 +42,10 @@ m2.MainB
 m2.MainB
 >> begin class m2.MainB
         System.out.println("m2 v2.0: " + module);
-	if (version.equals("2.0") == false) {
-	    throw new RuntimeException("Version in moduleDefinition does not match: " + version);
-	}
-	throw new RuntimeException("m1 imported the wrong version");
+        if (version.equals("2.0") == false) {
+            throw new RuntimeException("Version in moduleDefinition does not match: " + version);
+        }
+        throw new RuntimeException("m1 imported the wrong version");
 >> end class
 >>> end module
 >>> begin test m1

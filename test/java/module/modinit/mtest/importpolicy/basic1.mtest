@@ -11,9 +11,9 @@
 > export
 m1.Main
 >> begin class m1.MainA
-	if (ImportPolicyImpl.CALLED == false) {
-	    throw new Exception("Import policy not called");
-	}
+        if (ImportPolicyImpl.CALLED == false) {
+            throw new Exception("Import policy not called");
+        }
 >> end class
 >> begin class m1.ImportPolicyImpl
 > super
@@ -21,12 +21,17 @@ implements ImportPolicy
 > body
     static volatile boolean CALLED;
 
-    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
-	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
-	    throws UnsatisfiedDependencyException {
-	CALLED = true;
-	Repository rep = moduleDef.getRepository();
-	return Collections.singletonList(rep.find("java.se"));
+    public Map<ImportDependency,VersionConstraint> getImports(ModuleDefinition moduleDef,
+                Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+            throws UnsatisfiedDependencyException {
+        CALLED = true;
+        Map<ImportDependency,VersionConstraint> result = new HashMap<ImportDependency,VersionConstraint>();
+        Repository rep = moduleDef.getRepository();
+        for (ImportDependency dep : moduleDef.getImportDependencies()) {
+            ModuleDefinition md = rep.find(dep.getName());
+            result.put(dep, md.getVersion().toVersionConstraint());
+        }
+        return result;
     }
 >> end class
 >>> end module

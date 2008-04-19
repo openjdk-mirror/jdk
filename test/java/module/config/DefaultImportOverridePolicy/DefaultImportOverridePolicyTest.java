@@ -150,40 +150,47 @@ public class DefaultImportOverridePolicyTest {
         testBadNarrowing01();
     }
 
+    static ImportDependency newImportDependency(String name) {
+        return new ImportDependency("module", name, VersionConstraint.DEFAULT, false, false, null);
+    }
+
     static public void testConstructor01() throws Exception {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
-            Map<String, VersionConstraint> originalConstraints = new HashMap<String, VersionConstraint>();
-            originalConstraints.put("e.f.g", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("p.q.r", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("x.y.z", VersionConstraint.valueOf("1.0+"));
+            Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
+            ImportDependency importDep1 = newImportDependency("e.f.g");
+            ImportDependency importDep2 = newImportDependency("p.q.r");
+            ImportDependency importDep3 = newImportDependency("x.y.z");
+            originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
 
             File f = new File(System.getProperty("test.src", "."), "WellFormed.import.override.policy");
             ModuleSystemConfig.setProperty(ModuleSystemConfig.IMPORT_OVERRIDE_POLICY_URL_PREFIX+2, f.toURI().toURL().toString());
 
             ImportOverridePolicy iop = new DefaultImportOverridePolicy();
-            Map<String, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
+            Map<ImportDependency, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.7.0")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("2.3.4")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.7.0")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("2.3.4")));
 
             moduleDef = new MockModuleDefinition("a.b.z", Version.valueOf(1, 7, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.8.0")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("2.*")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.8.0")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("2.*")));
 
             moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(2, 0, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("[1.0, 2.0)")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("[2.0, 3.0)")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("[1.0, 2.0)")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("[2.0, 3.0)")));
         }
         catch (Throwable ex) {
             unexpected(ex);
@@ -193,10 +200,13 @@ public class DefaultImportOverridePolicyTest {
     static public void testGetDefaultImportOverridePolicy01() throws Exception {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
-            Map<String, VersionConstraint> originalConstraints = new HashMap<String, VersionConstraint>();
-            originalConstraints.put("e.f.g", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("p.q.r", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("x.y.z", VersionConstraint.valueOf("1.0+"));
+            Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
+            ImportDependency importDep1 = newImportDependency("e.f.g");
+            ImportDependency importDep2 = newImportDependency("p.q.r");
+            ImportDependency importDep3 = newImportDependency("x.y.z");
+            originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
 
             ModuleSystemConfig.setProperty(ModuleSystemConfig.IMPORT_OVERRIDE_POLICY_URL_PREFIX+2, "");
             ImportOverridePolicy iop = Modules.getImportOverridePolicy();
@@ -206,8 +216,8 @@ public class DefaultImportOverridePolicyTest {
             else
                 fail();
 
-            Map<String, VersionConstraint> readOnlyOriginalConstraints = Collections.unmodifiableMap(originalConstraints);
-            Map<String, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, readOnlyOriginalConstraints);
+            Map<ImportDependency, VersionConstraint> readOnlyOriginalConstraints = Collections.unmodifiableMap(originalConstraints);
+            Map<ImportDependency, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, readOnlyOriginalConstraints);
 
             check(overriddenConstraints == readOnlyOriginalConstraints);
         }
@@ -217,10 +227,13 @@ public class DefaultImportOverridePolicyTest {
 
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
-            Map<String, VersionConstraint> originalConstraints = new HashMap<String, VersionConstraint>();
-            originalConstraints.put("e.f.g", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("p.q.r", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("x.y.z", VersionConstraint.valueOf("1.0+"));
+            Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
+            ImportDependency importDep1 = newImportDependency("e.f.g");
+            ImportDependency importDep2 = newImportDependency("p.q.r");
+            ImportDependency importDep3 = newImportDependency("x.y.z");
+            originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
 
             File f = new File(System.getProperty("test.src", "."), "WellFormed.import.override.policy");
             ModuleSystemConfig.setProperty(ModuleSystemConfig.IMPORT_OVERRIDE_POLICY_URL_PREFIX+2, f.toURI().toURL().toString());
@@ -235,28 +248,28 @@ public class DefaultImportOverridePolicyTest {
             DefaultImportOverridePolicy diop = (DefaultImportOverridePolicy) iop;
             diop.refresh();
 
-            Map<String, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
+            Map<ImportDependency, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.7.0")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("2.3.4")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.7.0")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("2.3.4")));
 
             moduleDef = new MockModuleDefinition("a.b.z", Version.valueOf(1, 7, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.8.0")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("2.*")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.8.0")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("2.*")));
 
             moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(2, 0, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("[1.0, 2.0)")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("[2.0, 3.0)")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("[1.0, 2.0)")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("[2.0, 3.0)")));
         }
         catch (Throwable ex) {
             unexpected(ex);
@@ -266,10 +279,13 @@ public class DefaultImportOverridePolicyTest {
     static public void testSystemPropertyOverride01() throws Exception {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
-            Map<String, VersionConstraint> originalConstraints = new HashMap<String, VersionConstraint>();
-            originalConstraints.put("e.f.g", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("p.q.r", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("x.y.z", VersionConstraint.valueOf("1.0+"));
+            Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
+            ImportDependency importDep1 = newImportDependency("e.f.g");
+            ImportDependency importDep2 = newImportDependency("p.q.r");
+            ImportDependency importDep3 = newImportDependency("x.y.z");
+            originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
 
             // Pretend like -Djava.module.visibility.policy.file=<url to WellFormed.visibility.policy>
             //
@@ -287,28 +303,28 @@ public class DefaultImportOverridePolicyTest {
             DefaultImportOverridePolicy diop = (DefaultImportOverridePolicy) iop;
             diop.refresh();
 
-            Map<String, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
+            Map<ImportDependency, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.7.0")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("2.3.4")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.7.0")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("2.3.4")));
 
             moduleDef = new MockModuleDefinition("a.b.z", Version.valueOf(1, 7, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.8.0")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("2.*")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.8.0")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("2.*")));
 
             moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(2, 0, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("[1.0, 2.0)")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("[2.0, 3.0)")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("[1.0, 2.0)")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("[2.0, 3.0)")));
         }
         catch (Throwable ex) {
             unexpected(ex);
@@ -316,10 +332,13 @@ public class DefaultImportOverridePolicyTest {
 
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
-            Map<String, VersionConstraint> originalConstraints = new HashMap<String, VersionConstraint>();
-            originalConstraints.put("e.f.g", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("p.q.r", VersionConstraint.valueOf("1.0+"));
-            originalConstraints.put("x.y.z", VersionConstraint.valueOf("1.0+"));
+            Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
+            ImportDependency importDep1 = newImportDependency("e.f.g");
+            ImportDependency importDep2 = newImportDependency("p.q.r");
+            ImportDependency importDep3 = newImportDependency("x.y.z");
+            originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
+            originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
 
             // Pretend "import.override.policy.url.2" is set in the module system properties file
             //
@@ -341,28 +360,28 @@ public class DefaultImportOverridePolicyTest {
             DefaultImportOverridePolicy diop = (DefaultImportOverridePolicy) iop;
             diop.refresh();
 
-            Map<String, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
+            Map<ImportDependency, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("[1.7.0, 1.7.1)")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("[2.3.4, 2.3.5)")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("[1.7.0, 1.7.1)")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("[2.3.4, 2.3.5)")));
 
             moduleDef = new MockModuleDefinition("a.b.z", Version.valueOf(1, 7, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("1.0+")));
 
             moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(2, 0, 0));
             overriddenConstraints = iop.narrow(moduleDef, Collections.unmodifiableMap(originalConstraints));
 
             check(overriddenConstraints.size() == originalConstraints.size());
-            check(overriddenConstraints.get("e.f.g").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("p.q.r").equals(VersionConstraint.valueOf("1.0+")));
-            check(overriddenConstraints.get("x.y.z").equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep1).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep2).equals(VersionConstraint.valueOf("1.0+")));
+            check(overriddenConstraints.get(importDep3).equals(VersionConstraint.valueOf("1.0+")));
         }
         catch (Throwable ex) {
             unexpected(ex);
@@ -389,12 +408,15 @@ public class DefaultImportOverridePolicyTest {
 
             MockModuleDefinition moduleDef1 = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
 
-            Map<String, VersionConstraint> constraints = new HashMap<String, VersionConstraint>();
-            constraints.put("p.q.r", VersionConstraint.valueOf("1+"));
-            constraints.put("x.y.z", VersionConstraint.valueOf("1+"));
-            constraints.put("i.j.k", VersionConstraint.valueOf("1+"));
+            Map<ImportDependency, VersionConstraint> constraints = new HashMap<ImportDependency, VersionConstraint>();
+            ImportDependency importDep1 = newImportDependency("e.f.g");
+            ImportDependency importDep2 = newImportDependency("p.q.r");
+            ImportDependency importDep3 = newImportDependency("x.y.z");
+            constraints.put(importDep1, VersionConstraint.valueOf("1+"));
+            constraints.put(importDep2, VersionConstraint.valueOf("1+"));
+            constraints.put(importDep3, VersionConstraint.valueOf("1+"));
 
-            Map<String, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef1, Collections.unmodifiableMap(constraints));
+            Map<ImportDependency, VersionConstraint> overriddenConstraints = iop.narrow(moduleDef1, Collections.unmodifiableMap(constraints));
             fail();
         }
         catch (Throwable ex) {

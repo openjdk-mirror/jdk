@@ -32,10 +32,10 @@ m1.MainA
 m2.MainB
 m.Class1
 >> begin class m2.MainB
-	if (m.Class1.V != 2) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        if (m.Class1.V != 2) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
         new m3.MainC().run("from m2");
         new m4.MainD().run("from m2");
 >> end class
@@ -66,10 +66,10 @@ m3.MainC
 m4.MainD
 m.Class1
 >> begin class m4.MainD
-	if (m.Class1.V != 2) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        if (m.Class1.V != 2) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
 >> end class
 >> begin class m.Class1
 > body

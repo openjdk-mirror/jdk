@@ -13,26 +13,26 @@
 > export
 m1.Main
 >> begin class m1.MainA
-	if (InitializerImpl.INIT_COUNT < 1) {
-	    throw new Exception("Module initializer's initialize() is not called");
-	} else if (InitializerImpl.INIT_COUNT > 1) {
-	    throw new Exception("Module initializer's initialize() is called more than once");
-	}
-	ModuleDefinition moduleDef = module.getModuleDefinition();
-	Repository r = moduleDef.getRepository();
-	ModuleSystem ms = r.getModuleSystem();
-	ms.releaseModule(moduleDef);
+        if (InitializerImpl.INIT_COUNT < 1) {
+            throw new Exception("Module initializer's initialize() is not called");
+        } else if (InitializerImpl.INIT_COUNT > 1) {
+            throw new Exception("Module initializer's initialize() is called more than once");
+        }
+        ModuleDefinition moduleDef = module.getModuleDefinition();
+        Repository r = moduleDef.getRepository();
+        ModuleSystem ms = r.getModuleSystem();
+        ms.releaseModule(moduleDef);
 
-	if (InitializerImpl.INIT_COUNT != 1) {
-	    throw new Exception("Module initializer's initialize() is called more than once");
-	}
-	
-	if (InitializerImpl.RELEASE_COUNT < 1) {
-	    throw new Exception("Module initializer's release() is not called");
-	} else if (InitializerImpl.RELEASE_COUNT > 1) {
-	    throw new Exception("Module initializer's release() is called more than once");
-	}
-	new m2.MainB().run("from m1");
+        if (InitializerImpl.INIT_COUNT != 1) {
+            throw new Exception("Module initializer's initialize() is called more than once");
+        }
+
+        if (InitializerImpl.RELEASE_COUNT < 1) {
+            throw new Exception("Module initializer's release() is not called");
+        } else if (InitializerImpl.RELEASE_COUNT > 1) {
+            throw new Exception("Module initializer's release() is called more than once");
+        }
+        new m2.MainB().run("from m1");
 >> end class
 >> begin class m1.InitializerImpl
 > super
@@ -42,11 +42,11 @@ implements ModuleInitializer
     static volatile int RELEASE_COUNT = 0;
 
     public void initialize(Module module) {
-	INIT_COUNT++;
+        INIT_COUNT++;
     }
     public void release(Module module) {
-	RELEASE_COUNT++;
-	throw new RuntimeException("aborted");
+        RELEASE_COUNT++;
+        throw new RuntimeException("aborted");
     }
 >> end class
 >>> end module

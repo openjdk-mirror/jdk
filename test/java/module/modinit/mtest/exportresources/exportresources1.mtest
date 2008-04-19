@@ -1,5 +1,5 @@
 #
-# Verify that getExportedResources() return the correct information for 
+# Verify that getExportedResources() return the correct information for
 # the exported resources within the module
 #
 >>> begin module m1
@@ -15,52 +15,52 @@ m1.MainA
     checkExportedResources();
 > body
     private void checkExportedResources() throws Exception {
-	ModuleDefinition moduleDef = module.getModuleDefinition();
-	Repository r = moduleDef.getRepository();
-	
-	// m1 should have no exported resources
-	Set<String> exportedResources = moduleDef.getExportedResources();
-	if (exportedResources == null) {
-	    throw new Exception("getExportedResources() should never return null.");
-	}
-	if (exportedResources.size() != 0) {
-	    throw new Exception("m1 should have no exported resources.");
-	}
-	
-	// m2 should export only r1.txt and r2.txt
-	moduleDef = r.find("m2");
-	exportedResources = moduleDef.getExportedResources();
-	if (exportedResources == null) {
-	    throw new Exception("getExportedResources() should never return null.");
-	}	
-	if (exportedResources.size() != 2) {
-	    throw new Exception("m2 should export only two resources.");
-	}
-	if (exportedResources.contains("r1.txt") == false 
-	    || exportedResources.contains("r2.txt") == false) {
-	    throw new Exception("Missing exported resources in m2.");		
-	}		
+        ModuleDefinition moduleDef = module.getModuleDefinition();
+        Repository r = moduleDef.getRepository();
 
-	// m3 should export only r1.txt, r2.txt, r3.txt, r4.txt, r5.txt, r6.txt. r7.txt, r8.txt, etc.
-	moduleDef = r.find("m3");
-	exportedResources = moduleDef.getExportedResources();
-	if (exportedResources == null) {
-	    throw new Exception("getExportedResources() should never return null.");
-	}
-	if (exportedResources.size() < 8) {
-	    throw new Exception("m3 should export at least eight resources.");
-	}
-	if (exportedResources.contains("r1.txt") == false 
-	    || exportedResources.contains("r2.txt") == false
-	    || exportedResources.contains("a/r3.txt") == false
-	    || exportedResources.contains("b/r4.txt") == false
-	    || exportedResources.contains("a/c/r5.txt") == false
-	    || exportedResources.contains("b/d/r6.txt") == false
-	    || exportedResources.contains("aa/r7.txt") == false
-	    || exportedResources.contains("bb/r8.txt") == false) {
-	    throw new Exception("Missing exported resources in m3.");		
-	}		
-		
+        // m1 should have no exported resources
+        Set<String> exportedResources = moduleDef.getExportedResources();
+        if (exportedResources == null) {
+            throw new Exception("getExportedResources() should never return null.");
+        }
+        if (exportedResources.size() != 0) {
+            throw new Exception("m1 should have no exported resources.");
+        }
+
+        // m2 should export only r1.txt and r2.txt
+        moduleDef = r.find("m2");
+        exportedResources = moduleDef.getExportedResources();
+        if (exportedResources == null) {
+            throw new Exception("getExportedResources() should never return null.");
+        }
+        if (exportedResources.size() != 2) {
+            throw new Exception("m2 should export only two resources.");
+        }
+        if (exportedResources.contains("r1.txt") == false
+            || exportedResources.contains("r2.txt") == false) {
+            throw new Exception("Missing exported resources in m2.");
+        }
+
+        // m3 should export only r1.txt, r2.txt, r3.txt, r4.txt, r5.txt, r6.txt. r7.txt, r8.txt, etc.
+        moduleDef = r.find("m3");
+        exportedResources = moduleDef.getExportedResources();
+        if (exportedResources == null) {
+            throw new Exception("getExportedResources() should never return null.");
+        }
+        if (exportedResources.size() < 8) {
+            throw new Exception("m3 should export at least eight resources.");
+        }
+        if (exportedResources.contains("r1.txt") == false
+            || exportedResources.contains("r2.txt") == false
+            || exportedResources.contains("a/r3.txt") == false
+            || exportedResources.contains("b/r4.txt") == false
+            || exportedResources.contains("a/c/r5.txt") == false
+            || exportedResources.contains("b/d/r6.txt") == false
+            || exportedResources.contains("aa/r7.txt") == false
+            || exportedResources.contains("bb/r8.txt") == false) {
+            throw new Exception("Missing exported resources in m3.");
+        }
+
         // m4 should export only r3.txt and r6.txt
         moduleDef = r.find("m4");
         exportedResources = moduleDef.getExportedResources();
@@ -72,8 +72,8 @@ m1.MainA
         }
         if (exportedResources.contains("a/r3.txt") == false
             || exportedResources.contains("b/d/r6.txt") == false) {
-            throw new Exception("Missing exported resources in m4.");		
-        }		
+            throw new Exception("Missing exported resources in m4.");
+        }
 
         // m5 should export only r3.txt, r4.txt, r5.txt, r6.txt
         moduleDef = r.find("m5");
@@ -84,28 +84,28 @@ m1.MainA
         if (exportedResources.size() != 4) {
             throw new Exception("m5 should export only four resources.");
         }
-	if (exportedResources.contains("a/r3.txt") == false
-	    || exportedResources.contains("b/r4.txt") == false
-	    || exportedResources.contains("a/c/r5.txt") == false
-	    || exportedResources.contains("b/d/r6.txt") == false) {
-	    throw new Exception("Missing exported resources in m5.");		
-	}		
+        if (exportedResources.contains("a/r3.txt") == false
+            || exportedResources.contains("b/r4.txt") == false
+            || exportedResources.contains("a/c/r5.txt") == false
+            || exportedResources.contains("b/d/r6.txt") == false) {
+            throw new Exception("Missing exported resources in m5.");
+        }
 
-	// m6 should export only r3.txt, r5.txt, r8.txt
-	moduleDef = r.find("m6");
-	exportedResources = moduleDef.getExportedResources();
-	if (exportedResources == null) {
-	    throw new Exception("getExportedResources() should never return null.");
-	}
-	if (exportedResources.size() != 3) {
-	    throw new Exception("m6 should export only three resources.");
-	}
-	if (exportedResources.contains("a/r3.txt") == false
-	    || exportedResources.contains("a/c/r5.txt") == false
-	    || exportedResources.contains("bb/r8.txt") == false) {
-	    throw new Exception("Missing exported resources in m6.");		
-	}		
-    }    
+        // m6 should export only r3.txt, r5.txt, r8.txt
+        moduleDef = r.find("m6");
+        exportedResources = moduleDef.getExportedResources();
+        if (exportedResources == null) {
+            throw new Exception("getExportedResources() should never return null.");
+        }
+        if (exportedResources.size() != 3) {
+            throw new Exception("m6 should export only three resources.");
+        }
+        if (exportedResources.contains("a/r3.txt") == false
+            || exportedResources.contains("a/c/r5.txt") == false
+            || exportedResources.contains("bb/r8.txt") == false) {
+            throw new Exception("Missing exported resources in m6.");
+        }
+    }
 >> end class
 >>> end module
 >>> begin module m2
@@ -245,7 +245,7 @@ java.se
 > annotations
 @ExportResources({
     "a/**",
-    "bb/r8.txt"	
+    "bb/r8.txt"
 })
 @ImportModules({
     @ImportModule(name="java.se")

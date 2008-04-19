@@ -67,7 +67,7 @@ m3.MainC
     catch(UnsupportedOperationException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when releasing standard module definition.");	
+        throw new Exception("Incorrect exception is thrown when releasing standard module definition.");
     }
 
     try {
@@ -93,7 +93,7 @@ m3.MainC
     catch(IllegalStateException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when instantiating module definition.");	
+        throw new Exception("Incorrect exception is thrown when instantiating module definition.");
     }
 
     try {
@@ -107,7 +107,7 @@ m3.MainC
         ms.releaseModule(md1);
         ms.releaseModule(md2);
         ms.releaseModule(md1);
-        ms.releaseModule(md2);		
+        ms.releaseModule(md2);
 
         // instantiate m1, m2, m3 again
         Module mm1 = md1.getModuleInstance();
@@ -127,7 +127,7 @@ m3.MainC
     catch(IllegalStateException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when instantiating module definition.");	
+        throw new Exception("Incorrect exception is thrown when instantiating module definition.");
     }
 >> end class
 >>> end module

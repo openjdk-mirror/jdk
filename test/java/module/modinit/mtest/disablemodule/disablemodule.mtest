@@ -1,7 +1,7 @@
-# Defines m1, m2 
+# Defines m1, m2
 # m1 imports m2 with default versionconstraint
-# Test disables m2, and makes sure no more module instance of m2 can be 
-# instantiated. 
+# Test disables m2, and makes sure no more module instance of m2 can be
+# instantiated.
 >>> begin module m1
 > annotations
 @MainClass("m1.MainA")
@@ -32,7 +32,7 @@ m2.MainB
         Module m = md.getModuleInstance();
     }
     catch(Throwable e) {
-        throw new Exception("Module definition cannot be instantiated.");	
+        throw new Exception("Module definition cannot be instantiated.");
     }
 
     try {
@@ -46,7 +46,7 @@ m2.MainB
     catch(UnsupportedOperationException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when disabling standard module definition.");	
+        throw new Exception("Incorrect exception is thrown when disabling standard module definition.");
     }
 
     try {
@@ -61,7 +61,7 @@ m2.MainB
     catch(IllegalStateException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when instantiating disabled module definition.");	
+        throw new Exception("Incorrect exception is thrown when instantiating disabled module definition.");
     }
 
     try {
@@ -74,7 +74,7 @@ m2.MainB
     catch(IllegalStateException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when instantiating disabled module definition.");	
+        throw new Exception("Incorrect exception is thrown when instantiating disabled module definition.");
     }
 >> end class
 >>> end module

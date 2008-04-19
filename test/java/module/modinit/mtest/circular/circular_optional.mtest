@@ -13,16 +13,16 @@
 > export
 m0.Main
 >> begin class m0.Main
-	String[] moduleNames = new String[] { "m1", "m2" };
-	for (String moduleName : moduleNames) {
-	    ModuleDefinition md = repository.find(moduleName);
-	    try {
-		Module m = md.getModuleInstance();
-		throw new Exception("Module not in error state: " + moduleName);
-	    } catch (ModuleInitializationException e) {
-		System.out.println("OK: " + e);
-	    }
-	}
+        String[] moduleNames = new String[] { "m1", "m2" };
+        for (String moduleName : moduleNames) {
+            ModuleDefinition md = repository.find(moduleName);
+            try {
+                Module m = md.getModuleInstance();
+                throw new Exception("Module not in error state: " + moduleName);
+            } catch (ModuleInitializationException e) {
+                System.out.println("OK: " + e);
+            }
+        }
 >> end class
 >>> end module
 >>> begin module m1

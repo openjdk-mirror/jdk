@@ -13,10 +13,10 @@
 > export
 m1.Main
 >> begin class m1.MainA
-	if (InitializerImpl.CALLED == false) {
-	    throw new Exception("module initializer not called");
-	}
-	new m2.MainB().run("from m1");
+        if (InitializerImpl.CALLED == false) {
+            throw new Exception("module initializer not called");
+        }
+        new m2.MainB().run("from m1");
 >> end class
 >> begin class m1.InitializerImpl
 > super
@@ -25,23 +25,23 @@ implements ModuleInitializer
     static volatile boolean CALLED;
 
     public void initialize(Module module) throws ModuleInitializationException {
-	CALLED = true;
-	try {
-	    new m2.MainB().info("from module initializer");
-	    throw new ModuleInitializationException("failed");
-	} catch (NoClassDefFoundError e) {
-	    System.out.println("OK: " + e);
-	} catch (Exception ex) {
-	    if (ex instanceof ModuleInitializationException) {
-	        throw ((ModuleInitializationException) ex);
-	    } else {
-	        throw new ModuleInitializationException("failed", ex);
-	    }
-	} 
+        CALLED = true;
+        try {
+            new m2.MainB().info("from module initializer");
+            throw new ModuleInitializationException("failed");
+        } catch (NoClassDefFoundError e) {
+            System.out.println("OK: " + e);
+        } catch (Exception ex) {
+            if (ex instanceof ModuleInitializationException) {
+                throw ((ModuleInitializationException) ex);
+            } else {
+                throw new ModuleInitializationException("failed", ex);
+            }
+        }
     }
-    
+
     public void release(Module module) {
-    }    
+    }
 >> end class
 >>> end module
 >>> begin module m2

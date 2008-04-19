@@ -1,7 +1,7 @@
 #
 # Defines m1 and m2, and that m1 imports m2, and m2 imports m1, i.e.
 # cyclic dependency.
-# 
+#
 # Verify that the module initializer is invoked properly in m1 and m2.
 #
 >>> begin module m1
@@ -10,7 +10,7 @@
 @ModuleInitializerClass("m1.InitializerImpl")
 @ImportModules({
     @ImportModule(name="java.se"),
-    @ImportModule(name="m2")    
+    @ImportModule(name="m2")
 })
 > export
 m1.Main
@@ -18,61 +18,61 @@ m1.Main
 
         // Checks to see if m1's initializer is called properly.
         //
-	if (InitializerImpl.INIT_COUNT < 1) {
-	    throw new Exception("Module initializer's initialize() in m1 is not called");
-	} else if (InitializerImpl.INIT_COUNT > 1) {
-	    throw new Exception("Module initializer's initialize() in m1 is called more than once");
-	}
-	ModuleDefinition moduleDef = module.getModuleDefinition();
-	Repository r = moduleDef.getRepository();
-	ModuleSystem ms = r.getModuleSystem();
-	ms.releaseModule(moduleDef);
+        if (InitializerImpl.INIT_COUNT < 1) {
+            throw new Exception("Module initializer's initialize() in m1 is not called");
+        } else if (InitializerImpl.INIT_COUNT > 1) {
+            throw new Exception("Module initializer's initialize() in m1 is called more than once");
+        }
+        ModuleDefinition moduleDef = module.getModuleDefinition();
+        Repository r = moduleDef.getRepository();
+        ModuleSystem ms = r.getModuleSystem();
+        ms.releaseModule(moduleDef);
 
-	if (InitializerImpl.INIT_COUNT != 1) {
-	    throw new Exception("Module initializer's initialize() in m1 is called more than once");
-	}
-	
-	if (InitializerImpl.RELEASE_COUNT < 1) {
-	    throw new Exception("Module initializer's release() in m1 is not called");
-	} else if (InitializerImpl.RELEASE_COUNT > 1) {
-	    throw new Exception("Module initializer's release() in m1 is called more than once");
-	}
+        if (InitializerImpl.INIT_COUNT != 1) {
+            throw new Exception("Module initializer's initialize() in m1 is called more than once");
+        }
+
+        if (InitializerImpl.RELEASE_COUNT < 1) {
+            throw new Exception("Module initializer's release() in m1 is not called");
+        } else if (InitializerImpl.RELEASE_COUNT > 1) {
+            throw new Exception("Module initializer's release() in m1 is called more than once");
+        }
 
 
         // Checks to see if m2's initializer is called properly.
         //
-	if (m2.InitializerImpl.INIT_COUNT < 1) {
-	    throw new Exception("Module initializer's initialize() in m2 is not called");
-	} else if (m2.InitializerImpl.INIT_COUNT > 1) {
-	    throw new Exception("Module initializer's initialize() in m2 is called more than once");
-	}
-	Class clazz = m2.InitializerImpl.class;
-	moduleDef = clazz.getClassLoader().getModule().getModuleDefinition();
-	r = moduleDef.getRepository();
-	ms = r.getModuleSystem();
-	ms.releaseModule(moduleDef);
+        if (m2.InitializerImpl.INIT_COUNT < 1) {
+            throw new Exception("Module initializer's initialize() in m2 is not called");
+        } else if (m2.InitializerImpl.INIT_COUNT > 1) {
+            throw new Exception("Module initializer's initialize() in m2 is called more than once");
+        }
+        Class clazz = m2.InitializerImpl.class;
+        moduleDef = clazz.getClassLoader().getModule().getModuleDefinition();
+        r = moduleDef.getRepository();
+        ms = r.getModuleSystem();
+        ms.releaseModule(moduleDef);
 
-	if (m2.InitializerImpl.INIT_COUNT != 1) {
-	    throw new Exception("Module initializer's initialize() in m2 is called more than once");
-	}
-	
-	if (m2.InitializerImpl.RELEASE_COUNT < 1) {
-	    throw new Exception("Module initializer's release() in m2 is not called");
-	} else if (m2.InitializerImpl.RELEASE_COUNT > 1) {
-	    throw new Exception("Module initializer's release()in m2 is called more than once");
-	}
+        if (m2.InitializerImpl.INIT_COUNT != 1) {
+            throw new Exception("Module initializer's initialize() in m2 is called more than once");
+        }
+
+        if (m2.InitializerImpl.RELEASE_COUNT < 1) {
+            throw new Exception("Module initializer's release() in m2 is not called");
+        } else if (m2.InitializerImpl.RELEASE_COUNT > 1) {
+            throw new Exception("Module initializer's release()in m2 is called more than once");
+        }
 
         // Checks to see if m1's initializer is called abnormally due to the release of m2
         //
-	if (InitializerImpl.INIT_COUNT != 1) {
-	    throw new Exception("Module initializer's initialize() in m1 is called more than once");
-	}
-	
-	if (InitializerImpl.RELEASE_COUNT < 1) {
-	    throw new Exception("Module initializer's release() in m1 is not called");
-	} else if (InitializerImpl.RELEASE_COUNT > 1) {
-	    throw new Exception("Module initializer's release() in m1 is called more than once");
-	}
+        if (InitializerImpl.INIT_COUNT != 1) {
+            throw new Exception("Module initializer's initialize() in m1 is called more than once");
+        }
+
+        if (InitializerImpl.RELEASE_COUNT < 1) {
+            throw new Exception("Module initializer's release() in m1 is not called");
+        } else if (InitializerImpl.RELEASE_COUNT > 1) {
+            throw new Exception("Module initializer's release() in m1 is called more than once");
+        }
 
 >> end class
 >> begin class m1.InitializerImpl
@@ -83,10 +83,10 @@ implements ModuleInitializer
     static volatile int RELEASE_COUNT = 0;
 
     public void initialize(Module module) {
-	INIT_COUNT++;
+        INIT_COUNT++;
     }
     public void release(Module module) {
-	RELEASE_COUNT++;
+        RELEASE_COUNT++;
     }
 >> end class
 >>> end module
@@ -107,10 +107,10 @@ implements ModuleInitializer
     public static volatile int RELEASE_COUNT = 0;
 
     public void initialize(Module module) {
-	INIT_COUNT++;
+        INIT_COUNT++;
     }
     public void release(Module module) {
-	RELEASE_COUNT++;
+        RELEASE_COUNT++;
     }
 >> end class
 >>> end module

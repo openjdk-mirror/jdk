@@ -2,8 +2,8 @@
  *
  */
 
-importer a.b.c @ 1.0 {
-    p.q.r @ [1.7.0, 1.7.1);
-    x.y.z @ [2.3.4, 2.3.5);
+module a.b.c @ 1.0 {
+    import module p.q.r @ [1.7.0, 1.7.1);
+    import module x.y.z @ [2.3.4, 2.3.5);
 };
 

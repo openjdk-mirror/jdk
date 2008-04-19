@@ -14,24 +14,24 @@ m1.MainA
 > import
 import java.net.*;
 > run
-	checkPackage();
+        checkPackage();
 > body
     private void checkPackage() throws Exception {
-	String name = "m1";
-	System.out.println("Checking package " + name + "...");
-	ClassLoader cl = module.getClassLoader();
-	Class clazz = cl.loadClass("m1.MainA");
-	Package p = clazz.getPackage();
-	if (p == null) {
-	    throw new Exception("Cannot find package " + name);
-	}
-	if (p.getName().equals(name) == false) {
-	    throw new Exception("Unexpected package: " + p.getName() + " instead of " + name);
-	}
-	if (p.isSealed() == false) {
-	    throw new Exception("Package is not sealed");
-	}
-    }    
+        String name = "m1";
+        System.out.println("Checking package " + name + "...");
+        ClassLoader cl = module.getClassLoader();
+        Class clazz = cl.loadClass("m1.MainA");
+        Package p = clazz.getPackage();
+        if (p == null) {
+            throw new Exception("Cannot find package " + name);
+        }
+        if (p.getName().equals(name) == false) {
+            throw new Exception("Unexpected package: " + p.getName() + " instead of " + name);
+        }
+        if (p.isSealed() == false) {
+            throw new Exception("Package is not sealed");
+        }
+    }
 >> end class
 >>> end module
 >>> begin test m1

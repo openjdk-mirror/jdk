@@ -26,7 +26,7 @@
 package java.module;
 
 /**
- * This interface represents a module initializer of a module definition. The
+ * This interface represents a module initializer of a module instance. The
  * initializer is invoked when the module system initializes a module instance,
  * and when that module instance is released from the module system.
  * <p>
@@ -61,12 +61,11 @@ public interface ModuleInitializer {
      * <p>
      * Note that the module instance passed as the argument of this method has
      * not been fully initialized. The only methods in {@code Module} that the
-     * implementations of this method could invoke reliably are
+     * implementation of this method could invoke reliably are
      * {@code Module}'s {@code getModuleDefinition()}, {@code hashCode()}, and
      * {@code toString()}. Otherwise, the result is undeterministric.
      *
-     * @param module the module instance that this {@code ModuleInitializer}
-     *        belongs.
+     * @param module the {@code Module} instance to be initialized.
      * @throws ModuleInitializationException if this {@code ModuleInitializer}
      *         fails to initialize.
      */
@@ -85,13 +84,13 @@ public interface ModuleInitializer {
      * <p>
      * In the first situation, the module instance passed as the argument of
      * this method is in error state. The only methods in {@code Module} that
-     * the implementations of this method could invoke reliably are
+     * the implementation of this method could invoke reliably are
      * {@code Module}'s {@code getModuleDefinition()}, {@code hashCode()}, and
      * {@code toString()}. Otherwise, the result is undeterministric.
      * <p>
      * Note that after this method is invoked, the module classloader of this
      * module instance might still be accessible from other modules. If the
-     * implementations of this method attempt to reset some states or
+     * implementation of this method attempt to reset some states or
      * shutdown some functionalities in this module instance, this could be
      * problematic for the importing modules if they continue to access this
      * module instance after this module instance has been released.
@@ -101,8 +100,7 @@ public interface ModuleInitializer {
      * {@link #initialize(Module) initialize(Module)} method has been invoked
      * successfully.
      *
-     * @param module the module instance that this {@code ModuleInitializer}
-     *        belongs.
+     * @param module the {@code Module} instance to be released.
      */
     public void release(Module module);
 }

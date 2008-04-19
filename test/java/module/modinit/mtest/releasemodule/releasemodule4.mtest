@@ -72,7 +72,7 @@ m3.MainC
     catch(UnsupportedOperationException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when releasing standard module definition.");	
+        throw new Exception("Incorrect exception is thrown when releasing standard module definition.");
     }
 
     try {
@@ -84,7 +84,7 @@ m3.MainC
         Module mm1 = md1.getModuleInstance();
         Module mm2 = md2.getModuleInstance();
         Module mm3 = md3.getModuleInstance();
-    	
+
         if (mm3 == m3) {
             throw new Exception("m3 was not released properly.");
         }
@@ -92,7 +92,7 @@ m3.MainC
         if (mm2 == m2) {
             throw new Exception("m2 was not released as a result of releasing m3.");
         }
-    					
+
         if (mm1 == m1) {
             throw new Exception("m1 was not released as a result of releasing m2.");
         }
@@ -100,7 +100,7 @@ m3.MainC
     catch(IllegalStateException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when instantiating module definition.");	
+        throw new Exception("Incorrect exception is thrown when instantiating module definition.");
     }
 >> end class
 >>> end module

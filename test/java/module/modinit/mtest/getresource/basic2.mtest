@@ -20,83 +20,83 @@ m1.MainA
 > import
 import java.net.*;
 > run
-	checkClassResource();
-	checkFileResource();
+        checkClassResource();
+        checkFileResource();
 > body
     private void checkClassResource() throws Exception {
-	String name = "m/Dup.class";
-	System.out.println("Checking " + name + "...");
-	ClassLoader cl = module.getClassLoader();
-	InputStream in;
-	in = cl.getResourceAsStream(name);
-	checkClassStream1(in);
-	URL url = cl.getResource(name);
-	checkClassStream1(url.openStream());
-	checkClassStream1(url.openStream());
-	List<URL> urls = Collections.list(cl.getResources(name));
-	System.out.println("URLs: " + urls);
-	if (urls.size() != 2) {
-	    throw new Exception("Expected two URLs");
-	}
-	checkClassStream1(urls.get(0).openStream());
-	checkClassStream2(urls.get(1).openStream());
+        String name = "m/Dup.class";
+        System.out.println("Checking " + name + "...");
+        ClassLoader cl = module.getClassLoader();
+        InputStream in;
+        in = cl.getResourceAsStream(name);
+        checkClassStream1(in);
+        URL url = cl.getResource(name);
+        checkClassStream1(url.openStream());
+        checkClassStream1(url.openStream());
+        List<URL> urls = Collections.list(cl.getResources(name));
+        System.out.println("URLs: " + urls);
+        if (urls.size() != 2) {
+            throw new Exception("Expected two URLs");
+        }
+        checkClassStream1(urls.get(0).openStream());
+        checkClassStream2(urls.get(1).openStream());
     }
 
     private static void checkClassStream1(InputStream in) throws Exception {
-	int k = in.read();
-	if (k != '#') {
-	    throw new Exception("Wrong data: " + k);
-	    
-	}
-	in.close();
+        int k = in.read();
+        if (k != '#') {
+            throw new Exception("Wrong data: " + k);
+
+        }
+        in.close();
     }
 
     private static void checkClassStream2(InputStream in) throws Exception {
-	DataInputStream din = new DataInputStream(in);
-	int k = din.readInt();
-	if (k != 0xcafebabe) {
-	    throw new Exception("Wrong data: " + k);
-	}
-	in.close();
+        DataInputStream din = new DataInputStream(in);
+        int k = din.readInt();
+        if (k != 0xcafebabe) {
+            throw new Exception("Wrong data: " + k);
+        }
+        in.close();
     }
 
     private void checkFileResource() throws Exception {
-	String name = "resources/r1.txt";
-	System.out.println("Checking " + name + "...");
-	ClassLoader cl = module.getClassLoader();
-	InputStream in;
-	in = cl.getResourceAsStream(name);
-	checkFileStream1(in);
-	URL url = cl.getResource(name);
-	checkFileStream1(url.openStream());
-	checkFileStream1(url.openStream());
-	List<URL> urls = Collections.list(cl.getResources(name));
-	System.out.println("URLs: " + urls);
-	if (urls.size() != 2) {
-	    throw new Exception("Expected two URLs");
-	}
-	checkFileStream1(urls.get(0).openStream());
-	checkFileStream2(urls.get(1).openStream());
+        String name = "resources/r1.txt";
+        System.out.println("Checking " + name + "...");
+        ClassLoader cl = module.getClassLoader();
+        InputStream in;
+        in = cl.getResourceAsStream(name);
+        checkFileStream1(in);
+        URL url = cl.getResource(name);
+        checkFileStream1(url.openStream());
+        checkFileStream1(url.openStream());
+        List<URL> urls = Collections.list(cl.getResources(name));
+        System.out.println("URLs: " + urls);
+        if (urls.size() != 2) {
+            throw new Exception("Expected two URLs");
+        }
+        checkFileStream1(urls.get(0).openStream());
+        checkFileStream2(urls.get(1).openStream());
     }
 
     private static void checkFileStream1(InputStream in) throws Exception {
-	BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-	String line = reader.readLine();
-	if (line.equals("resource b1b") == false) {
-	    throw new Exception("Wrong content: " + line);
-	}
-	in.close();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        String line = reader.readLine();
+        if (line.equals("resource b1b") == false) {
+            throw new Exception("Wrong content: " + line);
+        }
+        in.close();
     }
-    
+
     private static void checkFileStream2(InputStream in) throws Exception {
-	BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-	String line = reader.readLine();
-	if (line.equals("resource 1") == false) {
-	    throw new Exception("Wrong content: " + line);
-	}
-	in.close();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        String line = reader.readLine();
+        if (line.equals("resource 1") == false) {
+            throw new Exception("Wrong content: " + line);
+        }
+        in.close();
     }
-    
+
 >> end class
 >> begin class m.Dup
 >> end class

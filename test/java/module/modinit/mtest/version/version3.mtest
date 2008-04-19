@@ -26,8 +26,8 @@ m1.MainA
 >> begin class m1.MainA
         m2.MainB.get().run(args);
         m3.MainC.get().run(args);
-	Object o = m2.MainB.get().getMainD();
-	m3.MainC.get().setMainD(o);
+        Object o = m2.MainB.get().getMainD();
+        m3.MainC.get().setMainD(o);
 >> end class
 >>> end module
 >>> begin module m2
@@ -43,12 +43,12 @@ m2.MainB
 import m4.MainD;
 > run
         MainD.get().run(args);
-	if (MainD.get().version.equals("1.6") == false) {
-	    throw new Exception("wrong version of m4");
-	}
+        if (MainD.get().version.equals("1.6") == false) {
+            throw new Exception("wrong version of m4");
+        }
 > body
     public MainD getMainD() {
-	return new MainD();
+        return new MainD();
     }
 >> end class
 >>> end module
@@ -66,14 +66,14 @@ m3.MainC
 import m4.MainD;
 > run
         MainD.get().run(args);
-	if (MainD.get().version.equals("1.6") == false) {
-	    throw new Exception("wrong version of m4");
-	}
+        if (MainD.get().version.equals("1.6") == false) {
+            throw new Exception("wrong version of m4");
+        }
 > body
     public void setMainD(Object o) throws Exception {
-	MainD m = (MainD)o;
-	System.out.println("got m4: " + m);
-	m.info();
+        MainD m = (MainD)o;
+        System.out.println("got m4: " + m);
+        m.info();
     }
 >> end class
 >>> end module

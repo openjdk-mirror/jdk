@@ -49,6 +49,7 @@ import sun.module.annotation.LegacyClasses;
 /*
  * @test QueryTest.java
  * @summary Test QueryTest
+ * @compile -XDignore.symbol.file QueryTest.java
  * @author Stanley M. Ho
  */
 
@@ -225,7 +226,7 @@ public class QueryTest {
 
         // Test ModuleQuery
         try {
-            Query query = Query.module("javax.swing", null);
+            Query query = Query.module("javax.swing", (VersionConstraint) null);
             fail();
         } catch (NullPointerException npe) {
             pass();

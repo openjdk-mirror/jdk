@@ -19,66 +19,66 @@ m1.MainA
     final java.util.concurrent.BlockingQueue<ModuleSystemEvent> eventQueue = new java.util.concurrent.LinkedBlockingQueue<ModuleSystemEvent>();
     ModuleSystemListener moduleSystemListener = new ModuleSystemListener() {
         public void handleEvent(ModuleSystemEvent e) {
-	    if (e.getType() == ModuleSystemEvent.Type.MODULE_INITIALIZED)
+            if (e.getType() == ModuleSystemEvent.Type.MODULE_INITIALIZED)
                 eventQueue.add(e);
-        }        
-    };        
+        }
+    };
     // Add module system listener
     ms.addModuleSystemListener(moduleSystemListener);
 
-    try {			
-        // Instantiating m2        
-	md2.getModuleInstance();
-	
-	// Poll first MODULE_INITIALIZED event
-	//
-	ModuleSystemEvent evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
-	if (evt.getType() != ModuleSystemEvent.Type.MODULE_INITIALIZED) {
-	    throw new Exception("Unexpected module system event type: " + evt.getType());			
-	}
-    
-	if (evt.getModuleDefinition() != md3) {
-	    throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());			
-	}
-    
-	// Poll second MODULE_INITIALIZED event
-	//
-	evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
-	if (evt.getType() != ModuleSystemEvent.Type.MODULE_INITIALIZED) {
-	    throw new Exception("Unexpected module system event type: " + evt.getType());			
-	}
-    
-	if (evt.getModuleDefinition() != md2) {
-	    throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());			
-	}			
+    try {
+        // Instantiating m2
+        md2.getModuleInstance();
+
+        // Poll first MODULE_INITIALIZED event
+        //
+        ModuleSystemEvent evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
+        if (evt.getType() != ModuleSystemEvent.Type.MODULE_INITIALIZED) {
+            throw new Exception("Unexpected module system event type: " + evt.getType());
+        }
+
+        if (evt.getModuleDefinition() != md3) {
+            throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());
+        }
+
+        // Poll second MODULE_INITIALIZED event
+        //
+        evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
+        if (evt.getType() != ModuleSystemEvent.Type.MODULE_INITIALIZED) {
+            throw new Exception("Unexpected module system event type: " + evt.getType());
+        }
+
+        if (evt.getModuleDefinition() != md2) {
+            throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());
+        }
     }
     catch(ModuleInitializationException mie) {
-	throw new Exception("Unexpected exception: " + mie);		
-    }        
+        throw new Exception("Unexpected exception: " + mie);
+    }
 
     // Remove module system listener
     ms.removeModuleSystemListener(moduleSystemListener);
-    
+
     // Clear event queue
-    eventQueue.clear();        
+    eventQueue.clear();
 
     try {
-	// Releasing module instances of md2 and md3
-	ms.releaseModule(md2);
-	ms.releaseModule(md3);
-	
-	// Instantiating m2 again       
-	md2.getModuleInstance();
-	
-	// No MODULE_INITIALIZED event should be sent to the
-	// module system listener after it has been removed.
-	ModuleSystemEvent evt = eventQueue.poll(5L, java.util.concurrent.TimeUnit.SECONDS);
-	if (evt != null) {
+        // Releasing module instances of md2 and md3
+        ms.releaseModule(md2);
+        ms.releaseModule(md3);
+
+        // Instantiating m2 again
+        md2.getModuleInstance();
+
+        // No MODULE_INITIALIZED event should be sent to the
+        // module system listener after it has been removed.
+        ModuleSystemEvent evt = eventQueue.poll(5L, java.util.concurrent.TimeUnit.SECONDS);
+        if (evt != null) {
             throw new Exception("Unexpected module system event after module system listener is removed: " + evt);
-	}		
+        }
     }
     catch(ModuleInitializationException mie) {
-        throw new Exception("Unexpected exception: " + mie);		
+        throw new Exception("Unexpected exception: " + mie);
     }
 >> end class
 >>> end module

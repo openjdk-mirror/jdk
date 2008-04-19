@@ -86,11 +86,11 @@ public abstract class ModuleDefinition {
     public abstract String getAttribute(String name);
 
     /**
-     * Returns an unmodifiable list of all kinds of import dependencies. The
-     * order of the import dependency in the list follows the declared import
-     * order in the {@code ModuleDefinition}.
+     * Returns an unmodifiable list of all import dependencies. The order of
+     * the import dependencies in the list follows the declared import order in
+     * the {@code ModuleDefinition}.
      *
-     * @return an unmodifiable list of all kinds of import dependencies.
+     * @return an unmodifiable list of all import dependencies.
      */
     public abstract List<ImportDependency> getImportDependencies();
 
@@ -161,7 +161,7 @@ public abstract class ModuleDefinition {
      */
     public boolean isClassExported(String name) {
         try {
-            // TODO: convert class name?
+            // XXX: convert class name?
             Set<String> exportedClasses = getExportedClasses();
             return exportedClasses.contains(name);
         } catch (UnsupportedOperationException uoe) {
@@ -264,8 +264,8 @@ public abstract class ModuleDefinition {
     public abstract boolean isModuleReleasable();
 
     /**
-     * Returns a {@code ModuleContent} instance which represents the content
-     * of this {@code ModuleDefinition}.
+     * Returns a {@code ModuleContent} which represents the content of this
+     * {@code ModuleDefinition}.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with a
@@ -273,7 +273,7 @@ public abstract class ModuleDefinition {
      * permission to ensure it's ok to access the content of this
      * {@code ModuleDefinition}.
      *
-     * @return the {@code ModuleContent} instance.
+     * @return the {@code ModuleContent}.
      * @throws SecurityException if a security manager exists and
      *         its {@code checkPermission} method denies access
      *         to the content of this {@code ModuleDefinition}.
@@ -292,7 +292,7 @@ public abstract class ModuleDefinition {
      *         {@code ModuleDefinition}; otherwise, returns false.
      */
     @Override
-    public final boolean equals(Object obj)   {
+    public final boolean equals(Object obj) {
         return (this == obj);
     }
 
@@ -302,7 +302,7 @@ public abstract class ModuleDefinition {
      * @return a hash code value for this {@code ModuleDefinition}.
      */
     @Override
-    public final int hashCode()   {
+    public final int hashCode() {
         return super.hashCode();
     }
 

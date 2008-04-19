@@ -26,10 +26,10 @@ m1.MainA
 m2.MainB
 m.Class1
 >> begin class m2.MainB
-	if (m.Class1.V != 1) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        if (m.Class1.V != 1) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
 >> end class
 >> begin class m.Class1
 > body
@@ -46,10 +46,10 @@ m.Class1
 m3.MainC
 m.Class1
 >> begin class m3.MainC
-	if (m.Class1.V != 2) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        if (m.Class1.V != 2) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
 >> end class
 >> begin class m.Class1
 > body

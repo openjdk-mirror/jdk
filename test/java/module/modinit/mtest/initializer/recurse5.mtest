@@ -13,7 +13,7 @@
 > export
 m0.Main
 >> begin class m0.Main
-	System.out.println("OK");
+        System.out.println("OK");
 >> end class
 >> begin class m0.InitializerImpl
 > super
@@ -21,17 +21,17 @@ implements ModuleInitializer
 > body
     public void initialize(Module module) throws ModuleInitializationException {
         ModuleDefinition moduleDef = module.getModuleDefinition();
-	Repository rep = moduleDef.getRepository();
-	ModuleDefinition md = rep.find("m1");
-	Module m = null;
-	try {
-	    m = md.getModuleInstance();
-	} catch (ModuleInitializationException e) {
-	    System.out.println("OK: " + e);
-	}
-	if (m != null) {
-	    throw new ModuleInitializationException("Unexpectedly got m1: " + m);
-        }	
+        Repository rep = moduleDef.getRepository();
+        ModuleDefinition md = rep.find("m1");
+        Module m = null;
+        try {
+            m = md.getModuleInstance();
+        } catch (ModuleInitializationException e) {
+            System.out.println("OK: " + e);
+        }
+        if (m != null) {
+            throw new ModuleInitializationException("Unexpectedly got m1: " + m);
+        }
     }
     public void release(Module module) {
     }
@@ -50,12 +50,12 @@ m1.Main
 >> begin class m1.MainA
         // Checks to see if m1's initializer is called properly.
         //
-	if (InitializerImpl.INIT_COUNT < 1) {
-	    throw new Exception("Module initializer's initialize() in m1 is not called");
-	} else if (InitializerImpl.INIT_COUNT > 1) {
-	    throw new Exception("Module initializer's initialize() in m1 is called more than once");
-	}
-	new m2.MainB().run("from m1");
+        if (InitializerImpl.INIT_COUNT < 1) {
+            throw new Exception("Module initializer's initialize() in m1 is not called");
+        } else if (InitializerImpl.INIT_COUNT > 1) {
+            throw new Exception("Module initializer's initialize() in m1 is called more than once");
+        }
+        new m2.MainB().run("from m1");
 >> end class
 >> begin class m1.InitializerImpl
 > super
@@ -65,32 +65,32 @@ implements ModuleInitializer
     public static volatile int RELEASE_COUNT = 0;
 
     public void initialize(Module module) throws ModuleInitializationException {
-	if (INIT_COUNT != 0) {
-	    throw new ModuleInitializationException("Module initializer's initialize() is called more than once");
-	}
-	INIT_COUNT++;
+        if (INIT_COUNT != 0) {
+            throw new ModuleInitializationException("Module initializer's initialize() is called more than once");
+        }
+        INIT_COUNT++;
 
-	try {
-	    Repository rep = module.getModuleDefinition().getRepository();
-	    ModuleDefinition md = rep.find("m3");
-	    Module m = md.getModuleInstance();
-	    ClassLoader cl = m.getClassLoader();
-	    Class clazz = cl.loadClass("m3.MainC");
-	    Object o = clazz.newInstance();
-	    System.out.println("m3: " + o);
-	} catch (Exception e) {
-	    if (e instanceof ModuleInitializationException) {
-	        throw ((ModuleInitializationException) e);
-	    } else {
-	        throw new ModuleInitializationException("could not get m3", e);
-	    }
-	}
+        try {
+            Repository rep = module.getModuleDefinition().getRepository();
+            ModuleDefinition md = rep.find("m3");
+            Module m = md.getModuleInstance();
+            ClassLoader cl = m.getClassLoader();
+            Class clazz = cl.loadClass("m3.MainC");
+            Object o = clazz.newInstance();
+            System.out.println("m3: " + o);
+        } catch (Exception e) {
+            if (e instanceof ModuleInitializationException) {
+                throw ((ModuleInitializationException) e);
+            } else {
+                throw new ModuleInitializationException("could not get m3", e);
+            }
+        }
     }
     public void release(Module module) {
-	if (RELEASE_COUNT != 0) {
-	    throw new IllegalStateException("Module initializer's release() is called more than once");
-	}
-	RELEASE_COUNT++;
+        if (RELEASE_COUNT != 0) {
+            throw new IllegalStateException("Module initializer's release() is called more than once");
+        }
+        RELEASE_COUNT++;
     }
 >> end class
 >>> end module

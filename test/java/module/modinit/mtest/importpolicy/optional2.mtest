@@ -1,5 +1,5 @@
 #
-# Verify that the custom import policy is invoked 
+# Verify that the custom import policy is invoked
 # and that it can omit optional import m2.
 #
 >>> begin module m1
@@ -14,16 +14,16 @@
 > export
 m1.Main
 >> begin class m1.MainA
-	if (ImportPolicyImpl.CALLED == false) {
-	    throw new Exception("Import policy not called");
-	}
-	try {
-	    new m2.MainB().run("from m1");
-	    throw new Exception("m2 visible");
-	} catch (NoClassDefFoundError e) {
-	    System.out.println("OK: " + e);
-	}
-	new m3.MainC().run("from m1");
+        if (ImportPolicyImpl.CALLED == false) {
+            throw new Exception("Import policy not called");
+        }
+        try {
+            new m2.MainB().run("from m1");
+            throw new Exception("m2 visible");
+        } catch (NoClassDefFoundError e) {
+            System.out.println("OK: " + e);
+        }
+        new m3.MainC().run("from m1");
 >> end class
 >> begin class m1.ImportPolicyImpl
 > super
@@ -31,16 +31,20 @@ implements ImportPolicy
 > body
     static volatile boolean CALLED;
 
-    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
-	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
-	    throws UnsatisfiedDependencyException {
-	CALLED = true;
-	Repository rep = moduleDef.getRepository();
-	List<ModuleDefinition> mds = new ArrayList<ModuleDefinition>();
-	mds.add(rep.find("java.se"));
-	mds.add(null);
-	mds.add(rep.find("m3"));
-	return mds;
+    public Map<ImportDependency,VersionConstraint> getImports(ModuleDefinition moduleDef,
+            Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+            throws UnsatisfiedDependencyException {
+        CALLED = true;
+        Repository rep = moduleDef.getRepository();
+        Map<ImportDependency,VersionConstraint> result = new HashMap<ImportDependency,VersionConstraint>();
+        for (ImportDependency dep : moduleDef.getImportDependencies()) {
+            ModuleDefinition md = rep.find(dep.getName(), dep.getVersionConstraint());
+            if (md.getName().equals("m2") == false)
+                result.put(dep, md.getVersion().toVersionConstraint());
+            else
+                result.put(dep, null);
+        }
+        return result;
     }
 >> end class
 >>> end module

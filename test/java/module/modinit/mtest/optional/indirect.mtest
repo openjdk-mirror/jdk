@@ -1,7 +1,7 @@
 #
 # m1 imports m2, m3, m4
 # m3 marked optional
-# 
+#
 # m3 imports optional m5
 # m5 missing
 #
@@ -19,20 +19,20 @@ m1.MainA
 >> begin class m1.MainA
 > run
         new m2.MainB().info(args);
-	new m3.MainC().run(args);
+        new m3.MainC().run(args);
         new m4.MainD().info(args);
-	checkImports();
+        checkImports();
 > body
     private void checkImports() {
-	List<Module> importedModules = module.getImportedModules();
-	System.out.println("imported: " + importedModules);
-	if ((importedModules.size() != 4)
-		|| (importedModules.get(0).getModuleDefinition().getName().equals("java.se") == false)
-		|| (importedModules.get(1).getModuleDefinition().getName().equals("m2") == false)
-		|| (importedModules.get(2).getModuleDefinition().getName().equals("m3") == false)
-		|| (importedModules.get(3).getModuleDefinition().getName().equals("m4") == false)) {
-	    throw new RuntimeException("Invalid imports: " + importedModules);
-	}
+        List<Module> importedModules = module.getImportedModules();
+        System.out.println("imported: " + importedModules);
+        if ((importedModules.size() != 4)
+                || (importedModules.get(0).getModuleDefinition().getName().equals("java.se") == false)
+                || (importedModules.get(1).getModuleDefinition().getName().equals("m2") == false)
+                || (importedModules.get(2).getModuleDefinition().getName().equals("m3") == false)
+                || (importedModules.get(3).getModuleDefinition().getName().equals("m4") == false)) {
+            throw new RuntimeException("Invalid imports: " + importedModules);
+        }
     }
 >> end class
 >>> end module
@@ -55,11 +55,11 @@ m2.MainB
 > export
 m3.MainC
 >> begin class m3.MainC
-	List<Module> importedModules = module.getImportedModules();
-	System.out.println("imported by m3: " + importedModules);
-	if (importedModules.size() != 1) {
-	    throw new RuntimeException("Invalid imports: " + importedModules);
-	}
+        List<Module> importedModules = module.getImportedModules();
+        System.out.println("imported by m3: " + importedModules);
+        if (importedModules.size() != 1) {
+            throw new RuntimeException("Invalid imports: " + importedModules);
+        }
 >> end class
 >>> end module
 >>> begin module m4

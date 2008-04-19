@@ -523,7 +523,7 @@ public class RunMTest {
                 srclist.append(f.getPath());
                 srclist.append(" ");
             }
-            String cmd = "-source 6 -target 6 -implicit:none -Xlint:all -sourcepath "
+            String cmd = "-source 6 -target 6 -XDignore.symbol.file -implicit:none -Xlint:all -sourcepath "
                 + srcpath.toString() + " " + srclist;
             int r = compiler.run(null, null, null, cmd.split(" "));
             if (r != 0) {

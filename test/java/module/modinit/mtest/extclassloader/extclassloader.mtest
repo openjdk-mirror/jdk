@@ -18,19 +18,19 @@
 > export
 m1.MainA
 >> begin class m1.MainA
-> import 
+> import
     import java.io.*;
     import java.module.*;
 > run
-	testExtensionModuleLoader();
+        testExtensionModuleLoader();
 > body
     private void testExtensionModuleLoader() throws Exception {
         Repository r = module.getModuleDefinition().getRepository();
         String testScratch = System.getProperty("test.scratch", ".");
 
         // Create source location for a URLRepository
-        File repositorySourceDir = new File(testScratch, 
-                                    "tmp_mtest" + File.separator 
+        File repositorySourceDir = new File(testScratch,
+                                    "tmp_mtest" + File.separator
                                     + "extclassloader" + File.separator
                                     + "extrepo-" + System.currentTimeMillis());
         repositorySourceDir.mkdirs();
@@ -42,19 +42,19 @@ m1.MainA
             if (mai.getName().equals("m1") == false)
                 extensionRepo.install(new File(mai.getFileName()).toURI().toURL());
         }
-            
-        // Create custom repository.properties file        
+
+        // Create custom repository.properties file
         File repositoryPropFile = new File(repositorySourceDir, "extclassloader.repository.properties");
         PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(repositoryPropFile)));
         pw.println("extension.parent=bootstrap");
         pw.println("extension.source=" + repositorySourceDir.getCanonicalFile().toURI().toURL());
         pw.println("extension.classname=sun.module.repository.URLRepository");
         pw.close();
-        
-        runWithCustomExtensionRepository(repositoryPropFile);        
+
+        runWithCustomExtensionRepository(repositoryPropFile);
     }
-    
-    private void runWithCustomExtensionRepository(File repositoryPropFile) throws Exception {    
+
+    private void runWithCustomExtensionRepository(File repositoryPropFile) throws Exception {
         String javaCmd = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         if (!new File(javaCmd).exists()) {
             javaCmd = javaCmd + ".exe";
@@ -129,7 +129,7 @@ m3.MainC
     } catch(ClassNotFoundException cnfe) {
         // exception expected
     }
-    
+
     try {
         clazz = Class.forName("m2.MainB");
         Module m = clazz.getClassLoader().getModule();

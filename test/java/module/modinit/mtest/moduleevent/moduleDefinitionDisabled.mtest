@@ -7,7 +7,7 @@
 @MainClass("m1.MainA")
 @Version("1.0")
 @ImportModules({
-    @ImportModule(name="java.se") 
+    @ImportModule(name="java.se")
 })
 > export
 m1.MainA
@@ -20,74 +20,74 @@ m1.MainA
     final java.util.concurrent.BlockingQueue<ModuleSystemEvent> eventQueue = new java.util.concurrent.LinkedBlockingQueue<ModuleSystemEvent>();
     ModuleSystemListener moduleSystemListener = new ModuleSystemListener() {
         public void handleEvent(ModuleSystemEvent e) {
-	    if (e.getType() == ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED)
+            if (e.getType() == ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED)
                 eventQueue.add(e);
         }
-    };        
+    };
     // Add module system listener
     ms.addModuleSystemListener(moduleSystemListener);
 
     try {
         // Disabling m2
         ms.disableModuleDefinition(md2);
-	
-	// Poll MODULE_DEFINITION_DISABLED event
-	ModuleSystemEvent evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
-	if (evt.getType() != ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED) {
-	    throw new Exception("Unexpected module system event type: " + evt.getType());			
-	}
-    
-	if (evt.getModuleDefinition() != md2) {
-	    throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());			
-	}
+
+        // Poll MODULE_DEFINITION_DISABLED event
+        ModuleSystemEvent evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
+        if (evt.getType() != ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED) {
+            throw new Exception("Unexpected module system event type: " + evt.getType());
+        }
+
+        if (evt.getModuleDefinition() != md2) {
+            throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());
+        }
     }
     catch(IllegalStateException ise) {
-	throw new Exception("Unexpected exception: " + ise);		
-    }        
+        throw new Exception("Unexpected exception: " + ise);
+    }
 
     // Clear event queue
-    eventQueue.clear();        
+    eventQueue.clear();
 
     try {
         // Disabling m2 again
         ms.disableModuleDefinition(md2);
-	
-	throw new Exception("IllegalStateException is expected to be thrown.");	
+
+        throw new Exception("IllegalStateException is expected to be thrown.");
     }
     catch(IllegalStateException ise) {
-	// no-op
-    }        
+        // no-op
+    }
 
     // No MODULE_DEFINITION_DISABLED event should be fired for an
     // already-disabled module definition.
     //
     ModuleSystemEvent evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
     if (evt != null) {
-	throw new Exception("Unexpected " + evt.getType() 
-	    + " was fired for an already-disabled module definition.");	
+        throw new Exception("Unexpected " + evt.getType()
+            + " was fired for an already-disabled module definition.");
     }
 
     // Remove module system listener
     ms.removeModuleSystemListener(moduleSystemListener);
-    
+
     // Clear event queue
-    eventQueue.clear();        
+    eventQueue.clear();
 
     try {
         // Disabling m3
         ms.disableModuleDefinition(md3);
     }
     catch(IllegalStateException ise) {
-	throw new Exception("Unexpected exception: " + ise);		
-    }        
+        throw new Exception("Unexpected exception: " + ise);
+    }
 
     // No MODULE_DEFINITION_DISABLED event should be fired to a module
     // system listener that is removed.
     //
     evt = eventQueue.poll(10L, java.util.concurrent.TimeUnit.SECONDS);
     if (evt != null) {
-	throw new Exception("Unexpected " + evt.getType() 
-	        + " was fired after module system listener is removed.");	
+        throw new Exception("Unexpected " + evt.getType()
+                + " was fired after module system listener is removed.");
     }
 >> end class
 >>> end module

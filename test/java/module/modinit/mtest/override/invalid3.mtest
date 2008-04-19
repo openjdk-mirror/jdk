@@ -13,19 +13,19 @@ m0.Main
 > import
 import java.lang.reflect.*;
 > run
-	ImportOverridePolicy defaultPolicy = Modules.getImportOverridePolicy();
-	try {
-	    ImportOverridePolicy policy = new ImportOverridePolicyImpl();
-	    Modules.setImportOverridePolicy(policy);
-	    ModuleDefinition md = repository.find("m1");
-	    Module m = md.getModuleInstance();
-	    if (ImportOverridePolicyImpl.called == 0) {
-		throw new Exception("ImportOverridePolicyImpl not called");
-	    }
-	    runOtherModule(m);
-	} finally {
-	    Modules.setImportOverridePolicy(defaultPolicy);
-	}
+        ImportOverridePolicy defaultPolicy = Modules.getImportOverridePolicy();
+        try {
+            ImportOverridePolicy policy = new ImportOverridePolicyImpl();
+            Modules.setImportOverridePolicy(policy);
+            ModuleDefinition md = repository.find("m1");
+            Module m = md.getModuleInstance();
+            if (ImportOverridePolicyImpl.called == 0) {
+                throw new Exception("ImportOverridePolicyImpl not called");
+            }
+            runOtherModule(m);
+        } finally {
+            Modules.setImportOverridePolicy(defaultPolicy);
+        }
 >> end class
 >> begin class m0.ImportOverridePolicyImpl
 > super
@@ -33,18 +33,22 @@ implements ImportOverridePolicy
 > body
     static int called;
 
-    public Map<String,VersionConstraint> narrow(ModuleDefinition importer, 
-	    Map<String,VersionConstraint> constraints) {
-	called++;
-	System.out.println("Constraints for " + importer.getName() + ": " + constraints);
-	if (importer.getName().equals("m1")) {
-	    Map<String,VersionConstraint> newConstraints = new HashMap<String,VersionConstraint>(constraints);
-	    newConstraints.put("m2", null);
-	    System.out.println("New constraints for " + importer.getName() + ": " + newConstraints);
-	    return newConstraints;
-	} else {
-	    return constraints;
-	}
+    public Map<ImportDependency,VersionConstraint> narrow(ModuleDefinition importer,
+            Map<ImportDependency,VersionConstraint> constraints) {
+        called++;
+        System.out.println("Constraints for " + importer.getName() + ": " + constraints);
+        if (importer.getName().equals("m1")) {
+            Map<ImportDependency,VersionConstraint> newConstraints = new HashMap<ImportDependency,VersionConstraint>(constraints);
+            for (ImportDependency dep : constraints.keySet()) {
+                if (dep.getName().equals("m2")) {
+                    newConstraints.put(dep, null);
+                }
+            }
+            System.out.println("New constraints for " + importer.getName() + ": " + newConstraints);
+            return newConstraints;
+        } else {
+            return constraints;
+        }
     }
 >> end class
 >>> end module
@@ -58,10 +62,10 @@ implements ImportOverridePolicy
 > export
 m1.MainA
 >> begin class m1.MainA
-	new m2.MainB().run("from m1");
-	if (m2.MainB.V != 2) {
-	    throw new Exception("Wrong m2");
-	}
+        new m2.MainB().run("from m1");
+        if (m2.MainB.V != 2) {
+            throw new Exception("Wrong m2");
+        }
 >> end class
 >>> end module
 >>> begin module m2
@@ -74,7 +78,7 @@ m1.MainA
 m2.MainB
 >> begin class m2.MainB
 > body
-	public static int V = 1;
+        public static int V = 1;
 >> end class
 >>> end module
 >>> begin module m2
@@ -87,7 +91,7 @@ m2.MainB
 m2.MainB
 >> begin class m2.MainB
 > body
-	public static int V = 2;
+        public static int V = 2;
 >> end class
 >>> end module
 >>> begin test m0

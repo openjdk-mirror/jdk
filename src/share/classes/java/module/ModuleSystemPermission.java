@@ -117,25 +117,25 @@ at the permission allows, and associated risks">
  * </tr>
  * <tr>
  *   <td>addModuleSystemListener</td>
- *   <td>Adds a module system listener to the module systems.</td>
+ *   <td>Adds a module system listener that listens to all module systems.</td>
  *   <td>This allows an attacker to monitor the module system events in the
  *       module systems.</td>
  * </tr>
  * <tr>
  *   <td>removeModuleSystemListener</td>
- *   <td>Removes a module system listener to the module systems.</td>
+ *   <td>Removes a module system listener from listening to any module systems.</td>
  *   <td>This allows an attacker to remove a system-provided module system
  *       listener from the module systems.</td>
  * </tr>
  * <tr>
  *   <td>addRepositoryListener</td>
- *   <td>Adds a repository listener to the repositories.</td>
+ *   <td>Adds a repository listener that listens to all repositories.</td>
  *   <td>This allows an attacker to monitor the repository events in the
  *       repositories.</td>
  * </tr>
  * <tr>
  *   <td>removeRepositoryListener</td>
- *   <td>Removes a repository listener to the repositories.</td>
+ *   <td>Removes a repository listener from listening to any repositories.</td>
  *   <td>This allows an attacker to remove a system-provided repository
  *       listener from the repositories.</td>
  * </tr>

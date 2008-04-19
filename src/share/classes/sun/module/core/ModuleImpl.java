@@ -473,10 +473,10 @@ final class ModuleImpl extends Module {
         }
 
         // Build version constraint map from the ImportDependencies
-        Map<String,VersionConstraint> versionConstraints = new HashMap<String,VersionConstraint>();
+        Map<ImportDependency,VersionConstraint> versionConstraints = new HashMap<ImportDependency,VersionConstraint>();
         for (ImportDependency dep : importDependencies) {
-            if (versionConstraints.put(dep.getName(), dep.getVersionConstraint()) != null) {
-                fail(null, "Module " + moduleString + " imports module "
+            if (versionConstraints.put(dep, dep.getVersionConstraint()) != null) {
+                fail(null, "Module " + moduleString + " imports " + dep.getType() + " "
                      + dep.getName() + " more than once.");
             }
         }
@@ -486,14 +486,28 @@ final class ModuleImpl extends Module {
         versionConstraints = callOverridePolicy(versionConstraints);
 
         // Invoke default or custom import policy
-        List<ModuleDefinition> importedMDs = callImportPolicy(versionConstraints);
+        Map<ImportDependency,VersionConstraint> result = callImportPolicy(versionConstraints);
 
         // Get a Module instance for each imported ModuleDefinition
-        for (ModuleDefinition importedMD : importedMDs) {
-            if (importedMD == null) {
+        Repository repository = moduleDef.getRepository();
+        for (ImportDependency dep : moduleDef.getImportDependencies()) {
+            if (dep.getType().equals("module") == false) {
+                // XXX: supports module dependency only at this point
+                fail(null, "Unrecognized import dependency type in module " + moduleString
+                    + ": import " + dep.getType() + " " + dep.getName()
+                    + " " + dep.getVersionConstraint());
+            }
+
+            // Retreives overriden version constraint for the dependency
+            VersionConstraint vc = result.get(dep);
+
+            // Checks if this dependency is optional
+            if (dep.isOptional() && vc == null) {
                 continue;
             }
-            ModuleSystem importedModuleSystem = importedMD.getRepository().getModuleSystem();
+
+            ModuleDefinition importedMD = repository.find(dep.getName(), vc);
+            ModuleSystem importedModuleSystem = importedMD.getModuleSystem();
             if (importedModuleSystem == moduleSystem) {
                 // Get the raw module instance from the module system.
                 // If it has not been initialized yet, it is automatically
@@ -509,39 +523,40 @@ final class ModuleImpl extends Module {
     }
 
     // Invoke ImportOverridePolicy
-    private Map<String,VersionConstraint> callOverridePolicy
-            (Map<String,VersionConstraint> versionConstraints)
+    private Map<ImportDependency,VersionConstraint> callOverridePolicy
+                        (Map<ImportDependency,VersionConstraint> versionConstraints)
             throws ModuleInitializationException {
         ImportOverridePolicy overridePolicy = Modules.getImportOverridePolicy();
         if (overridePolicy == null) {
             return versionConstraints;
         }
-        Map<String,VersionConstraint> newConstraints
+        Map<ImportDependency,VersionConstraint> newConstraints
             = overridePolicy.narrow(moduleDef, versionConstraints);
         // check constraints, unless the override policy just returned
         // the original constraints Map
         if (newConstraints != versionConstraints) {
             // make a copy before checking
-            newConstraints = new HashMap<String,VersionConstraint>(newConstraints);
+            newConstraints = new HashMap<ImportDependency,VersionConstraint>(newConstraints);
             if (versionConstraints.size() != newConstraints.size()) {
                 fail(null, "Import override policy error in module " + moduleString
-                     + ": size mismatch in the returned map of imported "
-                     + "module names and overridden version constraints: "
+                     + ": size mismatch in the returned map of import "
+                     + "dependencies and overridden version constraints: "
                      + versionConstraints.size() + " != " + newConstraints.size());
             }
-            for (Map.Entry<String,VersionConstraint> entry : versionConstraints.entrySet()) {
-                String moduleName = entry.getKey();
+            for (Map.Entry<ImportDependency,VersionConstraint> entry : versionConstraints.entrySet()) {
+                ImportDependency dep = entry.getKey();
                 VersionConstraint constraint = entry.getValue();
-                VersionConstraint newConstraint = newConstraints.get(moduleName);
+                VersionConstraint newConstraint = newConstraints.get(dep);
                 if (newConstraint == null) {
                     fail(null, "Import override policy error in module " + moduleString
                         + ": overridden version constraint missing in the "
-                        + "returned map for module " + moduleName);
+                        + "returned map for import " + dep.getType()
+                        + " dependency " + dep.getName());
                 }
                 if (constraint.contains(newConstraint) == false) {
                     fail(null, "Import override policy error in module " + moduleString
                         + ": overridden version constraint " + newConstraint
-                        + " for imported module " + moduleName
+                        + " for import " + dep.getType() + " dependency " + dep.getName()
                         + " is outside the boundary of the original "
                         + "version constraint "+ constraint);
                 }
@@ -551,8 +566,8 @@ final class ModuleImpl extends Module {
     }
 
     // Invoke default or custom import policy
-    private List<ModuleDefinition> callImportPolicy
-            (Map<String,VersionConstraint> versionConstraints)
+    private Map<ImportDependency,VersionConstraint> callImportPolicy
+            (Map<ImportDependency,VersionConstraint> versionConstraints)
             throws ModuleInitializationException {
         ImportPolicyClass importClass = moduleDef.getAnnotation(ImportPolicyClass.class);
         String importPolicyName = (importClass != null) ? importClass.value() : null;
@@ -575,46 +590,46 @@ final class ModuleImpl extends Module {
             // not reached
         }
         ImportPolicy importPolicy = (ImportPolicy)obj;
-        List<ModuleDefinition> importedMDs = importPolicy.getImports(moduleDef,
+        Map<ImportDependency,VersionConstraint> result = importPolicy.getImports(moduleDef,
             versionConstraints, DefaultImportPolicy.INSTANCE);
         // make copy before checking
-        importedMDs = new ArrayList<ModuleDefinition>(importedMDs);
-        // Verify that all the returned ModuleDefinitions match the
+        result = new HashMap<ImportDependency, VersionConstraint>(result);
+
+        // Verify that all the returned ImportDependency match the
         // import dependencies in order, name, and version constraints
         // and that no non-optional imports are missing
-        int n = importedMDs.size();
-        List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
+        int n = result.size();
+        Set<ImportDependency> importDependencies = new HashSet<ImportDependency>(moduleDef.getImportDependencies());
         if (n != importDependencies.size()) {
             fail(null, "Import policy error in module " + moduleString
-                 + ": mismatch in number of imported module definition in the returned list: "
+                 + ": mismatch in number of imports in the returned map: "
                  + n + " != " + importDependencies.size());
         }
-        for (int i = 0; i < n; i++) {
-            ImportDependency dep = importDependencies.get(i);
-            ModuleDefinition md = importedMDs.get(i);
-            if (md == null) {
+
+        if (!(importDependencies.containsAll(result.keySet())
+              && result.keySet().containsAll(importDependencies)))  {
+                fail(null, "Import policy error in module " + moduleString
+                    + ": the returned map does not contain all the import dependencies");
+        }
+
+        for (ImportDependency dep : importDependencies) {
+            VersionConstraint vc = result.get(dep);
+            if (vc == null) {
                 if (dep.isOptional() == false) {
                     fail(null, "Import policy error in module " + moduleString
-                         + ": non-optional imported module definition is missing in the returned list: "
+                         + ": non-optional import dependency is missing in the returned map: "
                          + dep.getName() + " " + dep.getVersionConstraint());
                 }
                 continue;
             }
-            String name = dep.getName();
-            if (name.equals(md.getName()) == false) {
+            if (dep.getVersionConstraint().contains(vc) == false) {
                 fail(null, "Import policy error in module " + moduleString
-                    + ": mismatch in the name of imported module definition in the returned list: "
-                    + name + " != " + md.getName());
-            }
-            Version version = md.getVersion();
-            VersionConstraint constraint = versionConstraints.get(name);
-            if (constraint.contains(version) == false) {
-                fail(null, "Import policy error in module " + moduleString
-                    + ": " + toString(md)
-                    + " in the returned list does not satisfy version constraint " + constraint);
+                    + ": import " + dep.getType() + " " + dep.getName()
+                    + " in the returned map does not satisfy version constraint " + dep.getVersionConstraint());
             }
         }
-        return importedMDs;
+
+        return result;
     }
 
     // Default import policy implementation
@@ -626,21 +641,25 @@ final class ModuleImpl extends Module {
             // empty
         }
 
-        public List<ModuleDefinition> getImports(ModuleDefinition moduleDef,
-                Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+        public Map<ImportDependency,VersionConstraint> getImports(ModuleDefinition moduleDef,
+                Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
                 throws ModuleInitializationException {
             String moduleString = moduleDef.getName() + " v" + moduleDef.getVersion();
-            List<ModuleDefinition> importedMDs = new ArrayList<ModuleDefinition>();
+            Map<ImportDependency,VersionConstraint> result = new HashMap<ImportDependency,VersionConstraint>();
             Repository rep = moduleDef.getRepository();
             List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
             for (ImportDependency dep : importDependencies) {
-
+                // XXX handle only module dependency at this point
+                //
+                if (dep.getType().equals("module") == false) {
+                    continue;
+                }
                 String name = dep.getName();
-                VersionConstraint constraint = constraints.get(name);
+                VersionConstraint constraint = constraints.get(dep);
                 if (constraint == null) {
                     throw new ModuleInitializationException
                         ("Default import policy error in module " + moduleString
-                         + ": overridden version constraint is missing for imported module " + name);
+                         + ": overridden version constraint is missing for import " + dep.getType() + " " + name);
                 }
                 ModuleDefinition importedMD = rep.find(name, constraint);
                 if (DEBUG) System.out.println("Imported module definition: " + importedMD);
@@ -657,9 +676,9 @@ final class ModuleImpl extends Module {
                     }
                     continue;
                 }
-                importedMDs.add(importedMD);
+                result.put(dep, importedMD.getVersion().toVersionConstraint());
             }
-            return Collections.unmodifiableList(importedMDs);
+            return Collections.unmodifiableMap(result);
         }
     }
 

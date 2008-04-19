@@ -30,9 +30,10 @@ import java.util.Map;
 
 /**
  * This interface represents the import policy of a module definition. The
- * import policy is used to determine the list of imported module definitions
- * in the resolving process to prepare the module instance.
+ * import policy is used to determine the version constraints that should be
+ * used to resolve the import dependencies in a module during initialization.
  * <p>
+ * @see java.module.ImportDependency
  * @see java.module.ImportOverridePolicy
  * @see java.module.Module
  * @see java.module.ModuleDefinition
@@ -44,49 +45,48 @@ import java.util.Map;
 public interface ImportPolicy {
 
     /**
-     * Returns a list of imported module definitions for preparing this module
-     * instance.
+     * Returns a map of import dependencies and the associated version
+     * constraints that should used when initializing this module instance.
      * <p>
-     * The list of import module dependencies that is returned from the
+     * The list of import dependencies that is returned from the
      * {@code getImportDependencies()} method of the
-     * {@code ModuleDefinition} object only reflects the import module
-     * dependencies with the original version constraints that were specified
+     * {@code ModuleDefinition} object only reflects the import dependencies
+     * with the original version constraints that were specified
      * in the module definition at build time. However, it is possible that
      * deployers might have used the system's import override policy to narrow
      * these version constraints at deployment time to control the actual
      * resolution.
      * <p>
-     * Some implementations may use the map of imported module names and
+     * Some implementations may use the map of import dependencies and
      * overridden version constraints to determine if the version constraint of
-     * an imported module has been overridden. The map is passed in one of the
+     * an import has been overridden. The map is passed in one of the
      * parameters of this method.
      * <p>
      * Some implementations may use the default import policy instance for
-     * determining the list of default imported module definitions for
-     * resolving, and it is passed in one of the parameters of this method.
+     * determining the map of import dependencies and default version
+     * constraints for resolving, and it is passed in one of the parameters of
+     * this method.
      * <p>
-     * All implementations should return a list of imported module
-     * definitions after it resolves the imports. The order of the imported
-     * module definitions in the list must follow the exact declared order of
-     * the corresponding imports. If an import cannot be resolved and the
-     * import dependency is mandatory (i.e. non-optional),
+     * All implementations should return a map of import dependencies and
+     * version constraints after resolving the imports. If an import cannot
+     * be resolved and the import dependency is mandatory (i.e. non-optional),
      * {@code UnsatisfiedDependencyException} must be thrown. If an import
      * cannot be resolved and the import dependency is optional, {@code null}
-     * must be used to represent the missing imported module definition in the
-     * list.
+     * must be used to represent the version constraint of the missing import
+     * in the map.
      *
      * @param moduleDef the module definition of this module instance.
-     * @param constraints an unmodifiable map of imported module names and
+     * @param constraints an unmodifiable map of import dependencies and
      *        overridden version constraints.
      * @param defaultImportPolicy the default import policy for this module
      *        instance.
-     * @throws UnsatisfiedDependencyException if an import module dependency
-     *         cannot be satisfied.
+     * @throws UnsatisfiedDependencyException if an import dependency cannot
+     *         be satisfied.
      * @throws ModuleInitializationException if there is other error.
-     * @return a list of imported module definitions for preparing this module
-     *         instance in the resolving process.
+     * @return a map of import dependencies and overridden version constraints
+     *         for preparing this module instance in the resolving process.
      */
-    public abstract List<ModuleDefinition> getImports(ModuleDefinition moduleDef,
-        Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+    public abstract Map<ImportDependency, VersionConstraint> getImports(ModuleDefinition moduleDef,
+        Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
         throws ModuleInitializationException;
 }

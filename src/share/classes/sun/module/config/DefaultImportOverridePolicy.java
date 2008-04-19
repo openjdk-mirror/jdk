@@ -28,6 +28,7 @@ package sun.module.config;
 import java.io.File;
 import java.io.IOException;
 import java.module.ModuleDefinition;
+import java.module.ImportDependency;
 import java.module.ImportOverridePolicy;
 import java.module.Version;
 import java.module.VersionConstraint;
@@ -163,24 +164,24 @@ public class DefaultImportOverridePolicy extends DefaultPolicy<java.module.Impor
     }
 
     /**
-     * Returns a map of imported module names and overridden version constraints
+     * Returns a map of import dependencies and overridden version constraints
      * for the module definition. The returned map contains the same set of
-     * module names as the given map.
+     * import dependencies as the given map.
      *
      * @param importer the importing module definition.
-     * @param originalConstraints an unmodifiable map of imported module names and
-     *        overridden version constraints.
-     * @return the map of imported module names and overridden version
-     *         constraints. It contains the same set of module names as the
-     *         given map.
+     * @param originalConstraints an unmodifiable map of import dependencies
+     *        and overridden version constraints.
+     * @return the map of import dependencies and overridden version
+     *         constraints. It contains the same set of import dependencies as
+     *         in the given map.
      */
-    public Map<String,VersionConstraint> narrow(ModuleDefinition importer,
-                                                Map<String,VersionConstraint> originalConstraints) {
+    public Map<ImportDependency,VersionConstraint> narrow(ModuleDefinition importer,
+                                                Map<ImportDependency,VersionConstraint> originalConstraints) {
 
-        Set<Map<String,VersionConstraint> > newConstraintsSet = new HashSet<Map<String,VersionConstraint> >();
+        Set<Map<ImportDependency,VersionConstraint> > newConstraintsSet = new HashSet<Map<ImportDependency,VersionConstraint> >();
 
         for (ImportOverridePolicy policy : policies)   {
-            Map<String,VersionConstraint> newConstraints = policy.narrow(importer, originalConstraints);
+            Map<ImportDependency,VersionConstraint> newConstraints = policy.narrow(importer, originalConstraints);
             if (newConstraints != originalConstraints) {
                 // Added constraints only if they are different than the original ones.
                 newConstraintsSet.add(newConstraints);
@@ -193,31 +194,31 @@ public class DefaultImportOverridePolicy extends DefaultPolicy<java.module.Impor
             return originalConstraints;
 
         // Otherwise, determine the intersected constraint from all policies
-        Map<String,VersionConstraint> result = null;
+        Map<ImportDependency,VersionConstraint> result = null;
 
-        for (Map.Entry<String,VersionConstraint> entry: originalConstraints.entrySet()) {
+        for (Map.Entry<ImportDependency,VersionConstraint> entry: originalConstraints.entrySet()) {
 
             // Determines intersecting version constraint between
             // import override policies
-            String name = entry.getKey();
+            ImportDependency dep = entry.getKey();
             VersionConstraint originalvcs = entry.getValue();
             VersionConstraint vcs = originalvcs;
 
-            for (Map<String,VersionConstraint> constraints : newConstraintsSet) {
+            for (Map<ImportDependency,VersionConstraint> constraints : newConstraintsSet) {
 
-                vcs = vcs.intersection(constraints.get(name));
+                vcs = vcs.intersection(constraints.get(dep));
 
                 if (vcs == null)
                     throw new IllegalArgumentException("The overridden version constraint "
                         + " is outside the known range of the original version constraint "
-                        + originalConstraints.get(name));
+                        + originalConstraints.get(dep));
             }
 
             if (originalvcs.equals(vcs) == false) {
                 if (result == null) {
-                    result = new HashMap<String,VersionConstraint>(originalConstraints);
+                    result = new HashMap<ImportDependency,VersionConstraint>(originalConstraints);
                 }
-                result.put(name, vcs);
+                result.put(dep, vcs);
             }
         }
 

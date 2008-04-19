@@ -31,8 +31,8 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * This class represents a module system. A module system is responsible for
- * instantiating a module instance from a module definition, and managing its
- * lifetime.
+ * instantiating module instances from module definitions, and managing their
+ * lifetimes.
  * <p>
  * @see java.module.Module
  * @see java.module.ModuleDefinition
@@ -58,12 +58,15 @@ public abstract class ModuleSystem {
      * {@code ModuleDefinition} in this {@code ModuleSystem}. The returned
      * {@code Module} is fully initialized and ready to use.
      * <p>
-     * If there is an existing {@code Module} instance for the specified
-     * {@code ModuleDefinition}, that instance is returned.  Otherwise, a new
-     * {@code Module} instance is instantiated, initialized, and returned.
+     * If there is an existing, unreleased {@code Module} instance for the
+     * specified {@code ModuleDefinition}, that instance is returned.
+     * Otherwise, a new {@code Module} instance is instantiated, initialized,
+     * and returned.
      *
-     * @param moduleDef a {@code ModuleDefinition} object
-     * @return a {@code Module} instance of the {@code ModuleDefinition}.
+     * @param moduleDef the {@code ModuleDefinition} which designates the
+     *        {@code Module} to be returned
+     * @return a {@code Module} instance corresponding to
+     *         {@code ModuleDefinition}.
      * @throws ModuleInitializationException if the {@code Module} instance
      *         cannot be initialized.
      * @throws IllegalStateException if the specified {@code ModuleDefinition}
@@ -75,8 +78,8 @@ public abstract class ModuleSystem {
      * Releases an existing {@code Module} instance corresponding to the
      * specified {@code ModuleDefinition} in this {@code ModuleSystem}.
      * <p>
-     * If there is an existing {@code Module} instance for the specified
-     * {@code ModuleDefinition}, it will never be returned by this
+     * If this {@code ModuleSystem} has a {@code Module} instance for the
+     * specified {@code ModuleDefinition}, it will never be returned by this
      * {@code ModuleSystem} after this method returns. Further, if that
      * {@code Module} instance is imported by other {@code Module}
      * instances, each of these importing {@code Module} instance will
@@ -87,9 +90,9 @@ public abstract class ModuleSystem {
      * <p>
      * {@code Module} instances corresponding to the {@code ModuleDefinition}
      * with name that begins with "java.", or from the bootstrap repository
-     * cannot be released. {@code Module} instances corresponding to the
-     * {@code ModuleDefinition} that its {@code isModuleReleasable} method
-     * returns false also cannot be released.
+     * cannot be released. {@code Module} instances corresponding to
+     * {@code ModuleDefinition} that their {@code isModuleReleasable} method
+     * returns {@code false} also cannot be released.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with a
@@ -114,10 +117,10 @@ public abstract class ModuleSystem {
      * The {@code ModuleDefinition} is {@link #releaseModule released} and
      * marked to disallow creation of new {@code Module} instances. Subsequent
      * calls to {@link #getModule getModule} with this
-     * {@code ModuleDefinition} throw an IllegalStateException.
+     * {@code ModuleDefinition} throw an {@code IllegalStateException}.
      * <p>
-     * {@code ModuleDefinition} with name that begins with "java.", or from
-     * the bootstrap repository cannot be disabled.
+     * {@code ModuleDefinition} instances with name that begins with "java.",
+     * or from the bootstrap repository cannot be disabled.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with a
@@ -125,7 +128,8 @@ public abstract class ModuleSystem {
      * ensure it's ok to disable the specified {@code ModuleDefinition} in this
      * {@code ModuleSystem}.
      *
-     * @param moduleDef a {@code ModuleDefinition} object.
+     * @param moduleDef the {@code ModuleDefinition} which specifies the module
+     *        to be disabled.
      * @throws SecurityException if a security manager exists and its
      *         {@code checkPermission} method denies access to disable the
      *         specified {@code ModuleDefinition} in this {@code ModuleSystem}.
@@ -145,7 +149,6 @@ public abstract class ModuleSystem {
         if (defaultImpl == null) {
             defaultImpl = sun.module.core.ModuleSystemImpl.INSTANCE;
         }
-        // TODO: check system property
         return defaultImpl;
     }
 

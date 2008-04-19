@@ -13,10 +13,10 @@
 > export
 m1.Main
 >> begin class m1.MainA
-	if (ImportPolicyImpl.CALLED == false) {
-	    throw new Exception("Import policy not called");
-	}
-	new m2.MainB().run("from m1");
+        if (ImportPolicyImpl.CALLED == false) {
+            throw new Exception("Import policy not called");
+        }
+        new m2.MainB().run("from m1");
 >> end class
 >> begin class m1.ImportPolicyImpl
 > super
@@ -24,20 +24,22 @@ implements ImportPolicy
 > body
     static volatile boolean CALLED;
 
-    public List<ModuleDefinition> getImports(ModuleDefinition moduleDef, 
-	    Map<String,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
-	    throws ModuleInitializationException {
-	CALLED = true;
-	try {
-	    new m1.MainA().info("from import policy");
-	} catch (Exception e) {
-	    throw new ModuleInitializationException("failed", e);
-	}
-	Repository rep = moduleDef.getRepository();
-	List<ModuleDefinition> mds = new ArrayList<ModuleDefinition>();
-	mds.add(rep.find("java.se"));
-	mds.add(rep.find("m2"));
-	return mds;
+    public Map<ImportDependency,VersionConstraint> getImports(ModuleDefinition moduleDef,
+            Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
+            throws ModuleInitializationException {
+        CALLED = true;
+        try {
+            new m1.MainA().info("from import policy");
+        } catch (Exception e) {
+            throw new ModuleInitializationException("failed", e);
+        }
+        Repository rep = moduleDef.getRepository();
+        Map<ImportDependency,VersionConstraint> result = new HashMap<ImportDependency,VersionConstraint>();
+        for (ImportDependency dep : moduleDef.getImportDependencies()) {
+            ModuleDefinition md = rep.find(dep.getName(), dep.getVersionConstraint());
+            result.put(dep, md.getVersion().toVersionConstraint());
+        }
+        return result;
     }
 >> end class
 >>> end module

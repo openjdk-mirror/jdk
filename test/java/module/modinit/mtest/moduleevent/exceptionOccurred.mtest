@@ -13,64 +13,64 @@ m1.MainA
 >> begin class m1.MainA
     Repository r = module.getModuleDefinition().getRepository();
     ModuleSystem ms = r.getModuleSystem();
-    ModuleDefinition md2 = r.find("m2");        
+    ModuleDefinition md2 = r.find("m2");
 
     final java.util.concurrent.BlockingQueue<ModuleSystemEvent> eventQueue = new java.util.concurrent.LinkedBlockingQueue<ModuleSystemEvent>();
     ModuleSystemListener moduleSystemListener = new ModuleSystemListener() {
-	public void handleEvent(ModuleSystemEvent e) {
-	    if (e.getType() == ModuleSystemEvent.Type.MODULE_INITIALIZATION_EXCEPTION)
+        public void handleEvent(ModuleSystemEvent e) {
+            if (e.getType() == ModuleSystemEvent.Type.MODULE_INITIALIZATION_EXCEPTION)
                 eventQueue.add(e);
-	}        
+        }
     };
-        
+
     // Add module system listener
     ms.addModuleSystemListener(moduleSystemListener);
-        
+
     ModuleInitializationException e;
-        
+
     try {
-	// Instantiating m2	
-	md2.getModuleInstance();
-	throw new Exception("Module definition is not expected to be instantiable.");		
+        // Instantiating m2
+        md2.getModuleInstance();
+        throw new Exception("Module definition is not expected to be instantiable.");
     }
     catch(ModuleInitializationException mie) {
-	e = mie;
+        e = mie;
     }
-        
+
     ModuleSystemEvent evt = eventQueue.poll(20L, java.util.concurrent.TimeUnit.SECONDS);
     if (evt.getType() != ModuleSystemEvent.Type.MODULE_INITIALIZATION_EXCEPTION) {
-	throw new Exception("Unexpected module system event type: " + evt.getType());			
+        throw new Exception("Unexpected module system event type: " + evt.getType());
     }
-        
+
     if (evt.getModuleDefinition().getName().equals("m2") == false) {
-        throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());			
+        throw new Exception("Unexpected module system event from: " + evt.getModuleDefinition());
     }
-        
+
     if (evt.getException().equals(e) == false) {
-        //throw new Exception("Unexpected module system exception: " + evt.getException());			
+        //throw new Exception("Unexpected module system exception: " + evt.getException());
     }
 
     // Remove module system listener
     ms.removeModuleSystemListener(moduleSystemListener);
-        
+
     // Clear event queue
     eventQueue.clear();
 
     try {
-	// Instantiating m2 again		
-	md2.getModuleInstance();
-	throw new Exception("Module definition is not expected to be instantiable.");		
+        // Instantiating m2 again
+        md2.getModuleInstance();
+        throw new Exception("Module definition is not expected to be instantiable.");
     }
     catch(ModuleInitializationException mie) {
-	e = mie;
+        e = mie;
     }
-        
+
     // No MODULE_INITIALIZATION_EXCEPTION event should be sent to the
     // module system listener after it has been removed.
     evt = eventQueue.poll(5L, java.util.concurrent.TimeUnit.SECONDS);
     if (evt != null) {
         throw new Exception("Unexpected module system event after module system listener is removed: " + evt);
-    }		
+    }
 >> end class
 >>> end module
 >>> begin module m2

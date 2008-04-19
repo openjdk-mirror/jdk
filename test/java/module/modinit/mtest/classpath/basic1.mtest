@@ -16,47 +16,47 @@ m1.MainA
 > import
 import java.net.URL;
 > run
-	// on the classpath
-	new classp.MainX().run("from m1");
-	ClassLoader loader = module.getClassLoader();
-	InputStream in = loader.getResourceAsStream("classp/cp1.txt");
-	checkFileStream(in);
-	URL url = loader.getResource("classp/cp1.txt");
-	checkFileStream(url.openStream());
-	// in the extension class loader
-	Class clazz = Class.forName("com.sun.crypto.provider.SunJCE");
-	Object o = clazz.newInstance();
-	System.out.println("Object: " + o);
-	List<URL> urls = Collections.list(loader.getResources("META-INF/MANIFEST.MF"));
-	System.out.println("urls: " + urls);
-	// Problem with manifest as resource due to jre/lib/ext/meta-index ?!
-//	url = null;
-//	for (URL u : urls) {
-//	    if (u.getPath().contains("sunjce")) {
-//		url = u;
-//		break;
-//	    }
-//	}
-	url = loader.getResource("com/sun/crypto/provider/SunJCE.class");
-	System.out.println("resource: " + url);
-	if (url == null) {
-	    throw new Exception("Could not find sunjce resource");
-	}
-	in = url.openStream();
-	in.read();
-	in.close();
+        // on the classpath
+        new classp.MainX().run("from m1");
+        ClassLoader loader = module.getClassLoader();
+        InputStream in = loader.getResourceAsStream("classp/cp1.txt");
+        checkFileStream(in);
+        URL url = loader.getResource("classp/cp1.txt");
+        checkFileStream(url.openStream());
+        // in the extension class loader
+        Class clazz = Class.forName("com.sun.crypto.provider.SunJCE");
+        Object o = clazz.newInstance();
+        System.out.println("Object: " + o);
+        List<URL> urls = Collections.list(loader.getResources("META-INF/MANIFEST.MF"));
+        System.out.println("urls: " + urls);
+        // Problem with manifest as resource due to jre/lib/ext/meta-index ?!
+//      url = null;
+//      for (URL u : urls) {
+//          if (u.getPath().contains("sunjce")) {
+//              url = u;
+//              break;
+//          }
+//      }
+        url = loader.getResource("com/sun/crypto/provider/SunJCE.class");
+        System.out.println("resource: " + url);
+        if (url == null) {
+            throw new Exception("Could not find sunjce resource");
+        }
+        in = url.openStream();
+        in.read();
+        in.close();
 > body
     private static void checkFileStream(InputStream in) throws Exception {
-	System.out.println("Stream: " + in);
-	if (in == null) {
-	    throw new Exception("Stream is null");
-	}
-	BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-	String line = reader.readLine();
-	if (line.equals("resource cp1") == false) {
-	    throw new Exception("Wrong content: " + line);
-	}
-	in.close();
+        System.out.println("Stream: " + in);
+        if (in == null) {
+            throw new Exception("Stream is null");
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        String line = reader.readLine();
+        if (line.equals("resource cp1") == false) {
+            throw new Exception("Wrong content: " + line);
+        }
+        in.close();
     }
 >> end class
 >>> end module

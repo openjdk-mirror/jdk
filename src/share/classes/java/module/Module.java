@@ -47,10 +47,10 @@ public abstract class Module
     }
 
     /**
-        * Returns the {@code ModuleDefinition} of this {@code Module}.
-        *
-        * @return the {@code ModuleDefinition} object.
-        */
+     * Returns the {@code ModuleDefinition} of this {@code Module}.
+     *
+     * @return the {@code ModuleDefinition} object.
+     */
     public abstract ModuleDefinition getModuleDefinition();
 
     /**

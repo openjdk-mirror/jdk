@@ -445,7 +445,7 @@ public abstract class ClassLoader {
      * @since 1.7
      */
     protected final ModuleInfo defineModuleInfo(String name, byte[] b, int off, int len)
-        throws ClassFormatError     {
+        throws ClassFormatError {
         Class<?> clazz = defineClass(name, b, off, len);
         return new ModuleInfo(clazz);
     }

@@ -31,10 +31,10 @@ m1.MainA
 m2.MainB
 m.Class1
 >> begin class m2.MainB
-	if (m.Class1.V != 1) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        if (m.Class1.V != 1) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
         new m3.MainC().run("from m2");
         new m4.MainD().run("from m2");
 >> end class
@@ -65,10 +65,10 @@ m3.MainC
 m4.MainD
 m.Class1
 >> begin class m4.MainD
-	if (m.Class1.V != 2) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        if (m.Class1.V != 2) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
 >> end class
 >> begin class m.Class1
 > body
@@ -84,22 +84,22 @@ m.Class1
 > export
 m0.Main
 >> begin class m0.Main
-	String[] moduleNames = new String[] { "m1", "m2", "m3" };
-	for (String moduleName : moduleNames) {
-	    ModuleDefinition md = repository.find(moduleName);
-	    try {
-		Module m = md.getModuleInstance();
-		throw new Exception("Module not in error state: " + moduleName);
-	    } catch (ModuleInitializationException e) {
-		System.out.println("OK: " + e);
-	    }
-	}
-	String[] goodModules = new String[] { "m4" };
-	for (String moduleName : goodModules) {
-	    ModuleDefinition md = repository.find(moduleName);
-	    Module m = md.getModuleInstance();
-	    System.out.println("OK: " + m);
-	}
+        String[] moduleNames = new String[] { "m1", "m2", "m3" };
+        for (String moduleName : moduleNames) {
+            ModuleDefinition md = repository.find(moduleName);
+            try {
+                Module m = md.getModuleInstance();
+                throw new Exception("Module not in error state: " + moduleName);
+            } catch (ModuleInitializationException e) {
+                System.out.println("OK: " + e);
+            }
+        }
+        String[] goodModules = new String[] { "m4" };
+        for (String moduleName : goodModules) {
+            ModuleDefinition md = repository.find(moduleName);
+            Module m = md.getModuleInstance();
+            System.out.println("OK: " + m);
+        }
 >> end class
 >>> end module
 >>> begin test m1

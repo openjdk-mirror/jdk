@@ -31,7 +31,7 @@ import java.net.URL;
         InputStream is;
         URL url;
         Enumeration<URL> urls;
-        
+
         // r1.txt should be accessible from m1
         //
         is = cl.getResourceAsStream("r1.txt");
@@ -61,7 +61,7 @@ import java.net.URL;
         if (urls != null && urls.hasMoreElements()) {
             throw new Exception("m1 should have no access to r2.txt through getResources().");
         }
-        
+
         // a/r3.txt should be accessible from m1 through m2
         //
         is = cl.getResourceAsStream("a/r3.txt");
@@ -76,7 +76,7 @@ import java.net.URL;
         if (urls == null || urls.hasMoreElements() == false) {
             throw new Exception("m1 should have access to a/r3.txt through getResources().");
         }
-        
+
         // b/r4.txt should NOT be accessible from m1
         //
         is = cl.getResourceAsStream("b/r4.txt");

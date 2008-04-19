@@ -13,7 +13,7 @@
     @ImportModule(name="java.se")})
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "m1.MainA"
-})       
+})
 > export
 m1.MainA
 >> begin class m1.MainA
@@ -24,7 +24,7 @@ m1.MainA
     // m1 should support deep validation
     if (m1.supportsDeepValidation() == false) {
         throw new Exception("m1 does not support deep validation as expected.");
-    }    
+    }
     // deep validation should succeed
     m1.deepValidate();
 
@@ -33,7 +33,7 @@ m1.MainA
     ModuleDefinition md3 = r.find("m3");
     Module m2 = md2.getModuleInstance();
     Module m3 = md3.getModuleInstance();
-        
+
     // m2 should support deep validation
     if (m2.supportsDeepValidation() == false) {
         throw new Exception("m2 does not support deep validation as expected.");
@@ -92,7 +92,7 @@ m1.MainA
     catch (ModuleInitializationException e) {
     }
 
-    
+
     ModuleDefinition md8 = r.find("m8");
     Module m8 = md8.getModuleInstance();
 
@@ -121,7 +121,7 @@ m1.MainA
     @ImportModule(name="m3")})
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "m2.MainB"
-})       
+})
 >> begin class m2.MainB
 >> end class
 >>> end module
@@ -132,7 +132,7 @@ m1.MainA
     @ImportModule(name="java.se")})
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "m3.MainC"
-})       
+})
 >> begin class m3.MainC
 >> end class
 >>> end module
@@ -145,7 +145,7 @@ m1.MainA
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "conflictTypeXYZ",
     "m4.MainD"
-})    
+})
 >> begin class m4.MainD
 >> end class
 >>> end module
@@ -157,8 +157,8 @@ m1.MainA
     @ImportModule(name="m6")})
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "m5.MainE"
-})       
-    
+})
+
 >> begin class m5.MainE
 >> end class
 >>> end module
@@ -171,7 +171,7 @@ m1.MainA
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "conflictTypeXYZ",
     "m6.MainF"
-})    
+})
 >> begin class m6.MainF
 >> end class
 >>> end module
@@ -185,7 +185,7 @@ m1.MainA
 })
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "m7.MainG"
-})    
+})
 >> begin class m7.MainG
 >> end class
 >>> end module
@@ -199,7 +199,7 @@ m1.MainA
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
     "conflictTypeXYZ",
     "m8.MainH"
-})    
+})
 >> begin class m8.MainH
 >> end class
 >>> end module

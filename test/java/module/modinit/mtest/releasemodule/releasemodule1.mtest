@@ -1,4 +1,4 @@
-# Defines m1, m2 
+# Defines m1, m2
 # m1 imports m2 with default versionconstraint
 # Test releases m2, and both m1 and m2 should be released as a result.
 >>> begin module m1
@@ -49,7 +49,7 @@ m2.MainB
     catch(UnsupportedOperationException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when releasing standard module definition.");	
+        throw new Exception("Incorrect exception is thrown when releasing standard module definition.");
     }
 
     try {
@@ -60,11 +60,11 @@ m2.MainB
         // instantiate m1 and m2 again
         Module mm1 = md1.getModuleInstance();
         Module mm2 = md2.getModuleInstance();
-    	
+
         if (mm2 == m2) {
             throw new Exception("m2 was not released properly.");
         }
-    					
+
         if (mm1 == m1) {
             throw new Exception("m1 was not released as a result of releasing m2.");
         }
@@ -72,7 +72,7 @@ m2.MainB
     catch(IllegalStateException ise) {
     }
     catch(Throwable e) {
-        throw new Exception("Incorrect exception is thrown when instantiating module definition.");	
+        throw new Exception("Incorrect exception is thrown when instantiating module definition.");
     }
 >> end class
 >>> end module

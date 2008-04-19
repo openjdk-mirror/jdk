@@ -23,17 +23,17 @@ m.Class1
 > import
 import m.Class1;
 > run
-	Class1 c1 = new Class1();
-	System.out.println("Object: " + c1);
-	Class clazz = c1.getClass();
-	System.out.println("Class: " + clazz);
-	System.out.println("ClassLoader: " + clazz.getClassLoader());
-	System.out.println("Module: " + clazz.getClassLoader().getModule());
-	System.out.println("V: " + c1.V);
-	if (c1.V != 2) {
-	    throw new Exception("Wrong Class1: " + c1);
-	}
-	System.out.println("OK");
+        Class1 c1 = new Class1();
+        System.out.println("Object: " + c1);
+        Class clazz = c1.getClass();
+        System.out.println("Class: " + clazz);
+        System.out.println("ClassLoader: " + clazz.getClassLoader());
+        System.out.println("Module: " + clazz.getClassLoader().getModule());
+        System.out.println("V: " + c1.V);
+        if (c1.V != 2) {
+            throw new Exception("Wrong Class1: " + c1);
+        }
+        System.out.println("OK");
 >> end class
 >> begin class m.Class1
 > body
@@ -50,11 +50,11 @@ import m.Class1;
 m2.MainB
 m.Class1
 >> begin class m2.MainB
-	m.Class1 c1 = new m.Class1();
-	if (c1.V != 2) {
-	    throw new Exception("Wrong Class1");
-	}
-	System.out.println("OK");
+        m.Class1 c1 = new m.Class1();
+        if (c1.V != 2) {
+            throw new Exception("Wrong Class1");
+        }
+        System.out.println("OK");
 >> end class
 >> begin class m.Class1
 > body

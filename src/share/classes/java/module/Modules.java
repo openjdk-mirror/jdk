@@ -39,9 +39,9 @@ import sun.module.repository.URLRepository;
 
 /**
  * This class consists exclusively of static methods that are specifically for
- * the default module system. It contains methods which constructs module
- * definition that are defined by the default module system. It also contains
- * methods that constructs the local repository and URL repository. In
+ * the default module system. It contains methods which construct module
+ * definitions that are defined by the default module system. It also contains
+ * methods that construct the local repository and URL repository. In
  * addition, it contains methods for setting or getting the system's visibility
  * policy and import override policy.
  *
@@ -99,7 +99,7 @@ public class Modules {
      *         to create a new {@code Repository} instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
-     * @throws IllegalArgumentException if circularity is detected.
+     * @throws IllegalArgumentException if a circularity is detected.
      */
     public static Repository newLocalRepository(Repository parent, String name, File source)
             throws IOException {
@@ -152,7 +152,7 @@ public class Modules {
      *         to create a new repository instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
-     * @throws IllegalArgumentException if circularity is detected.
+     * @throws IllegalArgumentException if a circularity is detected.
      */
     public static Repository newLocalRepository(Repository parent, String name,
             File source, Map<String, String> config)
@@ -258,7 +258,7 @@ public class Modules {
      *         to create a new repository instance.
      * @throws IOException if the repository cannot be constructed and
      *         initialized.
-     * @throws IllegalArgumentException if circularity is detected.
+     * @throws IllegalArgumentException if a circularity is detected.
      */
     public static Repository newURLRepository(Repository parent, String name, URL codebase)
             throws IOException {
@@ -405,7 +405,7 @@ public class Modules {
      * manager's {@code checkPermission} method with a
      * {@code ModuleSystemPermission("setImportOverridePolicy")}
      * permission to ensure it's ok to set the system's default import
-     * override policy..
+     * override policy.
      *
      * @param policy the import override policy for module definitions.
      * @throws SecurityException if a security manager exists and its
@@ -425,7 +425,7 @@ public class Modules {
 
     /**
      * Returns the system's default visibility policy for module definitions
-     * in the repositories..
+     * in the repositories.
      * <p>
      * The default class of the visibility policy can be overridden using the
      * {@code java.module.visibility.policy.classname} system property.
@@ -484,16 +484,17 @@ public class Modules {
      * <p>This method will typically be called by repository implementations
      * and not by applications.
      *
-     * @param metadata the contents of the {@code MODULE-INF/METADATA.MODULE}
-     *   file
+     * @param metadata an array of bytes which is the content of the
+     *        {@code MODULE-INF/METADATA.MODULE} file
      * @param content the {@code ModuleContent} to be used to access the
      *   contents of the module archive
      * @param repository the {@code Repository} in which the module archive is
      *        stored
-     * @param moduleReleasable the module instance instantiated from this
-     *        {@code ModuleDefinition} is releasable from its module system
+     * @param moduleReleasable true if the module instance instantiated from
+     *        this {@code ModuleDefinition} is releasable from its module
+     *        system
      * @throws ModuleFormatException if the contents of {@code metadata}
-     *         are not recognized or well formed.
+     *         are not recognized or are not well formed.
      * @return a new {@code ModuleDefinition}.
      */
     public static ModuleDefinition newJamModuleDefinition(byte[] metadata,
@@ -525,12 +526,14 @@ public class Modules {
      * @param version the version of the {@code ModuleDefinition}
      * @param metadataHandle a Callable from which the contents of the
      *        {@code MODULE-INF/METADATA.MODULE} file can be retrieved
+     *        as an array of bytes
      * @param content the {@code ModuleContent} to be used to access the
      *        contents of the module archive
      * @param repository the {@code Repository} in which the module archive is
      *        stored
-     * @param moduleReleasable the module instance instantiated from this
-     *        {@code ModuleDefinition} is releasable from the module system
+     * @param moduleReleasable true if the module instance instantiated from
+     *        this {@code ModuleDefinition} is releasable from the module
+     *        system
      * @return a new {@code ModuleDefinition}.
      */
     public static ModuleDefinition newJamModuleDefinition(String name, Version version,
