@@ -32,8 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the path for searching jar files in the module archive. This
- * metadata annotation is applied to the development module, i.e. the
- * <I>module</I> construct. For example,
+ * metadata annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/webapp/module-info.java
@@ -45,7 +44,7 @@ import java.lang.annotation.RetentionPolicy;
  *
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JarLibraryPath {
 

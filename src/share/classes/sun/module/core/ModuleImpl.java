@@ -420,6 +420,12 @@ final class ModuleImpl extends Module {
         case EXECUTE_INITIALIZER:
             callInitializeOnModuleInitializer();
             state = State.INITIALIZER_COMPLETE;
+
+            // Set the imported modules to delegate in the loader -
+            // reexports have been expanded.
+            loader.setImportedModules(importedModulesInLoader);
+            importedModulesInLoader = null;
+
             nextStep(); // recursive call
             return true;
 
@@ -427,11 +433,6 @@ final class ModuleImpl extends Module {
             r = checkDependencies(State.INITIALIZER_COMPLETE);
             if (r) {
                 state = State.READY;
-
-                // Set the imported modules to delegate in the loader -
-                // reexports have been expanded.
-                loader.setImportedModules(importedModulesInLoader);
-                importedModulesInLoader = null;
 
                 for (Module m : getImportedModules()) {
                     if (m instanceof ModuleImpl) {

@@ -217,7 +217,7 @@ public final class Jam {
         }
         // Parse the args to make sure that the module is specified and only
         // 'jar' options supported by 'jam' are listed. Also, build the
-        // arguments to pass to 'jar' by filtering out the mdoule arguments.
+        // arguments to pass to 'jar' by filtering out the module arguments.
         jarArgs = new ArrayList<String>();
         StringBuilder jarFlags = new StringBuilder();
         int count = 1;

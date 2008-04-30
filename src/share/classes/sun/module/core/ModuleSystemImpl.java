@@ -27,7 +27,6 @@ package sun.module.core;
 
 import java.util.*;
 import java.util.concurrent.*;
-
 import java.module.*;
 
 /**
@@ -204,6 +203,24 @@ public final class ModuleSystemImpl extends ModuleSystem {
             }
         }
         return getModuleInternal(moduleDef);
+    }
+
+    @Override
+    public List<Module> getModules(ModuleDefinition importer, List<ModuleDefinition> moduleDefs) throws ModuleInitializationException {
+        for (ModuleDefinition moduleDef : moduleDefs) {
+            // Check if the module definition has been disabled.
+            synchronized(disabledModuleDefs) {
+                if (disabledModuleDefs.containsKey(moduleDef)) {
+                    throw new IllegalStateException("Cannot instantiate new module instance from a disabled module definition.");
+                }
+            }
+        }
+
+        List<Module> result = new ArrayList<Module>();
+        for (ModuleDefinition moduleDef : moduleDefs) {
+            result.add(getModuleInternal(moduleDef));
+        }
+        return result;
     }
 
     /**

@@ -46,7 +46,7 @@ import java.lang.annotation.RetentionPolicy;
  *
  * @since 1.7
  */
-@Target(ElementType.MODULE)
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ModuleName {
 

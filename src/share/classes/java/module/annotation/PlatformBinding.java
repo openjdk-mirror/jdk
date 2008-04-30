@@ -32,8 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the platform binding of a module definition. This metadata
- * annotation is applied to the development module, i.e. the <I>module</I>
- * construct. For example,
+ * annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // src/win32/x86/com/wombat/xyz/module-info.java

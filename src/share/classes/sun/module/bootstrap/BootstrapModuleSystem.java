@@ -33,7 +33,9 @@ import java.module.ModuleSystem;
 import java.module.ModuleSystemEvent;
 import java.module.ModuleSystemPermission;
 import java.module.Repository;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -61,6 +63,26 @@ public final class BootstrapModuleSystem extends ModuleSystem {
         }
 
         return getModuleInternal(moduleDef);
+    }
+
+    @Override
+    public List<Module> getModules(ModuleDefinition importer, List<ModuleDefinition> moduleDefs) throws ModuleInitializationException {
+        for (ModuleDefinition moduleDef : moduleDefs) {
+            if (moduleDef.getRepository().getModuleSystem() != this) {
+                throw new IllegalArgumentException
+                    ("Cannot instantiate new module instance from module definition in a different module system.");
+            }
+            if (moduleDef.getRepository() != Repository.getBootstrapRepository()) {
+                throw new IllegalArgumentException
+                    ("Cannot instantiate new module instance from module definition in a non-bootstrap repository.");
+            }
+        }
+
+        List<Module> result = new ArrayList<Module>();
+        for (ModuleDefinition moduleDef : moduleDefs) {
+            result.add(getModuleInternal(moduleDef));
+        }
+        return result;
     }
 
     /**

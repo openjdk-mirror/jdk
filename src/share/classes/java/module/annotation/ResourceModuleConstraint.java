@@ -35,8 +35,7 @@ import java.lang.annotation.RetentionPolicy;
  * resource modules to satisfy. The version constraint is either a version,
  * a version range, or a combination of both, following the format described
  * in the {@link java.module.VersionConstraint} class. This metadata annotation
- * is applied to the development module, i.e. the <I>module</I> construct. For
- * example,
+ * is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // org/foo/xml/module-info.java
@@ -48,7 +47,7 @@ import java.lang.annotation.RetentionPolicy;
  * @see java.module.VersionConstraint
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ResourceModuleConstraint {
     /**

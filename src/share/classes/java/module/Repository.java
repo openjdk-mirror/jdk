@@ -90,8 +90,8 @@ public abstract class Repository {
      * @param parent the parent repository for delegation.
      * @param name the repository name.
      * @param source the source location.
-     * @param system the module system the module definitions in the repository
-     *        associated with.
+     * @param system the module system with which the module definitions in the
+     *        repository are associated.
      * @throws SecurityException if a security manager exists and its
      *         {@code checkPermission} method denies access to create a new
      *         repository instance.
@@ -143,8 +143,8 @@ public abstract class Repository {
      *
      * @param name the repository name.
      * @param source the source location.
-     * @param system the module system the module definitions in the repository
-     *        associated with.
+     * @param system the module system with which the module definitions in the
+     *        repository are associated.
      * @throws SecurityException if a security manager exists and its
      *         {@code checkPermission} method denies access to create a new
      *         instance of repository.
@@ -196,6 +196,8 @@ public abstract class Repository {
     /**
      * Returns the bootstrap repository. This is the repository provided by
      * the Java Runtime.
+     *
+     * @return the bootstrap repository.
      */
     public static Repository getBootstrapRepository()   {
         return BootstrapRepository.getInstance();
@@ -204,6 +206,8 @@ public abstract class Repository {
     /**
      * Returns the system repository. This is the default delegation parent
      * for new {@code Repository} instances.
+     *
+     * @return the system repository.
      */
     public static Repository getSystemRepository()  {
         return RepositoryConfig.getSystemRepository();
@@ -439,7 +443,7 @@ public abstract class Repository {
 
     /**
      * Find all matching module definitions in this {@code Repository}. This
-     * method should be overridden by repository implementations for finding
+     * method must be implemented by repository implementations for finding
      * matching module definitions, and will be invoked by the
      * {@link #find} method after checking the parent repository for the
      * requested module definitions.

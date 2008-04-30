@@ -181,6 +181,7 @@ public abstract class Query implements Serializable {
     /**
      * @serial include
      */
+/*
     private static class ExportedPackageQuery extends Query {
         private static final long serialVersionUID = -1700827011713291084L;
         private transient String name;
@@ -238,6 +239,7 @@ public abstract class Query implements Serializable {
             return constraint;
         }
     }
+*/
 
     /**
      * @serial include
@@ -670,12 +672,14 @@ public abstract class Query implements Serializable {
      * @param name the name of the package definition.
      * @return the {@code Query} object.
      */
+/*
     public static Query exportedPackage(String name) {
         if (name == null)
             throw new NullPointerException("name must not be null.");
 
         return new ExportedPackageQuery(name, VersionConstraint.DEFAULT);
     }
+*/
 
     /**
      * Returns a {@code Query} that requires a module definition to have an
@@ -687,6 +691,7 @@ public abstract class Query implements Serializable {
      * @param constraint the {@code VersionConstraint} object.
      * @return the {@code Query} object.
      */
+/*
     public static Query exportedPackage(String name, VersionConstraint constraint) {
         if (name == null)
             throw new NullPointerException("name must not be null.");
@@ -695,6 +700,7 @@ public abstract class Query implements Serializable {
 
         return new ExportedPackageQuery(name, constraint);
     }
+*/
 
     /**
      * Returns a {@code Query} that requires a module definition to have an
@@ -707,6 +713,7 @@ public abstract class Query implements Serializable {
      * @return the {@code Query} object.
      * @throws IllegalArgumentException if the string cannot be parsed.
      */
+/*
     public static Query exportedPackage(String name, String constraint) {
         if (name == null)
             throw new NullPointerException("name must not be null.");
@@ -715,6 +722,7 @@ public abstract class Query implements Serializable {
 
         return exportedPackage(name, VersionConstraint.valueOf(constraint));
     }
+*/
 
     /**
      * Determine if the specified module definition matches this query.
@@ -731,7 +739,7 @@ public abstract class Query implements Serializable {
      *
      * This method is intended to be used by the repository implementation as
      * an optimization to determine a set of module definitions that matches
-     * this query,  solely based on the requirement on the module names.
+     * this query, solely based on the requirement on the module names.
      *
      * @return an unmodifiable set of indexable module names if it exists;
      *         returns null otherwise. If the set is empty, no module
@@ -752,5 +760,7 @@ public abstract class Query implements Serializable {
      *         returns null otherwise. If the set is empty, no module
      *         definition would match this query.
      */
-    public abstract Set<String> getIndexablePackageNames();
+    private Set<String> getIndexablePackageNames() {
+        return null;
+    }
 }

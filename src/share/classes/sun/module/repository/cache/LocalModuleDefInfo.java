@@ -52,7 +52,7 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
      *
      * @param entryDirectory directory where the object will live.
      * @param metadataBytes byte array that represents the module metadata
-     * @param moduleInfo ModuleInfo recified from the module metadata
+     * @param moduleInfo ModuleInfo reified from the module metadata
      * @param jamFile jam file
      * @param codeSigners an array of code signers who signed the JAM file
      */

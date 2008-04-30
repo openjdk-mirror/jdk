@@ -35,8 +35,7 @@ import java.lang.annotation.RetentionPolicy;
  * requires its target module to satisfy. The version constraint is either a
  * version, a version range, or a combination of both, following the format
  * described in the {@link java.module.VersionConstraint} class. This metadata
- * annotation is applied to the development module, i.e. the <I>module</I>
- * construct. For example,
+ * annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // org/foo/xml/locale_fr/module-info.java

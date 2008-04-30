@@ -52,6 +52,35 @@ public class ImportDependency implements java.io.Serializable {
     private final Map<String, String> attributes;
 
     /**
+     * Constructs a {@code ImportDependency} object based on module-level dependency.
+     *
+     * @param name the name of the import.
+     * @param constraint the version constraint of the import.
+     * @param reexport true if the import is re-exported; otherwise, false.
+     * @param optional true if the import is optional; otherwise, false.
+     * @param attributes map of attributes of the import; null if there is no
+     *        attributes.
+     * @throws NullPointerException if name is null or constraint is null.
+     */
+    public static ImportDependency newImportModuleDependency(String name, VersionConstraint constraint, boolean reexport, boolean optional, Map<String, String> attributes) {
+        return new ImportDependency("module", name, constraint, reexport, optional, attributes);
+    }
+
+    /**
+     * Constructs a {@code ImportDependency} object based on package-level dependency.
+     *
+     * @param name the name of the import.
+     * @param constraint the version constraint of the import.
+     * @param optional true if the import is optional; otherwise, false.
+     * @param attributes map of attributes of the import; null if there is no
+     *        attributes.
+     * @throws NullPointerException if name is null or constraint is null.
+     */
+    public static ImportDependency newImportPackageDependency(String name, VersionConstraint constraint, boolean optional, Map<String, String> attributes) {
+        return new ImportDependency("package", name, constraint, false, optional, attributes);
+    }
+
+    /**
      * Constructs a {@code ImportDependency} object.
      *
      * @param type the type of the import.

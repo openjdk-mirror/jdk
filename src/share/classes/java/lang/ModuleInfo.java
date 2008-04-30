@@ -32,10 +32,9 @@ import java.module.annotation.*;
 import sun.module.annotation.*;
 
 /**
- * A {@code ModuleInfo} object contain information about a development module,
- * i.e. the <I>module</I> construct. The module information is retrieved and
- * made available by the {@link ClassLoader} instance that loaded the
- * class(es).
+ * A {@code ModuleInfo} object contain information about a Java module. The
+ * module information is retrieved and made available by the
+ * {@link ClassLoader} instance that loaded the class(es).
  * <p>
  * {@code ModuleInfo} has no public constructor. Instead {@code ModuleInfo}
  * objects are constructed automatically by the Java Virtual Machine as modules

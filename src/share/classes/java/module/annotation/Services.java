@@ -37,8 +37,8 @@ import java.lang.annotation.RetentionPolicy;
  * in a service-provider typically implement the interfaces and subclass the
  * classes defined in the service itself. If a module definition defines a
  * service, it should contain and export the set of interfaces and classes
- * that are part of the service. This metadata annotation is applied to the
- * development module, i.e. the <I>module</I> construct. For example,
+ * that are part of the service. This metadata annotation is applied to a
+ * Java module. For example,
  * <blockquote><pre>
  *    //
  *    // javax/xml/parsers/module-info.java
@@ -54,7 +54,7 @@ import java.lang.annotation.RetentionPolicy;
  * @see java.module.annotation.ServiceProviders
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Services {
 

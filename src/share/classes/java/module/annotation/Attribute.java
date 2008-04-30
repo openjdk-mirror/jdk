@@ -44,15 +44,6 @@ import java.lang.annotation.RetentionPolicy;
  *       &#064;Attribute(name="java.magic.number", value="CAFEBABE")
  *    })
  *    module com.wombat.xyz;
- *
- *    //
- *    // org/foo/util/packge-info.java
- *    //
- *    &#064;Version("1.0.0")
- *    &#064;Attributes({
- *       &#064;Attribute(name="vendor.name", value="Foo, Inc.")
- *    })
- *    package org.foo.util;
  * </pre></blockquote>
  *
  * @see java.module.annotation.Attributes

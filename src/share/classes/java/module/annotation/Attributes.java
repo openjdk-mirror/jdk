@@ -32,8 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates an array of attributes. This metadata annotation can be applied
- * to the development module, i.e. the <I>module</I> construct, or a Java
- * package. For example,
+ * to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java
@@ -44,21 +43,11 @@ import java.lang.annotation.RetentionPolicy;
  *       &#064;Attribute(name="java.magic.number", value="CAFEBABE")
  *    })
  *    module com.wombat.xyz;
- *
- *    //
- *    // org/foo/util/package-info.java
- *    //
- *    &#064;Version("1.0.0")
- *    &#064;Attributes({
- *       &#064;Attribute(name="vendor.name", value="Foo, Inc."),
- *    })
- *    package org.foo.util;
- *
  * </pre></blockquote>
  * @see java.module.annotation.Attribute
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.PACKAGE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Attributes {
     /**

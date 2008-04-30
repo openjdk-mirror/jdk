@@ -277,7 +277,7 @@ class VersionRange implements Comparable<VersionRange>  {
      * @return A {@code Version} parsed from the string.
      * @throws IllegalArgumentException if the string cannot be parsed.
      */
-    static VersionRange parse(String versionRange) {
+    static VersionRange valueOf(String versionRange) {
 
         // Check if the version matches the general version range format
         if (generalRangePattern.matcher(versionRange).matches())  {
@@ -586,7 +586,7 @@ class VersionRange implements Comparable<VersionRange>  {
     /**
      * Returns a normalized version range.
      *
-     * This method is used by {code java.module.VersionConstraint}.
+     * This method is used by {@code java.module.VersionConstraint}.
      */
     VersionRange normalize() {
 

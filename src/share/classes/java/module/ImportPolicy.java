@@ -86,7 +86,7 @@ public interface ImportPolicy {
      * @return a map of import dependencies and overridden version constraints
      *         for preparing this module instance in the resolving process.
      */
-    public abstract Map<ImportDependency, VersionConstraint> getImports(ModuleDefinition moduleDef,
+    public Map<ImportDependency, VersionConstraint> getImports(ModuleDefinition moduleDef,
         Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)
         throws ModuleInitializationException;
 }

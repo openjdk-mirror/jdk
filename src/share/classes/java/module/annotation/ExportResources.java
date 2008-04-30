@@ -32,8 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the exported resources in a module definition. This metadata
- * annotation is applied to the development module, i.e. the <I>module</I>
- * construct.
+ * annotation is applied to a Java module.
  * <p>
  * The string that specifies the exported resource may contain wildcard:<p>
  * 1. {@code '?'} matches a single character.<p>

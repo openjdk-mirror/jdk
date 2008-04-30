@@ -49,11 +49,11 @@ import java.util.jar.JarFile;
      *
      * @param entryDirectory directory where this object will live.
      * @param metadataBytes byte array that represents the module metadata
-     * @param moduleInfo ModuleInfo recified from the module metadata
+     * @param moduleInfo ModuleInfo reified from the module metadata
      * @param codebase codebase of the module definition
      * @param path path to the module definition relative to the codebase
      */
-     URLModuleDefInfo(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo,
+    URLModuleDefInfo(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo,
                      URL codebase, String path) {
         super(entryDirectory, metadataBytes, moduleInfo);
         this.codebase = codebase;

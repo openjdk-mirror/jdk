@@ -35,7 +35,7 @@ import java.lang.annotation.RetentionPolicy;
  * shallow validation is performed during module initialization. If the
  * shadowing check is disabled, it would be possible for classes from the
  * imported modules to shadow classes in the module. This metadata annotation is
- * applied to the development module, i.e. the <I>module</I> construct. For example,
+ * applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/webservice/module-info.java
@@ -52,7 +52,7 @@ import java.lang.annotation.RetentionPolicy;
  * <p>
  * @since 1.7
  */
-@Target(ElementType.MODULE)
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AllowShadowing {
 }

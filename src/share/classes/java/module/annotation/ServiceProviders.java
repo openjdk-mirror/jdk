@@ -39,7 +39,7 @@ import java.lang.annotation.RetentionPolicy;
  * service-provider, it should import the module definition which defines the
  * service. It should also contain and export the set of interfaces and classes
  * that are part of the service-provider. This metadata annotation is applied
- * to the development module, i.e. the <I>module</I> construct. For example,
+ * to a Java module. For example,
  * <p>
  * <blockquote><pre>
  *    //
@@ -62,7 +62,7 @@ import java.lang.annotation.RetentionPolicy;
  * @see java.module.annotation.Services
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ServiceProviders {
 

@@ -33,8 +33,8 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Indicates the legacy classes are exported from a module definition. A legacy
  * class is exportable if it is a public class that does not have any module
- * membership. This metadata annotation is applied to the development module,
- * i.e. the <I>module</I> construct. For example,
+ * membership. This metadata annotation is applied to a Java module. For
+ * example,
  * <blockquote><pre>
  *     //
  *     // com/wombat/xyz/module-info.java
@@ -45,7 +45,7 @@ import java.lang.annotation.RetentionPolicy;
  * </pre></blockquote>
  * @since 1.7
  */
-@Target(ElementType.MODULE)
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExportLegacyClasses {
 }

@@ -25,6 +25,7 @@
 
 package java.module;
 
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -73,6 +74,23 @@ public abstract class ModuleSystem {
      *         has already been disabled.
      */
     public abstract Module getModule(ModuleDefinition moduleDef) throws ModuleInitializationException;
+
+    /**
+     * Returns a list of {@code Module} instances for the specified
+     * {@code ModuleDefinition}s in this {@code ModuleSystem}. The returned
+     * {@code Module}s are fully initialized and ready to use.
+     *
+     * @param importer the {@code ModuleDefinition} which imports
+     * @param moduleDefs the {@code ModuleDefinition} which designates the
+     *        list of {@code Module}s to be returned
+     * @return a list of {@code Module} instances corresponding to
+     *         {@code ModuleDefinition}s.
+     * @throws ModuleInitializationException if a {@code Module} instance
+     *         cannot be initialized.
+     * @throws IllegalStateException if one of the {@code ModuleDefinition}s
+     *         has already been disabled.
+     */
+    public abstract List<Module> getModules(ModuleDefinition importer, List<ModuleDefinition> moduleDefs) throws ModuleInitializationException;
 
     /**
      * Releases an existing {@code Module} instance corresponding to the

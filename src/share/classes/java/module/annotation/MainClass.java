@@ -33,7 +33,7 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Indicates the main class of a module definition. The main class name must
  * not have the {@code .class} extension appended. This metadata annotation is
- * applied to the module, i.e. the <I>module</I> construct. For example,
+ * applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java
@@ -46,7 +46,7 @@ import java.lang.annotation.RetentionPolicy;
  * definition; the main class must be declared as exported separately.
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MainClass {
     /**

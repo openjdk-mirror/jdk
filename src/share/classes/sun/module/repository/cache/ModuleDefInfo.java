@@ -69,9 +69,9 @@ import sun.module.repository.RepositoryUtils;
      *
      * @param entryDirectory directory where the object will live.
      * @param metadataBytes byte array that represents the module metadata
-     * @param moduleInfo ModuleInfo recified from the module metadata
+     * @param moduleInfo ModuleInfo reified from the module metadata
      */
-     ModuleDefInfo(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo) {
+    ModuleDefInfo(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo) {
         this.entryDirectory = entryDirectory;
         this.metadataBytes = metadataBytes;
         this.moduleInfo = moduleInfo;

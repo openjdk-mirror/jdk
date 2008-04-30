@@ -33,7 +33,7 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Indicates the paths for searching native libraries in the module archive for
  * different platforms and architectures. This metadata annotation is applied
- * to the development module, i.e. the <I>module</I> construct. For example,
+ * to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/sun/java3d/module-info.java
@@ -49,7 +49,7 @@ import java.lang.annotation.RetentionPolicy;
  * @see java.module.annotation.NativeLibraryPath
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NativeLibraryPaths {
 

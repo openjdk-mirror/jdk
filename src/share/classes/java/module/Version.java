@@ -63,8 +63,8 @@ import java.util.regex.Pattern;
  *    update := digit+
  *    qualifier := (alpha | digit | '-' | '_')+
  * </pre></blockquote>
- * where {@code alpha} is an alphabetic character, e.g. {@code a-z, A-Z}.
- *       {@code digit} is a decimal digit, e.g. {@code 0-9}.
+ * where {@code alpha} is an alphabetic character, {@code a-z, A-Z}.
+ *       {@code digit} is a decimal digit, {@code 0-9}.
  *
  * <p>Instances of this class are immutable and safe for concurrent use by
  * multiple threads.

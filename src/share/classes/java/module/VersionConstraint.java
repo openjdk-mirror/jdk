@@ -92,8 +92,8 @@ import java.util.StringTokenizer;
  *   update := digit+
  *   qualifier := (alpha | digit | '-' | '_')+
  * </pre></blockquote>
- * where {@code alpha} is an alphabetic character, e.g. {@code a-z, A-Z}.
- *       {@code digit} is a decimal digit, e.g. {@code 0-9}.
+ * where {@code alpha} is an alphabetic character, {@code a-z, A-Z}.
+ *       {@code digit} is a decimal digit, {@code 0-9}.
  *
  * <p>Applications can obtain {@code VersionConstraint} objects by calling the
  * {@link #valueOf(String) valueOf()} factory method.
@@ -312,7 +312,7 @@ public final class VersionConstraint implements java.io.Serializable {
             if (Version.isVersion(token)) {
                 builder.add(Version.valueOf(token));
             } else if (VersionRange.isVersionRange(token)) {
-                builder.add(VersionRange.parse(token));
+                builder.add(VersionRange.valueOf(token));
             } else {
                 throw new IllegalArgumentException("Version constraint format is invalid: "
                         + versionConstraint);
