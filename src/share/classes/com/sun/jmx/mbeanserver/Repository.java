@@ -89,7 +89,6 @@ public class Repository {
 
     /* This class is used to match an ObjectName against a pattern. */
     private final static class ObjectNamePattern {
-        private final char[]   domain;
         private final String[] keys;
         private final String[] values;
         private final String   properties;
@@ -106,8 +105,7 @@ public class Repository {
          * @param pattern The ObjectName pattern under examination.
          **/
         public ObjectNamePattern(ObjectName pattern) {
-            this(pattern.getDomain(),
-                 pattern.isPropertyListPattern(),
+            this(pattern.isPropertyListPattern(),
                  pattern.isPropertyValuePattern(),
                  pattern.getCanonicalKeyPropertyListString(),
                  pattern.getKeyPropertyList(),
@@ -124,13 +122,11 @@ public class Repository {
          * @param keyPropertyList pattern.getKeyPropertyList().
          * @param pattern The ObjectName pattern under examination.
          **/
-        ObjectNamePattern(String domain,
-                          boolean propertyListPattern,
+        ObjectNamePattern(boolean propertyListPattern,
                           boolean propertyValuePattern,
                           String canonicalProps,
                           Map<String,String> keyPropertyList,
                           ObjectName pattern) {
-            this.domain = domain.toCharArray();
             this.isPropertyListPattern = propertyListPattern;
             this.isPropertyValuePattern = propertyValuePattern;
             this.properties = canonicalProps;
@@ -415,17 +411,8 @@ public class Repository {
         boolean to_default_domain = false;
 
         // Set domain to default if domain is empty and not already set
-        if (dom.length() == 0) {
-             try {
-                name = new ObjectName(domain + name.toString());
-            } catch (MalformedObjectNameException e) {
-                if (MBEANSERVER_LOGGER.isLoggable(Level.FINEST)) {
-                    MBEANSERVER_LOGGER.logp(Level.FINEST,
-                            Repository.class.getName(), "addMBean",
-                            "Unexpected MalformedObjectNameException", e);
-                }
-            }
-        }
+        if (dom.length() == 0)
+            name = Util.newObjectName(domain + name.toString());
 
         // Do we have default domain ?
         if (dom == domain) {
@@ -547,7 +534,7 @@ public class Repository {
         // "domain:*", "domain:[key=value],*" : names in the specified domain
 
         // Surely one of the most frequent case ... query on the whole world
-        ObjectName name = null;
+        ObjectName name;
         if (pattern == null ||
             pattern.getCanonicalName().length() == 0 ||
             pattern.equals(ObjectName.WILDCARD))
@@ -669,7 +656,7 @@ public class Repository {
      * @return  Number of MBeans.
      */
     public Integer getCount() {
-        return new Integer(nbElements);
+        return nbElements;
     }
 
     /**
@@ -678,7 +665,7 @@ public class Repository {
      *
      * @return  A string giving the name of the default domain name.
      */
-    public  String getDefaultDomain() {
+    public String getDefaultDomain() {
         return domain;
     }
 
