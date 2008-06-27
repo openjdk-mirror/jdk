@@ -4,9 +4,7 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -23,16 +21,27 @@
  * have any questions.
  */
 
-package javax.management;
-
-/* QueryExp classes can extend this to get non-default treatment for
- * Query.toString(q).  We're reluctant to change the public toString()
- * methods of the classes because people might be parsing them, even
- * though that's rather fragile.  But Query.toString(q) has no such
- * constraint so it can use the new toQueryString() method defined here.
+/*
+ * @test
+ * @bug 6708550
+ * @summary Tests File encoding
+ * @author Sergey Malenkov
  */
-class ToQueryString {
-    String toQueryString() {
-        return toString();
+
+import java.io.File;
+
+public final class java_io_File extends AbstractTest<File> {
+    public static void main(String[] args) {
+        new java_io_File().test(true);
+    }
+
+    @Override
+    protected File getObject() {
+        return new File("test.txt"); // NON-NLS: local file
+    }
+
+    @Override
+    protected File getAnotherObject() {
+        return new File("/pub/demo/"); // NON-NLS: path
     }
 }
