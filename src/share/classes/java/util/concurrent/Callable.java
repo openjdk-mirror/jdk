@@ -21,7 +21,6 @@
  * CA 95054 USA or visit www.sun.com if you need additional information or
  * have any questions.
  */
-
 /*
  * This file is available under and governed by the GNU General Public
  * License version 2 only, as published by the Free Software Foundation.
@@ -54,7 +53,7 @@ package java.util.concurrent;
  * @author Doug Lea
  * @param <V> the result type of method <tt>call</tt>
  */
-public interface Callable<V> {
+public interface Callable<V> extends RestrictedFunction {
     /**
      * Computes a result, or throws an exception if unable to do so.
      *

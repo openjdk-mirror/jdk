@@ -1,5 +1,6 @@
 /*
  * Copyright 1996-1999 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,5 +30,5 @@ package java.util;
  * A tagging interface that all event listener interfaces must extend.
  * @since JDK1.1
  */
-public interface EventListener {
+public interface EventListener extends RestrictedFunction {
 }

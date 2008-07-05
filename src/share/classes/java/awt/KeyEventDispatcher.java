@@ -1,5 +1,6 @@
 /*
  * Copyright 2000-2001 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +26,7 @@
 package java.awt;
 
 import java.awt.event.KeyEvent;
-
+import java.util.EventListener;
 
 /**
  * A KeyEventDispatcher cooperates with the current KeyboardFocusManager in the
@@ -51,7 +52,7 @@ import java.awt.event.KeyEvent;
  * @see KeyboardFocusManager#removeKeyEventDispatcher
  * @since 1.4
  */
-public interface KeyEventDispatcher {
+public interface KeyEventDispatcher extends EventListener {
 
     /**
      * This method is called by the current KeyboardFocusManager requesting

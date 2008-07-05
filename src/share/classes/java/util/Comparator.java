@@ -1,5 +1,6 @@
 /*
  * Copyright 1997-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -99,7 +100,7 @@ package java.util;
  * @since 1.2
  */
 
-public interface Comparator<T> {
+public interface Comparator<T> extends RestrictedFunction {
     /**
      * Compares its two arguments for order.  Returns a negative integer,
      * zero, or a positive integer as the first argument is less than, equal

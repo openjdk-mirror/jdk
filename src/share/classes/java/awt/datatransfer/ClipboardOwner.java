@@ -1,5 +1,6 @@
 /*
  * Copyright 1996-2002 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +26,8 @@
 
 package java.awt.datatransfer;
 
+import java.util.EventListener;
+
 /**
  * Defines the interface for classes that will provide data to
  * a clipboard. An instance of this interface becomes the owner
@@ -41,7 +44,7 @@ package java.awt.datatransfer;
  * @author      Amy Fowler
  */
 
-public interface ClipboardOwner {
+public interface ClipboardOwner extends EventListener {
 
     /**
      * Notifies this object that it is no longer the clipboard owner.

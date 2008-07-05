@@ -1,11 +1,10 @@
 /*
- * Copyright 2000 Sun Microsystems, Inc.  All Rights Reserved.
  * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Neal designates this
  * particular file as subject to the "Classpath" exception as provided
  * by Sun in the LICENSE file that accompanied this code.
  *
@@ -23,24 +22,15 @@
  * CA 95054 USA or visit www.sun.com if you need additional information or
  * have any questions.
  */
-package java.beans;
 
-import java.util.EventListener;
+package java.lang;
 
 /**
- * An ExceptionListener is notified of internal exceptions.
+ * An interface that extends RestrictedFunction may not be assiged from a
+ * lambda that contains a break, continue, or return to a target
+ * outside the lambda.
  *
- * @since 1.4
- *
- * @author Philip Milne
+ * @author Neal M Gafter
  */
-public interface ExceptionListener extends EventListener {
-    /**
-     * This method is called when a recoverable exception has
-     * been caught.
-     *
-     * @param e The exception that was caught.
-     *
-     */
-    public void exceptionThrown(Exception e);
+public interface RestrictedFunction {
 }

@@ -1,5 +1,6 @@
 /*
  * Copyright 1997-2002 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +26,8 @@
 
 package java.awt;
 
+import java.util.EventListener;
+
 /**
  * An interface for events that know how to dispatch themselves.
  * By implementing this interface an event can be placed upon the event
@@ -49,7 +52,7 @@ package java.awt;
  * @author  Timothy Prinzing
  * @since   1.2
  */
-public interface ActiveEvent {
+public interface ActiveEvent extends EventListener {
 
     /**
      * Dispatch the event to its target, listeners of the events source,

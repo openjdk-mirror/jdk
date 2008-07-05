@@ -124,6 +124,8 @@ JAVA_JAVA_java = \
 		java/lang/OutOfMemoryError.java \
 		java/lang/StackOverflowError.java \
 		java/lang/UnknownError.java \
+            java/lang/UnmatchedTransfer.java \
+        java/lang/Jump.java \
     java/lang/StackTraceElement.java \
     java/lang/Package.java \
     java/lang/Process.java \
@@ -135,6 +137,9 @@ JAVA_JAVA_java = \
     java/lang/Readable.java \
     java/lang/Override.java \
     java/lang/SuppressWarnings.java \
+    java/lang/Nothing.java \
+    java/lang/RestrictedFunction.java \
+    java/lang/Shared.java \
     java/lang/ref/Reference.java \
         java/lang/ref/SoftReference.java \
 	java/lang/ref/WeakReference.java \

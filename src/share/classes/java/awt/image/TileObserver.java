@@ -1,5 +1,6 @@
 /*
  * Copyright 1997-1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +26,8 @@
 
 package java.awt.image;
 
+import java.util.EventListener;
+
 /**
   * An interface for objects that wish to be informed when tiles
   * of a WritableRenderedImage become modifiable by some writer via
@@ -36,7 +39,7 @@ package java.awt.image;
   * @author Thomas DeWeese
   * @author Daniel Rice
   */
-public interface TileObserver {
+public interface TileObserver extends EventListener {
 
   /**
     * A tile is about to be updated (it is either about to be grabbed

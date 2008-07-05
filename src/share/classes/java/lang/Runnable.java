@@ -1,5 +1,6 @@
 /*
  * Copyright 1994-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,7 +54,7 @@ package java.lang;
  * @since   JDK1.0
  */
 public
-interface Runnable {
+interface Runnable extends RestrictedFunction {
     /**
      * When an object implementing interface <code>Runnable</code> is used
      * to create a thread, starting the thread causes the object's

@@ -1,11 +1,10 @@
 /*
- * Copyright 2000 Sun Microsystems, Inc.  All Rights Reserved.
  * Copyright 2008 Neal M Gafter.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Neal designates this
  * particular file as subject to the "Classpath" exception as provided
  * by Sun in the LICENSE file that accompanied this code.
  *
@@ -23,24 +22,19 @@
  * CA 95054 USA or visit www.sun.com if you need additional information or
  * have any questions.
  */
-package java.beans;
 
-import java.util.EventListener;
+package java.lang;
+
+import java.lang.annotation.*;
 
 /**
- * An ExceptionListener is notified of internal exceptions.
+ * Annotate a local variable with this annotation type to declare that
+ * the variable may be used in a lambda or local class, even if the
+ * variable is not final.
  *
- * @since 1.4
- *
- * @author Philip Milne
+ * @author gafter
  */
-public interface ExceptionListener extends EventListener {
-    /**
-     * This method is called when a recoverable exception has
-     * been caught.
-     *
-     * @param e The exception that was caught.
-     *
-     */
-    public void exceptionThrown(Exception e);
+@Retention(RetentionPolicy.SOURCE)
+@Target(value = {ElementType.LOCAL_VARIABLE, ElementType.PARAMETER})
+public @interface Shared {
 }
