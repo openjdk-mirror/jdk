@@ -37,158 +37,163 @@ import sun.module.repository.RepositoryConfig;
  * @compile -XDignore.symbol.file RepositoryConfigTest.java
  */
 public class RepositoryConfigTest {
+    static File testDir;
+    static File workDir;
+    static File repoDir;
+    static File propsFile;
+
     public static void realMain(String[] args) throws Throwable {
-        File repoDir = new File(System.getProperty("test.scratch", "."), "RepositoryConfigTestDir");
-        File propsFile = null;
+        testDir = new File(System.getProperty("test.scratch", "."));
+        workDir = new File(testDir, "RepoConfigTest");
+        repoDir = new File(workDir, "RepoConfigTestRepo");
 
-        try {
-            JamUtils.recursiveDelete(repoDir);
+        // If no args are given, set up a test and separate JVM on this same
+        // class with an argument.  When launched with an arg, invoke the
+        // correspondingly named test.
+        if (args.length == 0) {
+            JamUtils.recursiveDelete(workDir);
+            check(repoDir.mkdirs());
+            propsFile = new File(workDir, "RepoConfigTest.properties");
 
-            // A list of repositories:
-            // bootstrap/
-            //     extension/
-            //         global/
-            //             user/
-            //                 ide/
-            //                     remote
-            // "remote" is later set as the system repository
-            // Note that the parent of repository "ide" is not specifed right
-            // here; see checks below.
+            Properties p = initProperties();
 
-            Properties p = new Properties();
-            p.put("extension.parent", "bootstrap");
-            p.put("extension.source", getDir(repoDir, "ext").toURI().toURL().toExternalForm());
-            p.put("extension.classname", "sun.module.repository.LocalRepository");
-            p.put("global.parent", "extension");
-            p.put("global.source", getDir(repoDir, "global").toString());
-            p.put("user.parent", "global");
-            p.put("user.source", getDir(repoDir, "user").toString());
-            // XXX To test URLRepository config, need to create a URLRepo
-            //p.put("ide.source", getDir(repoDir, "ide").toURI().toURL().toExternalForm());
-            p.put("ide.source", getDir(repoDir, "ide").toString());
-            p.put("ide.optionOne", "a value");
-            p.put("ide.optionToo", "some other value");
-            p.put("remote.parent", "ide");
-            p.put("remote.source", getDir(repoDir, "remote").toString());
+            // Verify: The initial set of properties is such that ide has no
+            // parent
+            launch("noParentSpecified", false);
 
-            // xxx Need test: Verify if multiple furthest repositories => exception
-
-            Repository repo;
-
-            // Verify: specify properties file via system property.  This will
-            // work, but expect an exception because repository 'ide' doesn't
-            // specify a parent.
-            try {
-                propsFile = new File("RepoConfigTest.properties");
-                FileOutputStream fos = new FileOutputStream(propsFile);
-                p.store(fos, "For RepositoryConfigTest");
-                fos.close();
-                Properties sysProps = System.getProperties();
-                sysProps.put(
-                    ModuleSystemConfig.REPOSITORY_PROPERTIES_FILE,
-                    propsFile.getCanonicalPath());
-                repo = RepositoryConfig.getSystemRepository();
-                fail();
-            } catch (RuntimeException ex) {
-                expected(ex);
-            } catch (Throwable t) {
-                unexpected(t);
-            }
-
-            // Verify: if parent not specified => exception
-            try {
-                repo = RepositoryConfig.configRepositories(p);
-                fail();
-            } catch (RuntimeException ex) {
-                expected(ex);
-            } catch (Throwable t) {
-                unexpected(t);
-            }
-
-            // Verify if parent is not found => exception
-            try {
-                p.put("ide.parent", "NoParent");
-                repo = RepositoryConfig.configRepositories(p);
-                fail();
-            } catch (RuntimeException ex) {
-                expected(ex);
-            } catch (Throwable t) {
-                unexpected(t);
-            }
-            p.remove("ide.parent");
-
-            // Verify if invalid system property syntax => exception
+            // Verify: syntax errors are detected
             /* Disabled, since PropertyExpander does not recognize the below
              * as a problem.
-            try {
-                p.put("ide.parent", "${user.home");
-                repo = RepositoryConfig.configRepositories(p);
-                fail();
-            } catch (IllegalArgumentException ex) {
-                expected(ex);
-            } catch (Throwable t) {
-                unexpected(t);
-            }
-            p.remove("ide.parent");
+            updateProperties(p, "ide.parent", "${user.home");
+            launch("propertyException", false);
             */
 
-            // Make the configuration OK for remaining tests.
-            p.put("ide.parent", "user");
+            // Make the properties OK for remaining tests
+            updateProperties(p, "ide.parent", "user");
 
-            // Verify: if classname not fond => exception
-            try {
-                p.put("ide.classname", "foo.bar.RepositoryImpl");
-                repo = RepositoryConfig.configRepositories(p);
-                fail();
-            } catch (IllegalArgumentException ex) {
-                expected(ex);
-            } catch (Throwable t) {
-                unexpected(t);
-            }
-            p.remove("ide.classname");
+            // Verify: last repo is system Repository
+            launch("lastRepoIsSystem", true);
 
-            // Verify if dangling repository that is not under main repository chain => exception
-            try {
-                p.put("dangling.parent", "missing");
-                p.put("dangling.source", getDir(repoDir, "dangling").toString());
-                repo = RepositoryConfig.configRepositories(p);
-                fail();
-            } catch (RuntimeException ex) {
-                expected(ex);
-                p.remove("dangling.parent");
-                p.remove("dangling.source");
-            } catch (Throwable t) {
-                unexpected(t);
-            }
+            // Verify: added repo is not last repo
+            launch("addedIsNotLast", true);
 
-            // Verify that if correct parent, etc. => ok
-            p.put("ide.parent", "user");
-            repo = RepositoryConfig.configRepositories(p);
+            // Verify: expected repositories exist
+            launch("expectedRepositories", true);
 
-            check(repo != null);
-            RepositoryConfig.setSystemRepository(repo);
+            // Verify "dangling" repository causes exception (dangling meaning
+            // repository specified with non-existent parent)
+            p.put("dangling.parent", "missing");
+            updateProperties(p, "dangling.source",
+                             getDir(repoDir, "dangling").toString());
+            launch("dangling", false);
 
-            int count = 0;
-            String[] repoNames = new String[] {
-                "remote", "ide", "user", "global", "extension",
-                Repository.getBootstrapRepository().getName()
-            };
-            for (Repository r = Repository.getSystemRepository();
-                 r != null;
-                 r = r.getParent()) {
-                if (!check(repoNames[count].equals(r.getName()))) {
-                    System.out.println("expected " + repoNames[count] + ", got " + r.getName());
-                }
-                count++;
-            }
-            check(count == 6);
 
-        } finally {
             if (failed == 0) {
-                JamUtils.recursiveDelete(repoDir);
-                if (propsFile != null) propsFile.delete();
+                JamUtils.recursiveDelete(workDir);
+            }
+
+        } else {
+            String testName = args[0];
+            if (testName.equals("lastRepoIsSystem")) {
+                lastRepoIsSystem();
+            } else if (testName.equals("addedIsNotLast")) {
+                addedIsNotLast();
+            } else if (testName.equals("expectedRepositories")) {
+                expectedRepositories();
             }
         }
+    }
+
+    static void lastRepoIsSystem() {
+        Repository r = RepositoryConfig.getLastRepository();
+        check(r.equals(Repository.getSystemRepository()));
+    }
+
+    static void addedIsNotLast() throws Throwable {
+        Repository r = Modules.newLocalRepository("foo", new File(repoDir, "bar"));
+        check(r != RepositoryConfig.getLastRepository());
+        check(r != Repository.getSystemRepository());
+    }
+
+    static void expectedRepositories() {
+        int count = 0;
+        String[] repoNames = new String[] {
+            "remote", "ide", "user", "global", "extension",
+            Repository.getBootstrapRepository().getName()
+        };
+        for (Repository r = Repository.getSystemRepository();
+             r != null;
+             r = r.getParent()) {
+            if (!check(repoNames[count].equals(r.getName()))) {
+                System.out.println("expected " + repoNames[count] + ", got " + r.getName());
+            }
+            count++;
+        }
+        check(count == 6);
+    }
+
+    // Creates repository properties.  Note that as provided they are invalid;
+    // this is expected.
+    static Properties initProperties() throws Throwable {
+        JamUtils.recursiveDelete(repoDir);
+
+        // A list of repositories:
+        // bootstrap/
+        //     extension/
+        //         global/
+        //             user/
+        //                 ide/
+        //                     remote
+        // "remote" is later set as the system repository
+        // Note that the parent of repository "ide" is not specifed right
+        // here; see checks below.
+
+        Properties p = new Properties();
+        p.put("extension.parent", "bootstrap");
+        p.put("extension.source", getDir(repoDir, "ext").toURI().toURL().toExternalForm());
+        p.put("extension.classname", "sun.module.repository.LocalRepository");
+        p.put("global.parent", "extension");
+        p.put("global.source", getDir(repoDir, "global").toString());
+        p.put("user.parent", "global");
+        p.put("user.source", getDir(repoDir, "user").toString());
+        // XXX To test URLRepository config, need to create a URLRepo
+        //p.put("ide.source", getDir(repoDir, "ide").toURI().toURL().toExternalForm());
+        p.put("ide.source", getDir(repoDir, "ide").toString());
+        p.put("ide.optionOne", "a value");
+        p.put("ide.optionToo", "some other value");
+        p.put("remote.parent", "ide");
+        p.put("remote.source", getDir(repoDir, "remote").toString());
+
+        writeProps(p);
+        return p;
+    }
+
+    static void updateProperties(Properties p, String key, String value) throws Throwable {
+        p.put(key, value);
+        writeProps(p);
+    }
+
+    static void writeProps(Properties p) throws Throwable {
+        FileOutputStream fos = new FileOutputStream(propsFile);
+        p.store(fos, "For RepositoryConfigTest");
+        fos.close();
+    }
+
+    static void launch(String testName, boolean positive) throws Throwable {
+        String home = System.getProperty("java.home");
+        String java = home + File.separator + "bin" + File.separator + "java";
+        if (System.getProperty("os.platform").equals("windows")) {
+            java += ".exe";
+        }
+        ProcessBuilder pb = new ProcessBuilder(
+            java,
+            "-Djava.module.repository.properties.file=RepoConfigTest/RepoConfigTest.properties",
+            "RepositoryConfigTest",
+            testName);
+        pb.directory(testDir);
+        Process p = pb.start();
+        int rc = p.waitFor();
+        check(positive ? rc == 0 : rc != 0);
     }
 
     private static File getDir(File parent, String s) throws Throwable {

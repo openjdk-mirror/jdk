@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,39 +21,26 @@
  * have any questions.
  */
 
-import java.io.*;
-import java.module.Modules;
-import java.module.Repository;
-import java.util.HashMap;
-import java.util.Map;
-import sun.module.repository.RepositoryConfig;
+package cpserv.client;
 
-/**
- * @test
- * @summary Verify that initializing a URLRepository on a source that doesn't
- * have a repository-metadata.xml file throws an IOException.
- * @compile -XDignore.symbol.file Test6574851.java
- */
-public class Test6574851 {
-    public static void realMain(String args[]) throws Throwable {
-        try {
-            Map<String, String> config = new HashMap<String, String>();
-            config.put(
-                "sun.module.repository.URLRepository.sourceLocationMustExist",
-                "true");
-        Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(),
-            "test",
-            new File(
-                System.getProperty("test.scratch", "."),
-                "Test6574851-DoesNotExist").getCanonicalFile().toURI().toURL(),
-            config);
-        fail();
-        } catch (IOException ex) {
-            pass();
-        } catch (Throwable t) {
-            unexpected(t);
-        }
+import java.module.ModuleDefinition;
+import java.module.Version;
+import java.util.NoSuchElementException;
+import cpserv.service.FooService;
+
+public class Main {
+    public static void realMain(String[] args) throws Throwable {
+        FooService fs = null;
+
+        // Check by name rather than by java.lang.class to ensure that we
+        // don't load the class by other than the ServiceLoader
+
+        // Verify both default providers are returned.
+        fs = FooService.getNextProvider();
+        check(fs.getClass().getName().equals("cpserv.service.FooServiceDefaultProvider"));
+
+        System.err.println("testing service");
+        fs.test();
     }
 
     //--------------------- Infrastructure ---------------------------

@@ -26,9 +26,9 @@
 package sun.module.core;
 
 import java.io.*;
-import java.util.*;
-import java.security.SecureClassLoader;
 import java.net.URL;
+import java.security.SecureClassLoader;
+import java.util.*;
 
 /**
  * This class acts a ModuleLoader proxy, ie. it breaks the catch-22
@@ -99,5 +99,14 @@ public class ProxyModuleLoader extends SecureClassLoader {
         return (primaryModuleLoader == null)
             ? super.getResourceAsStream(name)
             : primaryModuleLoader.getResourceAsStream(name);
+    }
+
+    @Override
+    public java.module.Module getModule() {
+        if (primaryModuleLoader == null) {
+            return null;
+        } else {
+            return primaryModuleLoader.getModule();
+        }
     }
 }

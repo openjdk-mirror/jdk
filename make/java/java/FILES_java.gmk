@@ -1,5 +1,5 @@
 #
-# Copyright 1996-2007 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright 1996-2008 Sun Microsystems, Inc.  All Rights Reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -250,6 +250,8 @@ JAVA_JAVA_java = \
 	java/util/EnumMap.java \
     java/util/Arrays.java \
     java/util/ConcurrentModificationException.java \
+    java/util/Service.java \
+    java/util/ServiceProvider.java \
     java/util/ServiceLoader.java \
     java/util/ServiceConfigurationError.java \
     java/util/Timer.java \

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,39 +21,40 @@
  * have any questions.
  */
 
-import java.io.*;
-import java.module.Modules;
-import java.module.Repository;
-import java.util.HashMap;
-import java.util.Map;
-import sun.module.repository.RepositoryConfig;
+package charserv.client;
+
+import java.nio.charset.spi.CharsetProvider;
+import java.util.Iterator;
+import java.util.ServiceLoader;
+import java.module.ModuleDefinition;
+import java.module.Version;
+import java.util.NoSuchElementException;
 
 /**
- * @test
- * @summary Verify that initializing a URLRepository on a source that doesn't
- * have a repository-metadata.xml file throws an IOException.
- * @compile -XDignore.symbol.file Test6574851.java
+ * Checks that the test's provider for java.nio.charset.spi.CharsetProvider,
+ * which is defined in java.se.core, is available.
  */
-public class Test6574851 {
-    public static void realMain(String args[]) throws Throwable {
-        try {
-            Map<String, String> config = new HashMap<String, String>();
-            config.put(
-                "sun.module.repository.URLRepository.sourceLocationMustExist",
-                "true");
-        Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(),
-            "test",
-            new File(
-                System.getProperty("test.scratch", "."),
-                "Test6574851-DoesNotExist").getCanonicalFile().toURI().toURL(),
-            config);
-        fail();
-        } catch (IOException ex) {
-            pass();
-        } catch (Throwable t) {
-            unexpected(t);
+public class Main {
+    public static void realMain(String[] args) throws Throwable {
+        Iterator<CharsetProvider> loader =
+            ServiceLoader.load(CharsetProvider.class).iterator();
+
+        CharsetProvider cp = loader.next();
+
+        // Check by name rather than by java.lang.class to ensure that we
+        // don't load the class by other than the ServiceLoader
+        check(cp.getClass().getName().equals("charserv.provider.CharsetServiceProvider"));
+
+        // Check that we can get a provider from the classpath
+        boolean found = false;
+        while (!found && loader.hasNext()) {
+            cp = loader.next();
+            if (cp.getClass().getName().equals("charserv.other.CharsetServiceProviderOnClasspath")) {
+                found = true;
+                break;
+            }
         }
+        check(found);
     }
 
     //--------------------- Infrastructure ---------------------------

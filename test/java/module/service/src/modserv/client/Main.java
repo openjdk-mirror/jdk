@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,39 +21,49 @@
  * have any questions.
  */
 
-import java.io.*;
-import java.module.Modules;
-import java.module.Repository;
-import java.util.HashMap;
-import java.util.Map;
-import sun.module.repository.RepositoryConfig;
+package modserv.client;
 
-/**
- * @test
- * @summary Verify that initializing a URLRepository on a source that doesn't
- * have a repository-metadata.xml file throws an IOException.
- * @compile -XDignore.symbol.file Test6574851.java
- */
-public class Test6574851 {
-    public static void realMain(String args[]) throws Throwable {
+import modserv.service.CodecSet;
+import modserv.service.Encoder;
+
+public class Main {
+    static final boolean DEBUG = System.getProperty("service.debug") != null;
+
+    public static void realMain(String[] args) throws Throwable {
+        Encoder e = CodecSet.getEncoder("foo");
+        boolean rc = check(e.getClass().getName().equals("modserv.provider1.StandardCodecs$FooEncoder"));
+        debug("e.getClass().getName()=" + e.getClass().getName());
+        debug("e cl=" + e.getClass().getClassLoader());
+        debug("e cl=" + e.getClass().getClassLoader().hashCode());
+
+        // Another class from the same module is accessible
+        Class<?> c = Class.forName("modserv.provider1.AdvancedCodecs", false, e.getClass().getClassLoader());
+        debug("c.getName()=" + c.getName());
+        debug("c cl= " + c.getClassLoader());
+        debug("c cl= " + c.getClassLoader().hashCode());
+
+        // Another class from a different module is NOT accessible
         try {
-            Map<String, String> config = new HashMap<String, String>();
-            config.put(
-                "sun.module.repository.URLRepository.sourceLocationMustExist",
-                "true");
-        Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(),
-            "test",
-            new File(
-                System.getProperty("test.scratch", "."),
-                "Test6574851-DoesNotExist").getCanonicalFile().toURI().toURL(),
-            config);
-        fail();
-        } catch (IOException ex) {
+            c = Class.forName("modserv.provider2.AdvancedCodecs", false, e.getClass().getClassLoader());
+            fail(c.getName());
+        } catch (ClassNotFoundException ex) {
             pass();
         } catch (Throwable t) {
-            unexpected(t);
+            fail(t.getMessage());
         }
+
+        Class<?> sc = c.getSuperclass();
+        debug("sc.getName()=" + sc.getName());
+        debug("sc cl= " + sc.getClassLoader());
+        debug("sc cl= " + sc.getClassLoader().hashCode());
+
+        if (!rc || args.length > 0) {
+            System.err.println("encoded result: " + e.encode("hello, world"));
+        }
+    }
+
+    static void debug(String s) {
+        if (DEBUG) System.err.println("*** " + s);
     }
 
     //--------------------- Infrastructure ---------------------------
@@ -71,3 +81,4 @@ public class Test6574851 {
         System.out.println("\nPassed = " + passed + " failed = " + failed);
         if (failed > 0) throw new AssertionError("Some tests failed");}
 }
+

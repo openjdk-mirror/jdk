@@ -1,0 +1,59 @@
+# This tests that service-provider modules can be loaded when their
+# corresponding service-module is java.se.core service module
+#
+# Defines Provider, SqlDriverClient
+# Provider is a @ServiceProvider for java.sql.Driver
+# SqlDriverClient is a client
+>>> begin module Provider
+> annotations
+@ServiceProviders({
+    @ServiceProvider(service="java.sql.Driver", providerClass="Provider.TestDriver")
+})
+@ImportModules({
+    @ImportModule(name="java.se.core")
+})
+> export
+Provider.TestDriver
+>> begin class Provider.TestDriver
+> import
+import java.sql.*;
+> super
+implements java.sql.Driver
+> body
+    public boolean acceptsURL(String url) { return true; }
+    public Connection connect(String url, Properties info) { return null; }
+    public int getMajorVersion() { return 1; }
+    public int getMinorVersion() { return 1; }
+    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) { return null; }
+    public boolean jdbcCompliant() { return true; }
+>> end class
+>>> end module
+>>> begin module SqlDriverClient
+> annotations
+@MainClass("SqlDriverClient.Main")
+@ImportModules({
+    @ImportModule(name="java.se.core")
+})
+>> begin class SqlDriverClient.Main
+    Iterator<java.sql.Driver> loader =
+        ServiceLoader.load(repository, java.sql.Driver.class).iterator();
+    java.sql.Driver provider = loader.next();
+    String providerName = provider.getClass().getName();
+    if (!providerName.equals("Provider.TestDriver")) {
+        throw new Exception("got unexpected provider name: " + providerName);
+    }
+    try {
+        if (loader.hasNext()) {
+            System.err.println("FAILED: loader.hasNext() == true");
+            System.exit(1);
+        }
+        loader.next();
+        // fail
+    } catch (NoSuchElementException ex) {
+        // pass
+    }
+>> end class
+>>> end module
+>>> begin test SqlDriverClient
+return
+>>> end test

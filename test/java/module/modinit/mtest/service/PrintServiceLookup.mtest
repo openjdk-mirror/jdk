@@ -1,0 +1,33 @@
+# This tests that service providers can be loaded when both they and their
+# service are in the java.se.core service module
+#
+# Defines PrintLookupClient, which looks up a PrintService.
+>>> begin module PrintLookupClient
+> annotations
+@MainClass("PrintLookupClient.Main")
+@ImportModules({
+    @ImportModule(name="java.se.core")
+})
+>> begin class PrintLookupClient.Main
+    Iterator<javax.print.StreamPrintServiceFactory> loader =
+        ServiceLoader.load(javax.print.StreamPrintServiceFactory.class).iterator();
+	javax.print.StreamPrintServiceFactory provider = loader.next();
+    String providerName = provider.getClass().getName();
+    if (!providerName.equals("sun.print.PSStreamPrinterFactory")) {
+        throw new Exception("got unexpected provider name: " + providerName);
+    }
+    try {
+        if (loader.hasNext()) {
+            System.err.println("FAILED: loader.hasNext() == true");
+            System.exit(1);
+        }
+        loader.next();
+        // fail
+    } catch (NoSuchElementException ex) {
+        // pass
+    }
+>> end class
+>>> end module
+>>> begin test PrintLookupClient
+return
+>>> end test

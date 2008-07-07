@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,38 +21,41 @@
  * have any questions.
  */
 
-import java.io.*;
-import java.module.Modules;
-import java.module.Repository;
-import java.util.HashMap;
-import java.util.Map;
-import sun.module.repository.RepositoryConfig;
+package rxpserv.client;
+
+import java.module.ModuleDefinition;
+import java.module.annotation.Version;
+import java.util.Iterator;
+import java.util.ServiceLoader;
+import java.util.NoSuchElementException;
+import rxpserv.service.FooService;
 
 /**
- * @test
- * @summary Verify that initializing a URLRepository on a source that doesn't
- * have a repository-metadata.xml file throws an IOException.
- * @compile -XDignore.symbol.file Test6574851.java
+ * Checks that the sole version-appropriate provider for service Foo is
+ * available.
  */
-public class Test6574851 {
-    public static void realMain(String args[]) throws Throwable {
+public class Main {
+    public static void realMain(String[] args) throws Throwable {
+        FooService fs = FooService.getNextProvider();
+
+        // Check by name rather than by java.lang.class to ensure that we
+        // don't load the class by other than the ServiceLoader
+        Class clazz = fs.getClass();
+        check(clazz.getName().equals("rxpserv.provider.FooServiceProvider"));
+
+        // Since there are 2 versions of the service, and one of them should
+        // be unavailable, verify that we got the correct one.
+        ModuleDefinition modDef = clazz.getClassLoader().getModule().getModuleDefinition();
+        Version verAnno = modDef.getAnnotation(Version.class);
+        check(verAnno.value().equals("1.0"));
+
         try {
-            Map<String, String> config = new HashMap<String, String>();
-            config.put(
-                "sun.module.repository.URLRepository.sourceLocationMustExist",
-                "true");
-        Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(),
-            "test",
-            new File(
-                System.getProperty("test.scratch", "."),
-                "Test6574851-DoesNotExist").getCanonicalFile().toURI().toURL(),
-            config);
-        fail();
-        } catch (IOException ex) {
+            // Check that the provider of another service is *not*
+            // returned.
+            FooService.getNextProvider();
+            fail();
+        } catch (NoSuchElementException ex) {
             pass();
-        } catch (Throwable t) {
-            unexpected(t);
         }
     }
 

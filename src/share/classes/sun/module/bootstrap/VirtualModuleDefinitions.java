@@ -36,6 +36,9 @@ import java.module.ModuleDefinition;
 import java.module.ModuleContent;
 import java.module.annotation.ImportModule;
 import java.module.annotation.ImportModules;
+import java.module.annotation.ServiceProvider;
+import java.module.annotation.ServiceProviders;
+import java.module.annotation.Services;
 import java.module.annotation.Version;
 import java.security.CodeSigner;
 import java.util.ArrayList;
@@ -71,6 +74,44 @@ public final class VirtualModuleDefinitions {
      */
     @Version(PLATFORM_VERSION)
     @ModuleName("java.se.core")
+    @Services({
+        "java.nio.channels.spi.SelectorProvider",
+        "java.nio.charset.spi.CharsetProvider",
+        "java.rmi.server.RMIClassLoaderSpi",
+        "java.sql.Driver",
+        "javax.imageio.spi.ImageReader",
+        "javax.imageio.spi.ImageWriter",
+        "javax.imageio.spi.ImageTranscoder",
+        "javax.imageio.spi.ImageInputStream",
+        "javax.imageio.spi.ImageOutputStream",
+        "javax.management.remote.JMXConnectorProvider",
+        "javax.management.remote.JMXConnectorServerProvider",
+        "javax.naming.ldap.StartTlsResponse",
+        "javax.print.PrintServiceLookup",
+        "javax.print.StreamPrintServiceFactory",
+        "com.sun.tools.attach.spi.AttachProvider",
+        "com.sun.jdi.connect.Connector",
+        "com.sun.jdi.connect.Transport"
+    })
+    // XXX Note that some providers are platform-specific: For now they are
+    // added here but it seems we need platform-specific virtual modules.
+    @ServiceProviders({
+        @ServiceProvider(service="com.sun.mirror.apt.AnnotationProcessorFactory",
+                         providerClass="com.sun.istack.internal.ws.AnnotationProcessorFactoryImpl"),
+
+        // XXX Need to handle platform-specific providers
+        //@ServiceProvider(service="com.sun.tools.attach.spi.AttachProvider", // Solaris
+        //                 providerClass="sun.tools.attach.SolarisAttachProvider"),
+        //@ServiceProvider(service="com.sun.tools.attach.spi.AttachProvider", // Windows
+        //                 providerClass="sun.tools.attach.WindowsAttachProvider"),
+        //@ServiceProvider(service="com.sun.tools.attach.spi.AttachProvider", // Linux
+        //                 providerClass="sun.tools.attach.LinuxAttachProvider"),
+        //@ServiceProvider(service="javax.print.PrintServiceLookup",
+        //                 providerClass="sun.print.UnixPrintServiceLookup"),
+
+        @ServiceProvider(service="javax.print.StreamPrintServiceFactory",
+                         providerClass="sun.print.PSStreamPrinterFactory")
+    })
     @ExportPackages({
         "java",
         "javax.accessibility",

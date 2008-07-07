@@ -52,29 +52,14 @@ import sun.security.util.PropertyExpander;
  * Establishes the configuration of a set of repositories in a running JVM.  A
  * configuration specifies a list of repositories, one of which is a child of
  * the bootstrap repository and the others are successive children.
- * Repositories can be configured automatically via configuration files, by
- * setting a system property to the name of a configuration file, or directly
- * by providing them in a {@code java.util.Properties} object.
+ * Repositories can be configured automatically via configuration files, or by
+ * setting a system property to the name of a configuration file.
  * <p>
- * An example use use case is:
- * <pre>
- *         Repository repo = Modules.newLocalRepository(
- *             RepositoryConfig.getSystemRepository(),
- *             "application",
- *             appDir.getCanonicalFile());
- *         ...
- *         RepositoryConfig.setSystemRepository(repo);
- * </pre>
  * The initial call to {@code getSystemRepository} causes repositories to be
- * configured via configuration files, with the system repository set to the
+ * configured via a configuration file, with the system repository set to the
  * configured repository that is most distant (in the parent-child distance of
- * repository instances).  Thus {@code repo} uses that most distant repository
- * as its parent, then {@code repo} is set to be the system repository.
- * <p>
- * Note that {@code RepositoryConfig} can be initialized explicitly, instead
- * of relying on the default behavior described above; see {@link
- * LocalRepository#initialize(Map)} and {@link URLRepository#initialize(Map)}.
- *
+ * repository instances).
+
  * @since 1.7
  */
 public final class RepositoryConfig {
@@ -114,6 +99,9 @@ public final class RepositoryConfig {
     /** True once configRepositories has completed. */
     private static boolean configDone = false;
 
+    /** Last repository in the configuration. */
+    private static Repository lastRepository;
+
     /** Attribute which designates the parent of a repository. */
     private static final String parentAttr = "parent";
 
@@ -152,6 +140,9 @@ public final class RepositoryConfig {
      * repository.
      * @throws IllegalArgumentException if the system repository has already
      * been set via this method.
+     * @throws SecurityException if a security manager exists and its
+     * {@code checkPermission} method denies access to set the system
+     * repository.
      */
     public static void setSystemRepository(Repository r) throws IllegalArgumentException {
         SecurityManager sm = System.getSecurityManager();
@@ -176,6 +167,18 @@ public final class RepositoryConfig {
             systemRepository = configRepositories();
         }
         return systemRepository;
+    }
+
+    /**
+     * Returns the repository specified by the repository configuration which
+     * has the largest number of repositories between itself and the bootstrap
+     * repository.
+     * @return the repository configured to be farthest from the bootstrap
+     * repository.
+     */
+    public static synchronized Repository getLastRepository() {
+        getSystemRepository(); // Force initialization
+        return lastRepository;
     }
 
     /**
@@ -206,7 +209,7 @@ public final class RepositoryConfig {
                 }
             } else {
                 throw new RuntimeException(
-                    "Cannot load repository properties from file " + f);
+                    "Cannot load repository properties from file " + f.getAbsolutePath());
             }
         } catch (PropertyExpander.ExpandException ex) {
             throw new RuntimeException(ex);
@@ -225,29 +228,35 @@ public final class RepositoryConfig {
      * </pre>
      * For each named repository, there can be several attribute/value pairs.
      * One and only one named repository must have the attribute
-     * "PARENT" with the value "BOOTSTRAP": this indicates which repository
+     * "parent" with the value "bootstrap": this indicates which repository
      * is to be created as the immediate child of the bootstrap repository.
-     * Each other named repository must have a PARENT, and these must describe
+     * Each other named repository must have a parent, and these must describe
      * a list of repositories.
      * <p>
-     * Each repository must provide a attribute "SOURCE" which
+     * Each repository must provide a attribute "source" which
      * indicates the source location of the repository.
      * <p>
-     * Each repository can optionally provide a "CLASS" attribute, with a
-     * corresponding value that indicates the class of the repository.
+     * Each repository can optionally provide a "classname" attribute, with a
+     * corresponding value that indicates the name of the Class of the
+     * repository, or a "factoryname"  attribute, which indicates the name of
+     * a Class that can create a Repository.
      * <p>
-     * If a CLASS is given, then an instance of that class will be created.
-     * The repository class must have a constructor which has a signature like
-     * this:
+     * If classname is given, then an instance of that named class will be
+     * created. The repository class must have a constructor which has a
+     * signature like this:
      * <pre>
      * FooRepository(Repository parent, String name,
             URL source, Map&lt;String, String&gt; config) throws IOException;
      * </pre>
-     * (<em>Note: Support for CLASS is not yet implemented.</em>)
      * <p>
-     * If no CLASS is given, then if the SOURCE value is a URL, a
-     * URLRepository will be created; else if the SOURCE is an existing,
-     * readable file, a LocalRepository will be created.
+     * If factoryname is given, an instance of that will be created (but only
+     * once per JVM) and its {@code create} method used to create a repository
+     * instance.  See {@link RepositoryFactory}.
+     * <p>
+     * If neither classname nor factoryname is given, an appropriate
+     * repository will be created based on the source.  If source
+     * is a file-based URL or a filename, a LocalRepository will be created.
+     * If it is a non-file-based URL, a URLRepository will be created.
      * <p>
      * Other attributes are allowed, and are particular to the class of
      * repository that is created.  They are passed to the repository's
@@ -255,20 +264,21 @@ public final class RepositoryConfig {
      * @param configProps Properties that configure a list of repositories
      * @return The repository in the configuration that is furthest in the
      * list from the bootstrap repository.
+     * @throws IllegalStateException if repositories have already been
+     * configured.
      */
-    public static Repository configRepositories(Properties configProps) {
+    private static Repository configRepositories(Properties configProps) {
         if (configDone) {
             throw new IllegalStateException("Repositories have already been configured.");
         }
 
-        Repository rc = null;
         if (!configProps.isEmpty()) {
             LinkedHashMap<String, Map<String, String>> orderedConfig =
                 getConfigFromProps(configProps);
-            rc = createRepositories(orderedConfig);
+            lastRepository = createRepositories(orderedConfig);
             configDone = true;
         }
-        return rc;
+        return lastRepository;
     }
 
 
@@ -461,6 +471,8 @@ public final class RepositoryConfig {
      * keys are presumed to be ordered such that the first entry describes the
      * repository to create as a child of the bootstrap repository, the next
      * to create as a child of that, and so on.
+     * @return The repository in the configuration that is furthest in the
+     * list from the bootstrap repository.
      */
     private synchronized static Repository createRepositories(
             LinkedHashMap<String, Map<String, String>> orderedConfig) {

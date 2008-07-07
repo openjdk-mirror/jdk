@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2005-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,12 +29,21 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.module.ImportDependency;
+import java.module.Module;
+import java.module.ModuleDefinition;
+import java.module.ModuleInitializationException;
+import java.module.ModuleSystem;
+import java.module.Query;
+import java.module.Repository;
+import java.module.Version;
+import java.module.VersionConstraint;
+import java.module.annotation.ServiceProvider;
+import java.module.annotation.ServiceProviders;
+import java.module.annotation.Services;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import sun.module.core.ModuleUtils;
+import sun.module.repository.RepositoryConfig;
 
 
 /**
@@ -47,7 +56,8 @@ import java.util.NoSuchElementException;
  * can be installed in an implementation of the Java platform in the form of
  * extensions, that is, jar files placed into any of the usual extension
  * directories.  Providers can also be made available by adding them to the
- * application's class path or by some other platform-specific means.
+ * application's class path, by installing them as service-provider modules
+ * in repositories, or by some other platform-specific means.
  *
  * <p> For the purpose of loading, a service is represented by a single type,
  * that is, a single interface or abstract class.  (A concrete class can be
@@ -91,6 +101,46 @@ import java.util.NoSuchElementException;
  * providers, adding each one to the cache in turn.  The cache can be cleared
  * via the {@link #reload reload} method.
  *
+ * <p> Services and providers can be placed into service and service-provider
+ * modules, and installed into a repository.  Service and service-provider
+ * modules can be versioned independently.  A service module can have a number
+ * of default providers in the same module, thus being both a service module
+ * and a service-provider module.
+ *
+ * <p> Conceptually, when providers are loaded from repositories,
+ * the following strategy for locating service-provider modules is used:
+ *
+ * <ul>
+ * <li> Query the repository for all
+ * service-provider modules, ignoring those which do not provide for the
+ * requested {@code service}.</li>
+ *
+ * <li> Service-providers which have the same name as the {@code
+ * service}'s module, but have a different version, are ignored.</li>
+ *
+ * <li> Service-providers which have the same name and same version as the
+ * {@code service}'s module, but have a different module instance than the
+ * {@code service}'s module, are ignored.</li>
+ *
+ * <li> Service-providers which import directly (or transitively via module
+ * re-exports) a service module with the same name as the {@code service}'s
+ * module, but of a different version, are ignored.</li>
+ *
+ * <li> Service-providers which import directly (or transitively via module
+ * re-exports) a service module with the same name and version as the {@code
+ * service}'s module, but have a different module instance than the {@code
+ * service}'s module, are ignored.</li>
+ *
+ * <li> Of the remaining service-providers, for each service-provider module
+ * name, only the service-provider module with the highest version is
+ * retained.</li>
+ * </ul>
+ *
+ * <p> The provider classes are returned from an iterator in the following
+ * order: first, any default providers, in the order provided by the module to
+ * which they belong.  Then, non-default providers, sorted alphabetically by
+ * module name.
+ *
  * <p> Service loaders always execute in the security context of the caller.
  * Trusted system code should typically invoke the methods in this class, and
  * the methods of the iterators which they return, from within a privileged
@@ -101,7 +151,6 @@ import java.util.NoSuchElementException;
  *
  * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
  * method in this class will cause a {@link NullPointerException} to be thrown.
- *
  *
  * <p><span style="font-weight: bold; padding-right: 1em">Example</span>
  * Suppose we have a service type <tt>com.example.CodecSet</tt> which is
@@ -184,17 +233,37 @@ public final class ServiceLoader<S>
 
     private static final String PREFIX = "META-INF/services/";
 
-    // The class or interface representing the service being loaded
-    private Class<S> service;
 
-    // The class loader used to locate, load, and instantiate providers
-    private ClassLoader loader;
+    // For locating service modules
+    private static final Query serviceQuery =
+        Query.annotation(Services.class);
+
+    // For locating service-provider modules
+    private static final Query serviceProviderQuery =
+        Query.annotation(ServiceProviders.class);
+
+    // The class or interface representing the service being loaded
+    private final Class<S> service;
+
+    // The class loader used to locate, load, and instantiate providers.  Used
+    // only when no repository is available for loading providers.
+    private final ClassLoader loader;
 
     // Cached providers, in instantiation order
-    private LinkedHashMap<String,S> providers = new LinkedHashMap<String,S>();
+    private final LinkedHashMap<String,S> providers = new LinkedHashMap<String,S>();
 
-    // The current lazy-lookup iterator
-    private LazyIterator lookupIterator;
+    // Module containing the service
+    private final Module serviceMod;
+
+    // The repository in which ModuleDefinitions are found.
+    private final Repository repository;
+
+    // The current service provider lookup iterator
+    private List<ServiceLoaderIterator> lookupIterators;
+
+    // True if iteration is over providers from a Repository and then a ClassLoader
+    private final boolean isCompound;
+
 
     /**
      * Clear this loader's provider cache so that all providers will be
@@ -209,12 +278,57 @@ public final class ServiceLoader<S>
      */
     public void reload() {
         providers.clear();
-        lookupIterator = new LazyIterator(service, loader);
+        lookupIterators = new ArrayList<ServiceLoaderIterator>();
+        if (repository == null) {
+            lookupIterators.add(new LazyIterator(service, loader));
+        } else {
+            lookupIterators.add(new ModulesIterator(service, serviceMod));
+            if (isCompound) {
+                lookupIterators.add(new LazyIterator(service, loader));
+            }
+        }
     }
 
     private ServiceLoader(Class<S> svc, ClassLoader cl) {
         service = svc;
         loader = cl;
+        isCompound = false;
+
+        // If the both service and loader are from modules, use the loader's
+        // repository for provider lookups.
+        ClassLoader svcClassLoader = service.getClassLoader();
+        if (svcClassLoader != null && svcClassLoader.getModule() != null
+            && loader != null && loader.getModule() != null) {
+            repository =
+                loader.getModule().getModuleDefinition().getRepository();
+            serviceMod = svcClassLoader.getModule();
+        } else {
+            repository = null;
+            serviceMod = null;
+        }
+        reload();
+    }
+
+    private ServiceLoader(Class<S> svc, Repository repo) {
+        this(svc, repo, null, svc.getClassLoader().getModule(), false);
+    }
+
+    private ServiceLoader(Class<S> svc, Repository repo, Module mod) {
+        this(svc, repo, null, mod, false);
+    }
+
+    private ServiceLoader(Class<S> svc, Repository repo, ClassLoader cl,
+                          Module mod) {
+        this(svc, repo, cl, mod, true);
+    }
+
+    private ServiceLoader(Class<S> svc, Repository repo, ClassLoader cl,
+                          Module mod, boolean isCompound) {
+        this.service = svc;
+        this.repository = repo;
+        this.loader = cl;
+        this.serviceMod = mod;
+        this.isCompound = isCompound;
         reload();
     }
 
@@ -310,20 +424,35 @@ public final class ServiceLoader<S>
         return names.iterator();
     }
 
-    // Private inner class implementing fully-lazy provider lookup
+    // Base class for iterators which access providers of services.
     //
-    private class LazyIterator
+    private abstract class ServiceLoaderIterator
         implements Iterator<S>
     {
+        final Class<S> service;
 
-        Class<S> service;
-        ClassLoader loader;
+        ServiceLoaderIterator(Class<S> service) {
+            this.service = service;
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    // Private inner class implementing fully-lazy provider lookup from
+    // a ClassLoader.
+    //
+    private class LazyIterator
+        extends ServiceLoaderIterator
+    {
+        final ClassLoader loader;
         Enumeration<URL> configs = null;
         Iterator<String> pending = null;
         String nextName = null;
 
         private LazyIterator(Class<S> service, ClassLoader loader) {
-            this.service = service;
+            super(service);
             this.loader = loader;
         }
 
@@ -373,11 +502,307 @@ public final class ServiceLoader<S>
             }
             throw new Error();          // This cannot happen
         }
+    }
 
-        public void remove() {
-            throw new UnsupportedOperationException();
+    // Private inner class implementing provider lookup from Modules
+    //
+    private class ModulesIterator
+        extends ServiceLoaderIterator
+    {
+        private final Module serviceMod;
+
+        // Potential candidates are still screened for compatibility.
+        private Iterator<ModuleProvider> candidates = null;
+
+        // The next ModuleProvider from which a service will be returned.
+        private ModuleProvider nextMP = null;
+
+        private ModulesIterator(Class<S> service, Module serviceMod) {
+            super(service);
+            this.serviceMod = serviceMod;
         }
 
+        // In addition to usual hasNext - like behavior, sets nextMP to the
+        // next ModuleProvider from which a service provider is to be returned
+        // from next().
+        public boolean hasNext() {
+            if (candidates == null) {
+                candidates = getCandidates().iterator();
+            }
+            if (nextMP != null) { // Was set in prior call to hasNext
+                return true;
+            } else {
+                while (candidates.hasNext()) {
+                    nextMP = candidates.next();
+                    if (isCompatible(nextMP)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public S next() {
+            S rc = null;
+
+            // nextMP is null if hasNext() has not been called.
+            if (nextMP == null) {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+            }
+
+            String cn = nextMP.getName();
+            try {
+                Object o = null;
+                Class<?> nextMPClass = nextMP.getProviderClass();
+                o = nextMPClass.newInstance();
+                rc = service.cast(o);
+                providers.put(cn, rc);
+            } catch (Throwable x) {
+                fail(service,
+                     "Provider " + cn + " could not be instantiated: " + x,
+                     x);
+            }
+            nextMP = null;
+            return rc;
+        }
+
+        /**
+         * Gets the candidates provider modules for a service.  A candidate
+         * service provider module might not actually be acceptable; see next().
+         * <pre>
+         * Let S be the requested service
+         * Let SM be the service module to which S belongs
+         * Let SMD be the service module definition for SM
+         *
+         * For each module definition MD in the repository which has ServiceProviders
+         *   For each service provider P of MD
+         *     If P is a provider for S
+         *       Let M be the module instance for MD
+         *
+         *       If SMD's name matches MD's name
+         *         P is a default provider
+         *         If SM is the same as M
+         *           Add P as a default provider for SM
+         *         Continue to the next service provider
+         *
+         *       If M imports SM (directly or transitively via reexports)
+         *         Remove candidates with same name as M's but lower version
+         *         Add M as a candidate
+         * Sort the list of candidates according to name
+         * Add all default providers to the head of the list of candidates
+         * Return the list of candidates
+         *
+         * Mapping between above terms and code below:
+         * S:   service
+         * SM:  serviceMod
+         * SMD: serviceModDef
+         * MD:  providerModDef
+         * M:   providerMod (see use in ModuleChecker)
+         * P:   p (rougly; code based on ServiceProvider annotation)
+         * </pre>
+         * @return a list of {@code ModuleProvider} instances for the service
+         */
+        private List<ModuleProvider> getCandidates() {
+            List<ModuleProvider> rc = new ArrayList<ModuleProvider>();
+            List<ModuleProvider> defaultProviders = new ArrayList<ModuleProvider>();
+            if (serviceMod == null) {
+                return rc;
+            }
+            ModuleDefinition serviceModDef = serviceMod.getModuleDefinition();
+
+            // Keeps track of candiates per provider name.
+            Map<String, ModuleProvider> candidates = new HashMap<String, ModuleProvider>();
+
+            for (ModuleDefinition providerModDef : repository.find(serviceProviderQuery)) {
+                ServiceProviders sp = providerModDef.getAnnotation(ServiceProviders.class);
+                ModuleChecker checker = new ModuleChecker(serviceMod, providerModDef);
+
+                for (ServiceProvider p : sp.value()) {
+                    if (!p.service().equals(service.getName())) {
+                        continue;
+                    }
+
+                    // If providerModDef's name matches serviceModDef's name,
+                    // providerMod is a default provider.
+                    String providerName = providerModDef.getName();
+                    if (serviceModDef.getName().equals(providerName)) {
+                        // The provider is also a service module
+                        if (serviceModDef.getVersion().equals(providerModDef.getVersion())) {
+                            // If names and versions are the same, we still
+                            // need to check the identity
+                            if (checker.checkEquals()) {
+                                defaultProviders.add(new ModuleProvider(providerModDef, p.providerClass()));
+                            }
+                        } else {
+                            // If they are not the same versions, then the
+                            // provider is not suitable for this version of
+                            // the service, as it is a default for another
+                            // version.
+                        }
+                        continue;
+                    }
+
+                    // To be a candidate, a provider module must import the service module
+                    if (!checker.checkImports()) {
+                        continue;
+                    }
+
+                    // For provider-modules with a given name, keep only the
+                    // highest version.
+                    ModuleProvider candidate = candidates.get(providerName);
+                    if (candidate == null) {
+                        candidates.put(providerName,
+                                       new ModuleProvider(
+                                           providerModDef, p.providerClass()));
+                    } else if (providerModDef.getVersion().compareTo(candidate.getVersion()) > 0) {
+                        candidates.put(providerName,
+                                       new ModuleProvider(
+                                           providerModDef, p.providerClass()));
+                    }
+                }
+            }
+            rc.addAll(candidates.values());
+            Collections.sort(rc, ModuleProvider.comparator);
+            rc.addAll(0, defaultProviders);
+            return rc;
+        }
+
+        /**
+         * A candidate provider is compatible if
+         * (a) one of the interfaces it implements is the same as that
+         *     of the given service, or
+         * (b) one of its superclasses is exactly the same as the
+         *     given service.
+         * @return true if {@code mp} designates a compatible provider
+         */
+        private boolean isCompatible(ModuleProvider mp) {
+            String cn = mp.getName();
+            try {
+                Class<?> mpClass = mp.getProviderClass();
+
+                Class<?>[] interfaces = mpClass.getInterfaces();
+                if (Arrays.asList(interfaces).contains(service)) {
+                    return true;
+                }
+
+                Class sup = mpClass.getSuperclass();
+                while (sup != null) {
+                    if (sup == service) {
+                        return true;
+                    } else {
+                        sup = sup.getSuperclass();
+                    }
+                }
+                return false;
+
+            } catch (ClassNotFoundException x) {
+                fail(service,
+                     "Provider " + cn + " not found");
+            } catch (Throwable x) {
+                fail(service,
+                     "Provider " + cn + " could not be instantiated: " + x,
+                     x);
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Represents a way to compare two modules, one of which is obtained from
+     * its given definition.  If that attempt fails, a subsequent attempt is
+     * not repeated.  If it succeeds, it is used in all examinations.
+     */
+    private static class ModuleChecker {
+        private final Module serviceMod;
+        private final ModuleDefinition providerModDef;
+
+        private Module providerMod;
+        private boolean accessAttempted = false;
+
+        ModuleChecker(Module serviceMod, ModuleDefinition providerModDef) {
+            this.serviceMod = serviceMod;
+            this.providerModDef = providerModDef;
+        }
+
+        /** @return true if serviceMod == the provider's module */
+        boolean checkEquals() {
+            getProviderModule();
+            return providerMod == null ? false : serviceMod == providerMod;
+        }
+
+        /**
+         * @return true if the provider module imports the service module,
+         * directly or via reexports of imported modules (transitively).
+         */
+        boolean checkImports() {
+            getProviderModule();
+            boolean rc = false;
+            if (providerMod != null) {
+                List<Module> reexports = new ArrayList<Module>();
+                ModuleUtils.expandReexports(providerMod, reexports, true);
+                rc = reexports.contains(serviceMod);
+            }
+            return rc;
+        }
+
+        // Make only one attempt at getting the provider's module
+        private void getProviderModule() {
+            if (!accessAttempted) {
+                try {
+                    providerMod = providerModDef.getModuleInstance();
+                } catch (ModuleInitializationException ex) {
+                    // ignore
+                } finally {
+                    accessAttempted = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Represents a service that can be provided from a module
+     */
+    private static class ModuleProvider {
+        private final ModuleDefinition modDef;
+        private final String name;
+
+        // Comparison is based on name only.
+        private static final Comparator<ModuleProvider> comparator =
+            new Comparator<ModuleProvider>() {
+            public int compare(ModuleProvider m1, ModuleProvider m2) {
+                return m1.modDef.getName().compareTo(m2.modDef.getName());
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                return this == o;
+            }
+        };
+
+        ModuleProvider(ModuleDefinition modDef, String name) {
+            this.modDef = modDef;
+            this.name = name;
+        }
+
+        String getName() {
+            return name;
+        }
+
+        Version getVersion() {
+            return modDef.getVersion();
+        }
+
+        ModuleDefinition getModuleDefinition() {
+            return modDef;
+        }
+
+        Class<?> getProviderClass() throws ClassNotFoundException, ModuleInitializationException {
+            final Module m = modDef.getModuleInstance();
+            ClassLoader cl = m.getClassLoader();
+            return Class.forName(name, true, cl);
+        }
     }
 
     /**
@@ -426,43 +851,158 @@ public final class ServiceLoader<S>
             Iterator<Map.Entry<String,S>> knownProviders
                 = providers.entrySet().iterator();
 
+            Iterator<ServiceLoaderIterator> lookups = lookupIterators.iterator();
+            ServiceLoaderIterator currentLookup = null;
+
+            Error lastError = null;
+
             public boolean hasNext() {
                 if (knownProviders.hasNext())
                     return true;
-                return lookupIterator.hasNext();
+
+                initLookups();
+                boolean rc = false;
+
+                if (currentLookup.hasNext()) {
+                    rc = true;
+                } else {
+                    while (lookups.hasNext()) {
+                        currentLookup = lookups.next();
+                        if (currentLookup.hasNext()) {
+                            rc = true;
+                            break;
+                        }
+                    }
+                }
+                return rc;
             }
 
             public S next() {
                 if (knownProviders.hasNext())
                     return knownProviders.next().getValue();
-                return lookupIterator.next();
+
+                initLookups();
+                S rc = null;
+
+                if (currentLookup.hasNext()) {
+                    try {
+                        rc = currentLookup.next();
+                    } catch (ServiceConfigurationError e) {
+                        // XXX This could be a real error, or it could be that
+                        // a virtual module does not export this service.
+                        lastError = e;
+                    }
+                }
+
+                if (rc == null) {
+                    while (lookups.hasNext()) {
+                        currentLookup = lookups.next();
+                        if (currentLookup.hasNext()) {
+                            try {
+                                rc = currentLookup.next();
+                                break;
+                            } catch (ServiceConfigurationError e) {
+                                // XXX This could be a real error, or it could be that
+                                // a virtual module does not export this
+                                // service.
+                                lastError = e;
+                            }
+                        }
+                    }
+                }
+
+                if (rc == null) {
+                    if (lastError != null) {
+                        throw lastError;
+                    } else {
+                        throw new NoSuchElementException();
+                    }
+                }
+                return rc;
             }
 
             public void remove() {
                 throw new UnsupportedOperationException();
             }
 
+            private void initLookups() {
+                if (currentLookup == null && lookups.hasNext()) {
+                    lastError = null;
+                    currentLookup = lookups.next();
+                }
+            }
         };
     }
 
     /**
+     * Tries to find a service module in the bootstrap repository for the
+     * given {@code service}.
+     *
+     * @return a ModuleDefinition for {@code service} if one exists in the
+     * bootstrap repository, else null.
+     */
+    private static <S> Module findBootstrapModule(Class<S> service) {
+        Module rc = null;
+        String serviceName = service.getName();
+
+        for (ModuleDefinition md : Repository.getBootstrapRepository().find(serviceQuery)) {
+            Services ss = md.getAnnotation(Services.class);
+            for (String sName : ss.value()) {
+                if (serviceName.equals(sName)) {
+                    try {
+                        rc = md.getModuleInstance();
+                        break;
+                    } catch (ModuleInitializationException ex) {
+                        // ignore
+                    }
+                }
+            }
+        }
+        return rc;
+    }
+
+    /**
      * Creates a new service loader for the given service type and class
-     * loader.
+     * loader.  If both the service and loader are in modules, the loader's
+     * module's repository will be used to lookup provider-configuration files
+     * and provider classes.
      *
      * @param  service
      *         The interface or abstract class representing the service
      *
-     * @param  loader
-     *         The class loader to be used to load provider-configuration files
-     *         and provider classes, or <tt>null</tt> if the system class
-     *         loader (or, failing that, the bootstrap class loader) is to be
-     *         used
+     * @param loader
+     *         The class loader used to determine the location from which
+     *         provider-configuration files and provider classes are loaded.
+     *         If <tt>null</tt> the system class loader (or, failing that, the
+     *         bootstrap class loader) is used.
      *
      * @return A new service loader
      */
     public static <S> ServiceLoader<S> load(Class<S> service,
                                             ClassLoader loader)
     {
+        ClassLoader cl = service.getClassLoader();
+        if (cl == null) {
+            Module m = findBootstrapModule(service);
+            if (m != null) {
+                if (loader == null) {
+                    // Use bootstrap repo instead of bootstrap loader
+                    return new ServiceLoader<S>(
+                        service, Repository.getBootstrapRepository(), m);
+
+                } else if (loader == ClassLoader.getSystemClassLoader()) {
+                    // Use system repository and system class loader
+                    return new ServiceLoader<S>(
+                        service, Repository.getSystemRepository(), loader, m);
+
+                } else if (loader.getModule() != null) {
+                    // Use loader's respository
+                    return new ServiceLoader<S>(
+                        service, loader.getModule().getModuleDefinition().getRepository(), m);
+                }
+            }
+        }
+        // Fall back to pre-modules behavior
         return new ServiceLoader<S>(service, loader);
     }
 
@@ -494,7 +1034,53 @@ public final class ServiceLoader<S>
 
     /**
      * Creates a new service loader for the given service type, using the
-     * extension class loader.
+     * given {@link java.module.Repository} to locate providers.
+     *
+     * @param  repository
+     *         The repository from which service provider modules will be
+     *         obtained
+     *
+     * @param  service
+     *         The interface or abstract class representing the service
+     *
+     * @return A new service loader
+     *
+     * @throws IllegalArgumentException
+     *         if the {@code service} is not in a service module
+     *
+     * @since 1.7
+     */
+    public static <S> ServiceLoader<S> load(Repository repository,
+                                            Class<S> service)
+    {
+        if (repository == null) {
+            throw new NullPointerException(
+                "repository cannot be null");
+        }
+        ClassLoader cl = service.getClassLoader();
+        if (cl == null) {
+            Module m = findBootstrapModule(service);
+            if (m != null) {
+                return new ServiceLoader<S>(service, repository, m);
+            } else {
+                throw new IllegalArgumentException(
+                    "service is not in a service module");
+            }
+        } else if (cl.getModule() == null) {
+            throw new IllegalArgumentException(
+                "service is not in a service module");
+        }
+        return new ServiceLoader<S>(service, repository);
+    }
+
+    /**
+     * Creates a new service loader for the given service type, using the
+     * extension class loader or system repository.
+     *
+     * <ul>
+     * <li>If the service type is in a module, use the system repository.</li>
+     * <li>Otherwise, use the extension class loader.</li>
+     * </ul>
      *
      * <p> This convenience method simply locates the extension class loader,
      * call it <tt><i>extClassLoader</i></tt>, and then returns
@@ -517,13 +1103,27 @@ public final class ServiceLoader<S>
      * @return A new service loader
      */
     public static <S> ServiceLoader<S> loadInstalled(Class<S> service) {
-        ClassLoader cl = ClassLoader.getSystemClassLoader();
-        ClassLoader prev = null;
-        while (cl != null) {
-            prev = cl;
-            cl = cl.getParent();
+        ClassLoader cl = service.getClassLoader();
+        if (cl != null && cl.getModule() != null) {
+            return ServiceLoader.load(
+                RepositoryConfig.getLastRepository(), service);
+        } else {
+            // If the class is in the bootstrap module, it might represent a
+            // service defined in that module.
+            Module m = findBootstrapModule(service);
+            if (m != null) {
+                return new ServiceLoader<S>(service, Repository.getBootstrapRepository(), m);
+            } else {
+                // Fall back to pre-modules behavior
+                cl = ClassLoader.getSystemClassLoader();
+                ClassLoader prev = null;
+                while (cl != null) {
+                    prev = cl;
+                    cl = cl.getParent();
+                }
+                return ServiceLoader.load(service, prev);
+            }
         }
-        return ServiceLoader.load(service, prev);
     }
 
     /**
@@ -534,5 +1134,4 @@ public final class ServiceLoader<S>
     public String toString() {
         return "java.util.ServiceLoader[" + service.getName() + "]";
     }
-
 }
