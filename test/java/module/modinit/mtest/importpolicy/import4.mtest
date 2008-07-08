@@ -35,7 +35,7 @@ implements ImportPolicy
             if (md.getName().equals("m2") == false)
                 result.put(dep, md.getVersion().toVersionConstraint());
             else
-                result.put(new ImportDependency("module", "m3", VersionConstraint.DEFAULT, false, false, null), md.getVersion().toVersionConstraint());
+                result.put(Modules.newModuleDependency("m3", VersionConstraint.DEFAULT, false, false, null), md.getVersion().toVersionConstraint());
         }
         return result;
     }

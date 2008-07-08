@@ -90,7 +90,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
         if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in the bootstrap repository.");
         }
-        if (moduleDef.getRepository().getModuleSystem() != this) {
+        if (moduleDef.getModuleSystem() != this) {
             throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in a different module system.");
         }
         if (moduleDef.isModuleReleasable() == false) {
@@ -124,7 +124,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
         // this module system.
         for (Module m : importingModulesClosure) {
             ModuleDefinition md = m.getModuleDefinition();
-            if (md.getRepository().getModuleSystem() != this) {
+            if (md.getModuleSystem() != this) {
                 continue;
             }
             if (md.isModuleReleasable() == false) {
@@ -148,7 +148,9 @@ public final class ModuleSystemImpl extends ModuleSystem {
             mi.callReleaseOnModuleInitializer();
 
             // Send MODULE_RELEASED event
-            ModuleSystemEvent evt = new ModuleSystemEvent(this, ModuleSystemEvent.Type.MODULE_RELEASED, mi);
+            ModuleSystemEvent evt = new ModuleSystemEvent(this,
+                                        ModuleSystemEvent.Type.MODULE_RELEASED,
+                                        mi, null, null);
             this.sendEvent(evt);
         }
 
@@ -156,7 +158,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
         // other module systems.
         for (Module m : importingModulesClosure) {
             ModuleDefinition md = m.getModuleDefinition();
-            ModuleSystem ms = md.getRepository().getModuleSystem();
+            ModuleSystem ms = md.getModuleSystem();
             if (ms == this) {
                     continue;
             }
@@ -178,7 +180,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
         if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
             throw new UnsupportedOperationException("Cannot disable module definition in the bootstrap repository.");
         }
-        if (moduleDef.getRepository().getModuleSystem() != this) {
+        if (moduleDef.getModuleSystem() != this) {
             throw new UnsupportedOperationException("Cannot disable module definition in a different module system..");
         }
         synchronized(disabledModuleDefs) {
@@ -189,7 +191,9 @@ public final class ModuleSystemImpl extends ModuleSystem {
         }
 
         // Send MODULE_DEFINITION_DISABLED event
-        ModuleSystemEvent evt = new ModuleSystemEvent(this, moduleDef);
+        ModuleSystemEvent evt = new ModuleSystemEvent(this,
+                                    ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED,
+                                    null, moduleDef, null);
         this.sendEvent(evt);
     }
 
@@ -260,7 +264,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
     }
 
     synchronized ModuleImpl getModuleInstance(ModuleDefinition moduleDef) {
-        if (moduleDef.getRepository().getModuleSystem() != this) {
+        if (moduleDef.getModuleSystem() != this) {
             throw new IllegalArgumentException
                 ("Cannot instantiate new module instance from module definition in a different module system.");
         }

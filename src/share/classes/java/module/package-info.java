@@ -24,7 +24,14 @@
  */
 
 /**
- * Provides classes for the module system.
+ * Provides classes and interfaces for the Java Module System and the JAM (JAva
+ * Module) module system.
+ *
+ * <p> Unless otherwise noted, passing a <tt>null</tt> argument to a
+ * constructor or method in any class or interface in this package will cause
+ * a {@link java.lang.NullPointerException NullPointerException} to be thrown.
+ *
+ * <p> The java.module API is thread-safe.
  *
  * @since 1.7
  */

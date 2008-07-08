@@ -31,8 +31,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the path for searching classes and resources in the module
- * archive. This metadata annotation is applied to a Java module. For example,
+ * Indicates the path for searching classes and resources in the module archive.
+ * This metadata annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/webapp/module-info.java

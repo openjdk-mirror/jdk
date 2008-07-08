@@ -29,6 +29,11 @@ import java.util.List;
 
 /**
  * This class represents a reified module instance in a module system.
+ *
+ * Each {@code Module} instance has its own copies of the classes defined
+ * by the module definition, each with their own independent static
+ * state. Each {@code Module} instance is also interconnected with
+ * instances of the modules it imports.
  * <p>
  * @see java.lang.ClassLoader
  * @see java.module.ModuleDefinition

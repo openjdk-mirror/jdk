@@ -93,8 +93,7 @@ public class LocalRepositoryTest {
         config.put("sun.module.repository.LocalRepository.cacheDirectory",
                 expandDir.getAbsolutePath());
         Repository repo = Modules.newLocalRepository(
-            systemRepo,
-            "test", srcDir, config);
+            "test", srcDir, config, systemRepo);
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repo));
@@ -108,8 +107,7 @@ public class LocalRepositoryTest {
         try {
             config.put("sun.module.repository.LocalRepository.sourceLocationMustExist", "true");
             r2 = Modules.newLocalRepository(
-                systemRepo,
-                "test", new File("doesNotExist"), config);
+                "test", new File("doesNotExist"), config, systemRepo);
             fail();
         } catch (IOException ex) {
             check(ex.getMessage().contains("does not exist or is not a directory"));
@@ -188,7 +186,7 @@ public class LocalRepositoryTest {
         ModuleArchiveInfo mai = installed.get(0);
         check(mai.getName().equals("LocalRepoModuleA"));
 
-        // MODULE_INSTALLED event should be fired.
+        // MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(ec.installEventExists(repo, mai));
@@ -223,11 +221,11 @@ public class LocalRepositoryTest {
         jamFile = JamBuilder.createJam(
             "localrepotest", "LocalRepoTestB", "LocalRepoModuleB", "4.2",
             platform, arch, true, jamDir);
-        mai = repo.install(jamFile.getCanonicalFile().toURI().toURL());
+        mai = repo.install(jamFile.getCanonicalFile().toURI());
         check(mai != null);
         println("LocalRepoModuleB mai: " + mai);
 
-        // MODULE_INSTALLED event should be fired.
+        // MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(ec.installEventExists(repo, mai));
@@ -235,7 +233,7 @@ public class LocalRepositoryTest {
 
         // Verify that same module cannot be over itself
         try {
-            repo.install(jamFile.getCanonicalFile().toURI().toURL());
+            repo.install(jamFile.getCanonicalFile().toURI());
             fail();
         } catch (IllegalStateException ex) {
             pass();
@@ -265,7 +263,7 @@ public class LocalRepositoryTest {
         mai = installed.get(0);
         repo.uninstall(mai);
 
-        // MODULE_UNINSTALLED should be fired.
+        // MODULE_ARCHIVE_UNINSTALLED should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(!ec.installEventExists(repo, null));
@@ -288,11 +286,11 @@ public class LocalRepositoryTest {
         jamFile = JamBuilder.createJam(
             "localrepotest", "LocalRepoTestC", "LocalRepoModuleC", "2.7",
             "abc" + platform, "def" + arch, false, jamDir);
-        mai = repo.install(jamFile.getCanonicalFile().toURI().toURL());
+        mai = repo.install(jamFile.getCanonicalFile().toURI());
         check(mai != null);
         println("LocalRepoModuleC mai: " + mai);
 
-        // MODULE_INSTALLED event should be fired.
+        // MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(ec.installEventExists(repo, mai));
@@ -319,7 +317,7 @@ public class LocalRepositoryTest {
         repo.reload();
         check(repo.find(mai.getName()) == null);
 
-        // MODULE_UNINSTALLED event should be fired.
+        // MODULE_ARCHIVE_UNINSTALLED event should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(!ec.installEventExists(repo, null));
@@ -331,10 +329,10 @@ public class LocalRepositoryTest {
             platform, arch, false, jamDir);
         jb.setMethod("foo");
         jamFile = jb.createJam();
-        mai = repo.install(jamFile.getCanonicalFile().toURI().toURL());
+        mai = repo.install(jamFile.getCanonicalFile().toURI());
         runModule(repo, "LocalRepoModuleD", "foo");
 
-        // MODULE_INSTALLED event should be fired.
+        // MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(ec.installEventExists(repo, mai));
@@ -349,7 +347,7 @@ public class LocalRepositoryTest {
         jamFile = jb.createJam();
         repo.reload();
 
-        // Both MODULE_UNINSTALLED and MODULE_INSTALLED events should be fired.
+        // Both MODULE_ARCHIVE_UNINSTALLED and MODULE_ARCHIVE_INSTALLED events should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(ec.installEventExists(repo, null));
@@ -390,11 +388,11 @@ public class LocalRepositoryTest {
             null, null, false, jamDir);
 
         // Installs #1, #2, and #3
-        mai1 = repo.install(jamFile1.getCanonicalFile().toURI().toURL());
+        mai1 = repo.install(jamFile1.getCanonicalFile().toURI());
         check(mai1 != null);
-        mai2 = repo.install(jamFile2.getCanonicalFile().toURI().toURL());
+        mai2 = repo.install(jamFile2.getCanonicalFile().toURI());
         check(mai2 != null);
-        mai3 = repo.install(jamFile3.getCanonicalFile().toURI().toURL());
+        mai3 = repo.install(jamFile3.getCanonicalFile().toURI());
         check(mai3 != null);
 
         md = repo.find("LocalRepoModuleE", VersionConstraint.valueOf("7.0"));
@@ -427,11 +425,11 @@ public class LocalRepositoryTest {
         check(repo.uninstall(mai3));
 
         // Installs #1, #3, and #2
-        mai1 = repo.install(jamFile1.getCanonicalFile().toURI().toURL());
+        mai1 = repo.install(jamFile1.getCanonicalFile().toURI());
         check(mai1 != null);
-        mai3 = repo.install(jamFile3.getCanonicalFile().toURI().toURL());
+        mai3 = repo.install(jamFile3.getCanonicalFile().toURI());
         check(mai3 != null);
-        mai2 = repo.install(jamFile2.getCanonicalFile().toURI().toURL());
+        mai2 = repo.install(jamFile2.getCanonicalFile().toURI());
         check(mai2 != null);
 
         md = repo.find("LocalRepoModuleE", VersionConstraint.valueOf("7.0"));

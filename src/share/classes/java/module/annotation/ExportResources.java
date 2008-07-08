@@ -67,7 +67,7 @@ import java.lang.annotation.RetentionPolicy;
  *
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExportResources {
 

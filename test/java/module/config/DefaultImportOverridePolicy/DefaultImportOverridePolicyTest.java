@@ -28,6 +28,7 @@ import java.module.ImportDependency;
 import java.module.ImportOverridePolicy;
 import java.module.Modules;
 import java.module.ModuleDefinition;
+import java.module.ModuleDependency;
 import java.module.ModuleContent;
 import java.module.ModuleSystem;
 import java.module.PackageDefinition;
@@ -76,6 +77,11 @@ public class DefaultImportOverridePolicyTest {
         @Override
         public List<ImportDependency> getImportDependencies() {
             return Collections.unmodifiableList(new ArrayList<ImportDependency>());
+        }
+
+        @Override
+        public String getMainClass() {
+            return null;
         }
 
         @Override
@@ -150,17 +156,17 @@ public class DefaultImportOverridePolicyTest {
         testBadNarrowing01();
     }
 
-    static ImportDependency newImportDependency(String name) {
-        return new ImportDependency("module", name, VersionConstraint.DEFAULT, false, false, null);
+    static ImportDependency newModuleDependency(String name) {
+        return Modules.newModuleDependency(name, VersionConstraint.DEFAULT, false, false, null);
     }
 
     static public void testConstructor01() throws Exception {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
             Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("e.f.g");
-            ImportDependency importDep2 = newImportDependency("p.q.r");
-            ImportDependency importDep3 = newImportDependency("x.y.z");
+            ImportDependency importDep1 = newModuleDependency("e.f.g");
+            ImportDependency importDep2 = newModuleDependency("p.q.r");
+            ImportDependency importDep3 = newModuleDependency("x.y.z");
             originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
@@ -201,9 +207,9 @@ public class DefaultImportOverridePolicyTest {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
             Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("e.f.g");
-            ImportDependency importDep2 = newImportDependency("p.q.r");
-            ImportDependency importDep3 = newImportDependency("x.y.z");
+            ImportDependency importDep1 = newModuleDependency("e.f.g");
+            ImportDependency importDep2 = newModuleDependency("p.q.r");
+            ImportDependency importDep3 = newModuleDependency("x.y.z");
             originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
@@ -228,9 +234,9 @@ public class DefaultImportOverridePolicyTest {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
             Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("e.f.g");
-            ImportDependency importDep2 = newImportDependency("p.q.r");
-            ImportDependency importDep3 = newImportDependency("x.y.z");
+            ImportDependency importDep1 = newModuleDependency("e.f.g");
+            ImportDependency importDep2 = newModuleDependency("p.q.r");
+            ImportDependency importDep3 = newModuleDependency("x.y.z");
             originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
@@ -280,9 +286,9 @@ public class DefaultImportOverridePolicyTest {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
             Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("e.f.g");
-            ImportDependency importDep2 = newImportDependency("p.q.r");
-            ImportDependency importDep3 = newImportDependency("x.y.z");
+            ImportDependency importDep1 = newModuleDependency("e.f.g");
+            ImportDependency importDep2 = newModuleDependency("p.q.r");
+            ImportDependency importDep3 = newModuleDependency("x.y.z");
             originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
@@ -333,9 +339,9 @@ public class DefaultImportOverridePolicyTest {
         try {
             MockModuleDefinition moduleDef = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
             Map<ImportDependency, VersionConstraint> originalConstraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("e.f.g");
-            ImportDependency importDep2 = newImportDependency("p.q.r");
-            ImportDependency importDep3 = newImportDependency("x.y.z");
+            ImportDependency importDep1 = newModuleDependency("e.f.g");
+            ImportDependency importDep2 = newModuleDependency("p.q.r");
+            ImportDependency importDep3 = newModuleDependency("x.y.z");
             originalConstraints.put(importDep1, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep2, VersionConstraint.valueOf("1.0+"));
             originalConstraints.put(importDep3, VersionConstraint.valueOf("1.0+"));
@@ -409,9 +415,9 @@ public class DefaultImportOverridePolicyTest {
             MockModuleDefinition moduleDef1 = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
 
             Map<ImportDependency, VersionConstraint> constraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("e.f.g");
-            ImportDependency importDep2 = newImportDependency("p.q.r");
-            ImportDependency importDep3 = newImportDependency("x.y.z");
+            ImportDependency importDep1 = newModuleDependency("e.f.g");
+            ImportDependency importDep2 = newModuleDependency("p.q.r");
+            ImportDependency importDep3 = newModuleDependency("x.y.z");
             constraints.put(importDep1, VersionConstraint.valueOf("1+"));
             constraints.put(importDep2, VersionConstraint.valueOf("1+"));
             constraints.put(importDep3, VersionConstraint.valueOf("1+"));

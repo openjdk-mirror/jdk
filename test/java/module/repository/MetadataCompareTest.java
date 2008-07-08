@@ -106,7 +106,7 @@ public class MetadataCompareTest {
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
-        urlRepo.install(new URL("file://" + path));
+        urlRepo.install(new URL("file://" + path).toURI());
 
         // Create another JAM file and install it
         jamFile = JamBuilder.createJam(
@@ -116,7 +116,7 @@ public class MetadataCompareTest {
         if (!path.startsWith("/"))  {
             path = "/" + path;
         }
-        urlRepo.install(new URL("file://" + path));
+        urlRepo.install(new URL("file://" + path).toURI());
 
         // Create yet another JAM file and install it
         jamFile = JamBuilder.createJam(
@@ -126,7 +126,7 @@ public class MetadataCompareTest {
         if (!path.startsWith("/"))  {
             path = "/" + path;
         }
-        urlRepo.install(new URL("file://" + path));
+        urlRepo.install(new URL("file://" + path).toURI());
 
         // Create a dummy JAM file for the purpose of using its
         // MODULE.METADATA and JAM file to setup invalid
@@ -151,7 +151,7 @@ public class MetadataCompareTest {
         zf.close();
         data = baos.toByteArray();
 
-        URL u = urlRepo.getSourceLocation();
+        URL u = urlRepo.getSourceLocation().toURL();
         File f = JamUtils.getFile(u);
 
         // Overwrite the MODULE.METADATA for Bad.MDFile v3.1

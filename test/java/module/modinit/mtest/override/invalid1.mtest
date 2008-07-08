@@ -42,7 +42,7 @@ implements ImportOverridePolicy
             for (ImportDependency dep : constraints.keySet()) {
                 if (dep.getName().equals("m2")) {
                     newConstraints.remove(dep);
-                    newConstraints.put(new ImportDependency("module", "mX", VersionConstraint.DEFAULT, false, false, null),
+                    newConstraints.put(Modules.newModuleDependency("mX", VersionConstraint.DEFAULT, false, false, null),
                                        VersionConstraint.valueOf("1.0+"));
                 }
             }

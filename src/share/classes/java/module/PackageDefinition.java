@@ -77,7 +77,6 @@ public abstract class PackageDefinition {
      *        annotation type
      * @return this {@code PackageDefinition}'s annotation for the specified
      *         annotation type if present, else null
-     * @throws NullPointerException if the given annotation class is null
      */
     public abstract <T extends Annotation> T getAnnotation(Class<T> annotationClass);
 

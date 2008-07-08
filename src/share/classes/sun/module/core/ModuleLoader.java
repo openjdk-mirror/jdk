@@ -26,6 +26,7 @@
 package sun.module.core;
 
 import java.io.*;
+import java.nio.channels.Channels;
 import java.util.*;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -111,8 +112,8 @@ final class ModuleLoader extends SecureClassLoader {
             // downloaded and the module metadata is compared (and potentially
             // throws exception if there is a mismatch between the
             // MODULE.METADATA file and that in the JAM file.
-            CodeSigner[] codeSigners = content.getCodeSigners();
-            cs = new CodeSource(moduleURL, codeSigners);
+            List<CodeSigner> codeSigners = new ArrayList<CodeSigner>(content.getCodeSigners());
+            cs = new CodeSource(moduleURL, codeSigners.toArray(new CodeSigner[codeSigners.size()]));
         } catch (IOException e) {
             throw new ModuleInitializationException("cannot construct module's code source", e);
         }
@@ -219,8 +220,8 @@ final class ModuleLoader extends SecureClassLoader {
                 }
             }
 
-            byte[] classData = content.getEntryAsByteArray(path);
-            return defineClass(name, classData, 0, classData.length, cs);
+            java.nio.ByteBuffer classData = content.getEntryAsByteBuffer(path);
+            return defineClass(name, classData, cs);
         } catch (IOException e) {
             throw new ClassNotFoundException(name, e);
         }
@@ -290,7 +291,8 @@ final class ModuleLoader extends SecureClassLoader {
             return manifest;
         }
         if (content.hasEntry(JarFile.MANIFEST_NAME)) {
-            manifest = new Manifest(content.getEntryAsStream(JarFile.MANIFEST_NAME));
+            InputStream is = Channels.newInputStream(content.getEntryAsChannel(JarFile.MANIFEST_NAME));
+            manifest = new Manifest(is);
         }
         manifestSet = true;
         return manifest;
@@ -315,7 +317,7 @@ final class ModuleLoader extends SecureClassLoader {
         }
         try {
             if (content.hasEntry(path)) {
-                return content.getEntryAsStream(path);
+                return Channels.newInputStream(content.getEntryAsChannel(path));
             }
         } catch (IOException e) {
             // fallback to next return
@@ -420,7 +422,7 @@ final class ModuleLoader extends SecureClassLoader {
         ResourceConnection(URL url, ModuleLoader loader, String name) throws IOException {
             super(url);
             this.name =  name;
-            in = loader.content.getEntryAsStream(name);
+            in = Channels.newInputStream(loader.content.getEntryAsChannel(name));
             if (in == null) {
                 throw new IOException("Content no longer available: " + name);
             }

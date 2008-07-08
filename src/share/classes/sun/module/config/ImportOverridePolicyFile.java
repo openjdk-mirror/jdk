@@ -30,11 +30,13 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StreamTokenizer;
-import java.module.ModuleDefinition;
-import java.module.Version;
-import java.module.VersionConstraint;
 import java.module.ImportDependency;
 import java.module.ImportOverridePolicy;
+import java.module.ModuleDefinition;
+import java.module.ModuleDependency;
+import java.module.PackageDependency;
+import java.module.Version;
+import java.module.VersionConstraint;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -198,7 +200,16 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
 
             for (Map.Entry<ImportDependency,VersionConstraint> originalEntry : originalConstraints.entrySet()) {
                 ImportDependency dep = originalEntry.getKey();
-                String key = dep.getType() + ":" + dep.getName();
+                String key;
+
+                if (dep instanceof ModuleDependency) {
+                    key = "module:" + dep.getName();
+                } else if (dep instanceof PackageDependency) {
+                    key = "package:" + dep.getName();
+                } else {
+                    // import dependency is not recognized
+                    throw new IllegalArgumentException("The type of import dependency is not supported: " + dep);
+                }
 
                 // Original version constraint
                 VersionConstraint originalvcs = originalEntry.getValue();

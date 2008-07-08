@@ -548,6 +548,34 @@ public class VersionConstraintTest {
     /** Checks contains method.  No errors. */
     static public void testContains01() throws Exception {
         try {
+            VersionConstraint.valueOf("1.1").contains((Version) null);
+            fail();
+        } catch (NullPointerException ex) {
+            pass();
+        }
+
+        try {
+            VersionConstraint.valueOf("1.1").contains((VersionConstraint)null);
+            fail();
+        } catch (NullPointerException ex)  {
+            pass();
+        }
+
+        try {
+            VersionConstraint.valueOf("[1.1,1.2]").contains((Version) null);
+            fail();
+        } catch (NullPointerException ex) {
+            pass();
+        }
+
+        try {
+            VersionConstraint.valueOf("[1.1,1.2]").contains((VersionConstraint)null);
+            fail();
+        } catch (NullPointerException ex) {
+            pass();
+        }
+
+        try {
             VersionConstraint cs = VersionConstraint.valueOf("(1, 2);(2, 3);(3, 4);(4, 5);(5, 6)");
             check(cs.contains(Version.valueOf(0, 5, 0)) == false);
             check(cs.contains(Version.valueOf(1, 5, 0)) == true);
@@ -609,6 +637,14 @@ public class VersionConstraintTest {
 
     /** Checks intersection method.  No errors. */
     static public void testIntersection01() throws Exception {
+        try {
+            VersionConstraint cs1 = VersionConstraint.valueOf("1;2;3;4;5;6;7");
+            cs1.intersection(null);
+            fail();
+        } catch (NullPointerException ex) {
+            pass();
+        }
+
         try {
             VersionConstraint cs1 = VersionConstraint.valueOf("1;2;3;4;5;6;7");
             VersionConstraint cs2 = VersionConstraint.valueOf("1.1;2.2;3.3;4.4;5.5;6.6");

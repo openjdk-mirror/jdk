@@ -30,7 +30,7 @@ import java.security.BasicPermission;
 /**
  * The permission which the {@code SecurityManager} will check when code that
  * is running with a {@code SecurityManager} calls methods defined in the
- * module system for the Java platform.
+ * Java Module System.
  * <P>
  * The following table provides a summary description of what the permission
  * allows, and discusses the risks of granting code the permission.
@@ -45,9 +45,18 @@ at the permission allows, and associated risks">
  * </tr>
  *
  * <tr>
+ *   <td>createModuleSystem</td>
+ *   <td>Creation of a module system.</td>
+ *   <td>This is an extremely dangerous permission to grant. Malicious
+ *       applications that can instantiate their own module systems could then
+ *       load their rogue modules and classes into the system.</td>
+ * </tr>
+ * <tr>
  *   <td>releaseModule</td>
  *   <td>Releases an existing module instance from a module system via calls to
- *       the {@code ModuleSystem}'s {@code releaseModule} method.</td>
+ *       the {@code ModuleSystem}'s
+ *       {@link ModuleSystem#releaseModule(ModuleDefinition)
+ *       <tt>releaseModule</tt>} method.</td>
  *   <td>This is a dangerous permission to grant. Malicious applications could
  *       allow an attacker to release an existing module instance, so the
  *       runtime characteristics of the Java virtual machine is changed
@@ -56,7 +65,9 @@ at the permission allows, and associated risks">
  * <tr>
  *   <td>disableModuleDefinition</td>
  *   <td>Disables a module definition in a module system via calls to
- *       the {@code ModuleSystem}'s {@code disableModuleDefinition} method.</td>
+ *       the {@code ModuleSystem}'s
+ *       {@link ModuleSystem#disableModuleDefinition(ModuleDefinition)
+ *       <tt>disableModuleDefinition</tt>} method.</td>
  *   <td>This is an extremely dangerous permission to grant. Malicious
  *       applications could allow an attacker to perform denial-of-service
  *       attack by disabling a module definition, and the module system will be
@@ -66,20 +77,23 @@ at the permission allows, and associated risks">
  * <tr>
  *   <td>installModuleArchive</td>
  *   <td>Installs a module archive in a repository via calls to the
- *       {@code Repository}'s {@code install} method.</td>
+ *       {@code Repository}'s {@link Repository#install(URI)
+ *       <tt>install</tt>} method.</td>
  *   <td>This allows an attacker to install malicious code into a repository.</td>
  * </tr>
  * <tr>
  *   <td>uninstallModuleArchive</td>
  *   <td>Uninstalls a module archive in a repository via calls to the
- *       {@code Repository}'s {@code uninstall} method.</td>
+ *       {@code Repository}'s {@link Repository#uninstall(ModuleArchiveInfo)
+ *       <tt>uninstall</tt>} method.</td>
  *   <td>This allows an attacker to remove critical module definitions from a
  *       repository.</td>
  * </tr>
  * <tr>
  *   <td>listModuleArchive</td>
  *   <td>Discovers the installed module archives in a repository via calls
- *       to the {@code Repository}'s {@code list} method.</td>
+ *       to the {@code Repository}'s {@link Repository#list()
+ *       <tt>list</tt>} method.</td>
  *   <td>This allows an attacker to discover the installed module archives in a
  *       repository.</td>
  * </tr>
@@ -92,50 +106,72 @@ at the permission allows, and associated risks">
  * </tr>
  * <tr>
  *   <td>shutdownRepository</td>
- *   <td>Shutdown a repository.</td>
+ *   <td>Shutdown a repository via calls
+ *       to the {@code Repository}'s {@link Repository#shutdown()
+ *       <tt>shutdown</tt>} method.</td>
  *   <td>This allows an attacker to shutdown a repository so the repository
  *       can no longer serve any module definition.</td>
  * </tr>
  * <tr>
  *   <td>reloadRepository</td>
- *   <td>Reloads module definitions in a repository.</td>
+ *   <td>Reloads module definitions in a repository via calls
+ *       to the {@code Repository}'s {@link Repository#reload()
+ *       <tt>reload</tt>} method.</td>
  *   <td>This allows an attacker to invalidate the lifetime of the outstanding
  *       module instances instantiated from the module definitions in the
  *       repository.</td>
  * </tr>
  * <tr>
  *   <td>accessModuleContent</td>
- *   <td>Accesses the content of the module definition.</td>
+ *   <td>Accesses the content of the module definition via calls
+ *       to the {@code ModuleDefinition}'s {@link ModuleDefinition#getModuleContent()
+ *       <tt>getModuleContent</tt>} method.</td>
  *   <td>This allows an attacker to have access to the actual content of the
  *       module definition, which may contain sensitive information internally.</td>
  * </tr>
  * <tr>
  *   <td>setImportOverridePolicy</td>
- *   <td>Changes the default import override policy in the module system.</td>
+ *   <td>Changes the default import override policy in the JAM module system via calls
+ *       to the {@code Modules}'s
+ *       {@link Modules#setImportOverridePolicy(ImportOverridePolicy)
+ *       <tt>setImportOverridePolicy</tt>} method.</td>
+ * .</td>
  *   <td>This allows an attacker to choose specific versions of imported
  *       modules when a module instance is initialized.</td>
  * </tr>
  * <tr>
  *   <td>addModuleSystemListener</td>
- *   <td>Adds a module system listener that listens to all module systems.</td>
+ *   <td>Adds a module system listener that listens to all module systems via
+ *       calls to the {@code ModuleSystem}'s
+ *       {@link ModuleSystem#addModuleSystemListener(ModuleSystemListener)
+ *       <tt>addModuleSystemListener</tt>} method.</td>
  *   <td>This allows an attacker to monitor the module system events in the
  *       module systems.</td>
  * </tr>
  * <tr>
  *   <td>removeModuleSystemListener</td>
- *   <td>Removes a module system listener from listening to any module systems.</td>
+ *   <td>Removes a module system listener from listening to any module system
+ *       via calls to the {@code ModuleSystem}'s
+ *       {@link ModuleSystem#removeModuleSystemListener(ModuleSystemListener)
+ *       <tt>removeModuleSystemListener</tt>} method.</td>
  *   <td>This allows an attacker to remove a system-provided module system
  *       listener from the module systems.</td>
  * </tr>
  * <tr>
  *   <td>addRepositoryListener</td>
- *   <td>Adds a repository listener that listens to all repositories.</td>
+ *   <td>Adds a repository listener that listens to all repositories
+ *       via calls to the {@code Repository}'s
+ *       {@link Repository#addRepositoryListener(RepositoryListener)
+ *       <tt>addRepositoryListener</tt>} method.</td>
  *   <td>This allows an attacker to monitor the repository events in the
  *       repositories.</td>
  * </tr>
  * <tr>
  *   <td>removeRepositoryListener</td>
- *   <td>Removes a repository listener from listening to any repositories.</td>
+ *   <td>Removes a repository listener from listening to any repository
+ *       via calls to the {@code Repository}'s
+ *       {@link Repository#removeRepositoryListener(RepositoryListener)
+ *       <tt>removeRepositoryListener</tt>} method.</td>
  *   <td>This allows an attacker to remove a system-provided repository
  *       listener from the repositories.</td>
  * </tr>
@@ -150,6 +186,10 @@ at the permission allows, and associated risks">
  * @see java.security.Permissions
  * @see java.security.PermissionCollection
  * @see java.lang.SecurityManager
+ * @see java.module.Modules
+ * @see java.module.ModuleDefinition
+ * @see java.module.ModuleSystem
+ * @see java.module.Repository
  *
  * @since 1.7
  */

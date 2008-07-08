@@ -40,12 +40,12 @@ public class RepositoryTest  {
         File src = new File(".").getCanonicalFile();
         String name = "application";
         Repository rep = Modules.newLocalRepository(
-            RepositoryConfig.getSystemRepository(), name, src);
+            name, src, null, RepositoryConfig.getSystemRepository());
 
         check(rep.getParent() == Repository.getSystemRepository());
         check(name.equals(rep.getName()));
-        check(rep.getSourceLocation().equals(src.toURI().toURL()));
-        check(rep.getModuleSystem() == ModuleSystem.getDefault());
+        check(rep.getSourceLocation().equals(src.toURI()));
+//        check(rep.getModuleSystem() == ModuleSystem.getDefault());
 
         check(ec.initializeEventExists(rep));
 
@@ -56,7 +56,7 @@ public class RepositoryTest  {
         RepositoryConfig.setSystemRepository(rep);
 
         Repository sysRep = Repository.getSystemRepository();
-        check(sysRep.getModuleSystem() == ModuleSystem.getDefault());
+  //      check(sysRep.getModuleSystem() == ModuleSystem.getDefault());
 
         rep.shutdown();
 
@@ -66,7 +66,7 @@ public class RepositoryTest  {
 
         // Verify null arg checking
         try {
-            rep = Modules.newLocalRepository(null, name, src);
+            rep = Modules.newLocalRepository(name, src, null, null);
             fail();
         } catch (NullPointerException ex) {
             // expected
@@ -79,7 +79,7 @@ public class RepositoryTest  {
         check(!ec.shutdownEventExists(rep));
 
         try {
-            rep = Modules.newLocalRepository(null, src);
+            rep = Modules.newLocalRepository(null, src, null);
             fail();
         } catch (NullPointerException ex) {
             // expected
@@ -92,7 +92,7 @@ public class RepositoryTest  {
         check(!ec.shutdownEventExists(rep));
 
         try {
-            rep = Modules.newLocalRepository(name, null);
+            rep = Modules.newLocalRepository(name, null, null);
             fail();
         } catch (NullPointerException ex) {
             // expected
@@ -109,7 +109,7 @@ public class RepositoryTest  {
 
         // Creates a new repository
         rep = Modules.newLocalRepository(
-            RepositoryConfig.getSystemRepository(), name, src);
+            name, src, null, RepositoryConfig.getSystemRepository());
 
         // No event should be sent to an already-removed repository listener
         check(!ec.initializeEventExists(rep));

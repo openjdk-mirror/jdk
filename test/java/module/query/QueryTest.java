@@ -87,6 +87,11 @@ public class QueryTest {
         }
 
         @Override
+        public String getMainClass() {
+            return null;
+        }
+
+        @Override
         public Set<String> getAttributeNames() {
             return Collections.unmodifiableSet(attributes.keySet());
         }
@@ -181,7 +186,11 @@ public class QueryTest {
             check(query2.equals(query2) == true);
             check(query.toString().equals(query2.toString()) == true);
 
-            check(query.getIndexableModuleNames() == null);
+            try {
+                query.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             check(query.hashCode() == query2.hashCode());
         } catch (Throwable ex) {
@@ -198,7 +207,7 @@ public class QueryTest {
             check(query.match(moduleDef1) == false);
             check(query.match(moduleDef2) == false);
 
-            Set<String> indexableNames = query.getIndexableModuleNames();
+            Set<String> indexableNames = query.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 0);
 
             Query query2 = cloneQueryBySerialization(query);
@@ -268,7 +277,7 @@ public class QueryTest {
             check(query.equals(Query.module("x.y.z", VersionConstraint.valueOf("1.1.0"))) == false);
             check(query.equals(Query.attribute("my.name")) == false);
 
-            Set<String> indexableNames = Query.module("javax.swing").getIndexableModuleNames();
+            Set<String> indexableNames = Query.module("javax.swing").getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
 
             Query query3 = cloneQueryBySerialization(query);
@@ -381,7 +390,11 @@ public class QueryTest {
             check(query.equals(Query.attribute("x.y.z", HELLO_WORLD)) == true);
             check(query.equals(Query.attribute("x.y.z", RANDOM_VALUE)) == false);
 
-            check(query.getIndexableModuleNames() == null);
+            try {
+                query.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             query2 = cloneQueryBySerialization(query);
             check(query.equals(query2) == true);
@@ -434,7 +447,11 @@ public class QueryTest {
             check(query.equals(Query.attribute("my.name")) == false);
             check(query.equals(Query.annotation(LegacyClasses.class)) == true);
 
-            check(query.getIndexableModuleNames() == null);
+            try {
+                query.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             Query query2 = cloneQueryBySerialization(query);
             check(query.equals(query2) == true);
@@ -480,7 +497,11 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableModuleNames() == null);
+            try {
+                query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             query1 = Query.module("javax.swing", VersionConstraint.valueOf("1.0.0"));
             query2 = Query.not(query1);
@@ -488,7 +509,11 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableModuleNames() == null);
+            try {
+                query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             query1 = Query.attribute(KEY1);
             query2 = Query.not(query1);
@@ -496,7 +521,11 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableModuleNames() == null);
+            try {
+                query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             query1 = Query.attribute(KEY1, HELLO_WORLD);
             query2 = Query.not(query1);
@@ -504,7 +533,11 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableModuleNames() == null);
+            try {
+                query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             query1 = Query.attribute(KEY1, RANDOM_VALUE);
             query2 = Query.not(query1);
@@ -512,7 +545,11 @@ public class QueryTest {
             check(query1.match(moduleDef2) == false);
             check(query2.match(moduleDef1) == true);
             check(query2.match(moduleDef2) == true);
-            check(query2.getIndexableModuleNames() == null);
+            try {
+                query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             query1 = Query.not(Query.module("javax.swing"));
             check(query1.equals(query1) == true);
@@ -522,7 +559,11 @@ public class QueryTest {
             check(query1.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.1.0"))) == false);
             check(query1.equals(Query.attribute("my.name")) == false);
             check(query1.hashCode() == Query.not(Query.module("javax.swing")).hashCode());
-            check(query1.getIndexableModuleNames() == null);
+            try {
+                query1.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
 
             query2 = cloneQueryBySerialization(query1);
             check(query1.equals(query2) == true);
@@ -588,9 +629,9 @@ public class QueryTest {
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == false);
 
-            Set<String> indexableNames = query1.getIndexableModuleNames();
+            Set<String> indexableNames = query1.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = query2.getIndexableModuleNames();
+            indexableNames = query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("org.foo.xml"));
 
             query1 = Query.and(Query.module("javax.swing"), Query.attribute(KEY1));
@@ -600,9 +641,9 @@ public class QueryTest {
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == false);
 
-            indexableNames = query1.getIndexableModuleNames();
+            indexableNames = query1.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = query2.getIndexableModuleNames();
+            indexableNames = query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
 
             query1 = Query.and(Query.module("javax.swing"), Query.attribute(KEY2));
@@ -612,9 +653,9 @@ public class QueryTest {
             check(query2.match(moduleDef1) == false);
             check(query2.match(moduleDef2) == false);
 
-            indexableNames = query1.getIndexableModuleNames();
+            indexableNames = query1.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = query2.getIndexableModuleNames();
+            indexableNames = query2.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
 
             query1 = Query.and(Query.module("javax.swing", VersionConstraint.valueOf("1.0.0")),
@@ -630,11 +671,14 @@ public class QueryTest {
             check(query1.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0"))) == false);
             check(query1.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("2.0.0"))) == false);
 
-            indexableNames = Query.and(Query.attribute("hello"), Query.attribute("my.name")).getIndexableModuleNames();
-            check(indexableNames == null);
-            indexableNames = Query.and(Query.module("javax.swing"), Query.attribute("my.name")).getIndexableModuleNames();
+            try {
+                indexableNames = Query.and(Query.attribute("hello"), Query.attribute("my.name")).getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
+            indexableNames = Query.and(Query.module("javax.swing"), Query.attribute("my.name")).getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = Query.and(Query.module("javax.swing"), Query.module("org.xml.foo")).getIndexableModuleNames();
+            indexableNames = Query.and(Query.module("javax.swing"), Query.module("org.xml.foo")).getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 0);
 
             query2 = cloneQueryBySerialization(query1);
@@ -735,11 +779,18 @@ public class QueryTest {
             check(query1.equals(Query.or(Query.module("org.foo.xml", VersionConstraint.valueOf("2.0.0")),
                                          Query.annotation(java.module.annotation.MainClass.class))) == false);
 
-            Set<String> indexableNames = Query.or(Query.annotation(java.module.annotation.MainClass.class), Query.attribute("my.name")).getIndexableModuleNames();
-            check(indexableNames == null);
-            indexableNames = Query.or(Query.module("javax.swing"), Query.attribute("my.name")).getIndexableModuleNames();
-            check(indexableNames != null && indexableNames.size() == 1 && indexableNames.contains("javax.swing"));
-            indexableNames = Query.or(Query.module("javax.swing"), Query.module("org.xml.foo")).getIndexableModuleNames();
+            Set<String> indexableNames;
+            try {
+                indexableNames = Query.or(Query.annotation(java.module.annotation.MainClass.class), Query.attribute("my.name")).getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
+            try {
+                indexableNames = Query.or(Query.module("javax.swing"), Query.attribute("my.name")).getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
+            } catch (UnsupportedOperationException uoe) {
+                pass();
+            }
+            indexableNames = Query.or(Query.module("javax.swing"), Query.module("org.xml.foo")).getIndexHints(Query.MODULE_NAME_INDEX_HINTS);
             check(indexableNames != null && indexableNames.size() == 2
                   && indexableNames.contains("javax.swing") && indexableNames.contains("org.xml.foo"));
 

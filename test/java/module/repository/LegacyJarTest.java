@@ -96,7 +96,7 @@ public class LegacyJarTest extends LibraryTest {
         jamDir = makeTestDir("jam");
         File srcDir = makeTestDir("urlSource");
         Repository urlRepo = Modules.newURLRepository(
-            "LegacyJarTestURLRepo", srcDir.getCanonicalFile().toURI().toURL());
+            "LegacyJarTestURLRepo", srcDir.getCanonicalFile().toURI().toURL(), null);
         repo = urlRepo;
         runTest("LegacyDefaultTest", null);
         runTest("LegacyCustomTest", "no/place/like/home");
@@ -116,7 +116,7 @@ public class LegacyJarTest extends LibraryTest {
         jamDir = makeTestDir("jam");
         srcDir = makeTestDir("localSource");
         Repository localRepo = Modules.newLocalRepository(
-            "LegacyJarTestLocalRepo", srcDir.getCanonicalFile());
+            "LegacyJarTestLocalRepo", srcDir.getCanonicalFile(), null);
         repo = localRepo;
         runTest("LegacyDefaultTest", null);
         runTest("LegacyCustomTest", "no/place/like/home");
@@ -145,7 +145,7 @@ public class LegacyJarTest extends LibraryTest {
             jarPath = path;
             jb.addAnnotation("@JarLibraryPath(\"" + jarPath + "\")\n");
             File jamFile = getJam(jb);
-            ModuleArchiveInfo mai = repo.install(jamFile.toURI().toURL());
+            ModuleArchiveInfo mai = repo.install(jamFile.toURI());
             check(mai != null);
             try {
                 runModule(repo, modName, expectedAnswer);
@@ -178,7 +178,7 @@ public class LegacyJarTest extends LibraryTest {
             new sun.tools.jar.Main(System.out, System.err, "LegacyJarTest");
         jartool.run(jarArgs);
 
-        ModuleArchiveInfo mai = repo.install(jamFile.toURI().toURL());
+        ModuleArchiveInfo mai = repo.install(jamFile.toURI());
         check(mai != null);
         try {
             runModule(repo, modName, expectedAnswer);

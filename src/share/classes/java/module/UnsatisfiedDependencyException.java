@@ -26,8 +26,8 @@
 package java.module;
 
 /**
- * Thrown to indicate that there is an unsatisifed dependency during module
- * initialization.
+ * Thrown to indicate that an import dependency cannot be satisifed
+ * during initialization of a module instance.
  *
  * @see java.module.ImportDependency
  * @see java.module.ImportPolicy
@@ -84,14 +84,15 @@ public class UnsatisfiedDependencyException extends ModuleInitializationExceptio
     }
 
     /**
-     * Returns the module definition that has the unsatisfied dependency.
+     * Returns the module definition which the module instance is instantiated
+     * from.
      */
     public ModuleDefinition getModuleDefinition() {
         return moduleDef;
     }
 
     /**
-     * Returns the module dependency that is unsatisfied.
+     * Returns the import dependency that is unsatisfied.
      */
     public ImportDependency getImportDependency() {
         return dependency;

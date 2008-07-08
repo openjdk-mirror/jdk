@@ -34,7 +34,7 @@ implements ImportPolicy
             ModuleDefinition md = rep.find(dep.getName(), dep.getVersionConstraint());
             result.put(dep, md.getVersion().toVersionConstraint());
         }
-        result.put(new ImportDependency("module", "m3", VersionConstraint.DEFAULT, false, false, null), VersionConstraint.DEFAULT);
+        result.put(Modules.newModuleDependency("m3", VersionConstraint.DEFAULT, false, false, null), VersionConstraint.DEFAULT);
         return result;
     }
 >> end class

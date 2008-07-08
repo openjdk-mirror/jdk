@@ -39,7 +39,7 @@ m2.MainB
         // Disable the "java.se" module definition.
         Repository r = Repository.getBootstrapRepository();
         ModuleDefinition se = r.find("java.se");
-        ModuleSystem ms = se.getRepository().getModuleSystem();
+        ModuleSystem ms = se.getModuleSystem();
         ms.disableModuleDefinition(se);
         throw new Exception("Standard module definition should not be disabled.");
     }
@@ -51,7 +51,7 @@ m2.MainB
 
     try {
         // Disable the module definition.
-        ModuleSystem ms = md.getRepository().getModuleSystem();
+        ModuleSystem ms = md.getModuleSystem();
         ms.disableModuleDefinition(md);
 
         // try to instantiate a disabled module definition.
@@ -66,7 +66,7 @@ m2.MainB
 
     try {
         // Disable the same module definition again.
-        ModuleSystem ms = md.getRepository().getModuleSystem();
+        ModuleSystem ms = md.getModuleSystem();
         ms.disableModuleDefinition(md);
         Module m = md.getModuleInstance();
         throw new Exception("Disabled module definition should not be instantiable.");

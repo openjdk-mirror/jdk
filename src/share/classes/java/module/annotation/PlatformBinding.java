@@ -57,7 +57,7 @@ import java.lang.annotation.RetentionPolicy;
  * </pre></blockquote>
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PlatformBinding {
 

@@ -37,7 +37,9 @@ import java.module.Modules;
 import java.module.ModuleSystemPermission;
 import java.module.Repository;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.net.URISyntaxException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.HashMap;
@@ -52,6 +54,7 @@ import sun.security.util.PropertyExpander;
  * Establishes the configuration of a set of repositories in a running JVM.  A
  * configuration specifies a list of repositories, one of which is a child of
  * the bootstrap repository and the others are successive children.
+ * <p>
  * Repositories can be configured automatically via configuration files, or by
  * setting a system property to the name of a configuration file.
  * <p>
@@ -59,10 +62,10 @@ import sun.security.util.PropertyExpander;
  * configured via a configuration file, with the system repository set to the
  * configured repository that is most distant (in the parent-child distance of
  * repository instances).
-
  * @since 1.7
  */
-public final class RepositoryConfig {
+public final class RepositoryConfig
+{
 
     static {
         // Setup "repository.system.home" system property if it doesn't exist
@@ -245,8 +248,7 @@ public final class RepositoryConfig {
      * created. The repository class must have a constructor which has a
      * signature like this:
      * <pre>
-     * FooRepository(Repository parent, String name,
-            URL source, Map&lt;String, String&gt; config) throws IOException;
+     * FooRepository(Repository parent, String name, URL source, Map&lt;String, String&gt; config) throws IOException;
      * </pre>
      * <p>
      * If factoryname is given, an instance of that will be created (but only
@@ -280,7 +282,6 @@ public final class RepositoryConfig {
         }
         return lastRepository;
     }
-
 
     /**
      * Examine the given properties to create a Map from repository name to
@@ -373,7 +374,7 @@ public final class RepositoryConfig {
                                    String sourceName, Map<String, String> config)
                 throws IOException, InstantiationException, NoSuchMethodException,
                 ClassNotFoundException, IllegalAccessException,
-                InvocationTargetException, MalformedURLException;
+                InvocationTargetException, URISyntaxException;
     }
 
     /**
@@ -394,13 +395,13 @@ public final class RepositoryConfig {
                 URL u = new URL(sourceName);
                 if ("file".equals(u.getProtocol())) {
                     File f = new File(u.getFile()).getCanonicalFile();
-                    rc = Modules.newLocalRepository(parent, repoName, f, config);
+                    rc = Modules.newLocalRepository(repoName, f, config, parent);
                 } else {
-                    rc = Modules.newURLRepository(parent, repoName, u, config);
+                    rc = Modules.newURLRepository(repoName, u, config, parent);
                 }
             } catch (MalformedURLException ex) {
                 File f = new File(sourceName).getCanonicalFile();
-                rc = Modules.newLocalRepository(parent, repoName, f, config);
+                rc = Modules.newLocalRepository(repoName, f, config, parent);
             }
             return rc;
         }
@@ -424,14 +425,14 @@ public final class RepositoryConfig {
                           String sourceName, Map<String, String> config)
         throws IOException, InstantiationException, NoSuchMethodException,
                 ClassNotFoundException, IllegalAccessException,
-                InvocationTargetException, MalformedURLException {
-            URL u = sourceName == null ? null : new URL(sourceName);
+                InvocationTargetException, URISyntaxException {
+            URI u = sourceName == null ? null : new URI(sourceName);
             Class<?> clazz = Class.forName(className);
             Constructor ctor = clazz.getDeclaredConstructor(
-                Repository.class, String.class,
-                URL.class, Map.class);
+                String.class, URI.class, Map.class,
+                Repository.class);
             return (Repository) ctor.newInstance(
-                parent, repoName, u, config);
+                repoName, u, config, parent);
         }
     }
 
@@ -453,7 +454,7 @@ public final class RepositoryConfig {
                           String sourceName, Map<String, String> config)
         throws IOException, InstantiationException, NoSuchMethodException,
                 ClassNotFoundException, IllegalAccessException,
-                InvocationTargetException, MalformedURLException {
+                InvocationTargetException, URISyntaxException {
             URL u = sourceName == null ? null : new URL(sourceName);
             RepositoryFactory rf  = factories.get(factoryName);
             if (rf == null) {
@@ -482,6 +483,9 @@ public final class RepositoryConfig {
             Map<String, String> repoConfig = orderedConfig.get(repoName);
 
             String sourceName = repoConfig.get(sourceAttr);
+
+            sourceName = sourceName.replace('\\', '/');
+
             Repository repo = null;
 
             String clazzName = repoConfig.get(classAttr);

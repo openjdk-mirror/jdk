@@ -31,10 +31,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the legacy classes are exported from a module definition. A legacy
- * class is exportable if it is a public class that does not have any module
- * membership. This metadata annotation is applied to a Java module. For
- * example,
+ * Indicates that the legacy classes are exported from a module definition.
+ * A legacy class is a Java class which does not belong to any Java module;
+ * a legacy class is exportable from a module definition if that class
+ * is public. This metadata annotation is applied to a Java module.
+ * For example,
  * <blockquote><pre>
  *     //
  *     // com/wombat/xyz/module-info.java

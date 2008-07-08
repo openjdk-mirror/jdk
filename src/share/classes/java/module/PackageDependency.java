@@ -32,47 +32,50 @@ import java.util.Set;
 
 
 /**
- * This interface represents an import dependency in a module definition.
+ * This interface represents a package-level import dependency in a module
+ * definition.
  * <p>
+ * @see java.module.ImportDependency
  * @see java.module.VersionConstraint
  * @see java.io.Serializable
  *
  * @since 1.7
  * @serial include
  */
-public interface ImportDependency extends java.io.Serializable {
+public interface PackageDependency extends ImportDependency {
 
     /**
-     * Returns the name of the import.
+     * Returns the name of the package to import.
      *
-     * @return the name of the import.
+     * @return the name of the package to import.
      */
     public String getName();
 
     /**
-     * Returns the version constraint of the import.
+     * Returns the version constraint.
      *
-     * @return the version constraint of the import.
+     * @return the version constraint.
      */
     public VersionConstraint getVersionConstraint();
 
     /**
-     * Returns true if the import is re-exported; otherwise, returns false.
+     * Returns true if the imported package is re-exported; otherwise, returns false.
      *
-     * @return true if the import is re-exported; otherwise, returns false.
+     * @return true if the imported package is re-exported; otherwise, returns false.
      */
     public boolean isReexported();
 
     /**
-     * Returns true if the import is optional; otherwise, returns false.
+     * Returns true if this {@code PackageDependency} is optional;
+     * otherwise, returns false.
      *
-     * @return true if the import is optional; otherwise, returns false.
+     * @return true if this {@code PackageDependency} is optional; otherwise, returns false.
      */
     public boolean isOptional();
 
     /**
      * Returns an unmodifiable set of the names of the attributes associated
-     * with this {@code ImportDependency}.
+     * with this {@code PackageDependency}.
      *
      * @return an unmodifiable set of the names of the attributes.
      */
@@ -80,7 +83,7 @@ public interface ImportDependency extends java.io.Serializable {
 
     /**
      * Returns the value corresponding to the specified attribute name that is
-     * associated with this {@code ImportDependency}.
+     * associated with this {@code PackageDependency}.
      *
      * @param name the name of the attribute.
      * @return the value of the attribute. Returns null if the specified

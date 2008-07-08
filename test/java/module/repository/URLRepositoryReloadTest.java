@@ -79,8 +79,9 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
          */
         check(repoConfig != null);
         Repository repoWork = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(), "repoWork",
-            fileBasedRepo.getSourceLocation(), repoConfig);
+            "repoWork",
+            fileBasedRepo.getSourceLocation().toURL(), repoConfig,
+            RepositoryConfig.getSystemRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repoWork));
@@ -89,8 +90,9 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(!ec.uninstallEventExists(repoWork, null));
 
         Repository repoTest = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(), "repoTest",
-            repo.getSourceLocation(), repoConfig);
+            "repoTest",
+            repo.getSourceLocation().toURL(), repoConfig,
+            RepositoryConfig.getSystemRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repoTest));
@@ -115,11 +117,11 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
                 "jamnew", "JamNew", "ModuleJamNew",
                 "1.0", null, null, false, jamDir);
         ModuleArchiveInfo maiNew = repoWork.install(
-            jamNew.getCanonicalFile().toURI().toURL());
+            jamNew.getCanonicalFile().toURI());
         check(maiNew != null);
         check(repoWork.find("ModuleJamNew") != null);
 
-        // Only MODULE_INSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repoWork));
         check(!ec.shutdownEventExists(repoWork));
         check(ec.installEventExists(repoWork, maiNew));
@@ -130,7 +132,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         repoTest.reload();
         check(repoTest.find("ModuleJamNew") != null);
 
-        // Only MODULE_INSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repoTest));
         check(!ec.shutdownEventExists(repoTest));
         check(ec.installEventExists(repoTest, null));
@@ -142,7 +144,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(repoWork.uninstall(maiNew));
         check(repoWork.find("ModuleJamNew") == null);
 
-        // Only MODULE_UNINSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_UNINSTALLED event should be fired.
         check(!ec.initializeEventExists(repoWork));
         check(!ec.shutdownEventExists(repoWork));
         check(!ec.installEventExists(repoWork, null));
@@ -153,7 +155,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         repoTest.reload();
         check(repoTest.find("ModuleJamNew") == null);
 
-        // Only MODULE_UNINSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_UNINSTALLED event should be fired.
         check(!ec.initializeEventExists(repoTest));
         check(!ec.shutdownEventExists(repoTest));
         check(!ec.installEventExists(repoTest, null));
@@ -167,11 +169,11 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         jb.setMethod("foo");
         File jamReplace = jb.createJam();
         ModuleArchiveInfo maiReplace =
-            repoWork.install(jamReplace.getCanonicalFile().toURI().toURL());
+            repoWork.install(jamReplace.getCanonicalFile().toURI());
         check(repoWork.find("ModuleJamReplace") != null);
         runModule(repoWork, "ModuleJamReplace", "foo");
 
-        // Only MODULE_INSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repoWork));
         check(!ec.shutdownEventExists(repoWork));
         check(ec.installEventExists(repoWork, maiReplace));
@@ -182,7 +184,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(repoTest.find("ModuleJamReplace") != null);
         runModule(repoTest, "ModuleJamReplace", "foo");
 
-        // Only MODULE_INSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repoTest));
         check(!ec.shutdownEventExists(repoTest));
         check(ec.installEventExists(repoTest, null));
@@ -192,7 +194,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         // module of the same name, and install it in repoWork
         check(repoWork.uninstall(maiReplace));
 
-        // Only MODULE_UNINSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_UNINSTALLED event should be fired.
         check(!ec.initializeEventExists(repoWork));
         check(!ec.shutdownEventExists(repoWork));
         check(!ec.installEventExists(repoWork, null));
@@ -202,12 +204,12 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         jb.setMethod("bar");
         Thread.currentThread().sleep(1000); // make sure repos will see it as updated
         jamReplace = jb.createJam();
-        maiReplace = repoWork.install(jamReplace.getCanonicalFile().toURI().toURL());
+        maiReplace = repoWork.install(jamReplace.getCanonicalFile().toURI());
         dumpMai("Before running module with 'bar'", repoWork.list());
         check(repoWork.find("ModuleJamReplace") != null);
         runModule(repoWork, "ModuleJamReplace", "bar");
 
-        // Only MODULE_INSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repoWork));
         check(!ec.shutdownEventExists(repoWork));
         check(ec.installEventExists(repoWork, maiReplace));
@@ -219,7 +221,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(repoTest.find("ModuleJamReplace") != null);
         runModule(repoTest, "ModuleJamReplace", "bar");
 
-        // MODULE_UNINSTALLED and MODULE_INSTALLED event should be fired.
+        // MODULE_ARCHIVE_UNINSTALLED and MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repoTest));
         check(!ec.shutdownEventExists(repoTest));
         check(ec.installEventExists(repoTest, null));
@@ -228,7 +230,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         ModuleArchiveInfo mai = repoWork.list().get(0);
         check(repoWork.uninstall(mai));
 
-        // MODULE_UNINSTALLED  event should be fired.
+        // MODULE_ARCHIVE_UNINSTALLED  event should be fired.
         check(!ec.initializeEventExists(repoWork));
         check(!ec.shutdownEventExists(repoWork));
         check(!ec.installEventExists(repoWork, null));
@@ -236,7 +238,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
 
         repoTest.reload();
 
-        // MODULE_UNINSTALLED  event should be fired.
+        // MODULE_ARCHIVE_UNINSTALLED  event should be fired.
         check(!ec.initializeEventExists(repoTest));
         check(!ec.shutdownEventExists(repoTest));
         check(!ec.installEventExists(repoTest, null));

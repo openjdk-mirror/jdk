@@ -354,7 +354,9 @@ final class ModuleImpl extends Module {
             }
 
             // Send MODULE_INITIALIZATION_EXCEPTION event
-            ModuleSystemEvent evt = new ModuleSystemEvent(moduleSystem, getModuleDefinition(), e);
+            ModuleSystemEvent evt = new ModuleSystemEvent(moduleSystem,
+                                        ModuleSystemEvent.Type.MODULE_INITIALIZATION_EXCEPTION,
+                                        null, getModuleDefinition(), e);
             moduleSystem.sendEvent(evt);
 
             signalCompletion();
@@ -448,7 +450,9 @@ final class ModuleImpl extends Module {
                 }
 
                 // Send MODULE_INITIALIZED event
-                ModuleSystemEvent evt = new ModuleSystemEvent(moduleSystem, ModuleSystemEvent.Type.MODULE_INITIALIZED, this);
+                ModuleSystemEvent evt = new ModuleSystemEvent(moduleSystem,
+                                            ModuleSystemEvent.Type.MODULE_INITIALIZED,
+                                            this, null, null);
                 moduleSystem.sendEvent(evt);
 
                 signalCompletion();
@@ -477,7 +481,7 @@ final class ModuleImpl extends Module {
         Map<ImportDependency,VersionConstraint> versionConstraints = new HashMap<ImportDependency,VersionConstraint>();
         for (ImportDependency dep : importDependencies) {
             if (versionConstraints.put(dep, dep.getVersionConstraint()) != null) {
-                fail(null, "Module " + moduleString + " imports " + dep.getType() + " "
+                fail(null, "Module " + moduleString + " imports module "
                      + dep.getName() + " more than once.");
             }
         }
@@ -492,11 +496,10 @@ final class ModuleImpl extends Module {
         // Get a Module instance for each imported ModuleDefinition
         Repository repository = moduleDef.getRepository();
         for (ImportDependency dep : moduleDef.getImportDependencies()) {
-            if (dep.getType().equals("module") == false) {
+            if ((dep instanceof ModuleDependency) == false) {
                 // XXX: supports module dependency only at this point
                 fail(null, "Unrecognized import dependency type in module " + moduleString
-                    + ": import " + dep.getType() + " " + dep.getName()
-                    + " " + dep.getVersionConstraint());
+                    + ": " + dep.toString());
             }
 
             // Retreives overriden version constraint for the dependency
@@ -551,13 +554,13 @@ final class ModuleImpl extends Module {
                 if (newConstraint == null) {
                     fail(null, "Import override policy error in module " + moduleString
                         + ": overridden version constraint missing in the "
-                        + "returned map for import " + dep.getType()
+                        + "returned map for module"
                         + " dependency " + dep.getName());
                 }
                 if (constraint.contains(newConstraint) == false) {
                     fail(null, "Import override policy error in module " + moduleString
                         + ": overridden version constraint " + newConstraint
-                        + " for import " + dep.getType() + " dependency " + dep.getName()
+                        + " for module dependency " + dep.getName()
                         + " is outside the boundary of the original "
                         + "version constraint "+ constraint);
                 }
@@ -625,7 +628,7 @@ final class ModuleImpl extends Module {
             }
             if (dep.getVersionConstraint().contains(vc) == false) {
                 fail(null, "Import policy error in module " + moduleString
-                    + ": import " + dep.getType() + " " + dep.getName()
+                    + ": module dependency " + dep.getName()
                     + " in the returned map does not satisfy version constraint " + dep.getVersionConstraint());
             }
         }
@@ -652,7 +655,7 @@ final class ModuleImpl extends Module {
             for (ImportDependency dep : importDependencies) {
                 // XXX handle only module dependency at this point
                 //
-                if (dep.getType().equals("module") == false) {
+                if ((dep instanceof ModuleDependency) == false) {
                     continue;
                 }
                 String name = dep.getName();
@@ -660,7 +663,7 @@ final class ModuleImpl extends Module {
                 if (constraint == null) {
                     throw new ModuleInitializationException
                         ("Default import policy error in module " + moduleString
-                         + ": overridden version constraint is missing for import " + dep.getType() + " " + name);
+                         + ": overridden version constraint is missing for module dependency " + name);
                 }
                 ModuleDefinition importedMD = rep.find(name, constraint);
                 if (DEBUG) System.out.println("Imported module definition: " + importedMD);

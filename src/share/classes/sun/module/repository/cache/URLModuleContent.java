@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.module.ModuleContent;
 import java.net.URL;
 import java.security.CodeSigner;
+import java.util.Set;
 import java.util.jar.JarFile;
 import sun.module.JamUtils;
 import sun.module.repository.RepositoryUtils;
@@ -50,8 +51,8 @@ final class URLModuleContent extends CacheModuleContent {
     // Jam file
     private File jamFile;
 
-    // Code signers of the JAM file
-    private CodeSigner[] codeSigners;
+    // An unmodifiable set of code signers of the JAM file
+    private Set<CodeSigner> codeSigners;
 
     // Flag to indicate if the module archive has been downloaded.
     private boolean downloaded = false;
@@ -173,7 +174,7 @@ final class URLModuleContent extends CacheModuleContent {
     }
 
     @Override
-    protected CodeSigner[] getJamCodeSigners() {
+    protected Set<CodeSigner> getJamCodeSigners() {
         return codeSigners;
     }
 

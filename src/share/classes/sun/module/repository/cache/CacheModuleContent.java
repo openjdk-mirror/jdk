@@ -25,6 +25,7 @@
 
 package sun.module.repository.cache;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
@@ -32,6 +33,10 @@ import java.module.ModuleContent;
 import java.module.annotation.JarLibraryPath;
 import java.module.annotation.NativeLibraryPath;
 import java.module.annotation.NativeLibraryPaths;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.security.CodeSigner;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +55,7 @@ import sun.module.repository.RepositoryUtils;
  *
  * @since 1.7
  */
-abstract class CacheModuleContent extends ModuleContent {
+abstract class CacheModuleContent implements ModuleContent {
 
     // Entry directory
     private final File entryDirectory;
@@ -91,11 +96,11 @@ abstract class CacheModuleContent extends ModuleContent {
     protected abstract File getJamFile() throws IOException;
 
     /**
-     * Returns the code signers of the JAM file.
+     * Returns an unmodifiable set of code signers of the JAM file.
      *
-     * @return the code signers.
+     * @return an unmodifiable set of code signers.
      */
-    protected abstract CodeSigner[] getJamCodeSigners();
+    protected abstract Set<CodeSigner> getJamCodeSigners();
 
     /**
      * Returns true if the module metadata in the JAM file should be compared
@@ -199,6 +204,10 @@ abstract class CacheModuleContent extends ModuleContent {
      * does not match what the module metadata we obtained earlier.
      */
     private void compareMetadataBytes(byte[] moduleMetadataBytes) throws IOException {
+
+    System.out.println(" " + metadataBytes.length);
+    System.out.println(" " + moduleMetadataBytes.length);
+
         if ((metadataBytes.length != moduleMetadataBytes.length)
             || Arrays.equals(metadataBytes, moduleMetadataBytes) == false) {
             throw new IOException("Mismatch between MODULE.METADATA file and the one in the JAM file");
@@ -262,21 +271,51 @@ abstract class CacheModuleContent extends ModuleContent {
     }
 
     @Override
-    public final InputStream getEntryAsStream(String name) throws IOException {
+    public final ReadableByteChannel getEntryAsChannel(String name) throws IOException {
         if (initializeIfNecessary() == false)  {
             throw initializationException;
         }
         for (JarFile jf : classPaths)   {
             JarEntry je = jf.getJarEntry(name);
             if (je != null) {
-                return jf.getInputStream(je);
+                return Channels.newChannel(jf.getInputStream(je));
             }
         }
         return null;
     }
 
     @Override
-    public final CodeSigner[] getCodeSigners() throws IOException {
+    public ByteBuffer getEntryAsByteBuffer(String name) throws IOException {
+        ReadableByteChannel src = getEntryAsChannel(name);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        WritableByteChannel dest = Channels.newChannel(baos);
+
+        ByteBuffer buffer = ByteBuffer.allocate(8192);
+
+        // Read the stream until it is EOF
+        while (src.read(buffer) != -1) {
+             // prepare the buffer to be drained
+             buffer.flip();
+
+             // make sure the buffer was fully drained.
+             while (buffer.hasRemaining()) {
+                dest.write (buffer);
+             }
+
+             // make the buffer empty, ready for filling
+             buffer.clear();
+        }
+
+        // Close the channels
+        src.close();
+        dest.close();
+
+        // Convert to byte array
+        return ByteBuffer.wrap(baos.toByteArray()).asReadOnlyBuffer();
+    }
+
+    @Override
+    public final Set<CodeSigner> getCodeSigners() throws IOException {
         if (initializeIfNecessary() == false)  {
             throw initializationException;
         }

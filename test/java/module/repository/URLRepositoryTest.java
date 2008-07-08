@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.module.*;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -178,7 +179,7 @@ public class URLRepositoryTest  {
 
     void runTest(URL url, boolean fileBased) throws Throwable {
         Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(), "test", url, repoConfig);
+            "test", url, repoConfig, RepositoryConfig.getSystemRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repo));
@@ -206,8 +207,8 @@ public class URLRepositoryTest  {
             tmpConfig.putAll(repoConfig);
             tmpConfig.put("sun.module.repository.URLRepository.sourceLocationMustExist", "true");
             r2 = Modules.newURLRepository(
-                RepositoryConfig.getSystemRepository(),
-                "test2", new URL("file:///doesNotExist"), tmpConfig);
+                "test2", new URL("file:///doesNotExist"), tmpConfig,
+                RepositoryConfig.getSystemRepository());
             fail();
         } catch (FileNotFoundException ex) {
             check(ex.getMessage().contains("does not exist"));
@@ -265,10 +266,10 @@ public class URLRepositoryTest  {
 
         for (File f : jamFiles) {
             ModuleArchiveInfo mai =
-                workRepo.install(f.getCanonicalFile().toURI().toURL());
+                workRepo.install(f.getCanonicalFile().toURI());
             check(mai != null);
 
-            // MODULE_INSTALLED event should be fired.
+            // MODULE_ARCHIVE_INSTALLED event should be fired.
             check(!ec.initializeEventExists(workRepo));
             check(!ec.shutdownEventExists(workRepo));
             check(ec.installEventExists(workRepo, mai));
@@ -278,7 +279,7 @@ public class URLRepositoryTest  {
         if (!fileBased) {
             repo.reload();
 
-            // MODULE_UNINSTALLED and MODULE_INSTALLED events
+            // MODULE_ARCHIVE_UNINSTALLED and MODULE_ARCHIVE_INSTALLED events
             // should be fired for the existing modules
             check(!ec.initializeEventExists(repo));
             check(!ec.shutdownEventExists(repo));
@@ -297,7 +298,7 @@ public class URLRepositoryTest  {
         for (ModuleArchiveInfo mai : new ArrayList<ModuleArchiveInfo>(workRepo.list())) {
             check(workRepo.uninstall(mai));
 
-            // MODULE_UNINSTALLED event should be fired.
+            // MODULE_ARCHIVE_UNINSTALLED event should be fired.
             check(!ec.initializeEventExists(workRepo));
             check(!ec.shutdownEventExists(workRepo));
             check(!ec.installEventExists(workRepo, null));
@@ -306,7 +307,7 @@ public class URLRepositoryTest  {
         if (!fileBased) {
             repo.reload();
 
-            // MODULE_UNINSTALLED and MODULE_INSTALLED events
+            // MODULE_ARCHIVE_UNINSTALLED and MODULE_ARCHIVE_INSTALLED events
             // should be fired for the existing modules
             check(!ec.initializeEventExists(repo));
             check(!ec.shutdownEventExists(repo));
@@ -356,7 +357,7 @@ public class URLRepositoryTest  {
         if (fileBased) {
             // Check install of same module fails
             try {
-                repo.install(jamFiles.get(0).getCanonicalFile().toURI().toURL());
+                repo.install(jamFiles.get(0).getCanonicalFile().toURI());
                 fail();
             } catch (IllegalStateException ex) {
                 println("===" + ex.getMessage());
@@ -379,10 +380,10 @@ public class URLRepositoryTest  {
                 "extra", "SampleExtra", "ModuleExtra",
                 "0.1", "notsolaris", "notsparc", false, jamDir);
             ModuleArchiveInfo mai = null;
-            mai = repo.install(extra.getCanonicalFile().toURI().toURL());
+            mai = repo.install(extra.getCanonicalFile().toURI());
             check(mai != null);
 
-            // MODULE_INSTALLED event should be fired.
+            // MODULE_ARCHIVE_INSTALLED event should be fired.
             check(!ec.initializeEventExists(repo));
             check(!ec.shutdownEventExists(repo));
             check(ec.installEventExists(repo, mai));
@@ -394,7 +395,7 @@ public class URLRepositoryTest  {
 
         // Non .jam/.jar/.jam.pack.gz should cause exception from URLRepository.install.
         try {
-            repo.install(new URL("http://www.sun.com"));
+            repo.install(new URI("http://www.sun.com"));
             fail();
         } catch (UnsupportedOperationException ex) {
             if (fileBased) {
@@ -418,7 +419,7 @@ public class URLRepositoryTest  {
 
         // Non-existent file URL should fail
         try {
-            repo.install(new URL("file:/nonexistentfileforsuredontyouthinkireallyhope.jam"));
+            repo.install(new URI("file:/nonexistentfileforsuredontyouthinkireallyhope.jam"));
             fail();
         } catch (UnsupportedOperationException ex) {
             if (fileBased) {
@@ -459,7 +460,7 @@ public class URLRepositoryTest  {
                 if ("ModuleMumble".equals(mai.getName())) {
                     check(repo.uninstall(mai));
 
-                    // MODULE_UNINSTALLED event should be fired.
+                    // MODULE_ARCHIVE_UNINSTALLED event should be fired.
                     check(!ec.initializeEventExists(repo));
                     check(!ec.shutdownEventExists(repo));
                     check(!ec.installEventExists(repo, null));

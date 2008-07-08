@@ -59,6 +59,6 @@ public class UserRepositoryFactory extends RepositoryFactory {
         }
 
         File f = new File(sourceLocation.getFile()).getCanonicalFile();
-        return Modules.newLocalRepository(parent, name, f, config);
+        return Modules.newLocalRepository(name, f, config, parent);
     }
 }

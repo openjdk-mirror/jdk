@@ -42,8 +42,10 @@ import java.lang.annotation.RetentionPolicy;
  *    &#064;MainClass("com.wombat.xyz.Main")
  *    module com.wombat.xyz;
  * </pre></blockquote>
- * Being a main class does not imply the class is exported from the module
- * definition; the main class must be declared as exported separately.
+ * The main class must have a {@code main} method which is declared public,
+ * static, and void; the method must accept a single argument that is an array
+ * of strings.
+ *
  * @since 1.7
  */
 @Target({ElementType.MODULE})

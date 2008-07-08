@@ -31,9 +31,27 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * This class represents a module system. A module system is responsible for
- * instantiating module instances from module definitions, and managing their
- * lifetimes.
+ * This class represents a module system.
+ * <p>
+ * A {@code ModuleSystem} is responsible for creating and initializing
+ * module instances from module definitions, and managing their lifetimes.
+ * <p>
+ * A {@code ModuleSystem} object is used to instantiate and
+ * initialize a {@link Module}
+ * instance from a {@link ModuleDefinition} using the
+ * {@link getModule(ModuleDefinition) <tt>getModule</tt>} method or the
+ * {@link getModules(ModuleDefinition, List) <tt>getModules</tt>} method.
+ * The {@code ModuleSystem} object manages the lifetime of each
+ * {@code Module} instance it creates, until the
+ * {@code Module} instance is released using the
+ * {@link releaseModule(ModuleDefinition) <tt>releaseModule</tt>} method.
+ * <p>
+ * A {@code ModuleDefinition} can be disabled in its {@code ModuleSystem}
+ * using the
+ * {@link disableModuleDefinition(ModuleDefinition)
+ * <tt>disableModuleDefinition</tt>} method;
+ * the module system must not instantiate any new {@code Module} instance
+ * from a disabled {@code ModuleDefinition}.
  * <p>
  * @see java.module.Module
  * @see java.module.ModuleDefinition
@@ -45,14 +63,25 @@ import java.util.concurrent.ThreadFactory;
 @java.util.Service
 public abstract class ModuleSystem {
 
-    private static ModuleSystem defaultImpl = null;
-
     /**
-     * Constructor used by subclasses.
+     * Creates a {@code ModuleSystem} instance.
+     * <p>
+     * If a security manager is present, this method calls the security
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createModuleSystem")} permission to
+     * ensure it's ok to create a module system.
+     *
+     * @throws SecurityException if a security manager exists and its
+     *         {@code checkPermission} method denies access to create a new
+     *         module system instance.
      */
     protected ModuleSystem() {
-        // empty
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            sm.checkPermission(new ModuleSystemPermission("createModuleSystem"));
+        }
     }
+
 
     /**
      * Returns a {@code Module} instance for the specified
@@ -158,18 +187,6 @@ public abstract class ModuleSystem {
      */
     public abstract void disableModuleDefinition(ModuleDefinition moduleDef);
 
-    /**
-     * Returns the system's default module system.
-     *
-     * @return the system's default module system.
-     */
-    public static synchronized ModuleSystem getDefault() {
-        if (defaultImpl == null) {
-            defaultImpl = sun.module.core.ModuleSystemImpl.INSTANCE;
-        }
-        return defaultImpl;
-    }
-
     // Module system listener(s)
     private static ModuleSystemListener moduleSystemListener = null;
     private static Object listenerSyncObject = new Object();
@@ -218,7 +235,6 @@ public abstract class ModuleSystem {
      * @throws SecurityException if a security manager exists and its
      *         checkPermission method denies access to remove a module system
      *         listener from the module systems.
-     * @throws NullPointerException if listener is null.
      */
     public static final void removeModuleSystemListener(ModuleSystemListener listener) {
         if (listener == null) {

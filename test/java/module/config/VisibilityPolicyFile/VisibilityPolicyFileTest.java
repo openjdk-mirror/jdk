@@ -77,6 +77,11 @@ public class VisibilityPolicyFileTest {
         }
 
         @Override
+        public String getMainClass() {
+            return null;
+        }
+
+        @Override
         public Set<String> getAttributeNames() {
             return Collections.unmodifiableSet(attributes.keySet());
         }

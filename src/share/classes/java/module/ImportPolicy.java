@@ -29,9 +29,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This interface represents the import policy of a module definition. The
- * import policy is used to determine the version constraints that should be
- * used to resolve the import dependencies in a module during initialization.
+ * This interface represents the import policy of a module definition
+ * in the JAM module system. The import policy is used to
+ * determine the version constraints that should be used to resolve
+ * the import dependencies in a module during initialization.
  * <p>
  * @see java.module.ImportDependency
  * @see java.module.ImportOverridePolicy

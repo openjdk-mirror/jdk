@@ -31,9 +31,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.module.Modules;
 import java.module.ModuleDefinition;
 import java.module.ModuleContent;
+import java.module.ModuleSystem;
 import java.module.annotation.ImportModule;
 import java.module.annotation.ImportModules;
 import java.module.annotation.ServiceProvider;
@@ -43,10 +46,12 @@ import java.module.annotation.Version;
 import java.security.CodeSigner;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import sun.module.annotation.ModuleName;
 import sun.module.annotation.ExportPackages;
+import sun.module.core.JamModuleDefinition;
 
 /**
  * Definitions of the virtual modules for the Java SE platform.
@@ -98,7 +103,6 @@ public final class VirtualModuleDefinitions {
     @ServiceProviders({
         @ServiceProvider(service="com.sun.mirror.apt.AnnotationProcessorFactory",
                          providerClass="com.sun.istack.internal.ws.AnnotationProcessorFactoryImpl"),
-
         // XXX Need to handle platform-specific providers
         //@ServiceProvider(service="com.sun.tools.attach.spi.AttachProvider", // Solaris
         //                 providerClass="sun.tools.attach.SolarisAttachProvider"),
@@ -108,7 +112,6 @@ public final class VirtualModuleDefinitions {
         //                 providerClass="sun.tools.attach.LinuxAttachProvider"),
         //@ServiceProvider(service="javax.print.PrintServiceLookup",
         //                 providerClass="sun.print.UnixPrintServiceLookup"),
-
         @ServiceProvider(service="javax.print.StreamPrintServiceFactory",
                          providerClass="sun.print.PSStreamPrinterFactory")
     })
@@ -386,6 +389,9 @@ public final class VirtualModuleDefinitions {
         // empty
     }
 
+    // Bootstrap module system
+    private static final ModuleSystem moduleSystem = new BootstrapModuleSystem();
+
     /**
      * Returns a list of virtual module definitions for the Java SE platform.
      */
@@ -408,8 +414,9 @@ public final class VirtualModuleDefinitions {
         for (Class clazz : metadataClasses) {
             byte[] metadata = getBytes(clazz);
             try {
-                moduleDefs.add(Modules.newJamModuleDefinition(metadata,
-                    new DummyModuleContent(),
+                moduleDefs.add(new JamModuleDefinition(moduleSystem,
+                    null, null, metadata,
+                    null, new DummyModuleContent(),
                     BootstrapRepository.getInstance(),
                     false));
             } catch (Exception e) {
@@ -459,7 +466,9 @@ public final class VirtualModuleDefinitions {
      * XXX It should probably be fixed later on when we have real modules in
      * place.
      */
-    private static final class DummyModuleContent extends ModuleContent {
+    private static final class DummyModuleContent implements ModuleContent {
+
+        private static final Set<CodeSigner> codeSigners = Collections.unmodifiableSet(new HashSet<CodeSigner>());
 
         DummyModuleContent() {
             // empty
@@ -471,7 +480,12 @@ public final class VirtualModuleDefinitions {
         }
 
         @Override
-        public InputStream getEntryAsStream(String name) throws IOException {
+        public ReadableByteChannel getEntryAsChannel(String name) throws IOException {
+            throw new IOException();
+        }
+
+        @Override
+        public ByteBuffer getEntryAsByteBuffer(String name) throws IOException {
             throw new IOException();
         }
 
@@ -486,8 +500,8 @@ public final class VirtualModuleDefinitions {
         }
 
         @Override
-        public CodeSigner[] getCodeSigners() {
-            return null;
+        public Set<CodeSigner> getCodeSigners() {
+            return codeSigners;
         }
 
         @Override

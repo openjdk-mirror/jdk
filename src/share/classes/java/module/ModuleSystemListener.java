@@ -31,12 +31,16 @@ import java.util.EventListener;
  * The listener interface for receiving module system events.
  * <p>
  * The class that is interested in processing module system events implements
- * this interface. Instances of that class register with a module system,
- * using the module system's {@code addModuleSystemListener} static method.
+ * this interface, and the object created with that class is registered, using
+ * the
+ * {@link ModuleSystem#addModuleSystemListener(ModuleSystemListener)
+ * <tt>addModuleSystemListener</tt>} method of the {@code ModuleSystem} class.
  * <p>
  * Listeners that are no longer interested in processing any module system
- * events can be unregistered with the module system, using the module system's
- * {@code removedModuleSystemListener} static method.
+ * events can be unregistered, using the
+ * {@link ModuleSystem#removeModuleSystemListener(ModuleSystemListener)
+ * <tt>removeModuleSystemListener</tt>} method of the {@code ModuleSystem}
+ * class.
  *
  * @see java.module.ModuleSystem
  * @see java.module.ModuleSystemEvent
@@ -46,10 +50,7 @@ import java.util.EventListener;
 public interface ModuleSystemListener extends EventListener {
 
     /**
-     * Invoked after a module instance has been initialized successfully, after
-     * a module instance has been released successfully, after a module
-     * initialization exception occurs, or after a module definition has been
-     * disabled successfully.
+     * Invoked when a change has occurred in a module system.
      *
      * @param e module system event
      */

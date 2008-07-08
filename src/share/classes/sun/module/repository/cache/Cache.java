@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.CodeSigner;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.module.Version;
@@ -146,7 +147,7 @@ import sun.module.repository.RepositoryUtils;
 
             // Checks if the jam file is consistently signed by the same
             // signers.
-            CodeSigner[] codeSigners = JamUtils.getCodeSigners(f);
+            Set<CodeSigner> codeSigners = JamUtils.getCodeSigners(f);
 
             // Extracts MODULE.METADATA from the jam file.
             byte[] metadataBytes = JamUtils.getMetadataBytes(f);

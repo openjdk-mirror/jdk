@@ -57,10 +57,10 @@ public class EventChecker {
                 if (e.getType() == RepositoryEvent.Type.REPOSITORY_SHUTDOWN) {
                     shutdownEventQueue.add(e);
                 }
-                if (e.getType() == RepositoryEvent.Type.MODULE_INSTALLED) {
+                if (e.getType() == RepositoryEvent.Type.MODULE_ARCHIVE_INSTALLED)  {
                     installEventQueue.add(e);
                 }
-                if (e.getType() == RepositoryEvent.Type.MODULE_UNINSTALLED)  {
+                if (e.getType() == RepositoryEvent.Type.MODULE_ARCHIVE_UNINSTALLED)  {
                     uninstallEventQueue.add(e);
                 }
             }
@@ -101,11 +101,11 @@ public class EventChecker {
     }
 
     boolean installEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
-        return eventExists(installEventQueue, RepositoryEvent.Type.MODULE_INSTALLED, repo, mai);
+        return eventExists(installEventQueue, RepositoryEvent.Type.MODULE_ARCHIVE_INSTALLED, repo, mai);
     }
 
     boolean uninstallEventExists(Repository repo, ModuleArchiveInfo mai) throws Exception {
-        return eventExists(uninstallEventQueue, RepositoryEvent.Type.MODULE_UNINSTALLED, repo, mai);
+        return eventExists(uninstallEventQueue, RepositoryEvent.Type.MODULE_ARCHIVE_UNINSTALLED, repo, mai);
     }
 
     boolean eventExists(

@@ -41,13 +41,10 @@ import java.util.Set;
  * Composition of calls can construct arbitrary nestings of constraints, as
  * the following example illustrates:</p>
  * <pre>
- * Query query = Query.and(Query.module("com.wombat.webservice", "2.0.0+"),
+ * Query query = Query.and(Query.module("com.wombat.webservice"),
  *                         Query.annotation(ServiceProviders.class));
  * </pre>
  *
- * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
- * method in this class will cause a {@link NullPointerException} to be thrown.
- * <p>
  * @see java.module.ModuleDefinition
  * @see java.module.VersionConstraint
  * @since 1.7
@@ -67,9 +64,20 @@ public abstract class Query implements Serializable {
     private static final Query MATCH_NONE = new NoneQuery();
 
     /**
-     * A {@code Query} object that matches everything.
+     * A {@code Query} object that matches any module definition.
      */
     public static final Query ANY = MATCH_ALL;
+
+
+    /**
+     * Index hints based on the name of the module definition.
+     */
+    public static final String MODULE_NAME_INDEX_HINTS = "MODULE_NAME_INDEX_HINTS";
+
+    /**
+     * Index hints based on the name of the exported package in a module definition.
+     */
+    public static final String EXPORTED_PACKAGE_NAME_INDEX_HINTS = "EXPORTED_PACKAGE_NAME_INDEX_HINTS";
 
     /**
      * @serial include
@@ -77,13 +85,16 @@ public abstract class Query implements Serializable {
     private static class AllQuery extends Query {
         private static final long serialVersionUID = 4847340912937723526L;
         public boolean match(ModuleDefinition moduleDef)  {
+            if (moduleDef == null) {
+                throw new NullPointerException();
+            }
             return true;
         }
-        public Set<String> getIndexableModuleNames() {
-            return null;
-        }
-        public Set<String> getIndexablePackageNames() {
-            return null;
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType == null) {
+                throw new NullPointerException();
+            }
+            throw new UnsupportedOperationException();
         }
         public boolean equals(Object obj)   {
             return (obj instanceof AllQuery);
@@ -102,12 +113,15 @@ public abstract class Query implements Serializable {
     private static class NoneQuery extends Query {
         private static final long serialVersionUID = 469940504421183286L;
         public boolean match(ModuleDefinition moduleDef)  {
+            if (moduleDef == null) {
+                throw new NullPointerException();
+            }
             return false;
         }
-        public Set<String> getIndexableModuleNames() {
-            return Collections.emptySet();
-        }
-        public Set<String> getIndexablePackageNames() {
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType == null) {
+                throw new NullPointerException();
+            }
             return Collections.emptySet();
         }
         public boolean equals(Object obj) {
@@ -142,13 +156,13 @@ public abstract class Query implements Serializable {
             name = s.readUTF();
             constraint = VersionConstraint.valueOf(s.readUTF());
         }
-        public Set<String> getIndexableModuleNames() {
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType.equals(MODULE_NAME_INDEX_HINTS) == false) {
+                throw new UnsupportedOperationException();
+            }
             Set<String> indexableNames = new HashSet<String>();
             indexableNames.add(name);
             return Collections.unmodifiableSet(indexableNames);
-        }
-        public Set<String> getIndexablePackageNames() {
-            return null;
         }
         public boolean match(ModuleDefinition moduleDef)  {
             return moduleDef.getName().equals(name)
@@ -200,10 +214,10 @@ public abstract class Query implements Serializable {
             name = s.readUTF();
             constraint = VersionConstraint.valueOf(s.readUTF());
         }
-        public Set<String> getIndexableModuleNames() {
-            return null;
-        }
-        public Set<String> getIndexablePackageNames() {
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType.equals(IndexType.EXPORTED_PACKAGE_NAME) == false) {
+                throw new UnsupportedOperationException();
+            }
             Set<String> indexableNames = new HashSet<String>();
             indexableNames.add(name);
             return Collections.unmodifiableSet(indexableNames);
@@ -268,11 +282,11 @@ public abstract class Query implements Serializable {
             else
                 return (v.equals(value));
         }
-        public Set<String> getIndexableModuleNames()  {
-            return null;
-        }
-        public Set<String> getIndexablePackageNames() {
-            return null;
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType == null) {
+                throw new NullPointerException();
+            }
+            throw new UnsupportedOperationException();
         }
         public boolean equals(Object obj)   {
             if (!(obj instanceof AttributeQuery))
@@ -314,11 +328,11 @@ public abstract class Query implements Serializable {
             // No match if annotation is not present.
             return (annotation != null);
         }
-        public Set<String> getIndexableModuleNames()  {
-            return null;
-        }
-        public Set<String> getIndexablePackageNames() {
-            return null;
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType == null) {
+                throw new NullPointerException();
+            }
+            throw new UnsupportedOperationException();
         }
         public boolean equals(Object obj) {
             if (!(obj instanceof AnnotationQuery))
@@ -348,11 +362,11 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef) {
             return !query.match(moduleDef);
         }
-        public Set<String> getIndexableModuleNames()  {
-            return null;
-        }
-        public Set<String> getIndexablePackageNames() {
-            return null;
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType == null) {
+                throw new NullPointerException();
+            }
+            throw new UnsupportedOperationException();
         }
         public boolean equals(Object obj)   {
             if (!(obj instanceof NotQuery))
@@ -385,31 +399,26 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef) {
             return query1.match(moduleDef) && query2.match(moduleDef);
         }
-        public Set<String> getIndexableModuleNames()  {
-            Set<String> indexableNames1 = query1.getIndexableModuleNames();
-            Set<String> indexableNames2 = query2.getIndexableModuleNames();
-            if (indexableNames1 == null) {
-                return indexableNames2;
-            } else if (indexableNames2 == null) {
-                return indexableNames1;
-            } else {
-                Set<String> result = new HashSet<String>(indexableNames1);
-                result.retainAll(indexableNames2);
-                return Collections.unmodifiableSet(result);
+        public Set<String> getIndexHints(String indexType) {
+            if (indexType == null) {
+                throw new NullPointerException();
             }
-        }
-        public Set<String> getIndexablePackageNames()  {
-            Set<String> indexableNames1 = query1.getIndexablePackageNames();
-            Set<String> indexableNames2 = query2.getIndexablePackageNames();
-            if (indexableNames1 == null) {
-                return indexableNames2;
-            } else if (indexableNames2 == null) {
-                return indexableNames1;
-            } else {
-                Set<String> result = new HashSet<String>(indexableNames1);
-                result.retainAll(indexableNames2);
-                return Collections.unmodifiableSet(result);
+
+            Set<String> indexHints1, indexHints2;
+            try {
+                indexHints1 = query1.getIndexHints(indexType);
+            } catch (UnsupportedOperationException e) {
+                return query2.getIndexHints(indexType);
             }
+            try {
+                indexHints2 = query2.getIndexHints(indexType);
+            } catch (UnsupportedOperationException e) {
+                return indexHints1;
+            }
+
+            Set<String> result = new HashSet<String>(indexHints1);
+            result.retainAll(indexHints2);
+            return Collections.unmodifiableSet(result);
         }
         public boolean equals(Object obj)   {
             if (!(obj instanceof AndQuery))
@@ -447,31 +456,14 @@ public abstract class Query implements Serializable {
         public boolean match(ModuleDefinition moduleDef) {
             return query1.match(moduleDef) || query2.match(moduleDef);
         }
-        public Set<String> getIndexableModuleNames()  {
-            Set<String> indexableNames1 = query1.getIndexableModuleNames();
-            Set<String> indexableNames2 = query2.getIndexableModuleNames();
-            if (indexableNames1 == null)  {
-                return indexableNames2;
-            } else if (indexableNames2 == null)  {
-                return indexableNames1;
-            } else {
-                Set<String> result = new HashSet<String>(indexableNames1);
-                result.addAll(indexableNames2);
-                return Collections.unmodifiableSet(result);
-            }
-        }
-        public Set<String> getIndexablePackageNames()  {
-            Set<String> indexableNames1 = query1.getIndexablePackageNames();
-            Set<String> indexableNames2 = query2.getIndexablePackageNames();
-            if (indexableNames1 == null)  {
-                return indexableNames2;
-            } else if (indexableNames2 == null)  {
-                return indexableNames1;
-            } else {
-                Set<String> result = new HashSet<String>(indexableNames1);
-                result.addAll(indexableNames2);
-                return Collections.unmodifiableSet(result);
-            }
+        public Set<String> getIndexHints(String indexType)   {
+
+            Set<String> indexHints1 = query1.getIndexHints(indexType);
+            Set<String> indexHints2 = query2.getIndexHints(indexType);
+
+            Set<String> result = new HashSet<String>(indexHints1);
+            result.addAll(indexHints2);
+            return Collections.unmodifiableSet(result);
         }
         public boolean equals(Object obj)   {
             if (!(obj instanceof OrQuery))
@@ -512,13 +504,14 @@ public abstract class Query implements Serializable {
     }
 
     /**
-     * Returns a {@code Query} that is the conjunction of two other queries.
+     * Returns a {@code Query} that is the conjunction of two or more queries.
      *
      * @param query1 A query.
      * @param query2 Another query.
+     * @param queries Additional queries.
      * @return the {@code Query} object.
      */
-    public static Query and(Query query1, Query query2)  {
+    public static Query and(Query query1, Query query2, Query... queries)  {
         if (query1 == null)
             throw new NullPointerException("query1 must not be null.");
         if (query2 == null)
@@ -534,19 +527,24 @@ public abstract class Query implements Serializable {
 
         if (query1 == MATCH_NONE || query2 == MATCH_NONE)
             return MATCH_NONE;
-        // ----
 
-        return new AndQuery(query1, query2);
+        // ----
+        Query result = new AndQuery(query1, query2);
+        for (Query q : queries) {
+            result = new AndQuery(result, q);
+        }
+        return result;
     }
 
     /**
-     * Returns a {@code Query} that is the disjunction of two other queries.
+     * Returns a {@code Query} that is the disjunction of two or more queries.
      *
      * @param query1 A query.
      * @param query2 Another query.
+     * @param queries Additional queries.
      * @return the {@code Query} object.
      */
-    public static Query or(Query query1, Query query2) {
+    public static Query or(Query query1, Query query2, Query... queries) {
         if (query1 == null)
             throw new NullPointerException("query1 must not be null.");
         if (query2 == null)
@@ -562,9 +560,13 @@ public abstract class Query implements Serializable {
 
         if (query2 == MATCH_NONE)
             return query1;
-        // ----
 
-        return new OrQuery(query1, query2);
+        // ----
+        Query result = new OrQuery(query1, query2);
+        for (Query q : queries) {
+            result = new OrQuery(result, q);
+        }
+        return result;
     }
 
     /**
@@ -601,26 +603,6 @@ public abstract class Query implements Serializable {
     }
 
     /**
-     * Returns a {@code Query} that requires the name of a module definition
-     * equals to the specified name and that the version of a module definition
-     * to be contained within any of the ranges known to the specified version
-     * constraint.
-     *
-     * @param name the name of the module definition.
-     * @param constraint the string to be parsed as version constraint.
-     * @return the {@code Query} object.
-     * @throws IllegalArgumentException if the string cannot be parsed.
-     */
-    public static Query module(String name, String constraint) {
-        if (name == null)
-            throw new NullPointerException("name must not be null.");
-        if (constraint == null)
-            throw new NullPointerException("version constraint must not be null.");
-
-        return module(name, VersionConstraint.valueOf(constraint));
-    }
-
-    /**
      * Returns a {@code Query} that requires the specified name of a module attribute
      * exists.
      *
@@ -635,14 +617,14 @@ public abstract class Query implements Serializable {
     }
 
     /**
-     * Returns a {@code Query} that requires an attribute of a module definition
-     * matches the specified name and value.
+     * Returns a {@code Query} that requires a module attribute of a module
+     * definition matches the specified name and value.
      *
-     * @param name  the name of the module attribute.
+     * @param name the name of the module attribute.
      * @param value the value of the module attribute.
      * @return the {@code Query} object.
      */
-    public static Query attribute(String name, String value) {
+    public static Query attribute(String name, String value)  {
         if (name == null)
             throw new NullPointerException("attribute's name must not be null.");
         if (value == null)
@@ -703,28 +685,6 @@ public abstract class Query implements Serializable {
 */
 
     /**
-     * Returns a {@code Query} that requires a module definition to have an
-     * exported package definition of the specified name and that the version
-     * of the package definition to be contained within any of the ranges known
-     * to the specified version constraint.
-     *
-     * @param name the name of the package definition
-     * @param constraint the string to be parsed as version constraint.
-     * @return the {@code Query} object.
-     * @throws IllegalArgumentException if the string cannot be parsed.
-     */
-/*
-    public static Query exportedPackage(String name, String constraint) {
-        if (name == null)
-            throw new NullPointerException("name must not be null.");
-        if (constraint == null)
-            throw new NullPointerException("version constraint must not be null.");
-
-        return exportedPackage(name, VersionConstraint.valueOf(constraint));
-    }
-*/
-
-    /**
      * Determine if the specified module definition matches this query.
      *
      * @param target the {@code ModuleDefinition} to be matched.
@@ -734,33 +694,19 @@ public abstract class Query implements Serializable {
     public abstract boolean match(ModuleDefinition target);
 
     /**
-     * Returns an unmodifiable set of the indexable names of the module
-     * definitions that is represented by this query.
+     * Returns an unmodifiable set of strings that represent the index hints
+     * in the query based on the specified index type.
      *
-     * This method is intended to be used by the repository implementation as
-     * an optimization to determine a set of module definitions that matches
-     * this query, solely based on the requirement on the module names.
+     * This method is intended to be used by the repository implementations
+     * as an optimization technique to determine a set of module definitions
+     * that matches this query based on index.
      *
-     * @return an unmodifiable set of indexable module names if it exists;
-     *         returns null otherwise. If the set is empty, no module
-     *         definition would match this query.
+     * @param indexType index type
+     * @return an unmodifiable set of strings that represent the index
+     *         hints if they exist in the query. If the query matches no
+     *         module definition, an empty set is returned.
+     * @throws UnsupportedOperationException if no index hints is
+     *         available for the specified index type.
      */
-    public abstract Set<String> getIndexableModuleNames();
-
-    /**
-     * Returns an unmodifiable set of the indexable names of the package
-     * definitions that is represented by this query.
-     *
-     * This method is intended to be used by the repository implementation as
-     * an optimization to determine a set of module definitions that have
-     * exported package definitions which match this query, solely based on
-     * the requirement on the package names.
-     *
-     * @return an unmodifiable set of indexable package names if it exists;
-     *         returns null otherwise. If the set is empty, no module
-     *         definition would match this query.
-     */
-    private Set<String> getIndexablePackageNames() {
-        return null;
-    }
+    public abstract Set<String> getIndexHints(String indexType);
 }

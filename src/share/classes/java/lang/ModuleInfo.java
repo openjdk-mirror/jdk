@@ -208,6 +208,22 @@ public final class ModuleInfo implements AnnotatedElement {
         return exported.toArray(S0);
     }
 
+    /**
+     * Returns an array of String objects reflecting the binary names of all
+     * exported classes and interfaces that are a member of this module.
+     *
+     * <p>The elements in the array returned are not sorted and are not in
+     * any particular order.  This method returns an array of length 0 if
+     * the module has no exported types.
+     *
+     * @return an array of the names of all exported types.
+     * @throws UnsupporterOperationException if the exported types cannot be
+     *         determined.
+     */
+    public String[] getExportedClasses() {
+        return exported.toArray(S0);
+    }
+
     private static Set<String> getPackages(Collection<String> classes) {
         Set<String> packages = new HashSet<String>();
         for (String clazz : classes ) {
@@ -263,7 +279,7 @@ public final class ModuleInfo implements AnnotatedElement {
      * module information corresponding to the named module.
      *
      * @param name a module name, for example, {@code java.se.core}.
-     * @return the module information of the requested name. It may be null if
+     * @return the module information of the requested name. It returns null if
      *          no module information is available.
      */
     public static ModuleInfo getModuleInfo(String name) {

@@ -26,7 +26,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.module.ImportDependency;
 import java.module.ImportOverridePolicy;
+import java.module.Modules;
 import java.module.ModuleDefinition;
+import java.module.ModuleDependency;
 import java.module.ModuleContent;
 import java.module.ModuleSystem;
 import java.module.PackageDefinition;
@@ -74,6 +76,11 @@ public class ImportOverridePolicyFileTest {
         @Override
         public List<ImportDependency> getImportDependencies() {
             return Collections.unmodifiableList(new ArrayList<ImportDependency>());
+        }
+
+        @Override
+        public String getMainClass() {
+            return null;
         }
 
         @Override
@@ -146,8 +153,8 @@ public class ImportOverridePolicyFileTest {
         testBadImportOverridePolicyFile();
     }
 
-    static ImportDependency newImportDependency(String name) {
-        return new ImportDependency("module", name, VersionConstraint.DEFAULT, false, false, null);
+    static ImportDependency newModuleDependency(String name) {
+        return Modules.newModuleDependency(name, VersionConstraint.DEFAULT, false, false, null);
     }
 
     static public void testGoodImportOverridePolicyFile() throws Exception {
@@ -164,9 +171,9 @@ public class ImportOverridePolicyFileTest {
             MockModuleDefinition moduleDef6 = new MockModuleDefinition("x.y.*", Version.valueOf(3, 4, 5));
 
             Map<ImportDependency, VersionConstraint> constraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("p.q.r");
-            ImportDependency importDep2 = newImportDependency("x.y.z");
-            ImportDependency importDep3 = newImportDependency("i.j.k");
+            ImportDependency importDep1 = newModuleDependency("p.q.r");
+            ImportDependency importDep2 = newModuleDependency("x.y.z");
+            ImportDependency importDep3 = newModuleDependency("i.j.k");
             constraints.put(importDep1, VersionConstraint.valueOf("1+"));
             constraints.put(importDep2, VersionConstraint.valueOf("1+"));
             constraints.put(importDep3, VersionConstraint.valueOf("1+"));
@@ -222,9 +229,9 @@ public class ImportOverridePolicyFileTest {
             MockModuleDefinition moduleDef4 = new MockModuleDefinition("x.y.*", Version.valueOf(3, 4, 5));
 
             Map<ImportDependency, VersionConstraint> constraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("p.q.r");
-            ImportDependency importDep2 = newImportDependency("x.y.z");
-            ImportDependency importDep3 = newImportDependency("i.j.k");
+            ImportDependency importDep1 = newModuleDependency("p.q.r");
+            ImportDependency importDep2 = newModuleDependency("x.y.z");
+            ImportDependency importDep3 = newModuleDependency("i.j.k");
             constraints.put(importDep1, VersionConstraint.valueOf("1+"));
             constraints.put(importDep2, VersionConstraint.valueOf("1+"));
             constraints.put(importDep3, VersionConstraint.valueOf("1+"));
@@ -447,9 +454,9 @@ public class ImportOverridePolicyFileTest {
             MockModuleDefinition moduleDef1 = new MockModuleDefinition("a.b.c", Version.valueOf(1, 0, 0));
 
             Map<ImportDependency, VersionConstraint> constraints = new HashMap<ImportDependency, VersionConstraint>();
-            ImportDependency importDep1 = newImportDependency("p.q.r");
-            ImportDependency importDep2 = newImportDependency("x.y.z");
-            ImportDependency importDep3 = newImportDependency("i.j.k");
+            ImportDependency importDep1 = newModuleDependency("p.q.r");
+            ImportDependency importDep2 = newModuleDependency("x.y.z");
+            ImportDependency importDep3 = newModuleDependency("i.j.k");
             constraints.put(importDep1, VersionConstraint.valueOf("1+"));
             constraints.put(importDep2, VersionConstraint.valueOf("1+"));
             constraints.put(importDep3, VersionConstraint.valueOf("1+"));

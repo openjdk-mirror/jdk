@@ -26,13 +26,17 @@
 package java.module;
 
 /**
- * This interface represents a module initializer of a module instance. The
- * initializer is invoked when the module system initializes a module instance,
- * and when that module instance is released from the module system.
+ * This interface represents a module initializer of a module instance
+ * specifically in the JAM module system. The
+ * {@link #initialize(Module) initialize} method is invoked when
+ * the module system initializes a module instance; the
+ * {@link #release(Module) release} method is invoked when that module
+ * instance is released from the module system.
  * <p>
  * @see java.module.Module
  * @see java.module.ModuleDefinition
  * @see java.module.ModuleInitializationException
+ * @see java.module.annotation.ModuleInitializerClass
  *
  * @since 1.7
  */
@@ -50,9 +54,10 @@ public interface ModuleInitializer {
      * imported modules are still in the middle of the initialization, and
      * there are two potential issues:
      * <p>
-     * 1. The exported classes from these imported modules might not yet be
-     *    accessible from this method.<p>
-     * 2. The initializer of these imported modules might not yet been invoked.
+     * 1. The exported classes from an imported module are not guaranteed
+     *    to be accessible from this method.<p>
+     * 2. If an imported module have a module initializer, its
+     *    {@link #initialize(Module) initialize} method may not yet been invoked.
      * <p>
      * Implementations of this method should avoid accessing classes from the
      * imported modules, and should make no assumption that the imported
@@ -62,8 +67,11 @@ public interface ModuleInitializer {
      * Note that the module instance passed as the argument of this method has
      * not been fully initialized. The only methods in {@code Module} that the
      * implementation of this method could invoke reliably are
-     * {@code Module}'s {@code getModuleDefinition()}, {@code hashCode()}, and
-     * {@code toString()}. Otherwise, the result is undeterministric.
+     * {@code Module}'s
+     * {@link Module#getModuleDefinition() <tt>getModuleDefinition</tt>},
+     * {@link Module#hashCode() <tt>hashCode</tt>}, and
+     * {@link Module#toString() <tt>toString</tt>} methods.
+     * Otherwise, the result is undeterministric.
      *
      * @param module the {@code Module} instance to be initialized.
      * @throws ModuleInitializationException if this {@code ModuleInitializer}
@@ -75,18 +83,21 @@ public interface ModuleInitializer {
      * This method is invoked when a module instance is released from the
      * module system. It is invoked in the following situations:
      * <p>
-     * 1. The {@link #initialize(Module) initialize(Module)} method has been
+     * 1. The {@link #initialize(Module) initialize} method has been
      *    invoked successfully, but this module instance still gets into error
      *    state because one or more of its imported modules get into error
      *    state, or<p>
-     * 2. After the {@code releaseModule} method of the {@code ModuleSystem}
-     *    is invoked.
+     * 2. After the {@link ModuleSystem#releaseModule(ModuleDefinition) releaseModule}
+     *    method of the {@code ModuleSystem} is invoked.
      * <p>
      * In the first situation, the module instance passed as the argument of
      * this method is in error state. The only methods in {@code Module} that
      * the implementation of this method could invoke reliably are
-     * {@code Module}'s {@code getModuleDefinition()}, {@code hashCode()}, and
-     * {@code toString()}. Otherwise, the result is undeterministric.
+     * {@code Module}'s
+     * {@link Module#getModuleDefinition() <tt>getModuleDefinition</tt>},
+     * {@link Module#hashCode() <tt>hashCode</tt>}, and
+     * {@link Module#toString() <tt>toString</tt>} methods.
+     * Otherwise, the result is undeterministric.
      * <p>
      * Note that after this method is invoked, the module classloader of this
      * module instance might still be accessible from other modules. If the
@@ -97,7 +108,7 @@ public interface ModuleInitializer {
      * <p>
      * Also, when the virtual machine exits, there is no guarantee that this
      * method is ever invoked even if the
-     * {@link #initialize(Module) initialize(Module)} method has been invoked
+     * {@link #initialize(Module) initialize} method has been invoked
      * successfully.
      *
      * @param module the {@code Module} instance to be released.

@@ -36,45 +36,58 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 /**
- * This class represents a version constraint in the module system. A version
- * constraint is either a version, a version range, or combination of both.
+ * This class represents a version constraint. A version constraint is
+ * either a version, a version range, or combination of both.
  * <p>
- * For example,
- * <blockquote><pre>
- *    <i>Version:</i>
- *    1
- *    1.7
- *    1.7-b61
- *    1.7.0
- *    1.7.0-b61
- *    1.7.0.0
- *    1.7.0.1
- *    1.7.1.3-b32-beta-1
- *    1.7.1.3-b56_rc
- *
- *    <i>General version range:</i>
+ * <h3>Version</h3>
+ * Version is defined in {@link Version}.
+ * <p>
+ * <h3>Version range</h3>
+ * A version range is a range of versions. There are three basic kinds
+ * of version ranges: <i>general</i>, <i>open</i>, and <i>family</i>.
+ * <p>
+ * A general version range matches any version between a lower-bound
+ * version (ignoring qualifier) and an upper-bound version (ignoring
+ * qualifier); each bound is either inclusive or exclusive. It can be
+ * in one of the following formats (The {@code '['} and {@code ']'}
+ * characters mean inclusive; the {@code '('} and {@code ')'}
+ * characters mean exclusive):
+ * <pre>
  *    [1.2.3.4, 5.6.7.8)        ~ 1.2.3.4 <= x < 5.6.7.8
  *    (1.2.3.4, 5.6.7.8]        ~ 1.2.3.4 < x <= 5.6.7.8
  *    (1.2.3.4, 5.6.7.8)        ~ 1.2.3.4 < x < 5.6.7.8
- *    [1.2.3.4, 5.6.7.8]        ~ 1.2.3.4 <= x <= 5.6.7.8
- *
- *    <i>Open version range:</i>
+ *    [1.2.3.4, 5.6.7.8]        ~ 1.2.3.4 <= x <= 5.6.7.8</pre>
+ * An open version range matches any version (ignoring qualifier) greater
+ * than or equal to a specified version. It can be in one of the following
+ * formats (The {@code '+'} character means this version or later):
+ * <pre>
  *    1+                        ~ [1, infinity)                 ~ 1 <= x < infinity
  *    1.2+                      ~ [1.2, infinity)               ~ 1.2 <= x < infinity
  *    1.2.3+                    ~ [1.2.3, infinity)             ~ 1.2.3 <= x < infinity
- *    1.2.3.4+                  ~ [1.2.3.4, infinity)           ~ 1.2.3.4 <= x < infinity
- *
- *    <i>Family version range:</i>
+ *    1.2.3.4+                  ~ [1.2.3.4, infinity)           ~ 1.2.3.4 <= x < infinity</pre>
+ * A family version range matches any version (ignoring qualifier) that is
+ * in a particular release family, and it can be in one of the following
+ * formats (The {@code '*'} character means wildcard match):
+ * <pre>
  *    1.*                       ~ [1, 2)                        ~ 1 <= x < 2
  *    1.2.*                     ~ [1.2, 1.3)                    ~ 1.2 <= x < 1.3
- *    1.2.3.*                   ~ [1.2.3, 1.2.4)                ~ 1.2.3 <= x < 1.2.4
- *
- *    <i>Union of ranges:</i>
+ *    1.2.3.*                   ~ [1.2.3, 1.2.4)                ~ 1.2.3 <= x < 1.2.4</pre>
+ * It is possible to group two or more version ranges together as an union of
+ * ranges, using the {@code ';'} character as separator.
+ * <pre>
  *    [1.2.3.4, 2.0);2.*;3+     ~ 1.2.3.4 <= x < infinity
- *    1.*;[2.0, 2.7.3)          ~ 1.0.0 <= x < 2.7.3
- * </pre></blockquote>
- * The version constraint format is described by the following grammar:
- * <blockquote><pre>
+ *    1.*;[2.0, 2.7.3)          ~ 1.0.0 <= x < 2.7.3</pre>
+ * <p>
+ * <h3>Version constraint</h3>
+ * A version constraint is a mechanism in expressing versioning requirement
+ * through versions and version ranges. The version and the version range are
+ * really shorthands in establishing compatibility. If more arbitrary range,
+ * version inclusion, or version exclusion is needed, the version and the
+ * version range can be used as building blocks to express the versioning
+ * requirement.
+ * <p>
+ * The grammar for the version constraint is as follows:
+ * <pre>
  *   version-constraint := simple-version-constraint (';' simple-version-constraint)*
  *   simple-version-constraint := version | version-range
  *
@@ -90,13 +103,12 @@ import java.util.StringTokenizer;
  *   minor := digit+
  *   micro := digit+
  *   update := digit+
- *   qualifier := (alpha | digit | '-' | '_')+
- * </pre></blockquote>
+ *   qualifier := (alpha | digit | '-' | '_')+</pre>
  * where {@code alpha} is an alphabetic character, {@code a-z, A-Z}.
  *       {@code digit} is a decimal digit, {@code 0-9}.
- *
- * <p>Applications can obtain {@code VersionConstraint} objects by calling the
- * {@link #valueOf(String) valueOf()} factory method.
+ * <p>
+ * Applications can obtain {@code VersionConstraint} objects by calling the
+ * {@link #valueOf(String) valueOf} factory method.
  *
  * <p>Instances of this class are immutable and safe for concurrent use by
  * multiple threads.
@@ -144,6 +156,10 @@ public final class VersionConstraint implements java.io.Serializable {
      *         known to this version constraint. Otherwise, returns false.
      */
     public boolean contains(Version version) {
+        if (version == null) {
+            throw new NullPointerException("version must not be null.");
+        }
+
         for (Object cs : normalizedConstraints) {
             if (cs instanceof Version) {
                 Version v = (Version) cs;
@@ -170,6 +186,10 @@ public final class VersionConstraint implements java.io.Serializable {
      *         false.
      */
     private boolean contains(VersionRange versionRange) {
+        if (versionRange == null) {
+            throw new NullPointerException("versionRange must not be null.");
+        }
+
         for (Object cs : normalizedConstraints) {
             if (cs instanceof VersionRange) {
                 VersionRange vr = (VersionRange) cs;
@@ -191,6 +211,9 @@ public final class VersionConstraint implements java.io.Serializable {
      *         returns false.
      */
     public boolean contains(VersionConstraint versionConstraint)  {
+        if (versionConstraint == null) {
+            throw new NullPointerException("versionConstraint must not be null.");
+        }
 
         for (Object cs : versionConstraint.normalizedConstraints) {
             if (cs instanceof Version) {

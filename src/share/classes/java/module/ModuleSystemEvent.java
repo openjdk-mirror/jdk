@@ -26,7 +26,7 @@
 package java.module;
 
 /**
- * This class represents a module system event that occurs in a module
+ * This class represents an event that occurs in a module
  * system.
  *
  * @see java.module.Module
@@ -43,22 +43,22 @@ public class ModuleSystemEvent {
      */
     public enum Type {
         /**
-         * A module instance has been initialized successfully.
+         * A module instance has been initialized successfully in a module system.
          */
         MODULE_INITIALIZED,
 
         /**
-         * A module instance has been released successfully.
+         * A module instance has been released successfully in a module system.
          */
         MODULE_RELEASED,
 
         /**
-         * The initialization of a module instance has failed.
+         * The initialization of a module instance has failed in a module system.
          */
         MODULE_INITIALIZATION_EXCEPTION,
 
         /**
-         * A module definition has been disabled successfully.
+         * A module definition has been disabled successfully in a module system.
          */
         MODULE_DEFINITION_DISABLED
     };
@@ -70,89 +70,57 @@ public class ModuleSystemEvent {
     private ModuleInitializationException exception;
 
     /**
-     * Constructs a {@code ModuleSystemEvent} object with event type
-     * {@code MODULE_INITIALIZED} or {@code MODULE_RELEASED}, using the
+     * Constructs a {@code ModuleSystemEvent} instance using the
      * specified module system, event type, and module instance.
      *
      * @param source the module system where the event occurs
      * @param type the event type
      * @param module the module instance that the event applies to
-     * @throws IllegalArgumentException if type is
-     *         {@code MODULE_INITIALIZATION_EXCEPTION} or
-     *         {@code MODULE_DEFINITION_DISABLED}
-     * @throws NullPointerException if source is null, type is null,
-     *         or module is null.
-     *
+     * @param moduleDef the module definition that the event applies to
+     * @param exception module initialization exception
+     * @throws NullPointerException if source is {@code null} or type is
+     *         {@code null}.
+     * @throws IllegalArgumentException
+     * <ul>
+     *      <li><p>if type is {@link Type#MODULE_INITIALIZED
+     *             <tt>MODULE_INITIALIZED</tt>} or
+     *             {@link Type#MODULE_RELEASED
+     *             <tt>MODULE_RELEASED</tt>} but
+     *             module is {@code null}, or</p></li>
+     *      <li><p>if type is {@link Type#MODULE_DEFINITION_DISABLED
+     *             <tt>MODULE_DEFINITION_DISABLED</tt>} but
+     *             moduleDef is {@code null}, or</p></li>
+     *      <li><p>if type is {@link Type#MODULE_INITIALIZATION_EXCEPTION
+     *             <tt>MODULE_INITIALIZATION_EXCEPTION</tt>} but
+     *             exception is {@code null}.</p></li>
+     * </ul></p>
      */
-    public ModuleSystemEvent(ModuleSystem source, Type type, Module module) {
+    public ModuleSystemEvent(ModuleSystem source, Type type, Module module,
+                    ModuleDefinition moduleDef, ModuleInitializationException exception) {
         if (source == null)
             throw new NullPointerException("source must not be null");
 
         if (type == null)
             throw new NullPointerException("type must not be null");
 
-        if (module == null)
-            throw new NullPointerException("module must not be null");
+        if ((type.equals(Type.MODULE_INITIALIZED) || type.equals(Type.MODULE_RELEASED))
+             && module == null)
+            throw new IllegalArgumentException("module must not be null with event type " + type);
 
-        if (!(type.equals(Type.MODULE_INITIALIZED) || type.equals(Type.MODULE_RELEASED)))
-            throw new IllegalArgumentException("type must not be " + type);
+        if (type.equals(Type.MODULE_DEFINITION_DISABLED) && moduleDef == null)
+            throw new IllegalArgumentException("moduleDef must not be null with event type " + type);
+
+        if (type.equals(Type.MODULE_INITIALIZATION_EXCEPTION) && exception == null)
+            throw new NullPointerException("exception must not be null with event type " + type);
 
         this.type = type;
         this.source = source;
         this.module = module;
-        this.moduleDef = module.getModuleDefinition();
-        this.exception = null;
-    }
-
-    /**
-     * Constructs a {@code ModuleSystemEvent} object with event type
-     * {@code MODULE_DEFINITION_DISABLED}, using the specified module system
-     * and module definition.
-     *
-     * @param source the module system where the event occurs
-     * @param moduleDef the module definition that the event applies to
-     * @throws NullPointerException if source is null, or moduleDef is null.
-     *
-     */
-    public ModuleSystemEvent(ModuleSystem source, ModuleDefinition moduleDef) {
-        if (source == null)
-            throw new NullPointerException("source must not be null");
-
-        if (moduleDef == null)
-            throw new NullPointerException("moduleDef must not be null");
-
-        this.type = ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED;
-        this.source = source;
-        this.module = null;
-        this.moduleDef = moduleDef;
-        this.exception = null;
-    }
-
-    /**
-     * Constructs a {@code ModuleSystemEvent} object with event type
-     * {@code MODULE_INITIALIZATION_EXCEPTION}, using the specified module
-     * system, module definition, and module initialization exception.
-     *
-     * @param source the module system where the event occurs
-     * @param moduleDef the module definition that the event applies to
-     * @param exception module initialization exception
-     * @throws NullPointerException if source is null, moduleDef is null, or
-     *         exception is null.
-     */
-    public ModuleSystemEvent(ModuleSystem source, ModuleDefinition moduleDef, ModuleInitializationException exception) {
-        if (source == null)
-            throw new NullPointerException("source must not be null");
-
-        if (moduleDef == null)
-            throw new NullPointerException("moduleDef must not be null");
-
-        if (exception == null)
-            throw new NullPointerException("exception must not be null");
-
-        this.type = ModuleSystemEvent.Type.MODULE_INITIALIZATION_EXCEPTION;
-        this.source = source;
-        this.module = null;
-        this.moduleDef = moduleDef;
+        if (module != null)
+            this.moduleDef = module.getModuleDefinition();
+        else {
+            this.moduleDef = moduleDef;
+        }
         this.exception = exception;
     }
 
@@ -164,7 +132,7 @@ public class ModuleSystemEvent {
     }
 
     /**
-     * Returns the module system associated with the event.
+     * Returns the module system where the event occurs.
      */
     public ModuleSystem getSource() {
         return source;

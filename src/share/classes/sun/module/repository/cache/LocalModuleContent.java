@@ -27,6 +27,7 @@ package sun.module.repository.cache;
 
 import java.io.File;
 import java.module.ModuleContent;
+import java.util.Set;
 import java.security.CodeSigner;
 
 /**
@@ -53,7 +54,7 @@ final class LocalModuleContent extends CacheModuleContent {
     }
 
     @Override
-    protected CodeSigner[] getJamCodeSigners() {
+    protected Set<CodeSigner> getJamCodeSigners() {
         return mdInfo.getJamCodeSigners();
     }
 

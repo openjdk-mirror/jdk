@@ -31,9 +31,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the version. The version format must follow the one described in
- * the {@link java.module.Version} class. This metadata annotation can be
- * applied to a Java module. For examples,
+ * Indicates the version of a module definition. The version format must
+ * follow the one described in the {@link java.module.Version} class. This
+ * metadata annotation can be applied to a Java module. For examples,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java

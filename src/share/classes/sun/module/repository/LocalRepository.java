@@ -36,6 +36,7 @@ import java.module.Modules;
 import java.module.Query;
 import java.module.Repository;
 import java.module.Version;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -125,49 +126,6 @@ public final class LocalRepository extends AbstractRepository {
     }
 
     /**
-     * Creates a new <code>LocalRepository</code> instance.
-     * Initializes the repository.
-     * <p>
-     * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
-     * ensure it's ok to create a repository.
-     *
-     * @param parent the parent repository for delegation.
-     * @param name the repository name.
-     * @param source the source location.
-     * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to create a new
-     *         instance of repository.
-     * @throws java.io.IOException if the repository cannot be initialized.
-     */
-    public LocalRepository(Repository parent, String name, URL source) throws IOException {
-        this(parent, name, source, DEFAULT_CONFIG);
-    }
-
-    /**
-     * Creates a new <code>LocalRepository</code> instance using the
-     * <code>Repository</code> returned by the method
-     * <code>getSystemRepository()</code> as the parent repository.
-     * Initializes the repository.
-     * <p>
-     * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
-     * ensure it's ok to create a repository.
-     *
-     * @param name the repository name.
-     * @param source the source location.
-     * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to create a new
-     *         instance of repository.
-     * @throws java.io.IOException if the repository cannot be initialized.
-     */
-    public LocalRepository(String name, URL source) throws IOException {
-        this(getSystemRepository(), name, source);
-    }
-
-    /**
      * Creates a new <code>LocalRepository</code> instance, and initializes it
      * using information from the given {@code config}.
      * <p>
@@ -176,41 +134,19 @@ public final class LocalRepository extends AbstractRepository {
      * <code>ModuleSystemPermission("createRepository")</code> permission to
      * ensure it's ok to create a repository.
      *
+     * @param name the repository name.
+     * @param source the source location.
      * @param parent the parent repository for delegation.
-     * @param name the repository name.
-     * @param source the source location.
      * @param config Map of configuration names to their values
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to create a new
      *         instance of repository.
      * @throws java.io.IOException if the repository cannot be initialized.
      */
-    public LocalRepository(Repository parent, String name,
-            URL source, Map<String, String> config) throws IOException {
-        super(parent, name, source, config);
-    }
-
-    /**
-     * Creates a new <code>LocalRepository</code> instance using the
-     * <code>Repository</code> returned by the method
-     * <code>getSystemRepository()</code> as the parent repository, and
-     * initializes it using information from the given {@code config}.
-     * <p>
-     * If a security manager is present, this method calls the security
-     * manager's <code>checkPermission</code> method with a
-     * <code>ModuleSystemPermission("createRepository")</code> permission to
-     * ensure it's ok to create a repository.
-     *
-     * @param name the repository name.
-     * @param source the source location.
-     * @param config Map of configuration names to their values
-     * @throws SecurityException if a security manager exists and its
-     *         <tt>checkPermission</tt> method denies access to create a new
-     *         instance of repository.
-     * @throws java.io.IOException if the repository cannot be initialized.
-     */
-    public LocalRepository(String name, URL source, Map<String, String> config) throws IOException {
-        this(getSystemRepository(), name, source, config);
+    public LocalRepository(String name, URI source,
+                           Map<String, String> config,
+                           Repository parent) throws IOException {
+        super(name, source, (config == null ? DEFAULT_CONFIG : config), parent);
     }
 
     //
@@ -240,7 +176,10 @@ public final class LocalRepository extends AbstractRepository {
      * @param config Map of configuration names to their values
      * @throws IOException if the repository cannot be initialized
      */
-    protected void doInitialize(Map<String, String> config) throws IOException {
+    protected List<ModuleArchiveInfo> doInitialize2() throws IOException {
+        if (config == null) {
+            throw new NullPointerException("config must not be null");
+        }
         if ("true".equalsIgnoreCase(sysPropSourceLocMustExist)) {
             sourceLocMustExist = true;
         } else {
@@ -255,7 +194,7 @@ public final class LocalRepository extends AbstractRepository {
             cacheDirectory = new File(cacheDirName);
         }
 
-        sourceDirectory = JamUtils.getFile(getSourceLocation());
+        sourceDirectory = JamUtils.getFile(getSourceLocation().toURL());
         readOnly = (sourceDirectory.canWrite() == false);
         if (sourceDirectory.isDirectory() == false) {
             if (sourceLocMustExist) {
@@ -272,6 +211,8 @@ public final class LocalRepository extends AbstractRepository {
 
         assertValidDirs();
 
+        List<ModuleArchiveInfo> result = new ArrayList<ModuleArchiveInfo>();
+
         // Iterates the JAM files in the source directory, and cook them
         // one-by-one.
         File[] jamFiles = sourceDirectory.listFiles(JamUtils.JAM_JAR_FILTER);
@@ -279,6 +220,7 @@ public final class LocalRepository extends AbstractRepository {
         if (jamFiles != null) {
             Map<ModuleArchiveInfo, ModuleDefInfo> mdInfoMap =
                                         new HashMap<ModuleArchiveInfo, ModuleDefInfo>();
+
             for (File file : jamFiles) {
                 try {
                     // XXX Log this action
@@ -287,15 +229,15 @@ public final class LocalRepository extends AbstractRepository {
                     ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(file);
 
                     // Constructs a module archive info
-                    ModuleArchiveInfo mai  = new ModuleArchiveInfo(
+                    JamModuleArchiveInfo mai  = new JamModuleArchiveInfo(
                         this, mdInfo.getName(), mdInfo.getVersion(),
                         mdInfo.getPlatform(), mdInfo.getArch(),
                         file.getAbsolutePath(), file.lastModified());
 
                     mdInfoMap.put(mai, mdInfo);
 
-                    // Adds the module archive info into the internal data structure.
-                    moduleArchiveInfos.add(mai);
+                    // Adds the module archive info into the data structure.
+                    result.add(mai);
                 } catch (Exception ex) {
                     // XXX log warning but otherwise ignore
                     System.err.println("Failed to load module from " + file + ": " + ex);
@@ -309,8 +251,10 @@ public final class LocalRepository extends AbstractRepository {
             //
             // Constructs the module definitions from the module archives
             // based on the current platform and architecture.
-            constructModuleDefinitions(mdInfoMap);
+            addModuleDefinitions(constructModuleDefinitions(mdInfoMap));
         }
+
+        return result;
     }
 
     /**
@@ -344,7 +288,9 @@ public final class LocalRepository extends AbstractRepository {
 
             // Check to see if there exists a module archive that has
             // the same name, version, and platform binding.
-            for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+            for (ModuleArchiveInfo a : list()) {
+                JamModuleArchiveInfo mai = (JamModuleArchiveInfo) a;
+
                 if (mai.getName().equals(mdInfo.getName())
                     && mai.getVersion().equals(mdInfo.getVersion()))  {
                     if (mai.isPlatformArchNeutral()) {
@@ -410,7 +356,7 @@ public final class LocalRepository extends AbstractRepository {
      */
     protected boolean doUninstall(ModuleArchiveInfo mai) throws IOException {
         // Checks if the module archive still exists.
-        if (!moduleArchiveInfos.contains(mai)) {
+        if (!list().contains(mai)) {
             return false;
         }
 
@@ -447,7 +393,7 @@ public final class LocalRepository extends AbstractRepository {
         // installed that won't be uninstalled by this reload.
         List<ModuleArchiveInfo> uninstallCandidates = new ArrayList<ModuleArchiveInfo>();
         Set<File> existingJams = new HashSet<File>();
-        for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+        for (ModuleArchiveInfo mai : list()) {
             File f = new File(mai.getFileName());
             long modTime = mai.getLastModified();
             // Uninstall if source file is missing, or if it has been updated on disk.
@@ -498,11 +444,11 @@ public final class LocalRepository extends AbstractRepository {
     /**
      * Shutdown the repository.
      */
-    protected void doShutdown() throws IOException {
+    protected void doShutdown2() throws IOException {
         // XXX This is a hook for testing shutdownOnExit.
         if (uninstallOnShutdown) {
             // Only remove what was installed
-            for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+            for (ModuleArchiveInfo mai : list()) {
                 try {
                     uninstall(mai);
                 } catch(Exception e) {

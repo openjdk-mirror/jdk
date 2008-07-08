@@ -42,6 +42,7 @@ import java.module.Repository;
 import java.module.RepositoryEvent;
 import java.module.Version;
 import java.module.annotation.PlatformBinding;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.AccessController;
@@ -74,24 +75,16 @@ abstract class AbstractRepository extends Repository {
     /**
      * Internal data structures for the repository.
      */
-    protected final List<ModuleDefinition> moduleDefs =
-                new ArrayList<ModuleDefinition>();
-    protected final List<ModuleArchiveInfo> moduleArchiveInfos =
-                new ArrayList<ModuleArchiveInfo>();
     protected final Map<String, Map<ModuleArchiveInfo, ModuleDefinition> > contentMapping =
                 new HashMap<String, Map<ModuleArchiveInfo, ModuleDefinition> >();
-
-    /** True if this repository has been initialized but not yet shutdown. */
-    private boolean active;
-
-    /** True if this repository has been shutdown. */
-    private boolean shutdown;
 
     /** Repository cache. */
     protected Cache repositoryCache = null;
 
     /** Default configuration */
     protected static final Map<String, String> DEFAULT_CONFIG = Collections.emptyMap();
+
+    protected Map<String, String> config = DEFAULT_CONFIG;
 
     /**
      * Creates a new <code>AbstractRepository</code> instance, and initializes it
@@ -102,30 +95,32 @@ abstract class AbstractRepository extends Repository {
      * <code>ModuleSystemPermission("createRepository")</code> permission to
      * ensure it's ok to create a repository.
      *
-     * @param parent the parent repository for delegation.
      * @param name the repository name.
      * @param source the source location.
      * @param config Map of configuration names to their values
+     * @param parent the parent repository for delegation.
      * @throws SecurityException if a security manager exists and its
      *         <tt>checkPermission</tt> method denies access to create a new
      *         instance of repository.
      * @throws java.io.IOException if the repository cannot be initialized.
      */
-    protected AbstractRepository(Repository parent, String name,
-            URL source, Map<String, String> config) throws IOException {
-        super(parent, name, source, ModuleSystem.getDefault());
-        initialize(config);
+    protected AbstractRepository(String name, URI source,
+                                 Map<String, String> config,
+                                 Repository parent) throws IOException {
+        super(name, source, parent);
+        this.config = config;
+        initialize();
     }
 
     //
     // Template methods to be implemented in the subclass.
     //
 
-    protected abstract void doInitialize(final Map<String, String> config) throws IOException;
+    protected abstract List<ModuleArchiveInfo> doInitialize2() throws IOException;
     protected abstract ModuleArchiveInfo doInstall(URL url) throws IOException;
     protected abstract boolean doUninstall(ModuleArchiveInfo mai) throws IOException;
     protected abstract void doReload() throws IOException;
-    protected abstract void doShutdown() throws IOException;
+    protected abstract void doShutdown2() throws IOException;
     @Override
     public abstract boolean isReadOnly();
     @Override
@@ -137,34 +132,17 @@ abstract class AbstractRepository extends Repository {
     //
 
     @Override
-    public final void initialize() throws IOException {
-        initialize(DEFAULT_CONFIG);
-    }
-
-    /**
-     * Initializes the repository instance using the supplied configuration.
-     * <p>
-     * @param config Map of configuration names to their values
-     * @throws IOException if the repository cannot be initialized
-     */
-    private final synchronized void initialize(final Map<String, String> config)
+    protected final List<ModuleArchiveInfo> doInitialize()
                                             throws IOException {
-        if (active) {
-            return;             // initialize only once
-        }
-        if (shutdown) {
-            throw new IllegalStateException("Repository is already shutdown");
-        }
         if (config == null) {
             throw new NullPointerException("config must not be null");
         }
 
         try {
             // Initialize the repository under doPrivileged()
-            AccessController.doPrivileged(new PrivilegedExceptionAction<Boolean>() {
-                public Boolean run() throws Exception {
-                    doInitialize(config);
-                    return Boolean.TRUE;
+            return (List<ModuleArchiveInfo>) AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
+                public Object run() throws Exception {
+                    return doInitialize2();
                 }
             });
         } catch (PrivilegedActionException e) {
@@ -174,25 +152,27 @@ abstract class AbstractRepository extends Repository {
                 throw new IOException("Unexpected exception has occurred", e);
             }
         }
-
-        active = true;
-
-        // Send REPOSITORY_INITIALIZED event
-        RepositoryEvent evt = new RepositoryEvent(this,
-                                    RepositoryEvent.Type.REPOSITORY_INITIALIZED);
-        processEvent(evt);
     }
 
     @Override
-    public final synchronized ModuleArchiveInfo install(final URL url)
-                                                    throws IOException {
+    public synchronized List<ModuleArchiveInfo> list() {
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            sm.checkPermission(new ModuleSystemPermission("listModuleArchive"));
+        }
+        assertActive();
+        return getModuleArchiveInfos();
+    }
+
+    @Override
+    public final synchronized ModuleArchiveInfo install(URI uri) throws IOException {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("installModuleArchive"));
         }
 
-        if (url == null)  {
-            throw new NullPointerException("url must not be null");
+        if (uri == null)  {
+            throw new NullPointerException("uri must not be null");
         }
 
         assertActive();
@@ -201,6 +181,8 @@ abstract class AbstractRepository extends Repository {
 
         // Checks to see if the file to be installed is one of the file format
         // supported.
+        final URL url = uri.toURL();
+
         if (!(url.getFile().endsWith(".jam")
               || url.getFile().endsWith(".jar")
               || url.getFile().endsWith(".jam.pack.gz"))) {
@@ -228,8 +210,7 @@ abstract class AbstractRepository extends Repository {
     }
 
     @Override
-    public final synchronized boolean uninstall(final ModuleArchiveInfo mai)
-                                            throws IOException {
+    public final synchronized boolean uninstall(final ModuleArchiveInfo mai) throws IOException {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("uninstallModuleArchive"));
@@ -241,6 +222,12 @@ abstract class AbstractRepository extends Repository {
 
         assertActive();
         assertNotReadOnly();
+
+        if ((mai instanceof JamModuleArchiveInfo) == false) {
+            throw new UnsupportedOperationException("type of module archive is not supported: "
+                        + mai.getClass().getName());
+        }
+
         assertValidDirs();
 
         try {
@@ -277,7 +264,7 @@ abstract class AbstractRepository extends Repository {
         ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(file);
 
         // Constructs a module archive info
-        ModuleArchiveInfo mai  = new ModuleArchiveInfo(
+        ModuleArchiveInfo mai  = new JamModuleArchiveInfo(
             this, mdInfo.getName(), mdInfo.getVersion(),
             mdInfo.getPlatform(), mdInfo.getArch(),
             file.getAbsolutePath(), file.lastModified());
@@ -291,12 +278,13 @@ abstract class AbstractRepository extends Repository {
             // module archive supports the running platform and architecture.
             if (mdInfo.supportsRunningPlatformArch()) {
                 // Constructs a module definition
-                ModuleDefinition md = Modules.newJamModuleDefinition(
+                ModuleDefinition md = Modules.newModuleDefinition(
                                             mdInfo.getMetadataBytes(),
                                             mdInfo.getModuleContent(),
                                             this, true);
                 // Add the module definition into the internal data structure
-                moduleDefs.add(md);
+                addModuleDefinition(md);
+
                 value = new HashMap<ModuleArchiveInfo, ModuleDefinition>();
                 value.put(mai, md);
                 contentMapping.put(key, value);
@@ -321,12 +309,7 @@ abstract class AbstractRepository extends Repository {
         }
 
         // Adds the module archive into the internal data structure
-        moduleArchiveInfos.add(mai);
-
-        // Send MODULE_INSTALLED event
-        RepositoryEvent evt = new RepositoryEvent(this,
-                                    RepositoryEvent.Type.MODULE_INSTALLED, mai);
-        processEvent(evt);
+        addModuleArchiveInfo(mai);
 
         return mai;
     }
@@ -356,24 +339,8 @@ abstract class AbstractRepository extends Repository {
             } else {
                 // Removes the module archive and module definition mapping
                 // from internal data structure.
-                moduleDefs.remove(md);
+                removeModuleDefinition(md);
                 contentMapping.remove(key);
-
-                try {
-                    // Disables the module definition in the module system.
-                    getModuleSystem().disableModuleDefinition(md);
-                } catch (UnsupportedOperationException uoe) {
-                    // no-op
-                } catch (IllegalStateException ise) {
-                    // no-op
-                }
-                try {
-                    // Releases any module instance corresponding to the module
-                    // definition in the module system
-                    getModuleSystem().releaseModule(md);
-                } catch (UnsupportedOperationException uoe) {
-                    // no-op
-                }
 
                 // It is certainly possible that the repository may have another
                 // module archive for the same module name/version. e.g. a platform
@@ -393,12 +360,7 @@ abstract class AbstractRepository extends Repository {
         }
 
         // Removes the module archive from the internal data structure
-        moduleArchiveInfos.remove(mai);
-
-        // Send MODULE_UNINSTALLED event
-        RepositoryEvent evt = new RepositoryEvent(this,
-                                    RepositoryEvent.Type.MODULE_UNINSTALLED, mai);
-        processEvent(evt);
+        removeModuleArchiveInfo(mai);
     }
 
     /**
@@ -406,10 +368,11 @@ abstract class AbstractRepository extends Repository {
      * current platform and architecture, and updates the internal data
      * structure.
      */
-    protected final void constructModuleDefinitions(Map<ModuleArchiveInfo,
+    final Set<ModuleDefinition> constructModuleDefinitions(
+                                                    Map<ModuleArchiveInfo,
                                                     ModuleDefInfo> mdInfoMap)
                                                     throws IOException {
-        constructModuleDefinitions(mdInfoMap,
+        return constructModuleDefinitions(mdInfoMap,
                                    RepositoryUtils.getPlatform(),
                                    RepositoryUtils.getArch());
     }
@@ -419,7 +382,8 @@ abstract class AbstractRepository extends Repository {
      * specified platform and architecture, and updates the internal data
      * structure.
      */
-    protected final void constructModuleDefinitions(Map<ModuleArchiveInfo,
+    final Set<ModuleDefinition> constructModuleDefinitions(
+                                                    Map<ModuleArchiveInfo,
                                                     ModuleDefInfo> mdInfoMap,
                                                     String platform, String arch)
                                                     throws IOException {
@@ -436,8 +400,10 @@ abstract class AbstractRepository extends Repository {
         // name and version, there is at most one module definition in the
         // repository.
         //
-        List<ModuleArchiveInfo> appropriateModuleArchiveInfos =
-                    getAppropriateModuleArchiveInfos(moduleArchiveInfos, platform, arch);
+        Collection<ModuleArchiveInfo> appropriateModuleArchiveInfos =
+                    getAppropriateModuleArchiveInfos(mdInfoMap.keySet(), platform, arch);
+
+        Set<ModuleDefinition> result = new HashSet<ModuleDefinition>();
 
         //
         // Iterate the list of appropriate module archive, and creates
@@ -450,7 +416,7 @@ abstract class AbstractRepository extends Repository {
             ModuleDefInfo mdInfo = mdInfoMap.get(mai);
 
             // Constructs a module definition from the module archive.
-            ModuleDefinition md = Modules.newJamModuleDefinition(
+            ModuleDefinition md = Modules.newModuleDefinition(
                                     mdInfo.getMetadataBytes(),
                                     mdInfo.getModuleContent(),
                                     this, true);
@@ -461,8 +427,11 @@ abstract class AbstractRepository extends Repository {
                     new HashMap<ModuleArchiveInfo, ModuleDefinition>();
             value.put(mai, md);
             contentMapping.put(key, value);
-            moduleDefs.add(md);
+
+            result.add(md);
         }
+
+        return result;
     }
 
     /**
@@ -483,11 +452,12 @@ abstract class AbstractRepository extends Repository {
      */
     protected final void reconstructModuleDefinitionsIfNecessary(String platform, String arch)
                                 throws IOException {
-        List<ModuleArchiveInfo> appropriateModuleArchiveInfos =
-                    getAppropriateModuleArchiveInfos(moduleArchiveInfos, platform, arch);
+        Collection<ModuleArchiveInfo> appropriateModuleArchiveInfos =
+                    getAppropriateModuleArchiveInfos(list(), platform, arch);
 
         for (ModuleArchiveInfo mai : appropriateModuleArchiveInfos) {
             String key = mai.getName() + mai.getVersion();
+
             // If there is no module definition for the appropriate module
             // archive.
             if (contentMapping.get(key) == null) {
@@ -496,13 +466,14 @@ abstract class AbstractRepository extends Repository {
                                                 new File(mai.getFileName()));
 
                 // Constructs a module definition
-                ModuleDefinition md = Modules.newJamModuleDefinition(
+                ModuleDefinition md = Modules.newModuleDefinition(
                                             mdInfo.getMetadataBytes(),
                                             mdInfo.getModuleContent(),
                                             this, true);
 
                 // Add the module definition into the internal data structure
-                moduleDefs.add(md);
+                addModuleDefinition(md);
+
                 HashMap<ModuleArchiveInfo, ModuleDefinition> value =
                             new HashMap<ModuleArchiveInfo, ModuleDefinition>();
                 value.put(mai, md);
@@ -512,7 +483,7 @@ abstract class AbstractRepository extends Repository {
     }
 
     /**
-     * Returns a unmodifiable list of module archive info that are appropriate
+     * Returns a unmodifiable set of module archive info that are appropriate
      * to be used for the specified platform and architecture. If there are
      * duplicate modules (i.e. same name, version, and platform binding), the
      * duplicate is removed in the result.
@@ -521,12 +492,13 @@ abstract class AbstractRepository extends Repository {
      * @param p platform
      * @param a architecture
      */
-    private static List<ModuleArchiveInfo> getAppropriateModuleArchiveInfos(
+    private static Collection<ModuleArchiveInfo> getAppropriateModuleArchiveInfos(
                                              Collection<ModuleArchiveInfo> moduleArchiveInfos,
                                              String p, String a) {
         Map<String, ModuleArchiveInfo> preferredMap = new LinkedHashMap<String, ModuleArchiveInfo>();
 
-        for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+        for (ModuleArchiveInfo ma : moduleArchiveInfos) {
+            JamModuleArchiveInfo mai = (JamModuleArchiveInfo) ma;
             String key = mai.getName() + mai.getVersion();
             if (mai.isPlatformArchNeutral()) {
                 // The module archive is platform neutral
@@ -540,7 +512,7 @@ abstract class AbstractRepository extends Repository {
                        && a.equals(mai.getArch()))  {
                 // The module archive is platform specific to the specified
                 // platform/arch.
-                ModuleArchiveInfo mai2 = preferredMap.get(key);
+                JamModuleArchiveInfo mai2 = (JamModuleArchiveInfo) preferredMap.get(key);
 
                 // If no module archive exists in the prefered map for the given
                 // module name/version, use this module archive. Or if module
@@ -560,35 +532,7 @@ abstract class AbstractRepository extends Repository {
             }
         }
 
-        return Collections.unmodifiableList(
-                    new ArrayList<ModuleArchiveInfo>(preferredMap.values()));
-    }
-
-    @Override
-    public final synchronized List<ModuleDefinition> findModuleDefinitions(Query constraint) {
-        assertActive();
-        List<ModuleDefinition> result = new ArrayList<ModuleDefinition>();
-
-        if (constraint == Query.ANY) {
-            result = moduleDefs;
-        } else {
-            for (ModuleDefinition md : moduleDefs) {
-                if (md != null && constraint.match(md)) {
-                    result.add(md);
-                }
-            }
-        }
-        return Collections.unmodifiableList(result);
-    }
-
-    @Override
-    public final synchronized List<ModuleArchiveInfo> list() {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            sm.checkPermission(new ModuleSystemPermission("listModuleArchive"));
-        }
-        assertActive();
-        return Collections.unmodifiableList(moduleArchiveInfos);
+        return Collections.unmodifiableCollection(preferredMap.values());
     }
 
     @Override
@@ -600,7 +544,7 @@ abstract class AbstractRepository extends Repository {
         assertActive();
 
         if (!supportsReload()) {
-            throw new UnsupportedOperationException("Repository does not support reload");
+            throw new UnsupportedOperationException("Repository does not support the reload operation.");
         }
 
         try {
@@ -623,41 +567,12 @@ abstract class AbstractRepository extends Repository {
     }
 
     @Override
-    public synchronized void shutdown() throws IOException {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            sm.checkPermission(new ModuleSystemPermission("shutdownRepository"));
-        }
-        if (shutdown) {
-            return;             // shutdown only once
-        }
-        assertActive();
-
+    protected void doShutdown() throws IOException {
         try {
             // shutdown repository under doPrivileged()
             AccessController.doPrivileged(new PrivilegedExceptionAction<Boolean>() {
                 public Boolean run() throws Exception {
-                    doShutdown();
-
-                    // Iterates through each module definition that the
-                    // repository is aware of
-                    for (ModuleDefinition md : moduleDefs) {
-                        try {
-                            // Disables the module definition in the module system.
-                            getModuleSystem().disableModuleDefinition(md);
-                        } catch (UnsupportedOperationException uoe) {
-                            // no-op
-                        } catch (IllegalStateException ise) {
-                            // no-op
-                        }
-                        try {
-                            // Releases any module instance corresponding to the module definition
-                            // in the module system
-                            getModuleSystem().releaseModule(md);
-                        } catch (UnsupportedOperationException uoe) {
-                            // no-op
-                        }
-                    }
+                    doShutdown2();
 
                     return Boolean.TRUE;
                 }
@@ -672,27 +587,12 @@ abstract class AbstractRepository extends Repository {
             }
         }
 
-        moduleDefs.clear();
-        moduleArchiveInfos.clear();
         contentMapping.clear();
 
         // Shutdown repository cache
         if (repositoryCache != null) {
             repositoryCache.shutdown();
         }
-
-        active = false;
-        shutdown = true;
-
-        // Send REPOSITORY_SHUTDOWN event
-        RepositoryEvent evt = new RepositoryEvent(this,
-                                    RepositoryEvent.Type.REPOSITORY_SHUTDOWN);
-        processEvent(evt);
-    }
-
-    @Override
-    public final boolean isActive() {
-        return active;
     }
 
     private void assertActive() throws IllegalStateException {

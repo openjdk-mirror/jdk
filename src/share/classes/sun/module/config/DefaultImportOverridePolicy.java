@@ -27,9 +27,10 @@ package sun.module.config;
 
 import java.io.File;
 import java.io.IOException;
-import java.module.ModuleDefinition;
 import java.module.ImportDependency;
 import java.module.ImportOverridePolicy;
+import java.module.ModuleDefinition;
+import java.module.ModuleDependency;
 import java.module.Version;
 import java.module.VersionConstraint;
 import java.net.MalformedURLException;

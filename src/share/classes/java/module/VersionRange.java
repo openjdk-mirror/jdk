@@ -30,7 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * This class represents a version range in the module system.
+ * This class represents a version range.
  *
  * @see java.module.Query
  * @see java.module.Version
@@ -81,7 +81,6 @@ class VersionRange implements Comparable<VersionRange>  {
      * @param lowerBoundInclusive the inclusiveness of the lower bound version.
      * @param upperBound the upper bound version in the version range.
      * @param upperBoundInclusive the inclusiveness of the upper bound version.
-     * @throws NullPointerException if lowerBound is null or upperBound is null.
      * @throws IllegalArgumentException if the lowerBound is greater than the
      *         upperBound.
      */
@@ -182,8 +181,6 @@ class VersionRange implements Comparable<VersionRange>  {
      *
      * @param lowerBound the lower bound version in the version range.
      * @param upperBound the upper bound version in the version range.
-     * @throws NullPointerException if lowerBound is null or upperBound is
-     *         null.
      * @throws IllegalArgumentException if the lowerBound is greater than
      *         the upperBound.
      */

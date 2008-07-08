@@ -31,7 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the module definition to import. This metadata annotation is used
+ * Indicates a module definition to import. This metadata annotation is used
  * as nested annotation inside other enclosing annotations. For example,
  * <blockquote><pre>
  *    //

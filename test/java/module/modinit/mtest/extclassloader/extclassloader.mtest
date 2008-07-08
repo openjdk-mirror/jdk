@@ -35,12 +35,12 @@ m1.MainA
                                     + "extrepo-" + System.currentTimeMillis());
         repositorySourceDir.mkdirs();
 
-        Repository extensionRepo = Modules.newURLRepository("extension", repositorySourceDir.toURI().toURL());
+        Repository extensionRepo = Modules.newURLRepository("extension", repositorySourceDir.toURI().toURL(), null);
 
         for (ModuleArchiveInfo mai : r.list()) {
             // Installs all modules into the URLRepository, except m1.
             if (mai.getName().equals("m1") == false)
-                extensionRepo.install(new File(mai.getFileName()).toURI().toURL());
+                extensionRepo.install(new File(mai.getFileName()).toURI());
         }
 
         // Create custom repository.properties file

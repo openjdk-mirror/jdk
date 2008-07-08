@@ -32,7 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the name of a module definition. This metadata annotation is
- * applied to the module.
+ * applied to a Java module.
  * <p>
  * For example,
  * <blockquote><pre>

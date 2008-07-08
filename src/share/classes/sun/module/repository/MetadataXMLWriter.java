@@ -58,11 +58,11 @@ public class MetadataXMLWriter {
      */
     public static void write(
             URLRepository repo,
-            List<ModuleArchiveInfo> maiList,
-            ModuleArchiveInfo mai,
+            List<JamModuleArchiveInfo> maiList,
+            JamModuleArchiveInfo mai,
             boolean writeMAI) throws IOException {
         URL repoMD = new URL(
-            repo.getSourceLocation().toExternalForm()
+            repo.getSourceLocation().toURL().toExternalForm()
             + "/repository-metadata.xml");
         File repoMDFile = new File(repoMD.getFile());
         File repoMDDir = repoMDFile.getParentFile();
@@ -78,7 +78,7 @@ public class MetadataXMLWriter {
         }
         MetadataXMLWriter writer = new MetadataXMLWriter(tmpRepoMDFile);
         writer.begin();
-        for (ModuleArchiveInfo m : maiList) {
+        for (JamModuleArchiveInfo m : maiList) {
             if (!writeMAI && m.equals(mai)) {
                 // Don't write this ModuleArchiveInfo if it matches that given
             } else {
@@ -136,7 +136,7 @@ public class MetadataXMLWriter {
         return !rc; // Return false if error
     }
 
-    void writeModule(ModuleArchiveInfo mai) {
+    void writeModule(JamModuleArchiveInfo mai) {
         output("<module>");
         indent++;
         output("<name>" + mai.getName() + "</name>");

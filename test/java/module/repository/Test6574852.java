@@ -42,8 +42,8 @@ public class Test6574852 {
         System.out.println("dir=" + dir);
         System.out.println("url=" + url);
         Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(),
-            "test", url);
+            "test", url, null,
+            RepositoryConfig.getSystemRepository());
 
         try {
             repo.initialize();

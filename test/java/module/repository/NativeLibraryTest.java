@@ -69,7 +69,7 @@ public class NativeLibraryTest extends LibraryTest {
         // Run the tests against a URLRepository
         File srcDir = makeTestDir("urlSource");
         repo = Modules.newURLRepository(
-            "NativeLibTestURLRepo", srcDir.getCanonicalFile().toURI().toURL());
+            "NativeLibTestURLRepo", srcDir.getCanonicalFile().toURI().toURL(), null);
         runTest("DefaultTest", null);
         runTest("CustomTest", "home/on/the/range");
 
@@ -82,7 +82,7 @@ public class NativeLibraryTest extends LibraryTest {
         // Run the tests against a LocalRepository
         srcDir = makeTestDir("localSource");
         repo = Modules.newLocalRepository(
-            "NativeLibTestLocalRepo", srcDir.getCanonicalFile());
+            "NativeLibTestLocalRepo", srcDir.getCanonicalFile(), null);
         runTest("DefaultTest", null);
         runTest("CustomTest", "no/place/like/home");
 
@@ -122,7 +122,7 @@ public class NativeLibraryTest extends LibraryTest {
             File nativeLibFile = getNativeLibrary(jamFile, libPath, nativeLibDir, count++);
             File testcaseDir = addTestcaseToJam(jamFile, nativeLibFile);
 
-            ModuleArchiveInfo mai = repo.install(jamFile.getCanonicalFile().toURI().toURL());
+            ModuleArchiveInfo mai = repo.install(jamFile.getCanonicalFile().toURI());
             // Check module is installed
             check(mai != null);
 
@@ -148,7 +148,7 @@ public class NativeLibraryTest extends LibraryTest {
         addNativeLibraryToJam(jamFile, libPath, nativeLibDir, nativeLibFile);
         File testcaseDir = addTestcaseToJam(jamFile, nativeLibFile);
 
-        ModuleArchiveInfo mai = repo.install(jamFile.getCanonicalFile().toURI().toURL());
+        ModuleArchiveInfo mai = repo.install(jamFile.getCanonicalFile().toURI());
         // Check module is installed
         check(mai != null);
 

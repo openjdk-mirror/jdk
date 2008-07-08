@@ -107,10 +107,10 @@ public class URLRepoInstallTest {
         config.put("sun.module.repository.URLRepository.cacheDirectory", repoDownloadDir.getAbsolutePath());
 
         Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(),
             "test",
             repoDir.getCanonicalFile().toURI().toURL(),
-            config);
+            config,
+            RepositoryConfig.getSystemRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repo));
@@ -121,13 +121,13 @@ public class URLRepoInstallTest {
         // Check install
         ModuleArchiveInfo installedMAI = null;
         try {
-            installedMAI = repo.install(jamFile.getCanonicalFile().toURI().toURL());
+            installedMAI = repo.install(jamFile.getCanonicalFile().toURI());
             pass();
         } catch (Throwable t) {
             unexpected(t);
         }
 
-        // Only MODULE_INSTALLED event should be fired.
+        // Only MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repo));
         check(!ec.shutdownEventExists(repo));
         check(ec.installEventExists(repo, installedMAI));
@@ -183,7 +183,7 @@ public class URLRepoInstallTest {
                 check(installed.size() == 0);
                 pass();
 
-                // Only MODULE_UNINSTALLED event should be fired.
+                // Only MODULE_ARCHIVE_UNINSTALLED event should be fired.
                 check(!ec.initializeEventExists(repo));
                 check(!ec.shutdownEventExists(repo));
                 check(!ec.installEventExists(repo, null));
@@ -230,11 +230,11 @@ public class URLRepoInstallTest {
             null, null, false, jamDir);
 
         // Installs #1, #2, and #3
-        mai1 = repo.install(jamFile1.getCanonicalFile().toURI().toURL());
+        mai1 = repo.install(jamFile1.getCanonicalFile().toURI());
         check(mai1 != null);
-        mai2 = repo.install(jamFile2.getCanonicalFile().toURI().toURL());
+        mai2 = repo.install(jamFile2.getCanonicalFile().toURI());
         check(mai2 != null);
-        mai3 = repo.install(jamFile3.getCanonicalFile().toURI().toURL());
+        mai3 = repo.install(jamFile3.getCanonicalFile().toURI());
         check(mai3 != null);
 
         ModuleDefinition md = repo.find("URLRepoModuleA", VersionConstraint.valueOf("7.0"));
@@ -263,11 +263,11 @@ public class URLRepoInstallTest {
         check(repo.uninstall(mai3));
 
         // Installs #1, #3, and #2
-        mai1 = repo.install(jamFile1.getCanonicalFile().toURI().toURL());
+        mai1 = repo.install(jamFile1.getCanonicalFile().toURI());
         check(mai1 != null);
-        mai3 = repo.install(jamFile3.getCanonicalFile().toURI().toURL());
+        mai3 = repo.install(jamFile3.getCanonicalFile().toURI());
         check(mai3 != null);
-        mai2 = repo.install(jamFile2.getCanonicalFile().toURI().toURL());
+        mai2 = repo.install(jamFile2.getCanonicalFile().toURI());
         check(mai2 != null);
 
         md = repo.find("URLRepoModuleA", VersionConstraint.valueOf("7.0"));

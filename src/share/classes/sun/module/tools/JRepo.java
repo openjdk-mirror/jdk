@@ -34,7 +34,9 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.net.URISyntaxException;
 import java.module.*;
 import java.security.AccessController;
 import java.text.DateFormat;
@@ -178,14 +180,14 @@ public class JRepo {
             try {
                 URL u = new URL(repositoryLocation);
                 rc = Modules.newURLRepository(
-                    RepositoryConfig.getSystemRepository(),"jrepo", u);
+                    "jrepo", u, null, RepositoryConfig.getSystemRepository());
             } catch (MalformedURLException ex) {
                 File f = new File(repositoryLocation);
                 if (f.exists() && f.canRead()) {
                     rc = Modules.newLocalRepository(
-                        RepositoryConfig.getSystemRepository(),
                         "jrepo",
-                        f.getCanonicalFile());
+                        f.getCanonicalFile(), null,
+                        RepositoryConfig.getSystemRepository());
                 } else {
                     throw new IOException("Cannot access repository at " + repositoryLocation);
                 }
@@ -262,11 +264,15 @@ public class JRepo {
     /** Returns a user-grokkable description of the repository. */
     private String getRepositoryText(Repository repo) {
         String rc;
-        URL u = repo.getSourceLocation();
+        URI u = repo.getSourceLocation();
         if (u == null) {
             rc = "Bootstrap repository";
         } else {
-            rc = "Repository " + u.toExternalForm();
+            try {
+                rc = "Repository " + u.toURL().toExternalForm();
+            } catch (MalformedURLException ex) {
+                rc = "Repository unknown";
+            }
         }
         return rc;
     }
@@ -513,11 +519,13 @@ public class JRepo {
                     jamURL = jamName;
                 }
                 try {
-                    ModuleArchiveInfo mai = repo.install(new URL(jamURL));
+                    ModuleArchiveInfo mai = repo.install(new URL(jamURL).toURI());
                     if (verboseFlag.isEnabled()) {
                         msg.println("Installed " + jamName + ": " + getMAIText(mai));
                     }
                     return true;
+                } catch (URISyntaxException ex) {
+                    msg.error("Cannot install " + jamName + ": no such file, or malformed URI");
                 } catch (MalformedURLException ex) {
                     msg.error("Cannot install " + jamName + ": no such file, or malformed URL");
                 } catch (IOException ex) {

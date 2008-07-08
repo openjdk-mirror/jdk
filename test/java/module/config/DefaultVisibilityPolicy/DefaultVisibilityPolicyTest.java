@@ -79,6 +79,11 @@ public class DefaultVisibilityPolicyTest {
         }
 
         @Override
+        public String getMainClass() {
+            return null;
+        }
+
+        @Override
         public Set<String> getAttributeNames() {
             return Collections.unmodifiableSet(attributes.keySet());
         }
@@ -189,7 +194,7 @@ public class DefaultVisibilityPolicyTest {
 
             File f = new File(System.getProperty("test.src", "."), "WellFormed.visibility.policy");
             ModuleSystemConfig.setProperty(ModuleSystemConfig.VISIBILITY_POLICY_URL_PREFIX+2, f.toURI().toURL().toString());
-            VisibilityPolicy vp = Modules.getVisibilityPolicy();
+            VisibilityPolicy vp = Repository.getVisibilityPolicy();
 
             if (vp instanceof DefaultVisibilityPolicy)
                 pass();
@@ -253,7 +258,7 @@ public class DefaultVisibilityPolicyTest {
             File f = new File(System.getProperty("test.src", "."), "WellFormed.visibility.policy");
             System.setProperty("java.module.visibility.policy.file", f.toURI().toURL().toString());
 
-            VisibilityPolicy vp = Modules.getVisibilityPolicy();
+            VisibilityPolicy vp = Repository.getVisibilityPolicy();
 
             if (vp instanceof DefaultVisibilityPolicy)
                 pass();
@@ -294,7 +299,7 @@ public class DefaultVisibilityPolicyTest {
             File f2 = new File(System.getProperty("test.src", "."), "EverythingVisible.visibility.policy");
             System.setProperty("java.module.visibility.policy.file", "=" + f2.toURI().toURL().toString());
 
-            VisibilityPolicy vp = Modules.getVisibilityPolicy();
+            VisibilityPolicy vp = Repository.getVisibilityPolicy();
 
             if (vp instanceof DefaultVisibilityPolicy)
                 pass();
@@ -335,7 +340,7 @@ public class DefaultVisibilityPolicyTest {
             File f2 = new File(System.getProperty("test.src", "."), "NothingVisible.visibility.policy");
             System.setProperty("java.module.visibility.policy.file", "=" + f2.toURI().toURL().toString());
 
-            VisibilityPolicy vp = Modules.getVisibilityPolicy();
+            VisibilityPolicy vp = Repository.getVisibilityPolicy();
 
             if (vp instanceof DefaultVisibilityPolicy)
                 pass();

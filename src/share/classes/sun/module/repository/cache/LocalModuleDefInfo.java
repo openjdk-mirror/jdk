@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.module.ModuleContent;
 import java.security.CodeSigner;
+import java.util.Set;
 import java.util.jar.JarFile;
 
 /**
@@ -42,7 +43,7 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
     private final File jamFile;
 
     // Code signers of the JAM file
-    private final CodeSigner[] codeSigners;
+    private final Set<CodeSigner> codeSigners;
 
     // Module's content
     private ModuleContent content = null;
@@ -54,11 +55,11 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
      * @param metadataBytes byte array that represents the module metadata
      * @param moduleInfo ModuleInfo reified from the module metadata
      * @param jamFile jam file
-     * @param codeSigners an array of code signers who signed the JAM file
+     * @param codeSigners an unmodifiable set of code signers who signed the JAM file
      */
     LocalModuleDefInfo(File entryDirectory, byte[] metadataBytes,
                        ModuleInfo moduleInfo, File jamFile,
-                       CodeSigner[] codeSigners)  {
+                       Set<CodeSigner> codeSigners)  {
         super(entryDirectory, metadataBytes, moduleInfo);
         this.jamFile = jamFile;
         this.codeSigners = codeSigners;
@@ -85,9 +86,9 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
      }
 
      /**
-      * Returns the code signers of the JAM file.
+      * Returns an unmodifiable set of code signers of the JAM file.
       */
-    CodeSigner[] getJamCodeSigners() {
+     Set<CodeSigner> getJamCodeSigners() {
         return codeSigners;
      }
 }

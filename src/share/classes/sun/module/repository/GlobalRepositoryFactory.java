@@ -67,6 +67,6 @@ public class GlobalRepositoryFactory extends RepositoryFactory {
             sourceName = locations.get(platform);
         }
         return Modules.newLocalRepository(
-            parent, name, new File(sourceName), config);
+            name, new File(sourceName), config, parent);
     }
 }

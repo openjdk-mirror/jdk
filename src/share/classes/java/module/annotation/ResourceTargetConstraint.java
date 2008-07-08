@@ -31,8 +31,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the version constraint that a resource module definition
- * requires its target module to satisfy. The version constraint is either a
+ * Indicates the version constraint that a <i>resource module</i> requires its
+ * <i>target module</i> to satisfy. The version constraint is either a
  * version, a version range, or a combination of both, following the format
  * described in the {@link java.module.VersionConstraint} class. This metadata
  * annotation is applied to a Java module. For example,
@@ -45,14 +45,15 @@ import java.lang.annotation.RetentionPolicy;
  *    module org.foo.xml.locale_fr;
  * </pre></blockquote>
  * @see java.module.VersionConstraint
+ * @see java.util.ResourceBundle
  * @since 1.7
  */
-@Target({ElementType.MODULE, ElementType.TYPE})
+@Target({ElementType.MODULE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ResourceTargetConstraint {
     /**
-     * The version constraint that this resource module definition requires its
-     * target module to satisfy.
+     * The version constraint that this <i>resource module</i> requires its
+     * <i>target module</i> to satisfy.
      */
     String value() default "0.0.0.0+";
 }

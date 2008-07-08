@@ -28,8 +28,8 @@ package java.module;
 import java.io.IOException;
 
 /**
- * Thrown to indicate that the format of the module archive is neither
- * recognized nor supported.
+ * Thrown to indicate that the module format is neither recognized nor
+ * supported.
  *
  * @since 1.7
  */

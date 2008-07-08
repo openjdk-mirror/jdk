@@ -31,8 +31,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the path for searching native libraries in the module archive for
- * a particular platform and architecture. This metadata annotation is used as
+ * Indicates the path for searching native libraries in the module archive for a
+ * particular platform and architecture. This metadata annotation is used as
  * nested annotation inside other enclosing annotations. For example,
  * <blockquote><pre>
  *    //

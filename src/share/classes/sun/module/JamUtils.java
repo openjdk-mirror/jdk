@@ -338,14 +338,14 @@ public final class JamUtils {
     }
 
     /**
-     * Returns the code signers from the JAM file
+     * Returns an unmodifiable set of code signers from the JAM file
      *
      * @param jamFile jam file
-     * @return an array of code signers that sign the JAM file.
+     * @return an unmodifiable set of code signers that sign the JAM file.
      * @throws IOException if the JAM file is not consistently signed by same
      *         set of signers.
      */
-    public static CodeSigner[] getCodeSigners(JarFile jamFile) throws IOException {
+    public static Set<CodeSigner> getCodeSigners(JarFile jamFile) throws IOException {
         List<CodeSigner> overallCodeSigners = null;
 
         // Iterate each entry in the JAM file
@@ -382,7 +382,9 @@ public final class JamUtils {
                     + jamFile.getName());
         }
 
-        return overallCodeSigners.toArray(new CodeSigner[0]);
+        Set<CodeSigner> result = new HashSet<CodeSigner>();
+        result.addAll(overallCodeSigners);
+        return Collections.unmodifiableSet(result);
     }
 
     /**

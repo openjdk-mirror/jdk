@@ -36,11 +36,30 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * This class represents a version in the module system. The version must
- * be in the following format:<p>
- * <blockquote><pre>
- *    <I>major[.minor[.micro[.update]]][-qualifier]</I>
- * </pre></blockquote>
+ * This class represents a version. The format of the version is defined as
+ * follows:
+ * <pre>
+ *    major[.minor[.micro[.update]]][-qualifier]</pre>
+ * where
+ * <ul>
+ *      <p><li> {@code major}, {@code minor}, {@code micro}, and {@code update}
+ *              are non-negative integers, i.e. {@code 0} <= <i>x</i> <=
+ *              {@link java.lang.Integer#MAX_VALUE <tt>Integer.MAX_VALUE</tt>}.
+ *              </li></p>
+ *
+ *      <p><li> {@code qualifier} is a string, and it can contain regular
+ *              alphanumeric characters, {@code '-'}, and {@code '_'}.</li></p>
+ *
+ *      <p><li> If {@code minor} is not specified, it is treated as {@code 0}.
+ *              </li></p>
+ *
+ *      <p><li> If {@code micro} is not specified, it is treated as {@code 0}.
+ *              </li></p>
+ *
+ *      <p><li> If {@code update} is not specified, it is treated as {@code 0}.
+ *              </li></p>
+ * </ul></p>
+ *
  * For example,
  * <blockquote><pre>
  *    1
@@ -54,19 +73,41 @@ import java.util.regex.Pattern;
  *    1.7.1.3-b56_rc
  * </pre></blockquote>
  * The version format is described by the following grammar:
- * <blockquote><pre>
+ * <pre>
  *    version := simple-version ('-' qualifier)?
  *    simple-version:= major ('.' minor ('.' micro ('.' update)?)?)?
  *    major := digit+
  *    minor := digit+
  *    micro := digit+
  *    update := digit+
- *    qualifier := (alpha | digit | '-' | '_')+
- * </pre></blockquote>
+ *    qualifier := (alpha | digit | '-' | '_')+</pre>
  * where {@code alpha} is an alphabetic character, {@code a-z, A-Z}.
  *       {@code digit} is a decimal digit, {@code 0-9}.
+ * <p>
+ * When two versions are compared, {@code major}, {@code minor},
+ * {@code micro}, and {@code update} are compared numerically while
+ * {@code qualifier} is compared through string comparison lexicographically.
+ * Two versions are equivalent if and only if the major numbers, the minor
+ * numbers, the micro numbers, the update numbers, and the qualifiers each
+ * are equal respectively. If the major numbers, the minor numbers, the
+ * micro numbers, and the update numbers of two versions are equal
+ * respectively but one version has a qualifier while the other has
+ * none, the latter is considered a higher version. For example,
+ * <pre>
+ *      1 < 1.2 < 1.3.1 < 2
  *
- * <p>Instances of this class are immutable and safe for concurrent use by
+ *      1.6.0.5 < 1.7.0 < 1.7.0.1 < 1.7.0.2
+ *
+ *      3.4.5.6 < 3.4.5.7 == 3.4.5.07 < 3.4.6
+ *
+ *      7.8.9-b23 < 7.8.9 < 7.8.9.1-b10-alpha < 7.8.9.1-b18 < 7.8.9.1
+ *
+ *      4.3.2 == 4.3.2.0 < 4.3.2.1</pre>
+ * <p>
+ * Applications can obtain {@code Version} objects by calling one of the
+ * {@link #valueOf(String) valueOf} factory methods.
+ * <p>
+ * Instances of this class are immutable and safe for concurrent use by
  * multiple threads.
  *
  * @see java.module.Query
@@ -149,8 +190,9 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
 
     /**
      * Returns a {@code Version} object holding the specified version number.
-     *
-     * <p>Equivalent to {@code valueOf(major, minor, micro, 0, null);}.
+     * Equivalent to:
+     * <pre>
+     *      valueOf(major, minor, micro, 0, null)</pre>
      *
      * @param major the major version number.
      * @param minor the minor version number.
@@ -164,8 +206,10 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
 
     /**
      * Returns a {@code Version} object holding the specified version number.
-     *
-     * <p>Equivalent to {@code valueOf(major, minor, micro, 0, qualifier);}.
+     * If the version number has no qualifier, {@code qualifier} is
+     * {@code null}. Equivalent to:
+     * <pre>
+     *      valueOf(major, minor, micro, 0, qualifier)</pre>
      *
      * @param major the major version number.
      * @param minor the minor version number.
@@ -180,8 +224,9 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
 
     /**
      * Returns a {@code Version} object holding the specified version number.
-     *
-     * <p>Equivalent to {@code valueOf(major, minor, micro, update, null);}.
+     * Equivalent to:
+     * <pre>
+     *      valueOf(major, minor, micro, update, null)</pre>
      *
      * @param major the major version number.
      * @param minor the minor version number.
@@ -196,6 +241,8 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
 
     /**
      * Returns a {@code Version} object holding the specified version number.
+     * If the version number has no qualifier, {@code qualifier} is
+     * {@code null}.
      *
      * @param major the major version number.
      * @param minor the minor version number.
@@ -283,7 +330,8 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
     }
 
     /**
-     * Returns the qualifier in the version.
+     * Returns the qualifier. If this {@code Version} has no qualifier, this
+     * method returns {@code null}.
      *
      * @return the qualifier.
      */
@@ -372,7 +420,6 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      *         {@code Version} is less than the {@code Version} argument; and a
      *         value greater than 0 if this {@code Version} is greater than the
      *         {@code Version} argument.
-     * @throws NullPointerException if the {@code Version} argument is null.
      */
     @Override
     public int compareTo(Version version)   {

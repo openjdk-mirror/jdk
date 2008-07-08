@@ -41,14 +41,14 @@ public class Test6574851 {
             config.put(
                 "sun.module.repository.URLRepository.sourceLocationMustExist",
                 "true");
-        Repository repo = Modules.newURLRepository(
-            RepositoryConfig.getSystemRepository(),
-            "test",
-            new File(
-                System.getProperty("test.scratch", "."),
-                "Test6574851-DoesNotExist").getCanonicalFile().toURI().toURL(),
-            config);
-        fail();
+            Repository repo = Modules.newURLRepository(
+                "test",
+                new File(
+                    System.getProperty("test.scratch", "."),
+                    "Test6574851-DoesNotExist").getCanonicalFile().toURI().toURL(),
+                config,
+                RepositoryConfig.getSystemRepository());
+            fail();
         } catch (IOException ex) {
             pass();
         } catch (Throwable t) {

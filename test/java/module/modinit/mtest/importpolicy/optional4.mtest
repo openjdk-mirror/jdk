@@ -42,7 +42,7 @@ implements ImportPolicy
             if (md.getName().equals("m2") == false)
                 result.put(dep, md.getVersion().toVersionConstraint());
             else {
-                result.put(new ImportDependency("module", "m4", VersionConstraint.DEFAULT, false, false, null), VersionConstraint.DEFAULT);
+                result.put(Modules.newModuleDependency("m4", VersionConstraint.DEFAULT, false, false, null), VersionConstraint.DEFAULT);
             }
         }
         return result;

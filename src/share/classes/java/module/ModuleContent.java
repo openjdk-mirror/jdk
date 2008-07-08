@@ -30,117 +30,98 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Set;
 import java.security.CodeSigner;
 
 /**
- * This class represents the content of a module definition.
+ * This interface represents the content of a module definition. The content
+ * can be obtained from a {@code ModuleDefinition} instance using the
+ * {@link ModuleDefinition#getModuleContent() <tt>getModuleContent()</tt>}
+ * method.
  *
- * <p> Unless otherwise specified, passing a <tt>null</tt> argument to any
- * method in this class will cause a {@link NullPointerException} to be thrown.
- * <p>
  * @see java.module.ModuleDefinition
  * @see java.security.CodeSigner
  *
  * @since 1.7
  */
-public abstract class ModuleContent {
+public interface ModuleContent {
 
     /**
-     * Constructor used by subclasses.
-     */
-    protected ModuleContent() {
-        // empty
-    }
-
-    /**
-     * Determines if an entry exists in the module definition.
+     * Returns true if the specified entry is found.
      * <p>
-     * The entry's name is specified as {@code '/'} separated paths, with no
-     * leading {@code '/'}.
+     * The entry's name is specified using {@code '/'} as path separator; it
+     * has no leading {@code '/'}.
      *
-     * @param name entry's name.
-     * @return true if entry exists in the module definition; otherwise,
-     *         returns false.
+     * @param name the name of the entry.
+     * @return true if the specified entry is found; otherwise, return false.
      * @throws IOException if an I/O error occurs.
      */
-    public abstract boolean hasEntry(String name) throws IOException;
+    public boolean hasEntry(String name) throws IOException;
 
     /**
-     * Returns an entry in the module definition as an input stream.
+     * Returns the readable byte channel for the specified entry or
+     * {@code null} if not found.
      * <p>
-     * The entry's name is specified as {@code '/'} separated paths, with no
-     * leading {@code '/'}.
+     * The entry's name is specified using {@code '/'} as path separator; it
+     * has no leading {@code '/'}.
      *
-     * @param name entry's name.
-     * @return if entry exists, return input stream; otherwise, return null.
+     * @param name the name of the entry.
+     * @return the readable byte channel for the specified entry or
+     *         {@code null} if not found.
      * @throws IOException if an I/O error occurs.
      */
-    public abstract InputStream getEntryAsStream(String name) throws IOException;
+    public ReadableByteChannel getEntryAsChannel(String name) throws IOException;
 
     /**
-     * Returns an entry in the module definition as byte array.
+     * Returns the read-only byte buffer for the specified entry or
+     * {@code null} if not found.
      * <p>
-     * The entry's name is specified as {@code '/'} separated paths, with no
-     * leading {@code '/'}.
+     * The entry's name is specified using {@code '/'} as path separator; it
+     * has no leading {@code '/'}.
      *
-     * @param name entry's name.
-     * @return if an entry exists, return byte array; otherwise, returns null.
+     * @param name the name of the entry.
+     * @return the readable byte channel for the specified entry or
+     *         {@code null} if not found.
      * @throws IOException if an I/O error occurs.
      */
-    public byte[] getEntryAsByteArray(String name) throws IOException {
-        BufferedInputStream bis = new BufferedInputStream(getEntryAsStream(name));
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buffer = new byte[8192];
-
-        int byteRead = 0;
-
-        // Read the stream until it is EOF
-        while ((byteRead = bis.read(buffer, 0, 8192)) != -1)
-            baos.write(buffer, 0, byteRead);
-
-        // Close input stream
-        bis.close();
-
-        // Convert to byte array
-        return baos.toByteArray();
-    }
+    public ByteBuffer getEntryAsByteBuffer(String name) throws IOException;
 
     /**
-     * Returns the set of the names of the entries in the module definition.
+     * Returns an unmodifiable set of the names of the entries.
      * <p>
-     * Each entry's name is in the form of {@code '/'} separated paths, with no
-     * leading {@code '/'}.
+     * The entry's name is specified using {@code '/'} as path separator; it
+     * has no leading {@code '/'}.
      *
-     * @return the set of the names of the entries in the module definition.
+     * @return an unmodifiable set of the names of the entries.
      * @throws IOException if an I/O error occurs.
      */
-    public abstract Set<String> getEntryNames() throws IOException;
+    public Set<String> getEntryNames() throws IOException;
 
     /**
-     * Returns the path of the native library associated with the module
-     * definition.
+     * Returns the path of the native library for the specified library name
+     * or {@code null} if not found.
      *
      * @param libraryName the library name.
-     * @return native library if it is found; otherwise, returns null.
+     * @return the path of the native library or {@code null} if not found.
      * @throws IOException if an I/O error occurs.
      */
-    public abstract File getNativeLibrary(String libraryName) throws IOException;
+    public File getNativeLibrary(String libraryName) throws IOException;
 
     /**
-     * Returns the code signers associated with the module definition.
+     * Returns an unmodifiable set of code signers. If there is no code
+     * signer, an empty set is returned.
      *
-     * @return code signers of the module definition.
+     * @return an unmodifiable set of code signers.
      * @throws IOException if an I/O error occurs.
      */
-    public abstract CodeSigner[] getCodeSigners() throws IOException;
-
+    public Set<CodeSigner> getCodeSigners() throws IOException;
 
     /**
-     * Determines if the entire content of the module definition is stored locally.
+     * Returns true if the entire content is available locally.
      *
-     * @return true if the entire content of the module definition is stored
-     *         locally. Otherwise, returns false.
+     * @return true if the entire content is available locally; false otherwise.
      */
-    public abstract boolean isDownloaded();
+    public boolean isDownloaded();
 }

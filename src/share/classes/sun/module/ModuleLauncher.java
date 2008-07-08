@@ -33,8 +33,6 @@ import java.util.*;
 import java.lang.reflect.*;
 
 import java.module.*;
-import java.module.annotation.MainClass;
-
 import sun.module.*;
 import sun.module.repository.RepositoryConfig;
 import sun.module.core.ProxyModuleLoader;
@@ -93,8 +91,7 @@ public final class ModuleLauncher {
             if (moduleMain != null) {
                 mainClassName = moduleMain;
             } else {
-                MainClass mainClass = moddef.getAnnotation(MainClass.class);
-                mainClassName = (mainClass != null) ? mainClass.value() : null;
+                mainClassName = moddef.getMainClass();
                 if (mainClassName == null) {
                     throw new Exception("No Main-Class attribute in the module definition");
                 }
@@ -198,9 +195,9 @@ public final class ModuleLauncher {
         // The directory which houses the jam becomes the system repository.
         File baseDir = new File(jamFileName).getAbsoluteFile().getParentFile();
         repository = Modules.newLocalRepository(
-                RepositoryConfig.getSystemRepository(),
                 "application",
-                baseDir.getAbsoluteFile()
+                baseDir.getAbsoluteFile(), null,
+                RepositoryConfig.getSystemRepository()
                 );
         ModuleDefinition definition = null;
         // Get the basename of the jam file.
@@ -240,9 +237,9 @@ public final class ModuleLauncher {
         if (repositoryName == null) {
             // Assume the current directory as the system repository.
             repository = Modules.newLocalRepository(
-                    RepositoryConfig.getSystemRepository(),
                     "application",
-                    new File(".").getAbsoluteFile());
+                    new File(".").getAbsoluteFile(), null,
+                    RepositoryConfig.getSystemRepository());
         } else {
             if (moduleName == null) {
                 throw new IllegalArgumentException(MODULE_OPT +
@@ -262,12 +259,12 @@ public final class ModuleLauncher {
                     }
                 }
                 repository = Modules.newURLRepository(
-                        RepositoryConfig.getSystemRepository(),
-                        "application", u);
+                        "application", u, null,
+                        RepositoryConfig.getSystemRepository());
             } else {
                 repository = Modules.newLocalRepository(
-                        RepositoryConfig.getSystemRepository(),
-                        "application", new File(u.toURI()));
+                        "application", new File(u.toURI()), null,
+                        RepositoryConfig.getSystemRepository());
             }
         }
         RepositoryConfig.setSystemRepository(repository);

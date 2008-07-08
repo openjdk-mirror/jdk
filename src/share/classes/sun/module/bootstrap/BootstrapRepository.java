@@ -25,6 +25,7 @@
 
 package sun.module.bootstrap;
 
+import java.net.URI;
 import java.net.URL;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.module.ModuleDefinition;
 import java.module.ModuleArchiveInfo;
 import java.module.Query;
 import java.module.Repository;
+import sun.module.repository.JamModuleArchiveInfo;
 
 /**
  * Implementation of the bootstrap repository. It contains the standard module
@@ -54,7 +56,7 @@ public final class BootstrapRepository extends Repository {
     }
 
     private BootstrapRepository() {
-        super(null, "bootstrap", null, new BootstrapModuleSystem());
+        super("bootstrap", null, null);
     }
 
     /**
@@ -73,7 +75,7 @@ public final class BootstrapRepository extends Repository {
         // Setup ModuleArchiveInfo for the standard module definition.
         moduleArchiveInfos = new ArrayList<ModuleArchiveInfo>();
         for (ModuleDefinition md : moduleDefs) {
-            moduleArchiveInfos.add(new ModuleArchiveInfo(this,
+            moduleArchiveInfos.add(new JamModuleArchiveInfo(this,
                                         md.getName(), md.getVersion(),
                                         null, null, null, 0));
         }
@@ -120,7 +122,7 @@ public final class BootstrapRepository extends Repository {
     }
 
     @Override
-    public ModuleArchiveInfo install(URL u) throws IOException {
+    public ModuleArchiveInfo install(URI u) throws IOException {
         throw new IOException("Bootstrap repository is read-only.");
     }
 

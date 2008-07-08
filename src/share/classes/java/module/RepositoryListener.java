@@ -28,14 +28,17 @@ package java.module;
 import java.util.EventListener;
 
 /**
- * The listener interface for receiving repository events. The class that
- * is interested in processing repository events implements this interface,
- * and the object created with that class is registered, using the
- * repository's {@code addRepositoryListener} static method.
+ * The listener interface for receiving repository events.
+ * <p>
+ * The class that is interested in processing repository events implements
+ * this interface, and the object created with that class is registered, using
+ * the {@link Repository#addRepositoryListener(RepositoryListener)
+ * <tt>addRepositoryListener</tt>} method of the {@code Repository} class.
  * <p>
  * The object that is no longer interested in processing any repository event
- * is unregistered, using the repository's {@code removedRepositoryListener}
- * static method.
+ * is unregistered, using the
+ * {@link Repository#removeRepositoryListener(RepositoryListener)
+ * <tt>removeRepositoryListener</tt>} method of the {@code Repository} class.
  *
  * @see java.module.Repository
  * @see java.module.RepositoryEvent
@@ -45,10 +48,7 @@ import java.util.EventListener;
 public interface RepositoryListener extends EventListener {
 
     /**
-     * Invoked after a repository has been initialized successfully, after a
-     * repository has been shutdown successfully, after a module definition has
-     * been installed successfully in a repository, or after a module
-     * definition has been uninstalled successfully in a repository.
+     * Invoked when a change has occurred in a repository.
      *
      * @param e repository event
      */

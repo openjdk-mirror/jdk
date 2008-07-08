@@ -55,7 +55,7 @@ public @interface NativeLibraryPaths {
 
     /**
      * An array of paths for searching native libraries in the module archive
-     * for different platforms and architectures.     .
+     * for different platforms and architectures.
      */
     NativeLibraryPath[] value();
 }

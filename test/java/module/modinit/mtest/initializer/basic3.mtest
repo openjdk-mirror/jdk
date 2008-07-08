@@ -25,7 +25,7 @@ m1.Main
         }
         ModuleDefinition moduleDef = module.getModuleDefinition();
         Repository r = moduleDef.getRepository();
-        ModuleSystem ms = r.getModuleSystem();
+        ModuleSystem ms = moduleDef.getModuleSystem();
         ms.releaseModule(moduleDef);
 
         if (InitializerImpl.INIT_COUNT != 1) {
@@ -49,7 +49,7 @@ m1.Main
         Class clazz = m2.InitializerImpl.class;
         moduleDef = clazz.getClassLoader().getModule().getModuleDefinition();
         r = moduleDef.getRepository();
-        ms = r.getModuleSystem();
+        ms = moduleDef.getModuleSystem();
         ms.releaseModule(moduleDef);
 
         if (m2.InitializerImpl.INIT_COUNT != 1) {

@@ -26,7 +26,7 @@
 package java.module;
 
 /**
- * This class represents the information of an installed module archive
+ * This interface represents the information of an installed module archive
  * in a repository.
  *
  * @see java.module.Repository
@@ -34,132 +34,47 @@ package java.module;
  *
  * @since 1.7
  */
-public class ModuleArchiveInfo {
-    private Repository repository;
-
-    // These fields are a reflection of the information in the module archive.
-    private String name;
-    private Version version;
-    private String platform;
-    private String arch;
-    private String fileName;
-    private long lastModified;
-
-    /**
-     * Constructs a new {@code ModuleArchiveInfo} instance.
-     * <p>
-     * If the module definition in the module archive is platform and
-     * architecture neutral, both {@code platform} and {@code arch} must be
-     * null.
-     *
-     * @param repository the repository
-     * @param name the name of the module definition in the module archive.
-     * @param version the version of the module definition in the module
-     *        archive.
-     * @param platform the platform which the module definition in the module
-     *        archive targets.
-     * @param arch the architecture which the module definition in the module
-     *        archive targets.
-     * @param fileName the filename of the module archive.
-     * @param lastModified the last modified time of the module archive.
-     * @throws NullPointerException if repository is null, name is null,
-     *         version is null, or the last modified time is less than 0. It
-     *         is also thrown if platform is null but arch is not null, or
-     *         platform is not null but arch is null.
-     */
-    public ModuleArchiveInfo(Repository repository, String name,
-                             Version version, String platform, String arch,
-                             String fileName, long lastModified) {
-        if (repository == null) {
-            throw new IllegalArgumentException("repository must not be null.");
-        }
-        if (name == null) {
-            throw new IllegalArgumentException("name must not be null.");
-        }
-        if (version == null) {
-            throw new IllegalArgumentException(
-                "version must not be null.");
-        }
-        if ((platform == null ^ arch == null)) {
-            throw new IllegalArgumentException(
-                "platform and arch must be either both provided, or neither provided.");
-        }
-
-        if (lastModified <0) {
-            throw new IllegalArgumentException(
-                "lastModified must be greater than or equal to 0.");
-        }
-
-        this.repository = repository;
-        this.name = name;
-        this.version = version;
-        this.platform = platform;
-        this.arch = arch;
-        this.fileName = fileName;
-        this.lastModified = lastModified;
-    }
+public interface ModuleArchiveInfo {
 
     /**
      * Returns the repository where the module archive is stored.
      *
      * @return the repository.
      */
-    public Repository getRepository() {
-        return repository;
-    }
+    public Repository getRepository();
 
     /**
      * Returns the name of the module definition in the module archive.
      *
-     * @return the name of the module definition.
+     * @return the name of the module definition in the module archive.
      */
-    public String getName() {
-        return name;
-    }
+    public String getName();
 
     /**
      * Returns the version of the module definition in the module archive.
      *
-     * @return the version of the module definition.
+     * @return the version of the module definition in the module archive.
      */
-    public Version getVersion() {
-        return version;
-    }
+    public Version getVersion();
 
     /**
-     * Returns the name of the platform of the module definition in the
-     * module archive. The value should be one of the possible values
+     * Returns the name of the platform which the module archive targets.
+     * The value should be one of the possible values
      * of the system property {@code "os.platform"}.
      *
-     * @return the name of the platform. If the module definition has no
+     * @return the name of the platform. If the module archive has no
      *          platform binding, returns null.
      */
-    public String getPlatform() {
-        return platform;
-    }
+    public String getPlatform();
 
     /**
-     * Returns the name of the architecture of the module definition in the
-     * module archive. The value should be one of the possible values of
-     * the system property {@code "os.arch"}.
+     * Returns the name of the architecture of the module archive targets.
+     * The value should be one of the possible values of the system property {@code "os.arch"}.
      *
-     * @return the name of the architecture. If the module definition has no
+     * @return the name of the architecture. If the module archive has no
      *          platform binding, returns null.
      */
-    public String getArch() {
-        return arch;
-    }
-
-    /**
-     * Determines if the module definition in the module archive is
-     * platform and architecture neutral.
-     *
-     * @return true if the module definition in the module archive is platform
-     *         and architecture neutral; otherwise return false.
-     */
-    public boolean isPlatformArchNeutral() {
-        return (platform == null && arch == null);
-    }
+    public String getArch();
 
     /**
      * Returns the filename of the module archive.
@@ -167,9 +82,7 @@ public class ModuleArchiveInfo {
      * @return the filename of the module archive. If the module archive does not
      *          have a filename, return null.
      */
-    public String getFileName() {
-        return fileName;
-    }
+    public String getFileName();
 
     /**
      * Returns the last modified time of the module archive in the repository. The
@@ -177,42 +90,5 @@ public class ModuleArchiveInfo {
      *
      * @return the time the module archive was last modified, or 0 if not known.
      */
-    public long getLastModified() {
-        return lastModified;
-    }
-
-    /**
-     * Returns a {@code String} object representing this
-     * {@code ModuleArchiveInfo}.
-     *
-     * @return a string representation of the {@code ModuleArchiveInfo} object.
-     */
-    @Override
-    public String toString()    {
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("ModuleArchiveInfo[repository=");
-        builder.append(repository.getName());
-        builder.append(",module=");
-        builder.append(name);
-        builder.append(" v");
-        builder.append(version);
-        if (!isPlatformArchNeutral()) {
-            builder.append(",platform-arch=");
-            builder.append(platform);
-            builder.append("-");
-            builder.append(arch);
-        }
-        if (fileName != null) {
-            builder.append(",fileName=");
-            builder.append(fileName);
-        }
-        if (lastModified >= 0) {
-            builder.append(",lastModified=");
-            builder.append(new java.util.Date(lastModified));
-        }
-        builder.append("]");
-
-        return builder.toString();
-    }
+    public long getLastModified();
 }

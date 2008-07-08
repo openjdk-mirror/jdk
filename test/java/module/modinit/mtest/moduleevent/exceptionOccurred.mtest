@@ -12,7 +12,7 @@
 m1.MainA
 >> begin class m1.MainA
     Repository r = module.getModuleDefinition().getRepository();
-    ModuleSystem ms = r.getModuleSystem();
+    ModuleSystem ms = module.getModuleDefinition().getModuleSystem();
     ModuleDefinition md2 = r.find("m2");
 
     final java.util.concurrent.BlockingQueue<ModuleSystemEvent> eventQueue = new java.util.concurrent.LinkedBlockingQueue<ModuleSystemEvent>();

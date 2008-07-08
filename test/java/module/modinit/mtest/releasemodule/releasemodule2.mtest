@@ -44,7 +44,7 @@ m2.MainB
         // Releases the "java.se" module definition.
         Repository r = Repository.getBootstrapRepository();
         ModuleDefinition se = r.find("java.se");
-        ModuleSystem ms = se.getRepository().getModuleSystem();
+        ModuleSystem ms = se.getModuleSystem();
         ms.releaseModule(se);
         throw new Exception("Standard module definition should not be released.");
     }
@@ -56,7 +56,7 @@ m2.MainB
 
     try {
         // Releases m1 and m2
-        ModuleSystem ms = md2.getRepository().getModuleSystem();
+        ModuleSystem ms = md2.getModuleSystem();
         ms.releaseModule(md2);
 
         // instantiate m1 and m2 again

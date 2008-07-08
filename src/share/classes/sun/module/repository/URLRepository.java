@@ -44,6 +44,7 @@ import java.module.Query;
 import java.module.Repository;
 import java.module.RepositoryEvent;
 import java.module.Version;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.AccessController;
@@ -179,51 +180,6 @@ public final class URLRepository extends AbstractRepository {
     private static String arch = RepositoryUtils.getArch();;
 
     /**
-     * Creates a new <code>URLRepository</code> instance.
-     * Initializes the repository.
-     * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("createRepository")</code>
-     * permission to ensure it's ok to create a repository.
-     *
-     * @param parent the parent repository for delegation.
-     * @param name the repository name.
-     * @param codebase the source location.
-     * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
-     * @throws IOException if the repository cannot be initialized.
-     */
-    public URLRepository(Repository parent, String name, URL codebase)
-            throws IOException {
-        this(parent, name, codebase, DEFAULT_CONFIG);
-    }
-
-    /**
-     * Creates a new <code>URLRepository</code> instance using the
-     * <code>Repository</code> returned by the method
-     * <code>getSystemRepository()</code> as the parent repository.
-     * Initializes the repository.
-     * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("createRepository")</code>
-     * permission to ensure it's ok to create a repository.
-     *
-     * @param name the repository name.
-     * @param codebase the source location.
-     * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
-     * @throws IOException if the repository cannot be initialized.
-     */
-    public URLRepository(String name, URL codebase)
-            throws IOException {
-        this(getSystemRepository(), name, codebase);
-    }
-
-    /**
      * Creates a new <code>URLRepository</code> instance, and initializes it
      * using information from the given {@code config}.
      * <p>
@@ -232,42 +188,19 @@ public final class URLRepository extends AbstractRepository {
      * a <code>ModuleSystemPermission("createRepository")</code>
      * permission to ensure it's ok to create a repository.
      *
+     * @param name the repository name.
+     * @param codebase the source location.
+     * @param config Map of configuration names to their values
      * @param parent the parent repository for delegation.
-     * @param name the repository name.
-     * @param codebase the source location.
-     * @param config Map of configuration names to their values
      * @throws SecurityException if a security manager exists and
      *         its <tt>checkPermission</tt> method denies access
      *         to create a new instance of repository.
      * @throws IOException if the repository cannot be initialized.
      */
-    public URLRepository(Repository parent, String name, URL codebase,
-            Map<String, String> config) throws IOException {
-        super(parent, name, codebase, config);
-    }
-
-    /**
-     * Creates a new <code>URLRepository</code> instance using the
-     * <code>Repository</code> returned by the method
-     * <code>getSystemRepository()</code> as the parent repository, and
-     * initializes it using information from the given {@code config}.
-     * <p>
-     * If a security manager is present, this method calls the
-     * security manager's <code>checkPermission</code> method with
-     * a <code>ModuleSystemPermission("createRepository")</code>
-     * permission to ensure it's ok to create a repository.
-     *
-     * @param name the repository name.
-     * @param codebase the source location.
-     * @param config Map of configuration names to their values
-     * @throws SecurityException if a security manager exists and
-     *         its <tt>checkPermission</tt> method denies access
-     *         to create a new instance of repository.
-     * @throws IOException if the repository cannot be initialized.
-     */
-    public URLRepository(String name, URL codebase,
-            Map<String, String> config) throws IOException {
-        this(getSystemRepository(), name, codebase, config);
+    public URLRepository(String name, URI codebase,
+                         Map<String, String> config,
+                         Repository parent) throws IOException {
+        super(name, codebase, (config == null ? DEFAULT_CONFIG : config), parent);
     }
 
     //
@@ -294,8 +227,8 @@ public final class URLRepository extends AbstractRepository {
      * @param config Map of configuration names to their values
      * @throws IOException if the repository cannot be initialized.
      */
-    protected final void doInitialize(Map<String, String> config) throws IOException {
-        String tmp = getSourceLocation().toExternalForm();
+    protected final List<ModuleArchiveInfo> doInitialize2() throws IOException {
+        String tmp = getSourceLocation().toURL().toExternalForm();
         if (tmp.endsWith("/")) {
             canonicalizedCodebase = new URL(tmp);
         } else {
@@ -336,9 +269,10 @@ public final class URLRepository extends AbstractRepository {
 
             // Initializes the internal data structures based on the module
             // info set.
-            doInitialize(urlModuleInfoSet);
+            return doInitialize2(urlModuleInfoSet);
         } catch (IOException ex) {
-            // no-op
+            // ignore IOException
+            return new ArrayList<ModuleArchiveInfo>();
         } catch (Exception ex) {
             throw new IOException(
                 "Error processing repository-metadata.xml: " + ex.getMessage(), ex);
@@ -350,7 +284,10 @@ public final class URLRepository extends AbstractRepository {
      * modules information in the module info set. Creates the appropriate
      * module definitions if necessary.
      */
-    private void doInitialize(Set<URLModuleInfo> urlModuleInfoSet) throws IOException {
+    private List<ModuleArchiveInfo> doInitialize2(Set<URLModuleInfo> urlModuleInfoSet)
+                                        throws IOException {
+        List<ModuleArchiveInfo> result = new ArrayList<ModuleArchiveInfo>();
+
         if (urlModuleInfoSet != null) {
             Map<ModuleArchiveInfo, ModuleDefInfo> mdInfoMap =
                                         new HashMap<ModuleArchiveInfo, ModuleDefInfo>();
@@ -364,14 +301,14 @@ public final class URLRepository extends AbstractRepository {
                                             mi.getCanonicalizedPath());
 
                     // Constructs a module archive info
-                    ModuleArchiveInfo mai = new ModuleArchiveInfo(
+                    JamModuleArchiveInfo mai = new JamModuleArchiveInfo(
                         this, mdInfo.getName(), mdInfo.getVersion(),
                         mdInfo.getPlatform(), mdInfo.getArch(), null, 0);
 
                     mdInfoMap.put(mai, mdInfo);
 
                     // Adds the module archive info into the internal data structure.
-                    moduleArchiveInfos.add(mai);
+                    result.add(mai);
                 } catch (Exception ex) {
                     // XXX log warning but otherwise ignore
                     if (mi.getPlatform() == null && mi.getArch() == null) {
@@ -389,8 +326,10 @@ public final class URLRepository extends AbstractRepository {
 
             // Constructs the module definitions from the module archives
             // based on the specified platform and architecture.
-            constructModuleDefinitions(mdInfoMap, platform, arch);
+            addModuleDefinitions(constructModuleDefinitions(mdInfoMap, platform, arch));
         }
+
+        return result;
     }
 
     /**
@@ -429,7 +368,9 @@ public final class URLRepository extends AbstractRepository {
 
             // Check to see if there exists a module archive that has
             // the same name, version, and platform binding.
-            for (ModuleArchiveInfo mai : moduleArchiveInfos) {
+            for (ModuleArchiveInfo ma : list()) {
+                JamModuleArchiveInfo mai = (JamModuleArchiveInfo) ma;
+
                 if (mai.getName().equals(mdInfo.getName())
                     && mai.getVersion().equals(mdInfo.getVersion()))  {
                     if (mai.isPlatformArchNeutral()) {
@@ -457,7 +398,7 @@ public final class URLRepository extends AbstractRepository {
 
             // (1) Create the new MODULE.METADATA file.
             //
-            File sourceDir = new File(getSourceLocation().getFile());
+            File sourceDir = new File(getSourceLocation().toURL().getFile());
 
             // The module destination directory in the URLRepository should be
             // <source location>/<module-name>/<module-version>
@@ -498,7 +439,7 @@ public final class URLRepository extends AbstractRepository {
             // Note that we create a temp ModuleArchiveInfo so we
             // could update the repository metadata before we
             // have a real ModuleArchiveInfo in step 4.
-            writeRepositoryMetadata(new ModuleArchiveInfo(this, mdInfo.getName(),
+            writeRepositoryMetadata(new JamModuleArchiveInfo(this, mdInfo.getName(),
                                         mdInfo.getVersion(), mdInfo.getPlatform(),
                                         mdInfo.getArch(), null, 0), true);
 
@@ -528,12 +469,12 @@ public final class URLRepository extends AbstractRepository {
      */
     protected boolean doUninstall(ModuleArchiveInfo mai) throws IOException {
         // Checks if the module archive still exists.
-        if (!moduleArchiveInfos.contains(mai)) {
+        if (!list().contains(mai)) {
             return false;
         }
 
         // Source location
-        File sourceDir = new File(getSourceLocation().getFile());
+        File sourceDir = new File(getSourceLocation().toURL().getFile());
 
         // Delete file/filesystem resources related to md, and then
         // remove it from contents.
@@ -660,22 +601,19 @@ public final class URLRepository extends AbstractRepository {
             Set<URLModuleInfo> urlModuleInfoSet = MetadataXMLReader.read(repoMD);
 
             // Uninstall all existing module archives and module definitions
-            for (ModuleArchiveInfo mai : new ArrayList<ModuleArchiveInfo>(moduleArchiveInfos)) {
+            for (ModuleArchiveInfo mai : list()) {
                 removeModuleArchiveInternal(mai);
             }
 
-            moduleDefs.clear();
-            moduleArchiveInfos.clear();
+            // Clear internal module archive/module definition mapping
             contentMapping.clear();
 
-            // Initializes the internal data structures based on the module
-            // info set again.
-            doInitialize(urlModuleInfoSet);
+            // Initializes the data structures based on the module info set again.
+            List<ModuleArchiveInfo> moduleArchiveInfos = doInitialize2(urlModuleInfoSet);
 
+            // Adds the module archives into the internal data structure
             for (ModuleArchiveInfo mai : moduleArchiveInfos) {
-                RepositoryEvent evt = new RepositoryEvent(
-                    this, RepositoryEvent.Type.MODULE_INSTALLED, mai);
-                processEvent(evt);
+                addModuleArchiveInfo(mai);
             }
 
             // Reconstructs module definitions from the module archives if
@@ -692,7 +630,7 @@ public final class URLRepository extends AbstractRepository {
     }
 
     @Override
-    protected void doShutdown() throws IOException {
+    protected void doShutdown2() throws IOException {
         // Nothing specific to do during shutdown. No-op.
     }
 
@@ -702,7 +640,11 @@ public final class URLRepository extends AbstractRepository {
      */
     @Override
     public boolean isReadOnly() {
-        return (getSourceLocation().getProtocol().equals("file") == false);
+        try {
+            return (getSourceLocation().toURL().getProtocol().equals("file") == false);
+        } catch (java.net.MalformedURLException ex) {
+            return true;
+        }
     }
 
     /**
@@ -725,7 +667,7 @@ public final class URLRepository extends AbstractRepository {
             ModuleArchiveInfo mai,
             boolean writeMAI) throws IOException {
         URL repoMD = new URL(
-            getSourceLocation().toExternalForm()
+            getSourceLocation().toURL().toExternalForm()
             + "/repository-metadata.xml");
         File repoMDFile = new File(repoMD.getFile());
         File repoMDDir = repoMDFile.getParentFile();
@@ -741,15 +683,15 @@ public final class URLRepository extends AbstractRepository {
         }
         RepoMDWriter writer = new RepoMDWriter(tmpRepoMDFile);
         writer.begin();
-        for (ModuleArchiveInfo m : moduleArchiveInfos) {
+        for (ModuleArchiveInfo m : list()) {
             if (!writeMAI && m.equals(mai)) {
                 // Don't write this ModuleArchiveInfo if it matches that given
             } else {
-                writer.writeModule(m);
+                writer.writeModule((JamModuleArchiveInfo) m);
             }
         }
         if (writeMAI) {
-            writer.writeModule(mai);
+            writer.writeModule((JamModuleArchiveInfo) mai);
         }
 
         if (!writer.end()) {
@@ -812,7 +754,7 @@ public final class URLRepository extends AbstractRepository {
             return !rc; // Return false if error
         }
 
-        void writeModule(ModuleArchiveInfo mai) {
+        void writeModule(JamModuleArchiveInfo mai) {
             output("<module>");
             indent++;
             output("<name>" + mai.getName() + "</name>");
@@ -890,8 +832,8 @@ public final class URLRepository extends AbstractRepository {
     }
 
     protected void assertValidDirs() throws IOException {
-        if (getSourceLocation().getProtocol().equals("file")) {
-            File sourceDirectory = JamUtils.getFile(getSourceLocation());
+        if (getSourceLocation().toURL().getProtocol().equals("file")) {
+            File sourceDirectory = JamUtils.getFile(getSourceLocation().toURL());
             if (sourceDirectory.exists() == false
                 || sourceDirectory.isDirectory() == false) {
                 if (sourceLocMustExist) {
