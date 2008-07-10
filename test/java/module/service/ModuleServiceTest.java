@@ -94,11 +94,11 @@ public class ModuleServiceTest extends ServiceTest {
         File provider3Jam = createJam(pkgName, "provider3", scratchDir);
 
         // Check JAM files
-        repo.install(serviceJam.toURI().toURL());
-        repo.install(provider1Jam.toURI().toURL());
-        repo.install(provider2Jam.toURI().toURL());
-        ModuleArchiveInfo client = repo.install(clientJam.toURI().toURL());
-        repo.install(provider3Jam.toURI().toURL());
+        repo.install(serviceJam.toURI());
+        repo.install(provider1Jam.toURI());
+        repo.install(provider2Jam.toURI());
+        ModuleArchiveInfo client = repo.install(clientJam.toURI());
+        repo.install(provider3Jam.toURI());
 
         dump(repo);
 

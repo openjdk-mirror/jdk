@@ -93,12 +93,12 @@ public class VersionServiceTest extends ServiceTest {
         File providerJam_33 = createJam(
             pkgName, "provider", scratchDir,  "provider-3.3.jam");
 
-        repo.install(serviceJam_10.toURI().toURL());
-        repo.install(serviceJam_33.toURI().toURL());
-        repo.install(providerJam_10.toURI().toURL());
-        repo.install(providerJam_15.toURI().toURL());
-        repo.install(providerJam_33.toURI().toURL());
-        ModuleArchiveInfo client = repo.install(clientJam.toURI().toURL());
+        repo.install(serviceJam_10.toURI());
+        repo.install(serviceJam_33.toURI());
+        repo.install(providerJam_10.toURI());
+        repo.install(providerJam_15.toURI());
+        repo.install(providerJam_33.toURI());
+        ModuleArchiveInfo client = repo.install(clientJam.toURI());
 
         // Check JAM files in repository
         check(repo.findAll().size() > 0);

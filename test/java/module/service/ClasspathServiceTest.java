@@ -63,8 +63,8 @@ public class ClasspathServiceTest extends ServiceTest {
         File clientJam = createJam(pkgName, "client", scratchDir);
         File serviceJam = createJam(pkgName, "service", scratchDir);
 
-        repo.install(serviceJam.toURI().toURL());
-        ModuleArchiveInfo client = repo.install(clientJam.toURI().toURL());
+        repo.install(serviceJam.toURI());
+        ModuleArchiveInfo client = repo.install(clientJam.toURI());
 
         // Check JAM files in repository
         check(repo.findAll().size() > 0);

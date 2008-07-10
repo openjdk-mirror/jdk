@@ -102,13 +102,13 @@ public class ReexportServiceTest extends ServiceTest {
         compileSources(scratchDir, classesDir);
         File providerV2Jam = createJam(pkgName, "provider", scratchDir, "providerV2.jam");
 
-        repo.install(serviceV1Jam.toURI().toURL());
-        repo.install(serviceV2Jam.toURI().toURL());
-        repo.install(providerV1Jam.toURI().toURL());
-        repo.install(providerV2Jam.toURI().toURL());
-        repo.install(transitiveJam.toURI().toURL());
-        repo.install(extraJam.toURI().toURL());
-        ModuleArchiveInfo client = repo.install(clientJam.toURI().toURL());
+        repo.install(serviceV1Jam.toURI());
+        repo.install(serviceV2Jam.toURI());
+        repo.install(providerV1Jam.toURI());
+        repo.install(providerV2Jam.toURI());
+        repo.install(transitiveJam.toURI());
+        repo.install(extraJam.toURI());
+        ModuleArchiveInfo client = repo.install(clientJam.toURI());
 
         // Check JAM files in repository
         check(repo.findAll().size() > 0);

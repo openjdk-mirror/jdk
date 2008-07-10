@@ -80,16 +80,16 @@ public class RepositoryServiceTest extends ServiceTest {
         // Create test repositories
         File repoDir_1 = new File(scratchDir, "repo1");
         repoDir_1.mkdirs();
-        Repository repo_1 = Modules.newLocalRepository("DefaultTest", repoDir_1);
+        Repository repo_1 = Modules.newLocalRepository("DefaultTest", repoDir_1, null);
         File repoDir_2 = new File(scratchDir, "repo2");
         repoDir_2.mkdirs();
-        Repository repo_2 = Modules.newLocalRepository("DefaultTest", repoDir_2);
+        Repository repo_2 = Modules.newLocalRepository("DefaultTest", repoDir_2, null);
 
-        repo_1.install(serviceJam_10.toURI().toURL());
-        repo_1.install(providerJam_10.toURI().toURL());
-        ModuleArchiveInfo client = repo_1.install(clientJam.toURI().toURL());
+        repo_1.install(serviceJam_10.toURI());
+        repo_1.install(providerJam_10.toURI());
+        ModuleArchiveInfo client = repo_1.install(clientJam.toURI());
 
-        repo_2.install(providerJam_15.toURI().toURL());
+        repo_2.install(providerJam_15.toURI());
 
         // Check JAM files in repository
         check(repo_1.findAll().size() > 0);

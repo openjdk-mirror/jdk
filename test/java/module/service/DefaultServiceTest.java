@@ -58,9 +58,9 @@ public class DefaultServiceTest extends ServiceTest {
         File providerJam = createJam(pkgName, "provider", scratchDir);
         File clientJam = createJam(pkgName, "client", scratchDir);
 
-        repo.install(serviceJam.toURI().toURL());
-        repo.install(providerJam.toURI().toURL());
-        ModuleArchiveInfo client = repo.install(clientJam.toURI().toURL());
+        repo.install(serviceJam.toURI());
+        repo.install(providerJam.toURI());
+        ModuleArchiveInfo client = repo.install(clientJam.toURI());
 
         // Check JAM files in repository
         check(repo.findAll().size() > 0);

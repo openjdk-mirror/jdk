@@ -110,7 +110,7 @@ public class RepositoryConfigTest {
     }
 
     static void addedIsNotLast() throws Throwable {
-        Repository r = Modules.newLocalRepository("foo", new File(repoDir, "bar"));
+        Repository r = Modules.newLocalRepository("foo", new File(repoDir, "bar"), null);
         check(r != RepositoryConfig.getLastRepository());
         check(r != Repository.getSystemRepository());
     }

@@ -36,7 +36,7 @@ abstract public class FooService {
     static {
         try {
             repo = Modules.newLocalRepository("FooServiceRepo",
-                new File(System.getProperty("repoPath")));
+                new File(System.getProperty("repoPath")), null);
         } catch (Throwable t) {
             System.err.println("FooService: fatal " + t);
         }

@@ -72,7 +72,7 @@ abstract public class ServiceTest  {
         try {
             check(JamUtils.recursiveDelete(scratchDir));
             check(repoDir.mkdirs());
-            r = Modules.newLocalRepository(scratchDirName, repoDir);
+            r = Modules.newLocalRepository(scratchDirName, repoDir, null);
         } catch (IOException ex) {
             fail(ex.getMessage());
         }
