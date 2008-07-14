@@ -26,7 +26,7 @@
 package java.lang;
 
 /**
- * Exception thrown when a transfer from within a lambda does't have
+ * Exception thrown when a transfer from within a lambda doesn't have
  * a matching frame on the stack of the current thread.
  *
  * @author gafter

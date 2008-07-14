@@ -27,6 +27,8 @@ package java.lang;
 
 /**
  * Class used to implement transfers from within a lambda.
+ * This should only be thrown when the target of the transfer is on
+ * the call stack of the current thread.
  *
  * @author gafter
  */
