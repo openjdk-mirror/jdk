@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -38,16 +39,20 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URISyntaxException;
 import java.module.*;
+import java.module.annotation.ImportPolicyClass;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import sun.module.JamUtils;
+import java.util.Set;
 import sun.module.repository.RepositoryConfig;
 import sun.security.action.GetPropertyAction;
 import sun.tools.jar.CommandLine;
@@ -79,11 +84,17 @@ public class JRepo {
     /** Usage message created from each command's usage. */
     private static String usage = null;
 
-    /** Format for module name & version. */
+    /** Format for ModuleArchiveInfo name & version. */
     private static final String MAIFormat = "%-20s %-20s";
 
-    /** Format for additional/verbose module information. */
+    /** Format for additional/verbose ModuleArchiveInfo details. */
     private static final String MAIFormatVerbose = " %-9s %-7s %-17s %s";
+
+    /** Format for ModuleDefinition name & version. */
+    private static final String MDFormat = "%s-%s";
+
+    /** Format for additional/verbose ModuleDefinition details. */
+    private static final String MDFormatVerbose = " %s";
 
     /** String containing column headings for name & version. */
     private static final String maiHeading;
@@ -99,6 +110,12 @@ public class JRepo {
 
     /** Location of repository; if not given uses system repository. */
     private static final RepositoryFlag repositoryFlag = new RepositoryFlag();
+
+    /** Indicates dependencies command should display info on core modules. */
+    private static final Flag javaseFlag = new Flag('j');
+
+    /** Provides way to specify platform binding fo dependencies command. */
+    private static final BindingFlag bindingFlag = new BindingFlag();
 
     /** Contains the flags that are common to all commands. */
     private static final HashMap<Character, Flag> commonFlags = new HashMap<Character, Flag>();
@@ -119,6 +136,10 @@ public class JRepo {
         maiHeadingVerbose = sw.toString();
     }
 
+    public JRepo(OutputStream out, OutputStream err, BufferedReader reader) {
+        this(new PrintStream(out), new PrintStream(err), reader);
+    }
+
     public JRepo(PrintStream out, PrintStream err, BufferedReader reader) {
         msg = new Messenger("jrepo", out, err, reader);
         synchronized(commands) {
@@ -126,6 +147,7 @@ public class JRepo {
                 new ListCommand().register(commands);
                 new InstallCommand().register(commands);
                 new UninstallCommand().register(commands);
+                new DependenciesCommand().register(commands);
             }
         }
         reset();
@@ -189,7 +211,8 @@ public class JRepo {
                         f.getCanonicalFile(), null,
                         RepositoryConfig.getSystemRepository());
                 } else {
-                    throw new IOException("Cannot access repository at " + repositoryLocation);
+                    throw new IOException("Cannot access repository at " // XXX i18n
+                                          + repositoryLocation);
                 }
             }
         }
@@ -262,7 +285,7 @@ public class JRepo {
 
 
     /** Returns a user-grokkable description of the repository. */
-    private String getRepositoryText(Repository repo) {
+    private static String getRepositoryText(Repository repo) {
         String rc;
         URI u = repo.getSourceLocation();
         if (u == null) {
@@ -277,7 +300,7 @@ public class JRepo {
         return rc;
     }
 
-    private String getMAIText(ModuleArchiveInfo mai) {
+    private static String getMAIText(ModuleArchiveInfo mai) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         pw.printf(MAIFormat, mai.getName(), mai.getVersion());
@@ -297,6 +320,23 @@ public class JRepo {
         return sw.toString();
     }
 
+    private static String getMText(Module m) {
+        return getMDText(m.getModuleDefinition());
+    }
+
+    private static String getMDText(ModuleDefinition md) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        pw.printf(MDFormat, md.getName(), md.getVersion());
+        if (verboseFlag.isEnabled()) {
+            pw.printf(MDFormatVerbose,
+                      md.getRepository() == Repository.getBootstrapRepository()
+                      ? "bootstrap"
+                      : md.getRepository().getSourceLocation().toString());
+        }
+        return sw.toString();
+    }
+
     void usageError() {
         usageError(msg);
     }
@@ -304,7 +344,7 @@ public class JRepo {
     static void usageError(Messenger msg) {
         if (usage == null) {
             StringBuilder ub = new StringBuilder(
-                "Usage: jrepo <command>\nwhere <command> includes:");
+                "Usage: jrepo <command>\nwhere <command> includes:"); // XXX i18n
             for (Command c : commands.values()) {
                 String u = c.usage();
                 if (u != null) {
@@ -319,7 +359,7 @@ public class JRepo {
     /**
      * Represents a flag given on the command line.  Flags always are 2
      * characters long, and start with a '-'.  They can have additional
-     * associated arguments (cf RepositoryFlag).
+     * associated arguments (cf {@link #RepositoryFlag}).
      */
     private static class Flag {
         private final char name;
@@ -341,8 +381,11 @@ public class JRepo {
             return name;
         }
 
-        /** @return the number of arguments consumed by this Flag. */
-        int set(String[] args, int pos) {
+        /**
+         * @return the number of arguments consumed by this Flag
+         * @throws IllegalArgumentException if invalid args are given
+         */
+        int set(String[] args, int pos) throws IllegalArgumentException {
             enabled = true;
             return 1;
         }
@@ -367,7 +410,8 @@ public class JRepo {
             super('r');
         }
 
-        int set(String[] args, int pos) {
+        @Override
+        int set(String[] args, int pos) throws IllegalArgumentException {
             int rc = super.set(args, pos);
             location = args[pos + 1];
             return rc + 1;
@@ -377,9 +421,47 @@ public class JRepo {
             return location;
         }
 
+        @Override
         void reset() {
             super.reset();
             location = null;
+        }
+    }
+
+    private static class BindingFlag extends Flag {
+        String platform;
+        String arch;
+
+        BindingFlag() {
+            super('b');
+        }
+
+        @Override
+        int set(String[] args, int pos) throws IllegalArgumentException {
+            int rc = super.set(args, pos);
+            String[] binding = args[pos + 1].split("-");
+            if (binding.length != 2) {
+                throw new IllegalArgumentException(
+                    "Must 2 and only 2 elements for platform-arch");
+            }
+            platform = binding[0];
+            arch = binding[1];
+            return rc + 1;
+        }
+
+        String getPlatform() {
+            return platform;
+        }
+
+        String getArch() {
+            return arch;
+        }
+
+        @Override
+        void reset() {
+            super.reset();
+            platform = null;
+            arch = null;
         }
     }
 
@@ -430,7 +512,8 @@ public class JRepo {
                         i += numConsumed;  // Increases at each iteration.
                         rc += numConsumed; // Increases only when the arg is a flag.
                     } else {
-                        throw new IllegalArgumentException("unrecognized flag: " + args[i]);
+                        throw new IllegalArgumentException("unrecognized flag: " // XXX i18n
+                                                           + args[i]);
                     }
                 } else {
                     i++;
@@ -447,6 +530,7 @@ public class JRepo {
          */
         abstract String usage();
 
+        @Override
         public String toString() { return name; }
 
         /**
@@ -459,9 +543,9 @@ public class JRepo {
         abstract class RepositoryVisitor {
             abstract void doit(Repository repo, Messenger msg);
 
-            void doBefore(Messenger msg) { }
+            void preVisit(Messenger msg) { }
 
-            void doAfter(Messenger msg) { }
+            void postVisit(Messenger msg) { }
 
             final void run(Repository repo, Messenger msg) {
                 visit(repo, msg);
@@ -472,10 +556,179 @@ public class JRepo {
                 if (parent != null) {
                     visit(parent, msg);
                 }
-                doBefore(msg);
+                preVisit(msg);
                 doit(repo, msg);
-                doAfter(msg);
+                postVisit(msg);
             }
+        }
+    }
+
+
+    /** Lists dependencies of a module. */
+    private class DependenciesCommand extends Command {
+        @SuppressWarnings("unchecked")
+        private final Map<Character, Flag> myFlags = (Map<Character, Flag>) commonFlags.clone();
+
+        private String name;
+        private Version version;
+
+        // For printing module name, version.
+        private String moduleString;
+
+        DependenciesCommand() {
+            super("dependencies");
+            javaseFlag.register(myFlags);
+            bindingFlag.register(myFlags);
+        }
+
+        @Override
+        void reset() {
+            javaseFlag.reset();
+            bindingFlag.reset();
+        }
+
+        @Override
+        int parseFlags(String[] args, Map<Character, Flag> flags) {
+            return super.parseFlags(args, myFlags);
+        }
+
+        boolean parseArgs(String[] args, Messenger msg) {
+            if (args.length > 0) {
+                name = args[0];
+            }
+            if (args.length > 1) {
+                try {
+                    version = Version.valueOf(args[1]);
+                } catch (IllegalArgumentException ex) {
+                    return false;
+                }
+            }
+            if (args.length > 2) {
+                return false;
+            }
+
+            if (DEBUG) debug("name: " + name + " ver: " + version
+                             + " plat: " + bindingFlag.getPlatform()
+                             + " arch: " + bindingFlag.getArch());
+            return true;
+        }
+
+        boolean run(Repository repo, Messenger msg) {
+            boolean rc = true;
+            if (name != null) {
+                VersionConstraint vc = (version == null
+                                        ? VersionConstraint.DEFAULT
+                                        : version.toVersionConstraint());
+                printHeader(name, vc);
+                rc = depend(repo, name, vc,
+                            bindingFlag.getPlatform(), bindingFlag.getArch());
+                printTrailer(null);
+            } else {
+                for (ModuleArchiveInfo mai : repo.list()) {
+                    reset();
+                    String maiName = mai.getName();
+                    VersionConstraint vc = mai.getVersion().toVersionConstraint();
+                    printHeader(maiName, vc);
+                    rc &= depend(repo, maiName, vc,
+                                 mai.getPlatform(), mai.getArch());
+                    printTrailer("\n");
+                }
+            }
+            return rc;
+        }
+
+        boolean depend(Repository repo, String name, VersionConstraint constraint,
+                       String platform, String arch) {
+            ImportTraverser traverser = new ImportTraverser();
+            ImportTraverser.Visitor visitor = new ImportVisitor(traverser, msg);
+            try {
+                traverser.traverse(visitor, repo, name, constraint, platform, arch);
+                if (traverser.traversedAny()) {
+                    return true;
+                }
+                if (verboseFlag.isEnabled()) {
+                    msg.error("Cannot find module " + name + " in " // XXX i18n
+                              + getRepositoryText(repo));
+                }
+                return false;
+            } catch (ModuleInitializationException ex) {
+                msg.error("Cannot instantiate module for " + name // XXX i18n
+                          + ": " + ex);
+                return false;
+            }
+        }
+
+
+        void printHeader(String name, VersionConstraint vc) {
+            if (verboseFlag.isEnabled()) {
+                msg.println("Dependencies for " // XXXi18n
+                            + name + "-" + vc + ":");
+            }
+        }
+
+        void printTrailer(String s) {
+            if (verboseFlag.isEnabled()) {
+                msg.print(s);
+            }
+        }
+
+        String usage() {
+            return "dependencies [-v] [-r repositoryLocation] [-b platform-arch]"// XXX i18n
+                + " [moduleName [moduleVersion] ]\n"
+                + "        Lists all modules on which identified modules depend.\n"
+                + "        If no moduleName is given, lists dependencies of all"
+                + " module archives in the repository\n"
+                + "        which are instantiable on the current platform.";
+        }
+    }
+
+
+    private static class ImportVisitor extends ImportTraverser.Visitor {
+        private final Messenger msg;
+
+        private static final String INDENT = "    ";
+        private static final int INDENT_LENGTH = INDENT.length();
+
+        private String indent = "";
+
+        ImportVisitor(ImportTraverser traverser, Messenger msg) {
+            super(traverser);
+            this.msg = msg;
+        }
+
+        @Override
+        protected void init(Module m) {
+            printModule(m);
+        }
+
+        @Override
+        protected boolean preVisit(Module m) {
+            if (javaseFlag.isEnabled() == false
+                && m.getModuleDefinition().getName().startsWith("java.se")) {
+                return false;
+            } else {
+                indent += INDENT;
+                return true;
+            }
+        }
+
+        @Override
+        protected void visit(Module m) {
+            printModule(m);
+        }
+
+        @Override
+        protected void postVisit(Module m) {
+            if (javaseFlag.isEnabled() == false
+                && m.getModuleDefinition().getName().startsWith("java.se")) {
+                // empty
+            } else {
+                indent = indent.substring(INDENT_LENGTH);
+            }
+        }
+
+        void printModule(Module m) {
+            msg.println(indent + getMText(m));
         }
     }
 
@@ -536,7 +789,7 @@ public class JRepo {
         }
 
         String usage() {
-            return "install [-v] -r repositoryLocation jamFile | jamURL\n"
+            return "install [-v] -r repositoryLocation jamFile | jamURL\n" // XXX i18n
                 +  "        installs a module into a repository";
         }
     }
@@ -562,6 +815,7 @@ public class JRepo {
             interactiveFlag.register(myFlags);
         }
 
+        @Override
         void reset() {
             version = null;
             platformBinding = null;
@@ -569,6 +823,7 @@ public class JRepo {
             interactiveFlag.reset();
         }
 
+        @Override
         int parseFlags(String[] args, Map<Character, Flag> flags) {
             return super.parseFlags(args, myFlags);
         }
@@ -655,7 +910,8 @@ public class JRepo {
         }
 
         String usage() {
-            return "uninstall [-v] [-f | -i] -r repositoryLocation moduleName [moduleVersion] [modulePlatformBinding]\n"
+            return "uninstall [-v] [-f | -i] -r repositoryLocation moduleName"// XXX i18n
+                + " [moduleVersion] [modulePlatformBinding]\n"
                 +  "        removes a module from a repository, along with associated files.";
         }
 
@@ -667,9 +923,9 @@ public class JRepo {
                 rc = repo.uninstall(mai);
                 if (verboseFlag.isEnabled()) {
                     if (rc) {
-                        msg.println("Uninstalled " + getMAIText(mai));
+                        msg.println("Uninstalled " + getMAIText(mai)); // XXX i18n
                     } else {
-                        msg.error("Failed to uninstall " + getMAIText(mai));
+                        msg.error("Failed to uninstall " + getMAIText(mai)); // XXX i18n
                     }
                 }
             } catch (Exception ex) {
@@ -777,10 +1033,12 @@ public class JRepo {
             parentFlag.register(myFlags);
         }
 
+        @Override
         void reset() {
             parentFlag.reset();
         }
 
+        @Override
         int parseFlags(String[] args, Map<Character, Flag> flags) {
             return super.parseFlags(args, myFlags);
         }
@@ -803,16 +1061,17 @@ public class JRepo {
             boolean found = visitor.wasFound();
             if (verboseFlag.isEnabled() && !found) {
                 if (moduleName != null) {
-                    msg.error("Could not find module name starting with '" + moduleName + "'");
+                    msg.error("Could not find module name starting with '"// XXX i18n
+                              + moduleName + "'");
                 } else {
-                    msg.error("Could not find any modules");
+                    msg.error("Could not find any modules"); // XXX i18n
                 }
             }
             return found;
         }
 
         String usage() {
-            return "list [-v] [-p] [-r repositoryLocation] moduleName\n"
+            return "list [-v] [-p] [-r repositoryLocation] moduleName\n"// XXX i18n
                 +  "        lists the modules in the repository";
         }
 
@@ -823,15 +1082,21 @@ public class JRepo {
 
             void doit(Repository repo, Messenger msg) {
                 boolean printedHeader = false;
-                for (ModuleArchiveInfo mai : repo.list()) {
-                    if (moduleName == null || mai.getName().startsWith(moduleName)) {
-                        if (!printedHeader) {
-                            msg.println(getRepositoryText(repo));
-                            msg.println(verboseFlag.isEnabled() ? maiHeadingVerbose : maiHeading);
-                            printedHeader = true;
+                List<ModuleArchiveInfo> maiList = repo.list();
+                if (maiList.size() == 0 && verboseFlag.isEnabled()) {
+                    msg.println(getRepositoryText(repo));
+                    msg.println("   empty");
+                } else {
+                    for (ModuleArchiveInfo mai : repo.list()) {
+                        if (moduleName == null || mai.getName().startsWith(moduleName)) {
+                            if (!printedHeader) {
+                                msg.println(getRepositoryText(repo));
+                                msg.println(verboseFlag.isEnabled() ? maiHeadingVerbose : maiHeading);
+                                printedHeader = true;
+                            }
+                            msg.println(getMAIText(mai));
+                            found = true;
                         }
-                        msg.println(getMAIText(mai));
-                        found = true;
                     }
                 }
             }

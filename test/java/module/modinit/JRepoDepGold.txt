@@ -1,0 +1,114 @@
+>>>Test basic/import.mtest
+m1-1.0
+    java.se-1.7
+    m2-1.0
+        java.se-1.7
+>>>Test basic/import.mtest
+m2-1.0
+    java.se-1.7
+>>>Test circular/circular2.mtest
+m1-1.0
+    java.se-1.7
+    m2-1.0
+        java.se-1.7
+        m3-1.0
+            java.se-1.7
+            m1-1.0
+>>>Test circular/circular2.mtest
+m2-1.0
+    java.se-1.7
+    m3-1.0
+        java.se-1.7
+        m1-1.0
+            java.se-1.7
+            m2-1.0
+>>>Test circular/circular2.mtest
+m3-1.0
+    java.se-1.7
+    m1-1.0
+        java.se-1.7
+        m2-1.0
+            java.se-1.7
+            m3-1.0
+>>>Test importpolicy/import1.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+>>>Test importpolicy/optional1.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+    m3-0.0-default
+        java.se-1.7
+>>>Test importpolicy/optional2.mtest
+m1-0.0-default
+    java.se-1.7
+    m3-0.0-default
+        java.se-1.7
+>>>Test importpolicy/recurse1.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+>>>Test importpolicy/version1.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-1.2
+        java.se-1.7
+>>>Test importpolicy/version3.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-1.2
+        java.se-1.7
+>>>Test optional/basic.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+    m3-0.0-default
+        java.se-1.7
+    m4-0.0-default
+        java.se-1.7
+>>>Test optional/indirect.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+    m3-0.0-default
+        java.se-1.7
+    m4-0.0-default
+        java.se-1.7
+>>>Test optional/missing.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+    m4-0.0-default
+        java.se-1.7
+>>>Test validation/shadow4.mtest
+m1-0.0-default
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+        m3-0.0-default
+            java.se-1.7
+>>>Test validation/shadow4.mtest
+m2-0.0-default
+    java.se-1.7
+    m3-0.0-default
+        java.se-1.7
+>>>Test validation/shadow4.mtest
+m3-0.0-default
+    java.se-1.7
+>>>Test version/version3.mtest
+m1-1.1
+    java.se-1.7
+    m2-0.0-default
+        java.se-1.7
+        m4-1.6
+            java.se-1.7
+    m3-2.0
+        java.se-1.7
+        m4-1.6

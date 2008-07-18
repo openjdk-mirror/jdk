@@ -36,7 +36,7 @@ import sun.module.tools.JRepo;
  * @run main JRepoTest
  */
 public class JRepoTest {
-    private static final boolean debug = Boolean.getBoolean("module.tools.debug");
+    private static final boolean debug = true;/*Boolean.getBoolean("module.tools.debug"); ZZZ */
 
     static final ByteArrayOutputStream bout = new ByteArrayOutputStream();
     static final ByteArrayOutputStream berr = new ByteArrayOutputStream();
@@ -56,7 +56,6 @@ public class JRepoTest {
          * as a sanity check.
          */
 
-
         // Create a temporary directory for JAM files and repositories.
         File tmp = new File(
             System.getProperty("test.scratch", "."), "JRepoTestDir").getCanonicalFile();
@@ -73,7 +72,7 @@ public class JRepoTest {
         check(!jr.run(getArgs("install")) && usageOK(0));
         check(!jr.run(getArgs("install repo module")) && usageOK(0));
         check(!jr.run(getArgs("install -r repoDoesNotExist module")) && errorOK(1));
-        check(!jr.run(getArgs("install -p -r repoDoesNotExist module")) && errorOK(9));
+        check(!jr.run(getArgs("install -p -r repoDoesNotExist module")) && errorOK(13));
 
         // Create a directory for a local repository.
         File localRepoDir = new File(tmp, "JRepoTestLocalRepoDir");
@@ -123,13 +122,13 @@ public class JRepoTest {
         check(!jr.run(getArgs("list")) && errorOK(0));
         check(jr.run(getArgs("list -p")) && outputOK(14));
         check(!jr.run(getArgs("list -v")) && errorOK(1));
-        check(jr.run(getArgs("list -p -v")) && outputOK(14));
+        check(jr.run(getArgs("list -p -v")) && outputOK(22));
 
         // Common prefixes of "list"
         check(jr.run(getArgs("lis -r " + repo)) && outputOK(6));
         check(jr.run(getArgs("li -p -r " + repo)) && outputOK(20));
         check(jr.run(getArgs("l -v -r " + repo)) && outputOK(6));
-        check(jr.run(getArgs("list -p -v -r " + repo)) && outputOK(20));
+        check(jr.run(getArgs("list -p -v -r " + repo)) && outputOK(28));
 
         // Nonexist things are not there
         check(!jr.run(getArgs("list ThisWillNotBeFound")) && outputOK(0));
@@ -139,26 +138,26 @@ public class JRepoTest {
         check(!jr.run(getArgs("list java.se.core")) && errorOK(0));
         check(jr.run(getArgs("list -p java.se.core")) && outputOK(3));
         check(!jr.run(getArgs("list -v java.se.core")) && errorOK(1));
-        check(jr.run(getArgs("list -p -v java.se.core")) && outputOK(3));
+        check(jr.run(getArgs("list -p -v java.se.core")) && outputOK(11));
 
         // Various options work
         check(jr.run(getArgs("list -r " + repo + " JRepoModuleA")) && outputOK(3));
         check(jr.run(getArgs("list -p -r " + repo + " JRepoModuleA")) && outputOK(3));
         check(jr.run(getArgs("list -v -r " + repo + " JRepoModuleA")) && outputOK(3));
-        check(jr.run(getArgs("list -p -v -r " + repo + " JRepoModuleA")) && outputOK(3));
+        check(jr.run(getArgs("list -p -v -r " + repo + " JRepoModuleA")) && outputOK(11));
 
         // Given module name is treated as substring of full module names
         check(jr.run(getArgs("list -r " + repo + " JRepoModule")) && outputOK(6));
         check(jr.run(getArgs("list -p -r " + repo + " JRepoModu")) && outputOK(6));
         check(jr.run(getArgs("list -v -r " + repo + " JRepo")) && outputOK(6));
-        check(jr.run(getArgs("list -p -v -r " + repo + " JR")) && outputOK(6));
+        check(jr.run(getArgs("list -p -v -r " + repo + " JR")) && outputOK(14));
 
         /* Check uninstall command */
 
         check(!jr.run(getArgs("uninstall")) && usageOK(0));
         check(!jr.run(getArgs("uninstall repo MODULE")) && usageOK(0));
         check(!jr.run(getArgs("uninstall -r repoDoesNotExist module")) && errorOK(1));
-        check(!jr.run(getArgs("uninstall -p -r repoDoesNotExist module")) && errorOK(9));
+        check(!jr.run(getArgs("uninstall -p -r repoDoesNotExist module")) && errorOK(13));
 
         check(!jr.run(getArgs("uninstall -r " + repo + " Fred")) && errorOK(0));
         check(!jr.run(getArgs("uninstall -v -r " + repo + " Fred")) && errorOK(1));
@@ -314,7 +313,7 @@ public class JRepoTest {
     /** Check that usage is provided as expected. */
     static boolean usageOK(int len) throws Throwable {
         // Add number of default lines of usage output to given value.
-        return checkOutput(8 + len, berr);
+        return checkOutput(12 + len, berr);
     }
 
     //--------------------- Infrastructure ---------------------------

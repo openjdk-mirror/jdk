@@ -61,8 +61,8 @@ public class RunMTest {
         defaultProperties.put("header", WARNING_HEADER);
     }
 
-    private final File file;
-    private final File outputDirectory;
+    protected final File file;
+    protected final File outputDirectory;
     private final List<ModuleDescription> modules;
     private final List<TestDescription> tests;
 
@@ -77,7 +77,7 @@ public class RunMTest {
         } else {
             subdir = cPath.substring(k + mString.length());
         }
-        System.out.println(">>> Test " + subdir);
+        System.out.println(">>>Test " + subdir);
         outputDirectory = new File(baseDirectory, subdir);
         if (outputDirectory.exists()) {
             recursiveDelete(outputDirectory);
@@ -87,7 +87,7 @@ public class RunMTest {
         parse();
     }
 
-    private String getName() {
+    protected String getName() {
         return file.getName();
     }
 
@@ -310,16 +310,49 @@ public class RunMTest {
         }
     }
 
-    private static class TestDescription {
 
-        private final String name;
-        private String result;
+    // Abstracting the creation of TestDescription instances to a factory
+    // allows other tests to override TestDescription.runTest.
+    //
+    public static class TestDescriptionFactory {
+        private static TestDescriptionFactory instance;
 
-        private TestDescription(String name) {
+        static TestDescription create(String name) {
+            return getInstance().doCreate(name);
+        }
+
+        private static TestDescriptionFactory getInstance() {
+            if (instance == null) {
+                String factName = System.getProperty("TestDescriptionFactory.classname");
+                if (factName != null) {
+                    try {
+                        Class<?> clazz = Class.forName(factName);
+                        instance = (TestDescriptionFactory) clazz.newInstance();
+                    } catch (Throwable t) {
+                        throw new RuntimeException(t);
+                    }
+                } else {
+                    instance = new TestDescriptionFactory();
+                }
+            }
+            return instance;
+        }
+
+        protected TestDescription doCreate(String name) {
+            return new TestDescription(name);
+        }
+    }
+
+    public static class TestDescription {
+
+        protected final String name;
+        protected String result;
+
+        TestDescription(String name) {
             this.name = name;
         }
 
-        private void runTest(RunMTest mTest) throws Exception {
+        protected void runTest(RunMTest mTest) throws Exception {
             System.out.println("> Running test " + name + "...");
             Repository parent = sun.module.repository.RepositoryConfig.getSystemRepository();
             Repository repository = Modules.newLocalRepository(mTest.getName(), mTest.outputDirectory, null, parent);
@@ -360,7 +393,7 @@ public class RunMTest {
     private TestDescription parseTest(String header, BufferedReader reader) throws IOException {
         String[] s = header.split(" ");
         String name = s[s.length - 1];
-        TestDescription test = new TestDescription(name);
+        TestDescription test = TestDescriptionFactory.create(name);
         while (true) {
             String line = getLine(reader);
             if (line == null) {

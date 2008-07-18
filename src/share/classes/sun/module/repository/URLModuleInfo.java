@@ -60,7 +60,7 @@ public class URLModuleInfo {
     URLModuleInfo(String name, Version version, String platform, String arch, String path) {
         if ((platform == null ^ arch == null)) {
             throw new IllegalArgumentException(
-                "module platform and name must be either both provided, or neither provided");
+                "module platform and arch must be either both provided, or neither provided");
         }
 
         if (name == null) {
