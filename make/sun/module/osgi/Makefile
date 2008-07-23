@@ -61,7 +61,12 @@ ifdef OSGI_FRAMEWORK_JAR
   #
   # Temporary workaround to include the OSGi framework
   # and Felix OSGi container for compilation.
+ifeq ($(PLATFORM),windows)
+  OTHER_JAVACFLAGS = -cp $(OSGI_FRAMEWORK_JAR);$(FELIX_JAR)
+else # PLATFORM
   OTHER_JAVACFLAGS = -cp $(OSGI_FRAMEWORK_JAR):$(FELIX_JAR)
+endif
+
 endif
 
 #

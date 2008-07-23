@@ -103,6 +103,9 @@ public final class RepositoryConfig
     /** True once configRepositories has completed. */
     private static boolean configDone = false;
 
+    /** True once the repositories are all initialized. */
+    private static boolean initialized = false;
+
     /** Last repository in the configuration. */
     private static Repository lastRepository;
 
@@ -172,6 +175,7 @@ public final class RepositoryConfig
             systemRepository = configRepositories();
         }
         // XXX: Will revisit the bootstrapping issue
+        //
         // During the VM startup, we can only initialize the repositories
         // provided by rt.jar (loaded by bootstrap class loader).
         // This method may be called when initializing the application class
@@ -179,7 +183,8 @@ public final class RepositoryConfig
         // (classes not loaded by bootstrap class loader) may result
         // in a deadlock if loaded by the application class loader.
         //
-        if (initializeAll) {
+        if (initializeAll && !initialized) {
+            initialized = true;
             for (Repository r = systemRepository; r != null; r = r.getParent()) {
                 try {
                     if (!r.isActive()) {
