@@ -42,16 +42,14 @@ import java.net.*;
         checkClassStream2(urls.get(1).openStream());
     }
 
-    private static void checkClassStream1(InputStream in) throws Exception {
-        int k = in.read();
-        if (k != '#') {
-            throw new Exception("Wrong data: " + k);
-
-        }
-        in.close();
+    private void checkClassStream1(InputStream is) throws Exception {
+        ClassLoader cl = new DupClassLoader(is);
+        Class<?> clazz = cl.loadClass("m.Dup");
+        // NoSuchMethodError thrown if the method doesn't exist
+        java.lang.reflect.Method method = clazz.getMethod("findIt");
     }
 
-    private static void checkClassStream2(InputStream in) throws Exception {
+    private void checkClassStream2(InputStream in) throws Exception {
         DataInputStream din = new DataInputStream(in);
         int k = din.readInt();
         if (k != 0xcafebabe) {
@@ -97,6 +95,50 @@ import java.net.*;
         in.close();
     }
 
+    class DupClassLoader extends ClassLoader {
+        private final String dupClassName = "m.Dup";
+        private final InputStream is;
+        public DupClassLoader(InputStream is) {
+            super(null);
+            this.is = is;
+        }
+        public Class findClass(String name) throws ClassNotFoundException {
+            if (name.equals(dupClassName)) {
+                byte[] b = loadClassData();
+                return defineClass(name, b, 0, b.length);
+            } else {
+                throw new ClassNotFoundException(name);
+            }
+        }
+
+        private byte[] loadClassData() {
+            BufferedInputStream in = null;
+            ByteArrayOutputStream out = null;
+            try {
+                in = new BufferedInputStream(is);
+                out = new ByteArrayOutputStream();
+                int c;
+    
+                while ((c = in.read()) != -1) {
+                    out.write(c);
+                }
+                return out.toByteArray();
+            } catch (IOException ioe) {
+                return null;
+            } finally {
+                try {
+                    if (in != null) {
+                        in.close();
+                    }
+                    if (out != null) {
+                        out.close();
+                    }
+                } catch (IOException ioe) {
+                }
+            }
+        }
+    }
+
 >> end class
 >> begin class m.Dup
 >> end class
@@ -109,9 +151,8 @@ import java.net.*;
 >> begin file resources/r1.txt
 > copy r1b.txt
 >> end file
-# test file with .class extension; not really class file
->> begin file m/Dup.class
-> copy basic2.mtest
+>> begin file m/Dup.java
+> compile Dup.java
 >> end file
 >>> end module
 >>> begin test m1

@@ -21,23 +21,13 @@
  * have any questions.
  */
 
-package verserv.service;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@Version("1.0")
-@Services({"verserv.service.FooService"})
 @ServiceProviders({
-    @ServiceProvider(service="verserv.service.FooService",
-        providerClass="verserv.service.FooServiceDefaultProvider")
+    @ServiceProvider(service="modserv.service.CodecSet",
+        providerClass="modserv.provider2.AdvancedCodecs")
 })
+@Version("2.0")
 @ImportModules({
-    @ImportModule(name="java.se.core")
+    @ImportModule(name="java.se.core"),
+    @ImportModule(name="modserv.service", version="[2.5, 3.0)")
 })
-class module_info {
-    // Export service type
-    exports verserv$service$FooService;
-
-    // Note that the default service provider is *not* exported.
-}
+module modserv.provider2;

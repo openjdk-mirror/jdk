@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module cpserv.service;
 package cpserv.service;
 
 import java.util.Iterator;

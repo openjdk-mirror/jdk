@@ -60,7 +60,7 @@ import javax.tools.StandardLocation;
  * @since 1.7
  */
 // XXX Increment to RELEASE_7 when that's in place.
-@SupportedSourceVersion(SourceVersion.RELEASE_6)
+@SupportedSourceVersion(SourceVersion.RELEASE_7)
 @SupportedAnnotationTypes({"java.util.Service", "java.util.ServiceProvider"})
 public class ServiceProcessor extends AbstractProcessor {
     /**

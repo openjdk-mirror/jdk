@@ -21,11 +21,6 @@
  * have any questions.
  */
 
-package verserv.provider;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
 @Version("1.0")
 @ServiceProviders({
     @ServiceProvider(service="verserv.service.FooService",
@@ -36,12 +31,4 @@ import java.module.annotation.*;
 @Services("BarProvider")
 // It is important that this be on a single line; see ServiceTest.redefineAnnotations
 @ImportModules({ @ImportModule(name="java.se.core"), @ImportModule(name="verserv.service", version="[1.0, 2.0)") })
-class module_info {
-    // Export service type
-     exports verserv$provider$BarService;
-
-    // Export service provider type
-    exports verserv$provider$FooService2Provider;
-
-    // Note that the default service provider is *not* exported.
-}
+module verserv.provider;

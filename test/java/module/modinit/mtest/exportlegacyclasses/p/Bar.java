@@ -4,7 +4,9 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation.  Sun designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Sun in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,19 +23,11 @@
  * have any questions.
  */
 
-package rxpserv.provider;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@ServiceProviders({
-    @ServiceProvider(service="rxpserv.service.FooService",
-        providerClass="rxpserv.provider.FooServiceProvider")
-})
-// It is important that this be on a single line; see ServiceTest.redefineAnnotations
-@ImportModules({ @ImportModule(name="rxpserv.transitive"), @ImportModule(name="rxpserv.extra") })
-@Version("1.0")
-class module_info {
-    // Export service provider type
-    exports rxpserv$provider$FooServiceProvider;
+/**
+ * This class does not have the module membership.
+ */
+package p;
+public class Bar {
+    public void bar() {
+    }
 }

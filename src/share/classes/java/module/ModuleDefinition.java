@@ -242,11 +242,10 @@ public abstract class ModuleDefinition {
      */
     public boolean isClassExported(String name) {
         try {
-            // XXX: convert class name?
             Set<String> exportedClasses = getExportedClasses();
             return exportedClasses.contains(name);
         } catch (UnsupportedOperationException uoe) {
-            return false;
+            return true;
         }
     }
 
@@ -284,7 +283,7 @@ public abstract class ModuleDefinition {
             Set<String> exportedResources = getExportedResources();
             return exportedResources.contains(path);
         } catch (UnsupportedOperationException uoe) {
-            return false;
+            return true;
         }
     }
 

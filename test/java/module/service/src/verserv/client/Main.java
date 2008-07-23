@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module verserv.client;
 package verserv.client;
 
 import java.module.ModuleDefinition;

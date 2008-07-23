@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module cpserv.client;
 package cpserv.client;
 
 import java.module.ModuleDefinition;

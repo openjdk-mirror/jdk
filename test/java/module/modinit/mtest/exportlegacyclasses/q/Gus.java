@@ -4,7 +4,9 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation.  Sun designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Sun in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,22 +23,11 @@
  * have any questions.
  */
 
-package cliserv.service;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
-@Services({"cliserv.service.FooService"})
-@ServiceProviders({
-    @ServiceProvider(service="cliserv.service.FooService",
-        providerClass="cliserv.service.FooServiceDefaultProvider")
-})
-@ImportModules({
-    @ImportModule(name="java.se.core")
-})
-class module_info {
-    // Export service type
-    exports cliserv$service$FooService;
-
-    // Note that the default service provider is *not* exported.
+/**
+ * This class does not have the module membership.
+ */
+package q;
+public class Gus {
+    public void gus() {
+    }
 }

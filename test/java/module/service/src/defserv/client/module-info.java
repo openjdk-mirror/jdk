@@ -7,7 +7,7 @@
  * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABbILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * version 2 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
@@ -21,26 +21,9 @@
  * have any questions.
  */
 
-package cliserv.provider;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
-@ServiceProviders({
-    @ServiceProvider(service="cliserv.service.FooService",
-        providerClass="cliserv.provider.FooService2Provider"),
-    @ServiceProvider(service="cliserv.service.BarService",
-        providerClass="cliserv.provider.BarServiceProvider")
-})
-@Services("BarProvider")
 @ImportModules({
     @ImportModule(name="java.se.core"),
-    @ImportModule(name="cliserv.service") // Import service module defining Foo
+    @ImportModule(name="defserv.service")
 })
-class module_info {
-    // Export service provider type
-    exports cliserv$provider$FooService2Provider;
-
-    // Export service provider type
-    exports cliserv$provider$BarServiceProvider;
-}
+@MainClass("defserv.client.Main")
+module defserv.client;

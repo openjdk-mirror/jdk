@@ -21,25 +21,9 @@
  * have any questions.
  */
 
-module verserv.provider;
-package verserv.provider;
-
-import java.util.Iterator;
-import java.util.Service;
-import java.util.ServiceLoader;
-
-/**
- * A service for which we provide a default provider
- */
-@Service
-abstract public class BarService {
-    private static Iterator<BarService> loader =
-        ServiceLoader.load(BarService.class).iterator();
-
-    public static BarService getNextProvider() {
-        return loader.next();
-    }
-
-    public BarService() {
-    }
-}
+@Services({"rxpserv.service.FooService"})
+@ImportModules({
+    @ImportModule(name="java.se.core")
+})
+@Version("1.0")
+module rxpserv.service;

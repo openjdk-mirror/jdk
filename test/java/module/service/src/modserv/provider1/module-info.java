@@ -21,25 +21,15 @@
  * have any questions.
  */
 
-module verserv.provider;
-package verserv.provider;
-
-import java.util.Iterator;
-import java.util.Service;
-import java.util.ServiceLoader;
-
-/**
- * A service for which we provide a default provider
- */
-@Service
-abstract public class BarService {
-    private static Iterator<BarService> loader =
-        ServiceLoader.load(BarService.class).iterator();
-
-    public static BarService getNextProvider() {
-        return loader.next();
-    }
-
-    public BarService() {
-    }
-}
+@ServiceProviders({
+    @ServiceProvider(service="modserv.service.CodecSet",
+        providerClass="modserv.provider1.StandardCodecs"),
+    @ServiceProvider(service="modserv.service.CodecSet",
+        providerClass="modserv.provider1.AdvancedCodecs")
+})
+@Version("1.3")
+@ImportModules({
+    @ImportModule(name="java.se.core"),
+    @ImportModule(name="modserv.service", version="[2.0, 3.0)")
+})
+module modserv.provider1;

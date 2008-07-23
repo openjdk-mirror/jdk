@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module rxpserv.service;
 package rxpserv.service;
 
 import java.util.Iterator;

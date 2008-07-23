@@ -21,20 +21,11 @@
  * have any questions.
  */
 
-package modserv.service;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@Version("2.7")
-@Services({"modserv.service.CodecSet"})
+/**
+ * A module that just imports and reexports another module, but of a certain
+ * version.
+ */
 @ImportModules({
-    @ImportModule(name="java.se.core")
+    @ImportModule(name="rxpserv.provider", version="2.0")
 })
-class module_info {
-    // Export service types
-    exports modserv$service$CodecSet;
-
-    // Export type provided by CodecSet service
-    exports modserv$service$Encoder;
-}
+module rxpserv.extra;

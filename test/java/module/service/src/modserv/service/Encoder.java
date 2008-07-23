@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module modserv.service;
 package modserv.service;
 
 /**

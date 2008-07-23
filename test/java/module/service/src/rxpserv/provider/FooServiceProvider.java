@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module rxpserv.provider;
 package rxpserv.provider;
 
 import java.util.ServiceProvider;

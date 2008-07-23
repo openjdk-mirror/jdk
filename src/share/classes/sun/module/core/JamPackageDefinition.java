@@ -46,13 +46,13 @@ import java.util.Set;
 *
 * @since 1.7
 */
-class JamPackageDefinition extends PackageDefinition {
+public class JamPackageDefinition extends PackageDefinition {
 
     private String packageName;
     private Version version;
     private ModuleDefinition moduleDef;
 
-    JamPackageDefinition(String packageName, Version version, ModuleDefinition moduleDef) {
+    public JamPackageDefinition(String packageName, Version version, ModuleDefinition moduleDef) {
         this.packageName = packageName;
         this.version = version;
         this.moduleDef = moduleDef;

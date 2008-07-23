@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module defserv.service;
 package defserv.service;
 
 import java.util.Iterator;

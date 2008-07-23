@@ -419,7 +419,7 @@ public abstract class ClassLoader {
 
     /**
      * Converts an array of bytes into an instance of class <tt>ModuleInfo</tt>.
-     * Typically this method will only invoked by a class loader's
+     * Typically this method will only be invoked by a class loader's
      * {@link #findModuleInfo findModuleInfo()} method.
      *
      * @param  name
@@ -447,7 +447,7 @@ public abstract class ClassLoader {
     protected final ModuleInfo defineModuleInfo(String name, byte[] b, int off, int len)
         throws ClassFormatError {
         Class<?> clazz = defineClass(name, b, off, len);
-        return new ModuleInfo(clazz);
+        return new ModuleInfo(clazz, b, off, len);
     }
 
     /**

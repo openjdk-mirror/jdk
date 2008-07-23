@@ -21,15 +21,11 @@
  * have any questions.
  */
 
-package modserv.client;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@MainClass("modserv.client.Main")
+/**
+ * A module that just imports and reexports another module, but of a certain
+ * version.
+ */
 @ImportModules({
-    @ImportModule(name="java.se.core"),
-    @ImportModule(name="modserv.service", version="[2.0, 3.0)")
+    @ImportModule(name="rxpserv.service", version="1.0", reexport=true)
 })
-class module_info {
-}
+module rxpserv.transitive;

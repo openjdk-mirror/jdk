@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module modserv.provider2;
 package modserv.provider2;
 
 import java.util.ServiceProvider;

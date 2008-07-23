@@ -21,19 +21,12 @@
  * have any questions.
  */
 
-package charserv.provider;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
+@Services({"cliserv.service.FooService"})
 @ServiceProviders({
-    @ServiceProvider(service="java.nio.charset.spi.CharsetProvider",
-        providerClass="charserv.provider.CharsetServiceProvider")
+    @ServiceProvider(service="cliserv.service.FooService",
+        providerClass="cliserv.service.FooServiceDefaultProvider")
 })
 @ImportModules({
     @ImportModule(name="java.se.core")
 })
-class module_info {
-    // Export service provider type
-    exports charserv$provider$CharsetServiceProvider;
-}
+module cliserv.service;

@@ -213,24 +213,14 @@ public class RunMTest {
             File dir = new File(moduleDir, name.replace('.', SEP));
             dir.mkdirs();
             String mangledName = getMangledName();
-            File spfile = new File(dir, "module_info.java");
+            File spfile = new File(dir, "module-info.java");
             PrintWriter writer = new PrintWriter(spfile);
             writer.println(WARNING_HEADER);
-            writer.println("package " + mangledName + ";");
             writer.println();
-            for (String s : SP_HEADER) {
-                writer.println(s);
-            }
             for (String s : annotations) {
                 writer.println(s);
             }
-            writer.println("class module_info {");
-            writer.println();
-            for (String s : exports) {
-                writer.println("    exports " + s.replace(".", "$") + ";");
-            }
-            writer.println();
-            writer.println("}");
+            writer.println("module " + mangledName + ";");
             writer.close();
             return spfile;
         }
@@ -264,7 +254,7 @@ public class RunMTest {
 
         private final Map<String,String> properties;
 
-        private ClassDescription(String line) {
+        private ClassDescription(String line, String moduleName) {
             String[] ss = line.split(" ");
             String s = ss[ss.length - 1];
             int k = s.lastIndexOf('.');
@@ -272,6 +262,7 @@ public class RunMTest {
             name = s.substring(k + 1);
             properties = new HashMap<String,String>();
             properties.put("name", name);
+            properties.put("mod", moduleName);
             properties.put("pkg", pkg);
             properties.put("import", "");
             properties.put("super", "");
@@ -407,8 +398,8 @@ public class RunMTest {
         return test;
     }
 
-    private ClassDescription parseClass(String header, BufferedReader reader) throws IOException {
-        ClassDescription cd = new ClassDescription(header);
+    private ClassDescription parseClass(String header, String moduleName, BufferedReader reader) throws IOException {
+        ClassDescription cd = new ClassDescription(header, moduleName);
         String prop = "run";
         while (true) {
             String line = getLine(reader);
@@ -431,10 +422,12 @@ public class RunMTest {
 
         final String name;
         String sourceName;
+        boolean compile;
 
         private FileDescription(String line) {
             String[] ss = line.split(" ");
             name = ss[ss.length - 1];
+            compile = false;
         }
 
         private File write(ModuleDescription md) throws IOException {
@@ -474,6 +467,12 @@ public class RunMTest {
                 fd.sourceName = name;
                 continue;
             }
+            if (line.startsWith("> compile ")) {
+                String name = line.substring(10).trim();
+                fd.sourceName = name;
+                fd.compile = true;
+                continue;
+            }
             throw new IOException("Invalid file declaration: " + line);
         }
         return fd;
@@ -491,7 +490,7 @@ public class RunMTest {
                 throw new EOFException();
             }
             if (line.startsWith(">> begin class ")) {
-                md.classes.add(parseClass(line, reader));
+                md.classes.add(parseClass(line, name, reader));
                 continue;
             }
             if (line.startsWith(">> begin file ")) {
@@ -529,7 +528,10 @@ public class RunMTest {
                 md.sourceFiles.add(f);
             }
             for (FileDescription fd : md.otherFiles) {
-                fd.write(md);
+                f = fd.write(md);
+                if (fd.compile) {
+                    md.sourceFiles.add(f);
+                }
             }
         }
     }
@@ -556,7 +558,7 @@ public class RunMTest {
                 srclist.append(f.getPath());
                 srclist.append(" ");
             }
-            String cmd = "-source 6 -target 6 -XDignore.symbol.file -implicit:none -Xlint:all -sourcepath "
+            String cmd = "-source 7 -target 7 -XDignore.symbol.file -implicit:none -Xlint:all -sourcepath "
                 + srcpath.toString() + " " + srclist;
             int r = compiler.run(null, null, null, cmd.split(" "));
             if (r != 0) {
@@ -567,10 +569,8 @@ public class RunMTest {
             File moduleJam = new File(outputDirectory, moduleDir.getName() + ".jam");
 
             ArrayList<String> args = new ArrayList<String>();
-            args.add("cfsS");
+            args.add("cf");
             args.add(moduleJam.getCanonicalPath());
-            args.add(module.getMangledName());
-            args.add(moduleDir.getCanonicalPath() + File.separator);
 
             // Presume all other entries are directories containing classes.
             for (File f : moduleDir.listFiles()) {

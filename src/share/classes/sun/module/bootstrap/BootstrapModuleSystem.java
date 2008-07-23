@@ -44,11 +44,17 @@ import java.util.Map;
  * @since 1.7
  */
 public final class BootstrapModuleSystem extends ModuleSystem {
+    private static final BootstrapModuleSystem instance =
+        new BootstrapModuleSystem();
 
     private Map<ModuleDefinition, VirtualModule> modules = new HashMap<ModuleDefinition, VirtualModule>();
 
-    BootstrapModuleSystem() {
+    private BootstrapModuleSystem() {
         // empty
+    }
+
+    static BootstrapModuleSystem getInstance() {
+        return instance;
     }
 
     @Override

@@ -7,7 +7,7 @@
  * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABbILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * version 2 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
@@ -21,16 +21,9 @@
  * have any questions.
  */
 
-package rxpserv.transitive;
-
-import java.module.annotation.*;
-
-/**
- * A module that just imports and reexports another module, but of a certain
- * version.
- */
 @ImportModules({
-    @ImportModule(name="rxpserv.service", version="1.0", reexport=true)
+    @ImportModule(name="java.se.core"),
+    @ImportModule(name="java.classpath")
 })
-class module_info {
-}
+@MainClass("charserv.client.Main")
+module charserv.client;

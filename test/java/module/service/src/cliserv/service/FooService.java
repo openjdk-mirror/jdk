@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module cliserv.service;
 package cliserv.service;
 
 import java.util.Service;

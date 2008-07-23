@@ -21,28 +21,13 @@
  * have any questions.
  */
 
-package defserv.provider;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
+@Version("1.0")
+@Services({"reposerv.service.FooService"})
 @ServiceProviders({
-    @ServiceProvider(service="defserv.service.FooService",
-        providerClass="defserv.provider.FooService2Provider"),
-    @ServiceProvider(service="defserv.service.BarService",
-        providerClass="defserv.provider.BarServiceDefaultProvider")
+    @ServiceProvider(service="reposerv.service.FooService",
+        providerClass="reposerv.service.FooServiceDefaultProvider")
 })
-@Services("BarProvider")
 @ImportModules({
-    @ImportModule(name="java.se.core"),
-    @ImportModule(name="defserv.service") // Import service module defining Foo
+    @ImportModule(name="java.se.core")
 })
-class module_info {
-    // Export service type
-     exports defserv$provider$BarService;
-
-    // Export service provider type
-    exports defserv$provider$FooService2Provider;
-
-    // Note that the default service provider is *not* exported.
-}
+module reposerv.service;

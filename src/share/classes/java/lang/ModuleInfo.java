@@ -29,7 +29,8 @@ import java.util.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.module.annotation.*;
-import sun.module.annotation.*;
+import sun.module.MetadataParser;
+import sun.module.ModuleParsingException;
 
 /**
  * A {@code ModuleInfo} object contain information about a Java module. The
@@ -53,30 +54,30 @@ import sun.module.annotation.*;
  */
 public final class ModuleInfo implements AnnotatedElement {
 
-    // The implementation of this class is a temporary approximation
-    // designed to function without the javac and JVM support the final
-    // implementation will be able to take advantage of.
-    // The API is not expected to change, but the final implementation
-    // will be very different.
-
-    private final Set<String> exported, members;
-    private final static String SUFFIX = ".module_info";
-
-    /*
-     * Private storage for the module name and annotations.
-     */
     private final String moduleName;
-    private transient Map<Class, Annotation> annotations;
-    private transient Map<Class, Annotation> declaredAnnotations;
+    private final Set<String> exportedClasses;
+    private final Set<String> exportedPackages;
+    private final Set<String> memberPackages;
+    private final Map<Class, Annotation> annotations;
+    private final Map<Class, Annotation> declaredAnnotations;
 
     /**
      * Construct a <code>ModuleInfo</code> instance based on the information
      * of the module-info class.
      *
      * @param clazz the class the represents module-info.
-     * @return a new module info.
+     * @param b
+     *        The bytes that make up the module data.  The bytes in positions
+     *        <tt>off</tt> through <tt>off+len-1</tt> should have the format
+     *        of a valid module file as defined by the <a
+     *        href="http://java.sun.com/docs/books/vmspec/">Java Virtual
+     *        Machine Specification</a>.
+     * @param off
+     *        The start offset in <tt>b</tt> of the module data
+     * @param len
+     * @throws ClassFormatError if the data doesn't contain a valid module info.
      */
-    ModuleInfo(Class<?> clazz) {
+    ModuleInfo(Class<?> clazz, byte[] b, int off, int len) throws ClassFormatError {
         this.annotations = new HashMap<Class, Annotation>();
         this.declaredAnnotations = new HashMap<Class, Annotation>();
 
@@ -88,79 +89,15 @@ public final class ModuleInfo implements AnnotatedElement {
             declaredAnnotations.put(a.annotationType(), a);
         }
 
-        // Determines module name using @ModuleName annotation if exists;
-        // using the class name otherwise.
-        //
-        // @ModuleName is a workaround for building virtual module
-        // definitions in the Java SE platform, and this should be
-        // replaced after the actual JSR 294 support arrives.
-        sun.module.annotation.ModuleName moduleNameAnnotation = clazz.getAnnotation(sun.module.annotation.ModuleName.class);
-        if (moduleNameAnnotation == null) {
-            String className = clazz.getName();
-            if (className.endsWith(SUFFIX) == false) {
-                throw new ClassFormatError("Not a module: " + className);
-            }
-            moduleName = className.substring(0, className.length() - SUFFIX.length()).replace('$', '.');
-
-            // use LinkedHashSet to preserve order
-            Set<String> setExported = new LinkedHashSet<String>();
-            Set<String> setMembers = new LinkedHashSet<String>();
-            Field[] fields = clazz.getDeclaredFields();
-            for (Field field : fields) {
-                Class type = field.getType();
-                String name = field.getName().replace('$', '.');
-                if (type == exports.class) {
-                    setExported.add(name);
-                    setMembers.add(name);
-                }
-            }
-
-            LegacyClasses legacyClassesAnno = clazz.getAnnotation(LegacyClasses.class);
-            if (legacyClassesAnno != null) {
-                // Adds legacy classes as members
-                setMembers.addAll(Arrays.asList(legacyClassesAnno.value()));
-
-                ExportLegacyClasses exportLegacyClassesAnno = clazz.getAnnotation(ExportLegacyClasses.class);
-                if (exportLegacyClassesAnno != null) {
-                    // Adds legacy classes as exported
-                    setExported.addAll(Arrays.asList(legacyClassesAnno.value()));
-                }
-            }
-
-            exported = Collections.unmodifiableSet(getPackages(setExported));
-            members = Collections.unmodifiableSet(getPackages(setMembers));
-        } else {
-            // Virtual modules in the JDK
-            moduleName = moduleNameAnnotation.value();
-
-            // XXX @ExportPackages is a workaround for building virtual modules
-            // for the Java SE platform. It should be replaced after the
-            // actual JSR 294 support arrives in javac.
-            //
-            sun.module.annotation.ExportPackages exportPackages =
-                    getAnnotation(sun.module.annotation.ExportPackages.class);
-            if (exportPackages != null) {
-                HashSet<String> setExportedPackages = new LinkedHashSet<String>();
-                setExportedPackages.addAll(Arrays.asList(exportPackages.value()));
-                exported = Collections.unmodifiableSet(setExportedPackages);
-                members = exported;
-            } else {
-                members = Collections.emptySet();
-                exported = Collections.emptySet();
-            }
+        try {
+            MetadataParser metadata = new MetadataParser(b, off, len);
+            moduleName = metadata.getModuleName();
+            exportedClasses = new HashSet<String>(metadata.getModuleExportClassList(false));
+            memberPackages = new HashSet<String>(metadata.getModuleMemberPackageList());
+            exportedPackages = new HashSet<String>(metadata.getModuleExportPackageList());
+        } catch (ModuleParsingException mpe) {
+            throw new ClassFormatError("Invalid module data: " + mpe.getMessage());
         }
-    }
-
-    /**
-     * Construct a <code>ModuleInfo</code> instance based on the information
-     * of the module-info class loaded from the classloader.
-     *
-     * @param moduleName the module name
-     * @param loader the class loader to find the module-info class
-     * @return a new module info.
-     */
-    ModuleInfo(String moduleName, ClassLoader loader) {
-        this(getModuleInfo(moduleName, loader));
     }
 
     private final static String[] S0 = new String[0];
@@ -183,11 +120,11 @@ public final class ModuleInfo implements AnnotatedElement {
      * the module has no members.
      *
      * @return an array of the names of all member packages
-     * @throws UnsupporterOperationException if the packages cannot be
+     * @throws UnsupportedOperationException if the packages cannot be
      *         determined.
      */
     public String[] getMemberPackages() {
-        return members.toArray(S0);
+        return memberPackages.toArray(S0);
     }
 
     /**
@@ -201,11 +138,11 @@ public final class ModuleInfo implements AnnotatedElement {
      * the module has no members that are exported types.
      *
      * @return an array of the names of all packages that have exported types.
-     * @throws UnsupporterOperationException if the packages cannot be
+     * @throws UnsupportedOperationException if the packages cannot be
      *         determined.
      */
     public String[] getExportedPackages() {
-        return exported.toArray(S0);
+        return exportedPackages.toArray(S0);
     }
 
     /**
@@ -217,25 +154,11 @@ public final class ModuleInfo implements AnnotatedElement {
      * the module has no exported types.
      *
      * @return an array of the names of all exported types.
-     * @throws UnsupporterOperationException if the exported types cannot be
+     * @throws UnsupportedOperationException if the exported types cannot be
      *         determined.
      */
     public String[] getExportedClasses() {
-        return exported.toArray(S0);
-    }
-
-    private static Set<String> getPackages(Collection<String> classes) {
-        Set<String> packages = new HashSet<String>();
-        for (String clazz : classes ) {
-            int k = clazz.lastIndexOf('.');
-            if (k == -1) {
-                packages.add("<unnamed package>");
-            } else {
-                String pkg = clazz.substring(0, k);
-                packages.add(pkg);
-            }
-        }
-        return packages;
+        return exportedClasses.toArray(S0);
     }
 
     private static final class Loader extends ClassLoader {
@@ -253,7 +176,7 @@ public final class ModuleInfo implements AnnotatedElement {
      *
      * @param data the module data
      * @return a new module info that represents the module data.
-     * @throws ClassFormatErrror If the data did not contain a valid module
+     * @throws ClassFormatError If the data did not contain a valid module
      */
     public static ModuleInfo getModuleInfo(byte[] data) throws ClassFormatError {
         // we use a new ClassLoader for each ModuleInfo object so that we
@@ -263,19 +186,9 @@ public final class ModuleInfo implements AnnotatedElement {
         return loader.doDefineModuleInfo(data);
     }
 
-    private static Class<?> getModuleInfo(String name, ClassLoader loader) {
-        try {
-            return Class.forName(name + ".module-info", false, loader);
-        } catch (ClassNotFoundException ex) {
-            // store a proxy for the module info that has no annotations
-            class ModuleInfoProxy {}
-            return ModuleInfoProxy.class;
-        }
-    }
-
     /**
-     * Find the module information by name in the callers {@code ClassLoader}
-     * instance. The callers {@code ClassLoader} instance is used to find the
+     * Find the module information by name in the caller's {@code ClassLoader}
+     * instance. The caller's {@code ClassLoader} instance is used to find the
      * module information corresponding to the named module.
      *
      * @param name a module name, for example, {@code java.se.core}.
@@ -291,8 +204,8 @@ public final class ModuleInfo implements AnnotatedElement {
      * {@code ClassLoader} instance.  Those modules correspond to classes loaded
      * via or accessible by name to that {@code ClassLoader} instance.
      *
-     * @return a new array of module information known to the callers
-     *         {@code ClassLoader} instance.  An zero length array is returned
+     * @return a new array of module information known to the caller's
+     *         {@code ClassLoader} instance.  A zero length array is returned
      *         if none are known.
      */
     public static ModuleInfo[] getModuleInfos() {
@@ -351,7 +264,4 @@ public final class ModuleInfo implements AnnotatedElement {
     public String toString() {
         return "module " + moduleName;
     }
-
-    /** Temporary for module definition until javac support arrives */
-    public static class exports { private exports() {} };
 }

@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module cliserv.provider;
 package cliserv.provider;
 
 import java.util.Iterator;

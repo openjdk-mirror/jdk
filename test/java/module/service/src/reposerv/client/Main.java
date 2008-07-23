@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module reposerv.client;
 package reposerv.client;
 
 import java.module.*;

@@ -21,23 +21,9 @@
  * have any questions.
  */
 
-package reposerv.service;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@Version("1.0")
-@Services({"reposerv.service.FooService"})
-@ServiceProviders({
-    @ServiceProvider(service="reposerv.service.FooService",
-        providerClass="reposerv.service.FooServiceDefaultProvider")
-})
+@Version("2.7")
+@Services({"modserv.service.CodecSet"})
 @ImportModules({
     @ImportModule(name="java.se.core")
 })
-class module_info {
-    // Export service type
-    exports reposerv$service$FooService;
-
-    // Note that the default service provider is *not* exported.
-}
+module modserv.service;
