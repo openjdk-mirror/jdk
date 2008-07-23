@@ -35,6 +35,8 @@ import java.net.URL;
 import java.security.SecureClassLoader;
 import java.util.*;
 
+import sun.module.repository.RepositoryConfig;
+
 /**
  * This class represents the extension module loader that is used by the
  * extension classloader for loading classes and resources from extension
@@ -71,7 +73,7 @@ public final class ExtensionModuleLoader extends SecureClassLoader {
 
         List<ModuleDefinition> extensionModuleDefs = new ArrayList<ModuleDefinition>();
         final Repository bootstrapRepository = Repository.getBootstrapRepository();
-        Repository extensionRepository = Repository.getSystemRepository();
+        Repository extensionRepository = RepositoryConfig.getSystemRepository(false);
 
         if (extensionRepository != bootstrapRepository) {
 
@@ -88,7 +90,7 @@ public final class ExtensionModuleLoader extends SecureClassLoader {
             } else {
                 // Locating the system extension repository by looking up the immediate child
                 // of the extension repository, starting from the system repository.
-                Repository systemExtensionRepository = Repository.getSystemRepository();
+                Repository systemExtensionRepository = RepositoryConfig.getSystemRepository(false);
 
                 while (systemExtensionRepository.getParent() != extensionRepository) {
                     systemExtensionRepository = systemExtensionRepository.getParent();

@@ -36,6 +36,7 @@ OTHER_JAVACFLAGS = -Xlint:all
 AUTO_FILES_JAVA_DIRS = \
     java/module \
     sun/module
+AUTO_JAVA_PRUNE = osgi
 
 #
 # Directories

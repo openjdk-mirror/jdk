@@ -39,6 +39,7 @@ import java.module.Repository;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URISyntaxException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -163,13 +164,37 @@ public final class RepositoryConfig
     /**
      * Returns the current system repository, or if one has not been set (for
      * example, by the ModuleLauncher), creates it first.
+     * @param initializeAll initialize all repositories
      * @return the system repository
      */
-    public static synchronized Repository getSystemRepository() {
+    public static synchronized Repository getSystemRepository(boolean initializeAll) {
         if (!configDone) {
             systemRepository = configRepositories();
         }
+        // XXX: Will revisit the bootstrapping issue
+        // During the VM startup, we can only initialize the repositories
+        // provided by rt.jar (loaded by bootstrap class loader).
+        // This method may be called when initializing the application class
+        // loader.  Loading and initialize the OSGi and user-defined repositories
+        // (classes not loaded by bootstrap class loader) may result
+        // in a deadlock if loaded by the application class loader.
+        //
+        if (initializeAll) {
+            for (Repository r = systemRepository; r != null; r = r.getParent()) {
+                try {
+                    if (!r.isActive()) {
+                        r.initialize();
+                    }
+                } catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
         return systemRepository;
+    }
+
+    public static synchronized Repository getSystemRepository() {
+        return getSystemRepository(true);
     }
 
     /**
@@ -468,6 +493,58 @@ public final class RepositoryConfig
     }
 
     /**
+     * Creates an OSGi repository
+     */
+    private static class OSGiRepositoryCreator extends RepositoryCreator {
+        static final OSGiRepositoryCreator instance = new OSGiRepositoryCreator();
+        private OSGiRepositoryCreator() { }
+
+        /** Name of Repository subclass to create. */
+        private String className = "sun.module.osgi.OSGiRepository";
+        private final String repoJar = "file:///${java.home}/lib/osgi-repo.jar";
+        private final String containerAttr = "container";
+
+        void setClassName(String name) {
+            className = name;
+        }
+        URLClassLoader getURLClassLoader(File container) throws IOException {
+            URL[] urls = new URL[2];
+            try {
+                urls[0] = new URL(PropertyExpander.expand(repoJar));
+                urls[1] = container.toURI().toURL();
+            } catch (PropertyExpander.ExpandException ex) {
+                // XXX: should not reach here
+                ex.printStackTrace();
+            }
+            return URLClassLoader.newInstance(urls);
+        }
+
+        protected Repository create(Repository parent, String repoName,
+                          String sourceName, Map<String, String> config)
+        throws IOException, InstantiationException, NoSuchMethodException,
+                ClassNotFoundException, IllegalAccessException,
+                InvocationTargetException, URISyntaxException {
+            URI u = sourceName == null ? null : new URI(sourceName);
+            String containerPath = config.get(containerAttr);
+            File container;
+            try {
+                container = new File(new URI(containerPath));
+            } catch (URISyntaxException e) {
+                container = new File(containerPath);
+            }
+            if (!container.exists()) {
+                throw new IOException("OSGi container \"" + container +
+                    "\" does not exist");
+            }
+
+            Class<?> clazz = Class.forName(className, true, getURLClassLoader(container));
+            Constructor ctor = clazz.getDeclaredConstructor(
+                String.class, URI.class, Repository.class, Map.class);
+            return (Repository) ctor.newInstance(repoName, u, parent, config);
+        }
+    }
+
+    /**
      * Creates repositories based on the given {@code LinkedHashMap}, whose
      * keys are presumed to be ordered such that the first entry describes the
      * repository to create as a child of the bootstrap repository, the next
@@ -496,13 +573,17 @@ public final class RepositoryConfig
             }
 
             RepositoryCreator creator = DefaultCreator.instance;
-            if (clazzName != null || factoryName != null) {
-                if (clazzName != null) {
-                    ClassBasedCreator.instance.setClassName(clazzName);
-                    creator = ClassBasedCreator.instance;
-                } else {
-                    FactoryBasedCreator.instance.setFactoryName(factoryName);
-                    creator = FactoryBasedCreator.instance;
+            if (repoName.equals("osgi")) {
+                creator = OSGiRepositoryCreator.instance;
+            } else {
+                if (clazzName != null || factoryName != null) {
+                    if (clazzName != null) {
+                        ClassBasedCreator.instance.setClassName(clazzName);
+                        creator = ClassBasedCreator.instance;
+                    } else {
+                        FactoryBasedCreator.instance.setFactoryName(factoryName);
+                        creator = FactoryBasedCreator.instance;
+                    }
                 }
             }
 
@@ -532,7 +613,7 @@ public final class RepositoryConfig
             } catch (Exception ex) {
                 throw new IllegalArgumentException(
                     "Cannot create repository named '" + repoName + "' at location '" + sourceName
-                    + "': " + ex);
+                    + "': " + ex, ex);
             }
 
             /*
