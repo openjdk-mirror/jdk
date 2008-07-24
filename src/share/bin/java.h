@@ -188,4 +188,15 @@ static int ContinueInNewThread(InvocationFunctions* ifn,
  */
 void InitLauncher(jboolean javaw);
 
+/*
+ * This allows for finding classes from the bootstrap class
+ * loader directly, we don't want to load classes from the
+ * classpath especially so for Modules, and JNI_FindClass
+ * does use the  application class loader internally.
+ */
+typedef jclass (JNICALL FindClassFromBootLoader_t(JNIEnv *env,
+                                                const char *name,
+                                                jboolean throwError));
+
+jclass FindBootStrapClass(JNIEnv *env, const char *classname);
 #endif /* _JAVA_H_ */

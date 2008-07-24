@@ -1253,7 +1253,7 @@ static jstring getPlatformEncoding(JNIEnv *env) {
         if (propname) {
             jclass cls;
             jmethodID mid;
-            NULL_CHECK0 (cls = (*env)->FindClass(env, "java/lang/System"));
+            NULL_CHECK0 (cls = FindBootStrapClass(env, "java/lang/System"));
             NULL_CHECK0 (mid = (*env)->GetStaticMethodID(
                                    env, cls,
                                    "getProperty",
@@ -1268,7 +1268,7 @@ static jstring getPlatformEncoding(JNIEnv *env) {
 static jboolean isEncodingSupported(JNIEnv *env, jstring enc) {
     jclass cls;
     jmethodID mid;
-    NULL_CHECK0 (cls = (*env)->FindClass(env, "java/nio/charset/Charset"));
+    NULL_CHECK0 (cls = FindBootStrapClass(env, "java/nio/charset/Charset"));
     NULL_CHECK0 (mid = (*env)->GetStaticMethodID(
                            env, cls,
                            "isSupported",
@@ -1298,7 +1298,7 @@ NewPlatformString(JNIEnv *env, char *s)
         (*env)->SetByteArrayRegion(env, ary, 0, len, (jbyte *)s);
         if (!(*env)->ExceptionOccurred(env)) {
             if (isEncodingSupported(env, enc) == JNI_TRUE) {
-                NULL_CHECK0(cls = (*env)->FindClass(env, "java/lang/String"));
+                NULL_CHECK0(cls = FindBootStrapClass(env, "java/lang/String"));
                 NULL_CHECK0(mid = (*env)->GetMethodID(env, cls, "<init>",
                                           "([BLjava/lang/String;)V"));
                 str = (*env)->NewObject(env, cls, mid, ary, enc);
@@ -1309,7 +1309,7 @@ NewPlatformString(JNIEnv *env, char *s)
                   the encoding name, in which the StringCoding class will
                   pickup the iso-8859-1 as the fallback converter for us.
                 */
-                NULL_CHECK0(cls = (*env)->FindClass(env, "java/lang/String"));
+                NULL_CHECK0(cls = FindBootStrapClass(env, "java/lang/String"));
                 NULL_CHECK0(mid = (*env)->GetMethodID(env, cls, "<init>",
                                           "([B)V"));
                 str = (*env)->NewObject(env, cls, mid, ary);
@@ -1332,7 +1332,7 @@ NewPlatformStringArray(JNIEnv *env, char **strv, int strc)
     jarray ary;
     int i;
 
-    NULL_CHECK0(cls = (*env)->FindClass(env, "java/lang/String"));
+    NULL_CHECK0(cls = FindBootStrapClass(env, "java/lang/String"));
     NULL_CHECK0(ary = (*env)->NewObjectArray(env, strc, cls, 0));
     for (i = 0; i < strc; i++) {
         jstring str = NewPlatformString(env, *strv++);
@@ -1420,7 +1420,7 @@ GetMainClassName(JNIEnv *env, char *jarname)
     jobject jar, man, attr;
     jstring str, result = 0;
 
-    NULL_CHECK0(cls = (*env)->FindClass(env, "java/util/jar/JarFile"));
+    NULL_CHECK0(cls = FindBootStrapClass(env, "java/util/jar/JarFile"));
     NULL_CHECK0(mid = (*env)->GetMethodID(env, cls, "<init>",
                                           "(Ljava/lang/String;)V"));
     NULL_CHECK0(str = NewPlatformString(env, jarname));
@@ -1649,7 +1649,7 @@ PrintJavaVersion(JNIEnv *env, jboolean extraLF)
     jclass ver;
     jmethodID print;
 
-    NULL_CHECK(ver = (*env)->FindClass(env, "sun/misc/Version"));
+    NULL_CHECK(ver = FindBootStrapClass(env, "sun/misc/Version"));
     NULL_CHECK(print = (*env)->GetStaticMethodID(env,
                                                  ver,
                                                  (extraLF == JNI_TRUE) ? "println" : "print",
@@ -1704,7 +1704,7 @@ LaunchModule(JNIEnv* env, JavaMainArgs *args)
     /*
      * Initialize the ModuleLauncher with the required data
      */
-    NULL_CHECK0(cls = (*env)->FindClass(env, "sun/module/ModuleLauncher"));
+    NULL_CHECK0(cls = FindBootStrapClass(env, "sun/module/ModuleLauncher"));
 
     if (args->jamfile != NULL) {
         NULL_CHECK0(setJamFile = (*env)->GetStaticMethodID(env, cls,
@@ -1775,7 +1775,7 @@ LaunchModule(JNIEnv* env, JavaMainArgs *args)
     /*
      * Populate the argument array for the main entry point.
      */
-    NULL_CHECK0(scls = (*env)->FindClass(env, "java/lang/String"));
+    NULL_CHECK0(scls = FindBootStrapClass(env, "java/lang/String"));
     NULL_CHECK0(mainArgs = (*env)->NewObjectArray(env, args->argc, scls, NULL));
     for (n = 0 ; n < args->argc ; n++) {
         (*env)->SetObjectArrayElement(env, mainArgs, n, NewPlatformString(env, args->argv[n]));
@@ -1816,7 +1816,7 @@ PrintUsage(JNIEnv* env, jboolean doXUsage)
   jstring jprogname, vm1, vm2;
   int i;
 
-  NULL_CHECK(cls = (*env)->FindClass(env, "sun/launcher/LauncherHelp"));
+  NULL_CHECK(cls = FindBootStrapClass(env, "sun/launcher/LauncherHelp"));
 
 
   if (doXUsage) {
