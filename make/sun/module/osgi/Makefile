@@ -39,10 +39,10 @@ ifndef OPENJDK
   # if OSGI_FRAMEWORK_JAR and FELIX_JAR are set
   MODULES_LIB = $(CLOSED_SHARE_SRC)/lib/module
   ifndef OSGI_FRAMEWORK_JAR
-     OSGI_FRAMEWORK_JAR = $(MODULES_LIB)/org.osgi.core-1.0.1.jar
+     OSGI_FRAMEWORK_JAR = "$(MODULES_LIB)/org.osgi.core-1.0.1.jar"
   endif
   ifndef FELIX_JAR
-     FELIX_JAR = $(MODULES_LIB)/felix.jar
+     FELIX_JAR = "$(MODULES_LIB)/felix.jar"
   endif
 endif
 
@@ -61,11 +61,7 @@ ifdef OSGI_FRAMEWORK_JAR
   #
   # Temporary workaround to include the OSGi framework
   # and Felix OSGi container for compilation.
-ifeq ($(PLATFORM),windows)
-  OTHER_JAVACFLAGS = -cp $(OSGI_FRAMEWORK_JAR);$(FELIX_JAR)
-else # PLATFORM
-  OTHER_JAVACFLAGS = -cp $(OSGI_FRAMEWORK_JAR):$(FELIX_JAR)
-endif
+  OTHER_JAVACFLAGS = -cp "$(OSGI_FRAMEWORK_JAR)$(CLASSPATH_SEPARATOR)$(FELIX_JAR)"
 
 endif
 

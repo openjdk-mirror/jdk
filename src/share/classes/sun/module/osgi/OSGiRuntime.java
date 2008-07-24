@@ -76,6 +76,9 @@ class OSGiRuntime implements BundleActivator {
     private BundleContext context = null;
     private PackageAdmin packageAdmin = null;
 
+    // Default system property to configure the directory for OSGi bundle caching
+    private static final String CACHE_DIR_PROP = "java.module.osgi.repository.cache";
+
     private OSGiRuntime() {
     }
 
@@ -125,10 +128,11 @@ class OSGiRuntime implements BundleActivator {
                 // Get the path of the felix.jar file.
                 String jarLocation = classpath.substring(start, index + 9);
                 container = new File(jarLocation);
-            } else {
-                // No OSGi container
-                throw new IOException("Felix container doesn't exist");
             }
+        }
+        if (container == null || !container.exists()) {
+            // No OSGi container
+            throw new IOException("Felix container doesn't exist");
         }
 
         // Read configuration properties.
@@ -183,8 +187,13 @@ class OSGiRuntime implements BundleActivator {
 
         if ((profileName == null || profileName.length() == 0) &&
             (profileDirName == null || profileDirName.length() == 0)) {
-            throw new IOException("Fail to start the OSGi container: " +
-                "Profile name or directory property is not specified");
+            String cacheDir = System.getProperty(CACHE_DIR_PROP);
+            if (cacheDir != null) {
+                configProps.setProperty(BundleCache.CACHE_PROFILE_DIR_PROP, cacheDir);
+            } else {
+                throw new IOException("Fail to start the OSGi container: " +
+                    "Profile name or directory property is not specified");
+            }
         }
 
         // Configure the Felix instance to be embedded.
