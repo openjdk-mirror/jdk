@@ -62,6 +62,7 @@ public enum ElementType {
     PACKAGE,
 
     /**
+     * <span style="color: rgb(204, 0, 0);"><B>[NEW]</B></span>
      * Module declaration
      *
      * @since 1.7

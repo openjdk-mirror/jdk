@@ -28,6 +28,7 @@ package sun.module.repository.cache;
 import java.io.File;
 import java.io.IOException;
 import java.module.ModuleContent;
+import java.net.URL;
 import java.security.CodeSigner;
 import java.util.Set;
 import java.util.jar.JarFile;
@@ -42,6 +43,9 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
     // Jam file
     private final File jamFile;
 
+    // Origin of the JAM file
+    private final URL origin;
+
     // Code signers of the JAM file
     private final Set<CodeSigner> codeSigners;
 
@@ -55,13 +59,15 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
      * @param metadataBytes byte array that represents the module metadata
      * @param moduleInfo ModuleInfo reified from the module metadata
      * @param jamFile jam file
+     * @param origin origin of the module definition
      * @param codeSigners an unmodifiable set of code signers who signed the JAM file
      */
     LocalModuleDefInfo(File entryDirectory, byte[] metadataBytes,
                        ModuleInfo moduleInfo, File jamFile,
-                       Set<CodeSigner> codeSigners)  {
+                       URL origin, Set<CodeSigner> codeSigners)  {
         super(entryDirectory, metadataBytes, moduleInfo);
         this.jamFile = jamFile;
+        this.origin = origin;
         this.codeSigners = codeSigners;
     }
 
@@ -91,4 +97,12 @@ final class LocalModuleDefInfo extends ModuleDefInfo {
      Set<CodeSigner> getJamCodeSigners() {
         return codeSigners;
      }
-}
+
+     /**
+      * Returns the source location.
+      */
+     /* package-private */
+     URL getCodeBase()  {
+         return origin;
+     }
+ }

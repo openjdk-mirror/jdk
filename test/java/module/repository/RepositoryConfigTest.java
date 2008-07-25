@@ -105,14 +105,14 @@ public class RepositoryConfigTest {
     }
 
     static void lastRepoIsSystem() {
-        Repository r = RepositoryConfig.getLastRepository();
-        check(r.equals(Repository.getSystemRepository()));
+        Repository r = RepositoryConfig.getSystemRepository();
+        check(r.equals(Repository.getApplicationRepository()));
     }
 
     static void addedIsNotLast() throws Throwable {
         Repository r = Modules.newLocalRepository("foo", new File(repoDir, "bar"), null);
-        check(r != RepositoryConfig.getLastRepository());
-        check(r != Repository.getSystemRepository());
+        check(r != RepositoryConfig.getSystemRepository());
+        check(r != Repository.getApplicationRepository());
     }
 
     static void expectedRepositories() {
@@ -121,7 +121,7 @@ public class RepositoryConfigTest {
             "remote", "ide", "user", "global", "extension",
             Repository.getBootstrapRepository().getName()
         };
-        for (Repository r = Repository.getSystemRepository();
+        for (Repository r = Repository.getApplicationRepository();
              r != null;
              r = r.getParent()) {
             if (!check(repoNames[count].equals(r.getName()))) {

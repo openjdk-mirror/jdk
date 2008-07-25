@@ -253,15 +253,20 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Returns the {@code Module} instance this {@code ClassLoader} is
-     * associated with.
+     * <span style="color: rgb(204, 0, 0);"><B>[NEW]</B></span>
+     * Returns the {@code Module} instance associated with this
+     * {@code ClassLoader}.
      *
-     * <p>If this class loader is the module class loader of a
-     * {@link Module}, this method returns that {@code Module} object.
-     * Otherwise, it returns null.
+     * <p>If this class loader is the
+     * {@linkplain java.module.Module#getClassLoader module class loader}
+     * of a {@link Module} instance, this method returns that
+     * {@code Module} object. Otherwise, it returns null.
      *
-     * @return the {@code Module} instance this {@code ClassLoader} is
-     *         associated with or null.
+     * @return the {@code Module} instance associated with
+     *         this {@code ClassLoader}, or {@code null}.
+     * @throws IllegalStateException if a {@code Module} instance is
+     *         associated with this {@code ClassLoader} but the
+     *         {@code Module} instance has not been fully initialized.
      * @since 1.7
      */
     public Module getModule() {
@@ -1579,6 +1584,7 @@ public abstract class ClassLoader {
     }
 
     /**
+     * <span style="color: rgb(204, 0, 0);"><B>[NEW]</B></span>
      * Returns a <tt>ModuleInfo</tt> that has been defined by this class loader
      * or any of its ancestors.  </p>
      *
@@ -1593,6 +1599,7 @@ public abstract class ClassLoader {
     }
 
     /**
+     * <span style="color: rgb(204, 0, 0);"><B>[NEW]</B></span>
      * Returns all of the <tt>ModuleInfo</tt> defined by this class loader and
      * its ancestors.  </p>
      *

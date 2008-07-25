@@ -108,7 +108,7 @@ public class JRepo {
     /** Indicates that command output should be verbose. */
     private static final Flag verboseFlag = new Flag('v');
 
-    /** Location of repository; if not given uses system repository. */
+    /** Location of repository; if not given uses application repository. */
     private static final RepositoryFlag repositoryFlag = new RepositoryFlag();
 
     /** Indicates dependencies command should display info on core modules. */
@@ -188,7 +188,7 @@ public class JRepo {
     /**
      * Gets the repository based on command line flags.
      * @return Reposistory based on the value from {@code repositoryFlag} if
-     * that is non-null, else the system repository.
+     * that is non-null, else the application repository.
      */
     private Repository getRepository() throws IOException {
         Repository rc = null;
@@ -196,20 +196,20 @@ public class JRepo {
         String repositoryLocation = repositoryFlag.getLocation();
 
         if (repositoryLocation == null) {
-            rc = Repository.getSystemRepository();
+            rc = Repository.getApplicationRepository();
         } else {
             // If repositoryLocation is a URL use URLRepository else LocalRepository.
             try {
                 URL u = new URL(repositoryLocation);
                 rc = Modules.newURLRepository(
-                    "jrepo", u, null, RepositoryConfig.getSystemRepository());
+                    "jrepo", u, null, RepositoryConfig.getApplicationRepository());
             } catch (MalformedURLException ex) {
                 File f = new File(repositoryLocation);
                 if (f.exists() && f.canRead()) {
                     rc = Modules.newLocalRepository(
                         "jrepo",
                         f.getCanonicalFile(), null,
-                        RepositoryConfig.getSystemRepository());
+                        RepositoryConfig.getApplicationRepository());
                 } else {
                     throw new IOException("Cannot access repository at " // XXX i18n
                                           + repositoryLocation);
@@ -287,7 +287,7 @@ public class JRepo {
     /** Returns a user-grokkable description of the repository. */
     private static String getRepositoryText(Repository repo) {
         String rc;
-        URI u = repo.getSourceLocation();
+/*        URI u = repo.getSourceLocation();
         if (u == null) {
             rc = "Bootstrap repository";
         } else {
@@ -297,6 +297,9 @@ public class JRepo {
                 rc = "Repository unknown";
             }
         }
+ */
+        rc = "[" + repo.toString() + "]";
+
         return rc;
     }
 
@@ -330,9 +333,10 @@ public class JRepo {
         pw.printf(MDFormat, md.getName(), md.getVersion());
         if (verboseFlag.isEnabled()) {
             pw.printf(MDFormatVerbose,
-                      md.getRepository() == Repository.getBootstrapRepository()
-                      ? "bootstrap"
-                      : md.getRepository().getSourceLocation().toString());
+//                      md.getRepository() == Repository.getBootstrapRepository()
+//                      ? "bootstrap"
+//                      : md.getRepository().getSourceLocation().toString());
+                     md.getRepository().getName());
         }
         return sw.toString();
     }
@@ -538,7 +542,7 @@ public class JRepo {
          * {@code doit} in each one.  The abstract base class provides the recursion;
          * each concrete subclass provides the per-repository behavior.  The
          * recursion is such that the bootstrap repository is visited first,
-         * and the system repository is last.
+         * and the application repository is last.
          */
         abstract class RepositoryVisitor {
             abstract void doit(Repository repo, Messenger msg);
@@ -897,7 +901,7 @@ public class JRepo {
                     rc = true;
                     for (ModuleArchiveInfo mai : found) {
                         if (!uninstall(repo, mai, msg)) {
-                            if (DEBUG) debug("uninstall failed for " + getMAIText(mai) + " in " + repo.getSourceLocation());
+                            if (DEBUG) debug("uninstall failed for " + getMAIText(mai) + " in " + repo.toString());
                             rc = false;
                             break;
                         }

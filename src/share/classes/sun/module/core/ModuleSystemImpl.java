@@ -62,9 +62,6 @@ public final class ModuleSystemImpl extends ModuleSystem {
     // Modules that just moved into error state
     private final List<ModuleImpl> newErrorModules;
 
-    // Module definitions that have been disabled.
-    private final WeakHashMap<ModuleDefinition, Boolean> disabledModuleDefs = new WeakHashMap<ModuleDefinition, Boolean>();
-
     private ModuleSystemImpl() {
         modules = new IdentityHashMap<ModuleDefinition,ModuleImpl>();
         newModules = new LinkedBlockingQueue<ModuleImpl>();
@@ -84,17 +81,11 @@ public final class ModuleSystemImpl extends ModuleSystem {
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("releaseModule"));
         }
-        if (moduleDef.getName().startsWith("java.")) {
-            throw new UnsupportedOperationException("Cannot release module instances with name begins with \"java.\".");
-        }
-        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
-            throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in the bootstrap repository.");
-        }
         if (moduleDef.getModuleSystem() != this) {
-            throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in a different module system.");
+            throw new IllegalArgumentException("Module definition is associated with another module system.");
         }
         if (moduleDef.isModuleReleasable() == false) {
-            throw new UnsupportedOperationException("Cannot release module instances instantiated from a module definition which is not releasable.");
+            throw new UnsupportedOperationException("Module instance is not releasable.");
         }
         Module moduleToRelease = modules.get(moduleDef);
         if (moduleToRelease == null) {
@@ -169,42 +160,14 @@ public final class ModuleSystemImpl extends ModuleSystem {
     }
 
     @Override
-    public void disableModuleDefinition(ModuleDefinition moduleDef) {
-        SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            sm.checkPermission(new ModuleSystemPermission("disableModuleDefinition"));
-        }
-        if (moduleDef.getName().startsWith("java.")) {
-            throw new UnsupportedOperationException("Cannot disable module definition with name begins with \"java.\".");
-        }
-        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
-            throw new UnsupportedOperationException("Cannot disable module definition in the bootstrap repository.");
-        }
-        if (moduleDef.getModuleSystem() != this) {
-            throw new UnsupportedOperationException("Cannot disable module definition in a different module system..");
-        }
-        synchronized(disabledModuleDefs) {
-            if (disabledModuleDefs.containsKey(moduleDef)) {
-                throw new IllegalStateException("Cannot disable module definition which has already been disabled.");
-            }
-            disabledModuleDefs.put(moduleDef, Boolean.TRUE);
-        }
-
-        // Send MODULE_DEFINITION_DISABLED event
-        ModuleSystemEvent evt = new ModuleSystemEvent(this,
-                                    ModuleSystemEvent.Type.MODULE_DEFINITION_DISABLED,
-                                    null, moduleDef, null);
-        this.sendEvent(evt);
-    }
-
-    @Override
     public Module getModule(ModuleDefinition moduleDef) throws ModuleInitializationException {
+        if (moduleDef.getModuleSystem() != this) {
+            throw new IllegalArgumentException("Module definition is associated with another module system.");
+        }
         // Check if the module definition has been disabled.
         //
-        synchronized(disabledModuleDefs) {
-            if (disabledModuleDefs.containsKey(moduleDef)) {
-                throw new IllegalStateException("Cannot instantiate new module instance from a disabled module definition.");
-            }
+        if (isModuleDefinitionDisabled(moduleDef)) {
+            throw new IllegalStateException("Module definition has been disabled.");
         }
         return getModuleInternal(moduleDef);
     }
@@ -212,11 +175,12 @@ public final class ModuleSystemImpl extends ModuleSystem {
     @Override
     public List<Module> getModules(ModuleDefinition importer, List<ModuleDefinition> moduleDefs) throws ModuleInitializationException {
         for (ModuleDefinition moduleDef : moduleDefs) {
+            if (moduleDef.getModuleSystem() != this) {
+                throw new IllegalArgumentException("Module definition is associated with another module system.");
+            }
             // Check if the module definition has been disabled.
-            synchronized(disabledModuleDefs) {
-                if (disabledModuleDefs.containsKey(moduleDef)) {
-                    throw new IllegalStateException("Cannot instantiate new module instance from a disabled module definition.");
-                }
+            if (isModuleDefinitionDisabled(moduleDef)) {
+                throw new IllegalStateException("Module definition has been disabled.");
             }
         }
 
@@ -264,10 +228,6 @@ public final class ModuleSystemImpl extends ModuleSystem {
     }
 
     synchronized ModuleImpl getModuleInstance(ModuleDefinition moduleDef) {
-        if (moduleDef.getModuleSystem() != this) {
-            throw new IllegalArgumentException
-                ("Cannot instantiate new module instance from module definition in a different module system.");
-        }
         ModuleImpl module = modules.get(moduleDef);
         if (module == null) {
             module = new ModuleImpl(this, moduleDef);

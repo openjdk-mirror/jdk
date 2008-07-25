@@ -54,21 +54,21 @@ import java.lang.annotation.RetentionPolicy;
 public @interface NativeLibraryPath {
 
     /**
-     * The name of the platform. It should be one of the possible values of the
-     * system property {@code "os.platform"}.
+     * The name of the platform. The value must be one of the possible values
+     * of the system property {@code "os.platform"}.
      */
     String platform();
 
     /**
-     * The name of the architecture. It should be one of the possible values of
-     * the system property {@code "os.arch"}.
+     * The name of the architecture. The value must be one of the possible
+     * values of the system property {@code "os.arch"}.
      */
     String arch();
 
     /**
-     * The path for searching native libraries in the module archive. It must
-     * be a relative path to the root of the module archive, using {@code '/'}
-     * as path separator and no leading {@code '/'}.
+     * The path for searching native libraries in the module archive. The
+     * value must be a relative path to the root of the module archive,
+     * using {@code '/'} as the path separator and with no leading {@code '/'}.
      */
     String path();
 }

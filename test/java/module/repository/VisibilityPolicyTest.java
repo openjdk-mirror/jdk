@@ -72,7 +72,7 @@ public class VisibilityPolicyTest {
         repoDir.mkdirs();
 
         Repository repo = Modules.newLocalRepository(
-            "test", repoDir, null, RepositoryConfig.getSystemRepository());
+            "test", repoDir, null, RepositoryConfig.getApplicationRepository());
 
         for (File f : jamFiles) {
             repo.install(f.getCanonicalFile().toURI());

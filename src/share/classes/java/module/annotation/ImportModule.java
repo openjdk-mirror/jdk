@@ -53,33 +53,29 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ImportModule {
 
     /**
-     * Name of the imported module definition.
+     * The name of the module definition to import.
      */
     String name();
 
     /**
-     * Version constraint of the imported module definition. The version
-     * constraint is either a version, a version range, or a combination of
-     * both, following the format described in the
-     * {@link java.module.VersionConstraint} class. If the version constraint
-     * is not specified, the default is the highest version available.
+     * The version constraint of the import. The value
+     * must follow the
+     * {@linkplain java.module.VersionConstraint version constraint format}.
      */
     String version() default "0.0.0.0+";
 
     /**
-     * Optionality of the imported module definition. If optionality is not
-     * specified, the default is false.
+     * The optionality of the import.
      */
     boolean optional() default false;
 
     /**
-     * Re-export the imported module definition. If re-export is not specified,
-     * the default is false.
+     * The re-export of the import.
      */
     boolean reexport() default false;
 
     /**
-     * Other attributes. If no attributes is specified, the default is {}.
+     * Other attributes.
      */
     Attribute[] attributes() default {};
 }

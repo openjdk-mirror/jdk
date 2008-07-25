@@ -30,6 +30,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Set;
@@ -51,8 +52,8 @@ public interface ModuleContent {
     /**
      * Returns true if the specified entry is found.
      * <p>
-     * The entry's name is specified using {@code '/'} as path separator; it
-     * has no leading {@code '/'}.
+     * The entry's name must be specified using {@code '/'} as the path
+     * separator; it must have no leading {@code '/'}.
      *
      * @param name the name of the entry.
      * @return true if the specified entry is found; otherwise, return false.
@@ -64,8 +65,8 @@ public interface ModuleContent {
      * Returns the readable byte channel for the specified entry or
      * {@code null} if not found.
      * <p>
-     * The entry's name is specified using {@code '/'} as path separator; it
-     * has no leading {@code '/'}.
+     * The entry's name must be specified using {@code '/'} as the path
+     * separator; it must have no leading {@code '/'}.
      *
      * @param name the name of the entry.
      * @return the readable byte channel for the specified entry or
@@ -78,8 +79,8 @@ public interface ModuleContent {
      * Returns the read-only byte buffer for the specified entry or
      * {@code null} if not found.
      * <p>
-     * The entry's name is specified using {@code '/'} as path separator; it
-     * has no leading {@code '/'}.
+     * The entry's name must be specified using {@code '/'} as the path
+     * separator; it must have no leading {@code '/'}.
      *
      * @param name the name of the entry.
      * @return the readable byte channel for the specified entry or
@@ -91,8 +92,8 @@ public interface ModuleContent {
     /**
      * Returns an unmodifiable set of the names of the entries.
      * <p>
-     * The entry's name is specified using {@code '/'} as path separator; it
-     * has no leading {@code '/'}.
+     * Each entry's name uses {@code '/'} as the path separator with no
+     * leading {@code '/'}.
      *
      * @return an unmodifiable set of the names of the entries.
      * @throws IOException if an I/O error occurs.
@@ -108,6 +109,14 @@ public interface ModuleContent {
      * @throws IOException if an I/O error occurs.
      */
     public File getNativeLibrary(String libraryName) throws IOException;
+
+    /**
+     * Returns the location that is the origin of the content. The location
+     * may be {@code null}.
+     *
+     * @return the location that is the origin of the content.
+     */
+    public URL getLocation();
 
     /**
      * Returns an unmodifiable set of code signers. If there is no code

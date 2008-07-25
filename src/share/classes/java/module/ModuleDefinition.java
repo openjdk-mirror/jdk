@@ -32,80 +32,75 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * This class represents a reified module definition in a module system.
+ * This class represents a module definition in a module system.
+ * A module definition identifies a logical module in a module system
+ * within the Java Module System. A module definition implementation is
+ * responsible for exposing the information in the metadata of a module
+ * and exposing the content of that module; the format of the metadata
+ * and the content of a module are specific to the corresponding
+ * module system.
  * <p>
- * A {@code ModuleDefinition} identifies a logical module in a module system.
- * It specifies which classes and resources are provided by the module, and
- * what the module imports and exports. The classes in the
- * {@code ModuleDefinition} could be from one or more Java packages.
- * {@code ModuleDefinition}s from one or more module systems can coexist in
- * the same Java virtual machine (JVM) instance. A {@code ModuleDefinition}
- * is inherently stateless, and its identity is represented by its
- * {@link #getName() <tt>name</tt>} and
- * {@link #getVersion() <tt>version</tt>}.
+ * A module definition must have a {@linkplain #getName() name}
+ * and a {@linkplain #getVersion() version}. The Java Module
+ * System does not enforce any naming convention on module definitions;
+ * each module system may enforce its own naming convention on its module
+ * definitions. The version of a module definition must conform to the
+ * {@linkplain Version versioning scheme} in the Java Module System. A
+ * module definition implementation for a module system must be responsible
+ * for translating the versioning information in a module based on this
+ * versioning scheme, if the module system uses a different scheme.
  * <p>
- * A module definition can be instantiated by its module system creating a
- * {@code Module} instance at runtime, using the
- * {@link #getModuleInstance() <tt>getModuleInstance</tt>} method or the
- * module system's
- * {@link ModuleSystem#getModule(ModuleDefinition)
- * <tt>getModule(ModuleDefinition)</tt>} method.
+ * A module definition may have one or more
+ * {@linkplain #getAnnotations() annotations}.
+ * A module definition may also have one or more
+ * {@linkplain #getAttribute(String) module attributes}. Each module
+ * attribute is a name-value pair of case-sensitive strings, and module
+ * attributes are generally defined and used by components at a higher
+ * layer on top of the Java Module System.
  * <p>
- * The name of a {@code ModuleDefinition} is a case-sensitive string.
- * The Java Module System does not enforce any naming convention on module
- * definitions; each module system can have its own naming convention for its
- * module definitions.
+ * A module definition has {@linkplain #getMemberClasses() members} that
+ * are classes and resources provided by the module. The classes are from
+ * one or more Java packages.
  * <p>
- * Each {@code ModuleDefinition} contains zero or more module
- * attributes. Each module attribute is a name-value pair of case-sensitive
- * strings. Module attributes are generally defined and used by components
- * at a higher layer on top of the Java Module System.
- * <p>
- * Each {@code ModuleDefinition} defines which classes that are part of
- * the module, and the information can be obtained using the
- * {@link getMemberClasses()} method.
- * <p>
- * Each {@code ModuleDefinition} defines which classes and resources are visible
- * externally to other modules though the export mechanism. The export
- * mechanisms for classes and resources serve different purposes:
+ * A module definition may define which classes and resources are visible
+ * externally to other modules in the Java Module System through the export
+ * mechanism. The export mechanisms for classes and resources serve
+ * different purposes:
  * <ul>
  *      <li><p>The class export defines which classes are visible to other
- *             modules at build-time and after the module is interconnected
- *             at runtime. When Java code is compiled against other imported
- *             modules at build-time, the compiler would leverage the class
- *             export of the imported modules to ensure only exported classes
- *             can be compiled against. At runtime, a module system could also
- *             leverage the class export to determine how to search classes
- *             efficiently across imported modules in a module.
- *             The class export information can be obtained using the
- *             {@link #getExportedClasses()} method and the
- *             {@link #isClassExported(String)} method.</p></li>
+ *             modules at build-time and at runtime. A compiler may use the
+ *             information to enforce that only exported classes in a module
+ *             can be compiled against other modules. At runtime, a module
+ *             system may leverage the information to search classes more
+ *             efficiently across modules.
+ *             The class export's information can be obtained using the
+ *             {@link #getExportedClasses() getExportedClasses},
+ *             {@link #getExportedPackageDefinitions() getExportedPackageDefinitions}, and
+ *             {@link #isClassExported(String) isClassExported}
+ *             methods.</p></li>
  *
  *      <li><p>The resource export defines which resources are visible to
- *             other modules at runtime after the module is interconnected.
- *             A module system could leverage the resource export to search
- *             resources efficiently across imported modules; however, at
- *             build-time, the compiler compiles classes but not resources,
- *             thus the resource export is not used at all.
- *             Similarly, the resource export information can be obtained
- *             using the {@link #getExportedResources()} method and the
- *             {@link #isResourceExported(String)} method.</p></li>
+ *             other modules at runtime. A module system may leverage the
+ *             information to search resources more efficiently across
+ *             modules.
+ *             The resource export's information can be obtained using the
+ *             {@link #getExportedResources() getExportedResources} and
+ *             {@link #isResourceExported(String) isResourceExported}
+ *             methods.</p></li>
  * </ul>
  * <p>
- * Each {@code ModuleDefinition} also defines its dependencies upon other
- * module definitions using the import mechanism. These imports are expressed
- * as a list of {@link ImportDependency} instances which are returned by the
- * {@link #getImportDependencies()} method. At runtime, the module system of
- * the {@code ModuleDefinition} is the one responsible to recognize and
- * resolve these imports accordingly when it creates a module instance from
- * the module definition.
+ * A module definition may define its dependencies upon other modules
+ * using the {@linkplain #getImportDependencies() import} mechanism.
+ * A module definition must express its import dependencies as a list
+ * of {@link ImportDependency} instances.
  * <p>
- * Some implememtations of {@code ModuleDefinition} may not support the
- * {@link #getExportedClasses()}, {@link #getMemberClasses()}, and
- * {@link #getModuleContent()} methods; invoking these methods may throw
+ * A module definition implementation may not support the
+ * {@link #getExportedClasses() getExportedClasses},
+ * {@link #getMemberClasses() getMemberClasses}, and
+ * {@link #getModuleContent() getModuleContent} methods;
+ * calling these methods may throw
  * {@code UnsupportedOperationException}.
  *
- * <p>
  * @see java.module.Module
  * @see java.module.ModuleSystem
  * @see java.module.Repository
@@ -146,20 +141,32 @@ public abstract class ModuleDefinition {
 
     /**
      * Returns the value corresponding to the specified attribute name that is
-     * associated with this {@code ModuleDefinition}. If this
-     * {@code ModuleDefinition} has attributes with duplicate names, the value
-     * of the attribute in the last occurrence is returned.
+     * associated with this {@code ModuleDefinition}.
      *
      * @param name the name of the attribute.
-     * @return the value of the attribute. Returns null if the specified
-     *         attribute name is not found.
+     * @return the value of the attribute. Returns {@code null} if the
+     *         specified attribute name is not found.
      */
     public abstract String getAttribute(String name);
 
     /**
-     * Returns an unmodifiable list of all import dependencies. The order of
-     * the import dependencies in the list follows the declared import order in
-     * the {@code ModuleDefinition}.
+     * Returns an unmodifiable list of all import dependencies in this
+     * {@code ModuleDefinition}. The order of the import dependencies in
+     * the list must follow the declared import order in this
+     * {@code ModuleDefinition}.
+     * <p>
+     * If this {@code ModuleDefinition} has a module dependency with another
+     * module, the dependency must be represented by an implementation of
+     * {@link ModuleDependency} in the list.
+     * <p>
+     * If this {@code ModuleDefinition} has an package dependency with another
+     * module, the dependency must be represented by an implementation of
+     * {@link PackageDependency} in the list.
+     * <p>
+     * If this {@code ModuleDefinition} has an import dependency with another
+     * module that is neither a module dependency nor a package dependency, the
+     * dependency must not be represented by an implementation of
+     * {@link ModuleDependency} or {@link PackageDependency} in the list.
      *
      * @return an unmodifiable list of all import dependencies.
      */
@@ -183,18 +190,23 @@ public abstract class ModuleDefinition {
 
     /**
      * Returns the name of the main class in this {@code ModuleDefinition}.
+     * <p>
+     * The main class must be declared {@code public}. It must have a
+     * {@code main} method which is declared {@code public}, {@code static},
+     * and {@code void}; the {@code main} method must accept a single argument
+     * that is an array of strings.
      *
      * @return the name of the main class if it exists; otherwise returns null.
      */
     public abstract String getMainClass();
 
     /**
-     * Returns an unmodifiable set of the names of the classes that are members
-     * of this {@code ModuleDefinition}.
+     * Returns an unmodifiable set of the names of the member classes in
+     * this {@code ModuleDefinition}.
      *
      * @return The unmodifiable set of the names of the member classes.
      * @throws UnsupportedOperationException if the set of member classes
-     *         in this {@code ModuleDefinition} cannot be determined.
+     *         cannot be determined.
      */
     public abstract Set<String> getMemberClasses();
 
@@ -208,12 +220,13 @@ public abstract class ModuleDefinition {
 
     /**
      * Returns an unmodifiable set of the names of the classes that are
-     * exported by this {@code ModuleDefinition}. This is a subset of the
-     * classes returned by {@link #getMemberClasses() getMemberClasses()}.
+     * exported by this {@code ModuleDefinition}. This must be a subset of the
+     * classes returned by the {@link #getMemberClasses() getMemberClasses}
+     * method.
      *
      * @return The unmodifiable set of the names of the exported classes.
      * @throws UnsupportedOperationException if the set of exported classes
-     *         in this {@code ModuleDefinition} cannot be determined.
+     *         cannot be determined.
      */
     public abstract Set<String> getExportedClasses();
 
@@ -228,17 +241,17 @@ public abstract class ModuleDefinition {
     public abstract Set<PackageDefinition> getExportedPackageDefinitions();
 
     /**
-     * Returns true if the specified class is exported by this
+     * Returns true if the specified class may be exported by this
      * {@code ModuleDefinition}; returns false otherwise.
      * <p>
      * If this method returns {@code true} for a specified class, it implies
-     * neither that the class is actually found in the module definition, nor
-     * the class is guaranteed to be loaded successfully through the
-     * {@link ClassLoader#loadClass(String) loadClass} methods of
-     * the {@code ClassLoader} object in the module instance at runtime.
+     * neither that the class actually exists in the module definition, nor
+     * the class will be loaded successfully through the
+     * {@link ClassLoader#loadClass(String) loadClass} method of
+     * the {@code ClassLoader} object of the module instance at runtime.
      *
      * @param name the name of the class.
-     * @return true if the class is exported; otherwise, returns false.
+     * @return true if the class may be exported; otherwise, returns false.
      */
     public boolean isClassExported(String name) {
         try {
@@ -254,22 +267,25 @@ public abstract class ModuleDefinition {
      * Returns an unmodifiable set of the path of the resources exported by
      * this {@code ModuleDefinition}.
      * <p>
-     * Each resource's path is specified using {@code '/'} as path
-     * separator, with no leading {@code '/'}.
+     * Each resource's path uses {@code '/'} as the path separator and with no
+     * leading {@code '/'}.
      *
      * @return The unmodifiable set of the path of the exported resources.
      * @throws UnsupportedOperationException if the set of exported resources
-     *         in this {@code ModuleDefinition} cannot be determined.
+     *         cannot be determined.
      */
     public abstract Set<String> getExportedResources();
 
     /**
-     * Returns true if the specified resource is exported by this
+     * Returns true if the specified resource may be exported by this
      * {@code ModuleDefinition}; returns false otherwise.
      * <p>
+     * The resource's path uses {@code '/'} as the path separator and with no
+     * leading {@code '/'}.
+     * <p>
      * If this method returns {@code true} for a specified resource, it implies
-     * neither that the resource is actually found in the module definition, nor
-     * the resource is guaranteed to be loaded successfully through the
+     * neither that the resource actually exists in the module definition, nor
+     * the resource will be loaded successfully through the
      * {@link ClassLoader#getResource(String) getResource},
      * {@link ClassLoader#getResourceAsStream(String) getResourceAsStream},
      * or {@link ClassLoader#getResources(String) getResources}
@@ -277,7 +293,7 @@ public abstract class ModuleDefinition {
      * instance at runtime.
 
      * @param path A {@code '/'} delimited path (e.g. {@code x/y/Z.class})
-     * @return true if the resource in the path is exported.
+     * @return true if the resource in the path may be exported.
      */
     public boolean isResourceExported(String path) {
         try {
@@ -290,15 +306,19 @@ public abstract class ModuleDefinition {
 
     /**
      * Returns a {@code Module} instance for the specified
-     * {@code ModuleDefinition} in the {@code ModuleSystem}. The {@code Module}
-     * is initialized and ready to use. Equivalent to:
+     * {@code ModuleDefinition} from its {@code ModuleSystem}.
+     * The {@code Module} instance must be fully initialized
+     * and its module classloader must be ready for classloading.
+     * Equivalent to:
      * <pre>
      *      getModuleSystem().getModule(this);</pre>
      *
-     * @return a {@code Module} instance of the {@code ModuleDefinition}.
-     * @throws ModuleInitializationException if the module instance cannot be initialized.
+     * @return a {@code Module} instance of this {@code ModuleDefinition}.
+     * @throws ModuleInitializationException if the module system fails to initialize
+     *         the module instance.
      * @throws IllegalStateException if this {@code ModuleDefinition} has
-     *         already been disabled.
+     *         already been disabled in the module system.
+     * @see ModuleSystem#getModule(ModuleDefinition)
      */
     public final Module getModuleInstance() throws ModuleInitializationException {
         return getModuleSystem().getModule(this);
@@ -326,13 +346,13 @@ public abstract class ModuleDefinition {
     public abstract List<Annotation> getAnnotations();
 
     /**
-     * Checks if the entire content of this {@code ModuleDefinition} is stored
-     * locally.
+     * Returns true if this {@code ModuleDefinition} is local;
+     * otherwise, returns false.
      *
-     * @return true if the entire content of this {@code ModuleDefinition} is
-     *         stored locally; otherwise, returns false.
+     * @return true if this {@code ModuleDefinition} is local; otherwise,
+     *         returns false.
      */
-    public boolean isDownloaded() {
+    public boolean isLocal() {
         Boolean local = java.security.AccessController.doPrivileged(
                     new java.security.PrivilegedAction<Boolean>() {
                         public Boolean run() {
@@ -344,8 +364,10 @@ public abstract class ModuleDefinition {
     }
 
     /**
-     * Check if the {@code Module} instances instantiated from this
-     * {@code ModuleDefinition} can be released from its {@code ModuleSystem}.
+     * Returns true if the {@code ModuleSystem} of this
+     * {@code ModuleDefinition} can release any {@code Module} instance
+     * instantiated from this {@code ModuleDefinition}; otherwise, returns
+     * false.
      *
      * @return true if {@code Module} instances can be released; otherwise,
      *         returns false.

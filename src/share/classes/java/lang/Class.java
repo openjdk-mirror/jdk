@@ -739,6 +739,7 @@ public final
     }
 
     /**
+     * <span style="color: rgb(204, 0, 0);"><B>[NEW]</B></span>
      * Returns the information of the module that this class is a member of,
      * or null if this class is not a member of any module.
      *

@@ -226,7 +226,7 @@ public final class LocalRepository extends AbstractRepository {
                     // XXX Log this action
 
                     // Put the jam file into the repository cache and cook it
-                    ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(file);
+                    ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(getSourceLocation().toURL(), file);
 
                     // Constructs a module archive info
                     JamModuleArchiveInfo mai  = new JamModuleArchiveInfo(
@@ -284,7 +284,7 @@ public final class LocalRepository extends AbstractRepository {
             // the module information, e.g. name, version, etc.
             //
             // No need to shadow copy (if set) because this is a temp file.
-            ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(tmpFile, false);
+            ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(getSourceLocation().toURL(), tmpFile, false);
 
             // Check to see if there exists a module archive that has
             // the same name, version, and platform binding.

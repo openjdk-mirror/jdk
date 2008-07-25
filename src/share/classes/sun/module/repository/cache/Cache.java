@@ -82,21 +82,23 @@ import sun.module.repository.RepositoryUtils;
     /**
      * Returns a module definition info that is created based on the specified jam file.
      *
+     * @param source source location
      * @param file jam file.
      * @throws IOException if there is an I/O error occurred.
      */
-     public ModuleDefInfo getModuleDefInfo(File file) throws IOException {
-        return getModuleDefInfo(file, RepositoryUtils.shouldShadowCopyFiles());
+    public ModuleDefInfo getModuleDefInfo(URL source, File file) throws IOException {
+        return getModuleDefInfo(source, file, RepositoryUtils.shouldShadowCopyFiles());
      }
 
-    /**
-     * Returns a module definition info that is created based on the specified jam file.
-     *
-     * @param file jam file.
-     * @param shadowCopyFiles true if the specified jam file should be shadow copied.
-     * @throws IOException if there is an I/O error occurred.
-     */
-     public ModuleDefInfo getModuleDefInfo(File file, boolean shadowCopyFiles) throws IOException {
+     /**
+      * Returns a module definition info that is created based on the specified jam file.
+      *
+      * @param source source location
+      * @param file jam file.
+      * @param shadowCopyFiles true if the specified jam file should be shadow copied.
+      * @throws IOException if there is an I/O error occurred.
+      */
+     public ModuleDefInfo getModuleDefInfo(URL source, File file, boolean shadowCopyFiles) throws IOException  {
         //
         // Creates a module-specific directory under the root directory.
         //
@@ -155,7 +157,7 @@ import sun.module.repository.RepositoryUtils;
             // Determines if the MODULE.METADATA file is well-formed
             ModuleInfo moduleInfo = ModuleInfo.getModuleInfo(metadataBytes);
 
-            return new LocalModuleDefInfo(entryDirectory, metadataBytes, moduleInfo, jamFile, codeSigners);
+            return new LocalModuleDefInfo(entryDirectory, metadataBytes, moduleInfo, jamFile, source, codeSigners);
         } catch (ClassFormatError cfe) {
             throw new IOException("MODULE.METADATA is malformed in " + file.getName(), cfe);
         } finally {

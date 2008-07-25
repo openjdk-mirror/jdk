@@ -65,13 +65,7 @@ public interface ModuleInitializer {
      * undeterministic.
      * <p>
      * Note that the module instance passed as the argument of this method has
-     * not been fully initialized. The only methods in {@code Module} that the
-     * implementation of this method could invoke reliably are
-     * {@code Module}'s
-     * {@link Module#getModuleDefinition() <tt>getModuleDefinition</tt>},
-     * {@link Module#hashCode() <tt>hashCode</tt>}, and
-     * {@link Module#toString() <tt>toString</tt>} methods.
-     * Otherwise, the result is undeterministric.
+     * not been fully initialized.
      *
      * @param module the {@code Module} instance to be initialized.
      * @throws ModuleInitializationException if this {@code ModuleInitializer}

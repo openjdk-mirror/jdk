@@ -174,6 +174,11 @@ final class URLModuleContent extends CacheModuleContent {
     }
 
     @Override
+    public URL getLocation() {
+        return mdInfo.getCodeBase();
+    }
+
+    @Override
     protected Set<CodeSigner> getJamCodeSigners() {
         return codeSigners;
     }

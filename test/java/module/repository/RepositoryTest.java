@@ -40,11 +40,11 @@ public class RepositoryTest  {
         File src = new File(".").getCanonicalFile();
         String name = "application";
         Repository rep = Modules.newLocalRepository(
-            name, src, null, RepositoryConfig.getSystemRepository());
+            name, src, null, Repository.getApplicationRepository());
 
-        check(rep.getParent() == Repository.getSystemRepository());
+        check(rep.getParent() == Repository.getApplicationRepository());
         check(name.equals(rep.getName()));
-        check(rep.getSourceLocation().equals(src.toURI()));
+//        check(rep.getSourceLocation().equals(src.toURI()));
 //        check(rep.getModuleSystem() == ModuleSystem.getDefault());
 
         check(ec.initializeEventExists(rep));
@@ -53,10 +53,10 @@ public class RepositoryTest  {
         check(bsRep.getParent() == null);
         check(bsRep.isReadOnly());
 
-        RepositoryConfig.setSystemRepository(rep);
+        RepositoryConfig.setApplicationRepository(rep);
 
-        Repository sysRep = Repository.getSystemRepository();
-  //      check(sysRep.getModuleSystem() == ModuleSystem.getDefault());
+        Repository appRepo = Repository.getApplicationRepository();
+  //      check(appRepo.getModuleSystem() == ModuleSystem.getDefault());
 
         rep.shutdown();
 
@@ -109,7 +109,7 @@ public class RepositoryTest  {
 
         // Creates a new repository
         rep = Modules.newLocalRepository(
-            name, src, null, RepositoryConfig.getSystemRepository());
+            name, src, null, RepositoryConfig.getApplicationRepository());
 
         // No event should be sent to an already-removed repository listener
         check(!ec.initializeEventExists(rep));

@@ -62,14 +62,14 @@ import java.lang.annotation.RetentionPolicy;
 public @interface PlatformBinding {
 
     /**
-     * The name of the platform. It should be one of the possible values of the
-     * system property {@code "os.platform"}.
+     * The name of the platform. The value must be one of the possible values
+     * of the system property {@code "os.platform"}.
      */
     String platform();
 
     /**
-     * The name of the architecture. It should be one of the possible values of
-     * the system property {@code "os.arch"}.
+     * The name of the architecture. The value must be one of the possible
+     * values of the system property {@code "os.arch"}.
      */
     String arch();
 }

@@ -364,7 +364,7 @@ public final class URLRepository extends AbstractRepository {
             // the module information, e.g. name, version, etc.
             //
             // No need to shadow copy (if set) because this is a temp file.
-            ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(tmpFile, false);
+            ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(getSourceLocation().toURL(), tmpFile, false);
 
             // Check to see if there exists a module archive that has
             // the same name, version, and platform binding.

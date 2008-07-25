@@ -38,8 +38,9 @@ import sun.module.annotation.*;
  * <p>
  * {@code ModuleInfo} has no public constructor. Instead {@code ModuleInfo}
  * objects are constructed automatically by the Java Virtual Machine as modules
- * are loaded and by calls to the {@code defineModuleInfo} method in the class
- * loader.
+ * are loaded and by calls to the
+ * {@link ClassLoader#defineModuleInfo defineModuleInfo}
+ * method in the class loader.
  * <p>
  * Within each {@code ClassLoader} instance all classes from the same
  * java module have the same {@code ModuleInfo} object.  The static methods
@@ -47,7 +48,6 @@ import sun.module.annotation.*;
  * modules known to the current class loader to be found.
  *
  * @see java.lang.Class#getModuleInfo
- * @see java.lang.ClassLoader#defineModuleInfo
  * @see java.lang.ClassLoader#findModuleInfo
  * @since  1.7
  */
@@ -183,7 +183,7 @@ public final class ModuleInfo implements AnnotatedElement {
      * the module has no members.
      *
      * @return an array of the names of all member packages
-     * @throws UnsupporterOperationException if the packages cannot be
+     * @throws UnsupportedOperationException if the packages cannot be
      *         determined.
      */
     public String[] getMemberPackages() {
@@ -193,15 +193,15 @@ public final class ModuleInfo implements AnnotatedElement {
     /**
      * Returns an array of String objects reflecting the binary names of all
      * packages that have exported classes and interfaces that are a member
-     * of this module. The names returned by this method are a subset of the
-     * names returned by {@link #getMemberPackages}.
+     * of this module. The names returned by this method must be a subset of
+     * the names returned by {@link #getMemberPackages}.
      *
      * <p>The elements in the array returned are not sorted and are not in
      * any particular order.  This method returns an array of length 0 if
      * the module has no members that are exported types.
      *
      * @return an array of the names of all packages that have exported types.
-     * @throws UnsupporterOperationException if the packages cannot be
+     * @throws UnsupportedOperationException if the packages cannot be
      *         determined.
      */
     public String[] getExportedPackages() {
@@ -217,7 +217,7 @@ public final class ModuleInfo implements AnnotatedElement {
      * the module has no exported types.
      *
      * @return an array of the names of all exported types.
-     * @throws UnsupporterOperationException if the exported types cannot be
+     * @throws UnsupportedOperationException if the exported types cannot be
      *         determined.
      */
     public String[] getExportedClasses() {
@@ -236,6 +236,59 @@ public final class ModuleInfo implements AnnotatedElement {
             }
         }
         return packages;
+    }
+
+    /**
+     * Returns an array of String objects reflecting the fully-qualified binary
+     * names of all {@linkplain java.util.ServiceLoader services} that
+     * are defined in this module.
+     *
+     * <p>The elements in the array returned are not sorted and are not in
+     * any particular order.  This method returns an array of length 0 if
+     * the module has no service.
+     *
+     * @return an array of the names of all defined services
+     * @throws UnsupportedOperationException if the defined services
+     *         cannot be determined.
+     */
+    public String[] getDefinedServices() {
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+
+    /**
+     * Returns an array of String objects reflecting the fully-qualified binary
+     * names of all {@linkplain java.util.ServiceLoader services} that
+     * are implemented by service providers in this module.
+     *
+     * <p>The elements in the array returned are not sorted and are not in
+     * any particular order.  This method returns an array of length 0 if
+     * the module has no service provider for any service.
+     *
+     * @return an array of the names of all implemented services
+     * @throws UnsupportedOperationException if the implemented services
+     *         cannot be determined.
+     */
+    public String[] getImplementedServices() {
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+
+    /**
+     * Returns an array of String objects reflecting the fully-qualified binary
+     * names of all {@linkplain java.util.ServiceLoader service providers}
+     * in this module for the given service.
+     *
+     * <p>The elements in the array returned are not sorted and are not in
+     * any particular order.  This method returns an array of length 0 if
+     * the module has no service providers for the given service.
+     *
+     * @paramm service the name of the service
+     * @return an array of the names of all service providers for the given
+     *         service
+     * @throws UnsupportedOperationException if the service providers
+     *         cannot be determined.
+     */
+    public String[] getServiceProviders(String service) {
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     private static final class Loader extends ClassLoader {

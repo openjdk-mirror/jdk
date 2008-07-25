@@ -86,6 +86,8 @@ abstract class AbstractRepository extends Repository {
 
     protected Map<String, String> config = DEFAULT_CONFIG;
 
+    private URI source;
+
     /**
      * Creates a new <code>AbstractRepository</code> instance, and initializes it
      * using information from the given {@code config}.
@@ -107,9 +109,19 @@ abstract class AbstractRepository extends Repository {
     protected AbstractRepository(String name, URI source,
                                  Map<String, String> config,
                                  Repository parent) throws IOException {
-        super(name, source, parent);
+        super(name, parent);
         this.config = config;
+        this.source = source;
         initialize();
+    }
+
+    /**
+     * Returns the source location of this {@code Repository}.
+     *
+     * @return the source location.
+     */
+    public final URI getSourceLocation()    {
+        return source;
     }
 
     //
@@ -261,7 +273,7 @@ abstract class AbstractRepository extends Repository {
     protected final ModuleArchiveInfo addModuleArchiveInternal(File file)
                                         throws IOException {
         // Put the jam file into the repository cache and cook it
-        ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(file);
+        ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(getSourceLocation().toURL(), file);
 
         // Constructs a module archive info
         ModuleArchiveInfo mai  = new JamModuleArchiveInfo(
@@ -463,6 +475,7 @@ abstract class AbstractRepository extends Repository {
             if (contentMapping.get(key) == null) {
                 // Put the jam file into the repository cache and cook it
                 ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(
+                                                getSourceLocation().toURL(),
                                                 new File(mai.getFileName()));
 
                 // Constructs a module definition

@@ -110,7 +110,7 @@ public class URLRepoInstallTest {
             "test",
             repoDir.getCanonicalFile().toURI().toURL(),
             config,
-            RepositoryConfig.getSystemRepository());
+            RepositoryConfig.getApplicationRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repo));

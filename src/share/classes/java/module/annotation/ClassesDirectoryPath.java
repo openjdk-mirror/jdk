@@ -50,7 +50,7 @@ public @interface ClassesDirectoryPath {
     /**
      * The path for searching classes and resources in the module archive. It
      * must be a relative path to the root of the module archive, using
-     * {@code '/'} as path separator and no leading {@code '/'}.
+     * {@code '/'} as the path separator and with no leading {@code '/'}.
      */
     String value();
 }

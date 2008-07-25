@@ -55,9 +55,12 @@ import sun.module.repository.RepositoryConfig;
  * and subclass the classes defined in the service itself.  Service providers
  * can be installed in an implementation of the Java platform in the form of
  * extensions, that is, jar files placed into any of the usual extension
- * directories.  Providers can also be made available by adding them to the
- * application's class path, by installing them as service-provider modules
- * in repositories, or by some other platform-specific means.
+ * directories.  <span style="color: rgb(204, 0, 0);">
+ * In addition, service providers can be installed in an
+ * implementation of the Java platform in the form of
+ * <a href="../../java/module/package-summary.html">JAM modules</a>
+ * in the repositories.</span> Providers can also be made available by adding them
+ * to the application's class path, or by some other platform-specific means.
  *
  * <p> For the purpose of loading, a service is represented by a single type,
  * that is, a single interface or abstract class.  (A concrete class can be
@@ -72,6 +75,8 @@ import sun.module.repository.RepositoryConfig;
  * defined here.  The only requirement enforced by this facility is that
  * provider classes must have a zero-argument constructor so that they can be
  * instantiated during loading.
+ *
+ * <span style="color: rgb(204, 0, 0);"><h4>Service providers and JAR files</h4></span>
  *
  * <p><a name="format"> A service provider is identified by placing a
  * <i>provider-configuration file</i> in the resource directory
@@ -93,6 +98,41 @@ import sun.module.repository.RepositoryConfig;
  * note that this is not necessarily the class loader from which the file was
  * actually loaded.
  *
+ * <span style="color: rgb(204, 0, 0);"><h4>Service providers and JAM modules</h4>
+ *
+ * A <i>service module</i> is a JAM module which contains one or more
+ * service's types. A service is identified by placing a
+ * {@code ModuleServiceTable} attribute in the metadata of the service module.
+ * The attribute contains a list of fully-qualified
+ * <a href="../lang/ClassLoader.html#name">binary name</a> of the
+ * service's types. If a particular service is named
+ * in the attribute more than once, then the duplicates are ignored.
+ * <p>
+ * A <i>service provider module</i> is a JAM module which contains one or more
+ * provider classes for one or more services. A service provider module may
+ * have more than one provider classes for the same service. A service
+ * provider module may have the same provider class for more than one service.
+ * A service provider is identified by placing a
+ * {@code ModuleServiceProviderTable} attribute in the metadata
+ * of the service provider module. The attribute contains a list of
+ * fully-qualified binary name of the service's types and concrete
+ * provider classes. If a particular pair of service and concrete provider
+ * class is named in the attribute more than once, then the duplicates
+ * are ignored.
+ * <p>
+ * A service module which contains provider classes as the default
+ * implementations for its services is also a service provider module.
+ * A service provider module must import a service module for the service
+ * types either directly or transitively (through module re-exports),
+ * except if the service provider module is also a service module.
+ * <p>
+ * For more information about the {@code ModuleServiceTable}
+ * and {@code ModuleServiceProviderTable} attributes, see the
+ * {@link java.lang.ModuleInfo ModuleInfo} API.
+ * </span>
+ *
+ * <pre>
+ * </pre>
  * <p> Providers are located and instantiated lazily, that is, on demand.  A
  * service loader maintains a cache of the providers that have been loaded so
  * far.  Each invocation of the {@link #iterator iterator} method returns an
@@ -100,46 +140,6 @@ import sun.module.repository.RepositoryConfig;
  * instantiation order, and then lazily locates and instantiates any remaining
  * providers, adding each one to the cache in turn.  The cache can be cleared
  * via the {@link #reload reload} method.
- *
- * <p> Services and providers can be placed into service and service-provider
- * modules, and installed into a repository.  Service and service-provider
- * modules can be versioned independently.  A service module can have a number
- * of default providers in the same module, thus being both a service module
- * and a service-provider module.
- *
- * <p> Conceptually, when providers are loaded from repositories,
- * the following strategy for locating service-provider modules is used:
- *
- * <ul>
- * <li> Query the repository for all
- * service-provider modules, ignoring those which do not provide for the
- * requested {@code service}.</li>
- *
- * <li> Service-providers which have the same name as the {@code
- * service}'s module, but have a different version, are ignored.</li>
- *
- * <li> Service-providers which have the same name and same version as the
- * {@code service}'s module, but have a different module instance than the
- * {@code service}'s module, are ignored.</li>
- *
- * <li> Service-providers which import directly (or transitively via module
- * re-exports) a service module with the same name as the {@code service}'s
- * module, but of a different version, are ignored.</li>
- *
- * <li> Service-providers which import directly (or transitively via module
- * re-exports) a service module with the same name and version as the {@code
- * service}'s module, but have a different module instance than the {@code
- * service}'s module, are ignored.</li>
- *
- * <li> Of the remaining service-providers, for each service-provider module
- * name, only the service-provider module with the highest version is
- * retained.</li>
- * </ul>
- *
- * <p> The provider classes are returned from an iterator in the following
- * order: first, any default providers, in the order provided by the module to
- * which they belong.  Then, non-default providers, sorted alphabetically by
- * module name.
  *
  * <p> Service loaders always execute in the security context of the caller.
  * Trusted system code should typically invoke the methods in this class, and
@@ -962,10 +962,29 @@ public final class ServiceLoader<S>
     }
 
     /**
+     * <span style="color: rgb(204, 0, 0);"><B>[UPDATED]</B></span>
      * Creates a new service loader for the given service type and class
-     * loader.  If both the service and loader are in modules, the loader's
-     * module's repository will be used to lookup provider-configuration files
-     * and provider classes.
+     * loader.
+     * <p>
+     * <span style="color: rgb(204, 0, 0);">
+     * The service loader first uses the class loader to search for providers
+     * for the given service type; the service loader then uses the following
+     * repository in the Java Module System to search for service provider
+     * modules for the given service type if the service type is from a
+     * module module:
+     * <p>
+     * <ul>
+     *      <li> {@linkplain java.module.Repository#getApplicationRepository Application repository}
+     *           if the class loader or an ancestor of the class loader is the system class loader.</li>
+     *
+     *      <li> {@linkplain java.module.Repository#getSystemRepository System repository}
+     *           if the class loader or an ancestor of the class loader is the extension class loader.</li>
+     *
+     *      <li> The repository associated with the module which the class loader
+     *           belongs if the class loader is a
+     *           {@linkplain java.module.Module#getClassLoader module class loader}.</li>
+     * </ul>
+     * </span>
      *
      * @param  service
      *         The interface or abstract class representing the service
@@ -991,9 +1010,9 @@ public final class ServiceLoader<S>
                         service, Repository.getBootstrapRepository(), m);
 
                 } else if (loader == ClassLoader.getSystemClassLoader()) {
-                    // Use system repository and system class loader
+                    // Use application repository and system class loader
                     return new ServiceLoader<S>(
-                        service, Repository.getSystemRepository(), loader, m);
+                        service, Repository.getApplicationRepository(), loader, m);
 
                 } else if (loader.getModule() != null) {
                     // Use loader's respository
@@ -1033,8 +1052,16 @@ public final class ServiceLoader<S>
     }
 
     /**
+     * <span style="color: rgb(204, 0, 0);"><B>[NEW]</B></span>
      * Creates a new service loader for the given service type, using the
-     * given {@link java.module.Repository} to locate providers.
+     * given {@link java.module.Repository}.
+     * <p>
+     * This method uses the repository to search for service provider modules
+     * for the given service type; the service provider module must
+     * import (either directly or transitively through module reexports)
+     * the same instance of the service module which the given service
+     * type belongs, unless the provider is a default provider
+     * in the same service module instance.
      *
      * @param  repository
      *         The repository from which service provider modules will be
@@ -1074,13 +1101,13 @@ public final class ServiceLoader<S>
     }
 
     /**
+     * <span style="color: rgb(204, 0, 0);"><B>[UPDATED]</B></span>
      * Creates a new service loader for the given service type, using the
-     * extension class loader or system repository.
-     *
-     * <ul>
-     * <li>If the service type is in a module, use the system repository.</li>
-     * <li>Otherwise, use the extension class loader.</li>
-     * </ul>
+     * <span style="color: rgb(204, 0, 0);">
+     * the extension class loader, and using the
+     * {@linkplain java.module.Repository#getSystemRepository system repository}
+     * if the service type is from a service module.
+     * </span>
      *
      * <p> This convenience method simply locates the extension class loader,
      * call it <tt><i>extClassLoader</i></tt>, and then returns
@@ -1095,7 +1122,10 @@ public final class ServiceLoader<S>
      * <p> This method is intended for use when only installed providers are
      * desired.  The resulting service will only find and load providers that
      * have been installed into the current Java virtual machine; providers on
-     * the application's class path will be ignored.
+     * the application's class path
+     * <span style="color: rgb(204, 0, 0);">
+     * and providers in the application repository will be ignored.
+     * </span>
      *
      * @param  service
      *         The interface or abstract class representing the service
@@ -1106,7 +1136,7 @@ public final class ServiceLoader<S>
         ClassLoader cl = service.getClassLoader();
         if (cl != null && cl.getModule() != null) {
             return ServiceLoader.load(
-                RepositoryConfig.getLastRepository(), service);
+                Repository.getSystemRepository(), service);
         } else {
             // If the class is in the bootstrap module, it might represent a
             // service defined in that module.

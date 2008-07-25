@@ -28,6 +28,7 @@ package sun.module.bootstrap;
 import java.module.ImportDependency;
 import java.module.Module;
 import java.module.ModuleDefinition;
+import java.module.ModuleDependency;
 import java.module.ModuleInitializationException;
 import java.module.ModuleSystem;
 import java.module.ModuleSystemEvent;
@@ -55,11 +56,11 @@ public final class BootstrapModuleSystem extends ModuleSystem {
     public Module getModule(ModuleDefinition moduleDef) throws ModuleInitializationException {
         if (moduleDef.getModuleSystem() != this) {
             throw new IllegalArgumentException
-                ("Cannot instantiate new module instance from module definition in a different module system.");
+                ("Module definition is associated with another module system.");
         }
         if (moduleDef.getRepository() != Repository.getBootstrapRepository()) {
             throw new IllegalArgumentException
-                ("Cannot instantiate new module instance from module definition in a non-bootstrap repository.");
+                ("Module definition is not associated with the bootstrap repository.");
         }
 
         return getModuleInternal(moduleDef);
@@ -69,12 +70,12 @@ public final class BootstrapModuleSystem extends ModuleSystem {
     public List<Module> getModules(ModuleDefinition importer, List<ModuleDefinition> moduleDefs) throws ModuleInitializationException {
         for (ModuleDefinition moduleDef : moduleDefs) {
             if (moduleDef.getModuleSystem() != this) {
-                throw new IllegalArgumentException
-                    ("Cannot instantiate new module instance from module definition in a different module system.");
+                throw new IllegalArgumentException(
+                "Module definition is associated with another module system.");
             }
             if (moduleDef.getRepository() != Repository.getBootstrapRepository()) {
                 throw new IllegalArgumentException
-                    ("Cannot instantiate new module instance from module definition in a non-bootstrap repository.");
+                ("Module definition is not associated with the bootstrap repository.");
             }
         }
 
@@ -107,9 +108,10 @@ public final class BootstrapModuleSystem extends ModuleSystem {
         // Based on the import dependency, set up the appropriate imported
         // modules for a virtual module.
         for (ImportDependency dep : moduleDef.getImportDependencies()) {
+            ModuleDependency moduleDep = (ModuleDependency) dep;
 
             // Find the imported module only through the bootstrap repository.
-            ModuleDefinition md = Repository.getBootstrapRepository().find(dep.getName(), dep.getVersionConstraint());
+            ModuleDefinition md = Repository.getBootstrapRepository().find(moduleDep.getName(), moduleDep.getVersionConstraint());
 
             // Instantiate a new module instance of the imported module
             Module importedModule = getModuleInternal(md);
@@ -133,17 +135,16 @@ public final class BootstrapModuleSystem extends ModuleSystem {
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("releaseModule"));
         }
-        if (moduleDef.getName().startsWith("java.")) {
-            throw new UnsupportedOperationException("Cannot release module instances with name begins with \"java.\".");
-        }
-        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
-            throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in the bootstrap repository.");
-        }
         if (moduleDef.getModuleSystem() != this) {
-            throw new UnsupportedOperationException("Cannot release module instances instantiated from module definitions in a different module system.");
+            throw new IllegalArgumentException
+                ("Module definition is associated with another module system.");
+        }
+        if (moduleDef.getRepository() != Repository.getBootstrapRepository()) {
+            throw new IllegalArgumentException
+                ("Module definition is not associated with the bootstrap repository.");
         }
         if (moduleDef.isModuleReleasable() == false) {
-            throw new UnsupportedOperationException("Cannot release module instances instantiated from a module definition which is not releasable.");
+            throw new UnsupportedOperationException("Module instance is not releasable.");
         }
 
         // The MODULE_RELEASED event is never sent because virtual module
@@ -156,14 +157,16 @@ public final class BootstrapModuleSystem extends ModuleSystem {
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("disableModuleDefinition"));
         }
-        if (moduleDef.getName().startsWith("java.")) {
-            throw new UnsupportedOperationException("Cannot disable module definition with name begins with \"java.\".");
-        }
-        if (moduleDef.getRepository() == Repository.getBootstrapRepository()) {
-            throw new UnsupportedOperationException("Cannot disable module definition in the bootstrap repository.");
-        }
         if (moduleDef.getModuleSystem() != this) {
-            throw new UnsupportedOperationException("Cannot disable module definition in a different module system..");
+            throw new IllegalArgumentException
+                ("Module definition is associated with another module system.");
+        }
+        if (moduleDef.getRepository() != Repository.getBootstrapRepository()) {
+            throw new IllegalArgumentException
+                ("Module definition is not associated with the bootstrap repository.");
+        } else {
+            throw new UnsupportedOperationException
+                ("Module definition in the bootstrap repository cannot be disabled.");
         }
     }
 

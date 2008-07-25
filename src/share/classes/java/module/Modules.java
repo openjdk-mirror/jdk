@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import sun.module.core.JamModuleDefinition;
 import sun.module.config.DefaultImportOverridePolicy;
 import sun.module.config.DefaultVisibilityPolicy;
@@ -40,90 +39,126 @@ import sun.module.repository.URLRepository;
 
 /**
  * This class consists exclusively of static methods that are specifically for
- * the JAM (JAva Module) modules in the JAM module system.
+ * the JAM modules in the JAM module system.
  * <p>
- * <h3> ModuleSystem implementation</h3>
+ * <h2> JAM Module System</h2>
+ *
+ * The JAM module system is a concrete module system
+ * implementation and is the default module system within the Java Module
+ * System. See the JAM Module System Specification for more details.
+ *
+ * <h3> ModuleSystem</h3>
  * The JAM module system provides a concrete {@link ModuleSystem}
  * implementation for JAM modules. Applications can obtain the
  * {@code ModuleSystem} objects by calling the
- * {@link getModuleSystem() <tt>getModuleSystem</tt>} method.
+ * {@link #getModuleSystem() <tt>getModuleSystem</tt>} method.
  * <p>
- * <h3> ModuleDefinition implementation</h3>
+ * <h3> ModuleDefinition</h3>
  * The JAM module system provides a concrete {@link ModuleDefinition}
  * implementation for JAM modules. Applications can obtain the
- * {@code ModuleDefinition} objects by calling one of the
+ * {@code ModuleDefinition} objects by calling the
  * {@link #newModuleDefinition(byte[], ModuleContent,Repository,boolean)
- * <tt>newModuleDefinition</tt>} factory methods.
+ * <tt>newModuleDefinition</tt>} factory method.
  * <p>
- * <h3> Repository implementations</h3>
+ * <h3> Repository</h3>
  * The JAM module system provides two concrete repository implementations:
- * <i>Local repository</i> and <i>URL repository</i>.
+ * <i>Local repository</i> and <i>URL repository</i>.  Both repository
+ * implementations must support the JAM file format as described in the JAM
+ * Module System Specification. Both repository implementations must also
+ * validate the integrity of a JAM file when the file is installed.
  * <p>
- * <h4>Local Repository</h4>
- * A <i>local repository</i> loads module definitions whose module archives
- * are stored in a directory in the file system. This allows deployers to
- * easily deploy module definitions into the repository by copying, ftp-ing,
- * or dragging-and-dropping the module archives into a directory. This also
- * facilitates sharing between different repositories if they process the
- * module archives from the same directory. Hence, this directory is also
- * called a <i>repository interchange directory</i>.
- * <p>
- * The policy for processing the module archives in the repository
- * interchange directory is as follows:
+ * <A NAME="SelectionPolicy"></A><h5>Selection policy for JAM modules</h5>
+ *
+ * Local repository and URL repository have both platform-neutral and
+ * <a href="package-summary.html#PlatformSpecificModules">platform-specific modules</a>
+ * installed. Implementations of these repositories must use the following
+ * policy to select the set of JAM modules appropriate for the platform and
+ * architecture of the system:
  * <ul>
- *      <li><p>Files whose names end in {@code .jam} that follow the naming
- *             convention scheme defined in Section 4.1 of the JAM Module
- *             System specification will be processed. Files whose names end
- *             in {@code .jam} but do not follow the naming convention scheme
- *             will be ignored. Files whose names end in
- *             {@code .jam.pack.gz}, {@code .jar}, {@code .zip} or other
- *             filename extensions would also be ignored.</p></li>
+ *      <li><p>JAM module with platform binding which does not match
+ *             the platform and architecture of the system is ignored.
+ *             </p></li>
  *
- *      <li><p>Files would be considered regardless of whether or not they
- *             are "hidden" in the UNIX sense, i.e., the files are stored
- *             under a directory and the name of the directory begins with
- *             {@code '.'}.</p></li>
- *
- *      <li><p>Subdirectories would not be searched recursively, i.e.,
- *             if the directory is foo, the repository implementation should
- *             only looks for JAM files in {@code foo}, not in {@code foo/bar},
- *             {@code foo/baz}, etc.</p></li>
- *
- *      <li><p>The order in which the JAM files are enumerated is not specified
- *             and may vary from platform to platform and even from invocation
- *             to invocation on the same machine. If there is more than one JAM
- *             file containing the same version of the module definition, the
- *             repository implementation should only load the first enumerated
- *             one, and ignore the others.</p></li>
+ *      <li><p>JAM module with platform binding which matches
+ *             the system's platform and architecture is preferred
+ *             over the JAM module of the same name and version with no
+ *             platform binding.</p></li>
  * </ul>
+ *
+ * <h4>Local Repository</h4>
+ * <i>Local repository</i> supports loading JAM modules from a directory on
+ * a file system. Different repository instances in the same or different
+ * Java virtual machines can process the
+ * JAM modules from the same directory for sharing purposes. Hence, the
+ * directory is also called <i>repository interchange directory</i>.
+ * <p>
+ * A local repository must follow the policy below to
+ * process JAM modules in the repository interchange directory, when the
+ * {@link Repository#initialize() <tt>initialize</tt>} or
+ * {@link Repository#reload() <tt>reload</tt>} method is called:
+ * <ul>
+ *      <li><p>A local repository must process JAM file which
+ *             has {@code .jam} extension and follows the naming convention
+ *             defined in Section 3.1 of the JAM Module System Specification.
+ *             A local repository must ignore JAM file which
+ *             has {@code .jam} extension but does not follow the naming
+ *             convention.
+ *             A local repository must ignore JAM file which
+ *             has {@code .jam.pack.gz}, {@code .jar}, {@code .zip} or other
+ *             filename extensions.
+ *
+ *      <li><p>A local repository must support a
+ *             "hidden" (in the UNIX sense) repository interchange directory.
+ *             </p></li>
+ *
+ *      <li><p>A local repository must ignore subdirectories
+ *             under the repository interchange directory.
+ *             </p></li>
+ *
+ *      <li><p>Local repository implementations may enumerate the JAM files in
+ *             any order.</p></li>
+ *
+ *      <li><p>Local repository implementations must ignore the duplicates
+ *             if there is more than one JAM file containing the same JAM module.
+ *             </p></li>
+ * </ul>
+ * <p>
+ * A local repository must follow the
+ * <a href="#SelectionPolicy">selection policy</a> to determine a
+ * selected set of JAM modules, from the set of JAM modules available
+ * in the repository interchange directory. Local repository
+ * implementations must only create {@code ModuleDefinition}s for the
+ * selected set of JAM modules.
+ * <p>
+ * Local repository implementations must support the
+ * {@link Repository#reload() <tt>reload</tt>} operation. During reload,
+ * a local repository must compare the set of JAM
+ * modules in the repository interchange directory against
+ * the set of JAM modules which was last recognized by the local
+ * repository.
+ * See
+ * {@link Repository#reload()} for more details.
+ * <p>
+ * Local repository implementations must become
+ * {@linkplain Repository#isReadOnly() read-only}
+ * if the repository interchange directory is read-only as determined
+ * when the repository is initialized and reloaded.
+ * Local repository implementations must support the
+ * {@link Repository#install(URI) <tt>install</tt>} and
+ * {@link Repository#uninstall(ModuleArchiveInfo) <tt>uninstall</tt>} operations.
  * <p>
  * Instances of this {@code Repository} can be constructed using one of the
  * {@link #newLocalRepository(String, File, Map, Repository)
- * <tt>newLocalRepository</tt>} factory methods, and the factory methods
+ * <tt>newLocalRepository</tt>} factory methods; the factory methods
  * also invokes the {@code Repository}'s
  * {@link Repository#initialize() <tt>initialize</tt>} method automatically.
- * <p>
- * Instance of this {@code Repository} is read-only if its <i>repository
- * interchange directory</i> is read-only during repository
- * initialization. Instance of this {@code Repository} also supports the
- * {@link Repository#install(URI) <tt>install</tt>} and
- * {@link Repository#uninstall(ModuleArchiveInfo) <tt>uninstall</tt>} operations
- * if the {@code Repository} is not read-only.
- * <p>
- * Instance of this {@code Repository} supports reload. When the
- * {@code Repository} instance is reloaded, the set of module archives
- * in the <i>repository interchange directory</i> are checked against
- * the set of module archives that were recognized during repository
- * initialization to determine if the set of module archives and the
- * set of module definitions should be changed. See
- * {@link Repository#reload()} for more details.
  * <p>
  * Below is an example showing how to construct a <i>local repository</i> to
  * search for a specific module definition:
  * <pre>
  *      // Create a local repository instance. The source location is
  *      // interpreted by the repository implementation as a local directory
- *      // where the module definitions are stored. The local repository
+ *      // where the JAM files are stored. The local repository
  *      // instance is automatically initialized during construction.
  *      File file = new File("/home/wombat/repository");
  *      Repository repo = Modules.newLocalRepository("wombat", file, null);
@@ -132,88 +167,101 @@ import sun.module.repository.URLRepository;
  *      ModuleDefinition moduleDef = repo.find("org.foo.xml", VersionConstraint.valueOf("1.0.0"));</pre>
  *
  * <h4>URL Repository</h4>
- * A <i>URL repository</i> loads module definitions whose module archives
- * are stored in a codebase URL, and it is designed to optimize loading
- * through specific files and directories layout. <i>URL repository</i>
- * is typically used to download module definitions from server, but it
- * could also be used with a file-based URL.
+ * <i>URL repository</i> supports loading JAM modules
+ * from a codebase URL. URL repository is typically used to
+ * download JAM modules from server, but it can also be used with a
+ * file-based URL.
+ * <p>
+ * URL repository must have a <i>repository metadata file</i>
+ * (i.e. repository-metadata.xml) which describes the JAM modules in
+ * the repository. The <i>repository metadata file</i> must exist
+ * directly under the codebase URL, and it must conform to the
+ * <a href="RepositoryMetadata.xml">repository metadata schema</a>.
+ * <pre>
+ *      {codebase}/repository-metadata.xml</pre>
+ *
+ * A JAM module in the URL repository is identified by placing an entry
+ * in the <i>repository metadata file</i>. Each entry has a
+ * module name, module version, path (relative path to a location
+ * where the module is stored under the codebase URL), and platform
+ * binding. URL repository implementations must ignore the duplicates
+ * if there is more than one entry for the JAM module with the
+ * same name, version, and platform binding.
+ * For a given JAM module in the URL repository, its module
+ * metadata file {@code MODULE.METADATA} must exist under the path, and
+ * its module archive (i.e. either {@code .jam} file,
+ * {@code .jam.pack.gz} file, or both} must also exist under the path.
+ * <h5>Platform-neutral JAM module</h5>
+ * <pre>
+ *      {codebase}/{path}/MODULE.METADATA
+ *      {codebase}/{path}/&lt;module-name&gt;-&lt;module-version&gt;.jam
+ *      {codebase}/{path}/&lt;module-name&gt;-&lt;module-version&gt;.jam.pack.gz</pre>
+ *
+ * <h5>Platform-specific JAM module</h5>
+ * <pre>
+ *      {codebase}/{path}/MODULE.METADATA
+ *      {codebase}/{path}/&lt;module-name&gt;-&lt;module-version&gt;[&lt;platform&gt;-&lt;arch&gt;].jam
+ *      {codebase}/{path}/&lt;module-name&gt;-&lt;module-version&gt;[&lt;platform&gt;-&lt;arch&gt;].jam.pack.gz</pre>
+ *
+ * URL repository implementations must follow the
+ * <a href="#SelectionPolicy">selection policy</a> to determine a
+ * selected set of JAM modules, from the set of JAM modules available
+ * in the repository as described in the repository metadata file.
+ * URL repository implementations must only create
+ * {@code ModuleDefinition}s for the selected set of JAM modules.
+ * <p>
+ * For each JAM module in the selected set,
+ * <ul>
+ *      <li><p>URL repository implementations must either download the
+ *             {@code .jam} file or {@code .jam.pack.gz} file for the given
+ *             JAM module. URL repository implementations must prefer
+ *             the {@code .jam.pack.gz} file over the {@code .jam} file
+ *             if the codebase URL is not file-based.</p></li>
+ *
+ *      <li><p>URL repository implementations must ignore the JAM module
+ *             if the module's name, version, and platform binding specified
+ *             in the repository metadata file do not match the information
+ *             in the module metadata file
+ *             (i.e. {@code MODULE.METADATA file}).</p></li>
+ *
+ *      <li><p>A URL repository implementation must throw exception in
+ *             methods of {@link ModuleContent} in the
+ *             {@link ModuleDefinition}s the URL repository creates, if
+ *             the module metadata file (i.e. {@code MODULE.METADATA
+ *             file}) is not bit-wise equal to the module metadata file
+ *             inside the {@code .jam} file or {@code .jam.pack.gz} file
+ *             which the URL repository has downloaded.
+ *             </p></li>
+ * </ul>
+ * URL repository is {@linkplain Repository#isReadOnly() read-only}
+ * if the codebase is a non-file-based URL or it is a file-based URL
+ * which represents a read-only directory on the file system.
+ * URL repository implementations must support the
+ * {@link Repository#install(java.net.URI) <tt>install</tt>} and
+ * {@link Repository#uninstall(ModuleArchiveInfo) <tt>uninstall</tt>}
+ * operations for JAM files.
+ * <p>
+ * A URL repository must support the
+ * {@linkplain Repository#reload() reload}
+ * operation; it must compare the timestamp of the
+ * <i>repository metadata file</i> against the timestamp of the same file
+ * which was last downloaded. If the timestamps are different, a URL
+ * repository must do the following:
+ * <ol>
+ *      <li><p>Download the repository metadata file and determine
+ *             the set of JAM modules based on the selection policy.</p></li>
+ *      <li><p>Remove all existing module archives and module definitions
+ *             from the repository.</p></li>
+ *      <li><p>Add new module archives and module definitions to the
+ *             repository.</p></li>
+ * </ol>
+ * See {@link Repository#reload()} for more details.
  * <p>
  * Instance of this {@code Repository} can be constructed using one of the
  * {@link #newURLRepository(String, URL, Map, Repository)
- * <tt>newURLRepository</tt>} factory methods, and the factory methods also
+ * <tt>newURLRepository</tt>} factory methods; the factory methods also
  * invokes the newly constructed {@code Repository}'s
  * {@link Repository#initialize() <tt>initialize</tt>} method automatically.
- * <p>
- * Information about the module definitions available from the
- * codebase URL must be published in a <i>repository metadata file</i>
- * (i.e. {@code repository-metadata.xml}. The contents of the file must
- * follow the schema of the URL Repository metadata described in the
- * JAM Module System specification.
- * <p>
- * When this {@code Repository}is initialized, the repository metadata file
- * (i.e. repository-metadata.xml) is downloaded from the codebase URL.
- * <pre>
- *      {codebase}/repository-metadata.xml</pre>
- * In the repository metadata file, each module definition is described
- * with a name, a version, a platform binding, and a path (relative to
- * the codebase URL where the JAM module metadata file, the module
- * archive, and/or the packed module archive are located). If no path
- * and no platform binding is specified, the default path is
- * {@code "{name}/{version}"}. If the path is not specified and the
- * module definition has platform binding, the default path is
- * {@code "{name}/{version}/{platform}-{arch}"}.
- * <p>
- * After the {@code Repository} successfully downloads the repository
- * metadata file, the JAM module metadata file of each module definition
- * (i.e. {@code MODULE.METADATA file}) in the repository is downloaded
- * based on the information in the <i>repository metadata file</i>:
- * <pre>
- *      {codebase}/{path}/MODULE.METADATA</pre>
- * If a module definition is platform-specific, its JAM module metadata file
- * is downloaded if and only if the platform binding described in the
- * <i>repository metadata file</i> matches the platform and the architecture
- * of the system.
- * <p>
- * Module definitions are available for searches using one of the
- * {@link Repository#find(Query) <tt>find</tt>} methods after the
- * {@code Repository} instance is initialized. If a module instance is
- * instantiated from a module definition that has no platform binding, the
- * module archive is downloaded by probing in the following order:
- * <pre>
- *      {codebase}/{path}/{name}-{version}.jam.pack.gz
- *      {codebase}/{path}/{name}-{version}.jam</pre>
- * On the other hand, if a module instance is instantiated from a
- * platform-specific module definition, the module archive is
- * downloaded by probing in the following order:
- * <pre>
- *      {codebase}/{path}/{name}-{version}-{platform}-{arch}.jam.pack.gz
- *      {codebase}/{path}/{name}-{version}-{platform}-{arch}.jam</pre>
- * To ensure the integrity of the separately-hosted JAM module metadata
- * file is in sync with that in the module archive of the same module
- * definition, they are compared bit-wise against each other after the
- * module archive is downloaded when the module instance is
- * instantiated from the module definition. If these JAM module metadata
- * files are not in sync, the instantiation of the module definition
- * will fail.
- * <p>
- * Instance of this {@code Repository} is read-only unless the codebase
- * URL is a file-based URL which represents a writable directory on the
- * file system. Instance of this {@code Repository}
- * supports the {@link Repository#install(java.net.URI) <tt>install</tt>} and
- * {@link Repository#uninstall(ModuleArchiveInfo) <tt>uninstall</tt>} operations
- * when the {@code Repository} is not read-only.
- * <p>
- * Instance of this {@code Repository} supports reload. When the
- * {@code Repository} instance is reloaded, the timestamp of the
- * <i>repository metadata file</i> is checked against the timestamp of
- * the same file that was downloaded during repository initialization.
- * If the timestamps are identical, there is no change in the set of
- * module archives and the set of module definitions in the repository.
- * Otherwise, all existing module archives and module definitions in
- * the repository are removed, the repository metadata file is downloaded,
- * and the module definitions described in the <i>repository metadata file</i>
- * are downloaded and are available for subsequent searches.
- * See {@link Repository#reload()} for more details.
  * <p>
  * Below is an example showing how to construct a <i>URL repository</i> to
  * search for a specific module definition:
@@ -230,7 +278,7 @@ import sun.module.repository.URLRepository;
  *      // Search org.foo.xml version 1.3.0 from the repository instance.
  *      ModuleDefinition moduleDef = repo.find("org.foo.xml", VersionConstraint.valueOf("1.3.0"));</pre>
  *
- * <h3> Module dependency and package dependency implementations</h3>
+ * <h3> Module dependency and package dependency</h3>
  * The JAM module system provides a concrete implementation for
  * {@link ModuleDependency} and another concrete implementation for
  * {@link PackageDependency}. Instances of the {@code ModuleDependency}
@@ -248,9 +296,9 @@ import sun.module.repository.URLRepository;
  * initialization.
  * <p>
  * The system's import override policy can be obtained using the
- * {@link getImportOverridePolicy()
+ * {@link #getImportOverridePolicy()
  * <tt>getImportOverridePolicy</tt>} method. The system's import override policy
- * can be changed using the {@link setImportOverridePolicy(ImportOverridePolicy)
+ * can be changed using the {@link #setImportOverridePolicy(ImportOverridePolicy)
  * <tt>setImportOverridePolicy</tt>} method.
  * <p>
  * @see java.module.ImportOverridePolicy
@@ -301,7 +349,7 @@ public class Modules {
     }
 
     /**
-     * Constructs a new {@code ModuleDependency} instance.
+     * Returns a new {@code ModuleDependency} instance.
      *
      * @param name the name of the imported module.
      * @param constraint the version constraint.
@@ -318,7 +366,7 @@ public class Modules {
     }
 
     /**
-     * Constructs a new {@code PackageDependency} instance.
+     * Returns a new {@code PackageDependency} instance.
      *
      * @param name the name of the package.
      * @param constraint the version constraint.
@@ -335,11 +383,13 @@ public class Modules {
     }
 
     /**
-     * Constructs a new {@code Repository} instance that loads module
-     * archives from a directory on the file system, and initializes
-     * using information from the given {@code config}.
+     * Returns a a new {@code Repository} instance which supports
+     * JAM modules in a directory, using the given
+     * {@code config}. The newly created {@code Repository}
+     * instance is initialized automatically.
      * <p>
      * If {@code config} is null, the configuration is ignored.
+     * The configuration is implementation dependent.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with
@@ -379,13 +429,14 @@ public class Modules {
     }
 
     /**
-     * Constructs a new {@code Repository} instance that loads module
-     * definitions from a directory on the file system, and initializes
-     * the repository using information from the given {@code config}.
-     * Equivalent to:
+     * Returns a a new {@code Repository} instance which supports
+     * JAM modules in a directory, using
+     * the given {@code config}. The newly created {@code Repository}
+     * instance is initialized automatically. Equivalent to:
      * <pre>
-     *      newLocalRepository(name, codebase, config, Repository.getSystemRepository());</pre>
+     *      newLocalRepository(name, codebase, config, Repository.getApplicationRepository());</pre>
      * If {@code config} is null, the configuration is ignored.
+     * The configuration is implementation dependent.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with
@@ -414,12 +465,17 @@ public class Modules {
         }
 
         return new LocalRepository(name, source.toURI(), config,
-                            Repository.getSystemRepository());
+                            Repository.getApplicationRepository());
     }
 
     /**
-     * Constructs and initializes a new {@code Repository} instance that loads
-     * module definitions from a codebase URL.
+     * Returns a a new {@code Repository} instance which supports
+     * JAM modules from a codebase URL, using
+     * the given {@code config}. The newly created {@code Repository}
+     * instance is initialized automatically.
+     * <p>
+     * If {@code config} is null, the configuration is ignored.
+     * The configuration is implementation dependent.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with a
@@ -427,7 +483,7 @@ public class Modules {
      * it's ok to create a repository.
      *
      * @param name the repository name.
-     * @param codebase the source location.
+     * @param codebase the code base of the repository.
      * @param config Map of configuration names to their values
      * @param parent the parent repository for delegation.
      * @return a new {@code Repository} instance.
@@ -462,18 +518,22 @@ public class Modules {
     }
 
     /**
-     * Constructs a new {@code Repository} instance that loads module
-     * definitions from a codebase URL, and initializes using information
-     * from the given {@code config}. Equivalent to:
+     * Returns a a new {@code Repository} instance which supports
+     * JAM modules from a codebase URL, using
+     * the given {@code config}. The newly created {@code Repository}
+     * instance is initialized automatically. Equivalent to:
      * <pre>
-     *      newURLRepository(name, codebase, config, Repository.getSystemRepository());</pre>
+     *      newURLRepository(name, codebase, config, Repository.getApplicationRepository());</pre>
+     * If {@code config} is null, the configuration is ignored.
+     * The configuration is implementation dependent.
+     * <p>
      * If a security manager is present, this method calls the
      * security manager's {@code checkPermission} method with
      * a {@code ModuleSystemPermission("createRepository")}
      * permission to ensure it's ok to create a repository.
      *
      * @param name the repository name.
-     * @param codebase the source location.
+     * @param codebase the code base of the repository.
      * @param config Map of configuration names to their values
      * @return a new repository instance.
      * @throws SecurityException if a security manager exists and
@@ -486,7 +546,7 @@ public class Modules {
     public static Repository newURLRepository(String name, URL codebase,
             Map<String, String> config)
             throws IOException {
-        return newURLRepository(name, codebase, config, Repository.getSystemRepository());
+        return newURLRepository(name, codebase, config, Repository.getApplicationRepository());
     }
 
     /**
@@ -620,7 +680,7 @@ public class Modules {
     }
 
     /**
-     * Constructs a new {@code ModuleDefinition} instance for a JAM module.
+     * Returns a new {@code ModuleDefinition} instance for a JAM module.
      *
      * <p>This method will typically be called by repository implementations
      * and not by applications.
@@ -653,49 +713,5 @@ public class Modules {
         return new JamModuleDefinition
             (getModuleSystem(),
              null, null, metadata, null, content, repository, moduleReleasable);
-    }
-
-    /**
-     * Constructs a new {@code ModuleDefinition} instance for a JAM module.
-     *
-     * <p>This method will typically be called by repository implementations
-     * and not by applications. It is useful in case the metadata has not
-     * yet been retrieved but the module name and version are available.
-     *
-     * @param name the name of the {@code ModuleDefinition}
-     * @param version the version of the {@code ModuleDefinition}
-     * @param metadataHandle a Callable from which the contents of the
-     *        {@code MODULE-INF/METADATA.MODULE} file can be retrieved
-     *        as an array of bytes
-     * @param content the {@code ModuleContent} to be used to access the
-     *        contents of the module definition
-     * @param repository the {@code Repository} in which the module definition
-     *        is associated with
-     * @param moduleReleasable true if the module instance instantiated from
-     *        this {@code ModuleDefinition} is releasable from the module
-     *        system
-     * @return a new {@code ModuleDefinition}.
-     */
-    public static ModuleDefinition newModuleDefinition(String name, Version version,
-            Callable<byte[]> metadataHandle, ModuleContent content,
-            Repository repository, boolean moduleReleasable) {
-        if (name == null) {
-            throw new NullPointerException("name must not be null.");
-        }
-        if (version == null) {
-            throw new NullPointerException("version must not be null.");
-        }
-        if (metadataHandle == null) {
-            throw new NullPointerException("metadata handle must not be null.");
-        }
-        if (content == null) {
-            throw new NullPointerException("content must not be null.");
-        }
-        if (repository == null) {
-            throw new NullPointerException("repository must not be null.");
-        }
-        return new JamModuleDefinition
-            (getModuleSystem(), name, version, null,
-             metadataHandle, content, repository, moduleReleasable);
     }
 }

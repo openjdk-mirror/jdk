@@ -64,6 +64,7 @@ public class URLRepositoryTest  {
     List<File> jamFiles = new ArrayList<File>();
 
     // The file-based repository
+    URL fileBasedURL;
     URLRepository fileBasedRepo;
 
     // Configuration of the URLRepository.
@@ -179,7 +180,7 @@ public class URLRepositoryTest  {
 
     void runTest(URL url, boolean fileBased) throws Throwable {
         Repository repo = Modules.newURLRepository(
-            "test", url, repoConfig, RepositoryConfig.getSystemRepository());
+            "test", url, repoConfig, RepositoryConfig.getApplicationRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repo));
@@ -188,6 +189,7 @@ public class URLRepositoryTest  {
         check(!ec.uninstallEventExists(repo, null));
 
         if (fileBased) {
+            fileBasedURL = url;
             fileBasedRepo = (URLRepository) repo;
         }
       //  check(JamUtils.recursiveDelete(repoSrcDir));
@@ -195,10 +197,10 @@ public class URLRepositoryTest  {
         repoSrcDir.mkdirs();
 
         println("=" + getClass().getName() + " with " + url);
-        runTest0(repo, fileBased);
+        runTest0(repo, url, fileBased);
     }
 
-    void runTest0(Repository repo, boolean fileBased) throws Throwable {
+    void runTest0(Repository repo, URL repoURL, boolean fileBased) throws Throwable {
         // In a different repository, verify we get an exception if we require
         // the source location to exist, but it does not.
         Repository r2 = null;
@@ -208,7 +210,7 @@ public class URLRepositoryTest  {
             tmpConfig.put("sun.module.repository.URLRepository.sourceLocationMustExist", "true");
             r2 = Modules.newURLRepository(
                 "test2", new URL("file:///doesNotExist"), tmpConfig,
-                RepositoryConfig.getSystemRepository());
+                RepositoryConfig.getApplicationRepository());
             fail();
         } catch (FileNotFoundException ex) {
             check(ex.getMessage().contains("does not exist"));
@@ -511,7 +513,7 @@ public class URLRepositoryTest  {
     void checkShutdown0(Repository repo) throws Throwable {
         dumpMai("Checking shutdown", repo.list());
         if (failed == 0) {
-            println("=shutting down " + repo.getSourceLocation());
+            println("=shutting down " + repo.toString());
             repo.shutdown();
 
             // REPOSITORY_SHUTDOWN event should be fired.

@@ -151,7 +151,7 @@ public class MetadataCompareTest {
         zf.close();
         data = baos.toByteArray();
 
-        URL u = urlRepo.getSourceLocation().toURL();
+        URL u = new URL(urlRepoLocation);
         File f = JamUtils.getFile(u);
 
         // Overwrite the MODULE.METADATA for Bad.MDFile v3.1

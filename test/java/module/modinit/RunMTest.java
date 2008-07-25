@@ -354,7 +354,7 @@ public class RunMTest {
 
         protected void runTest(RunMTest mTest) throws Exception {
             System.out.println("> Running test " + name + "...");
-            Repository parent = sun.module.repository.RepositoryConfig.getSystemRepository();
+            Repository parent = Repository.getApplicationRepository();
             Repository repository = Modules.newLocalRepository(mTest.getName(), mTest.outputDirectory, null, parent);
             ModuleDefinition md = repository.find(name);
             try {

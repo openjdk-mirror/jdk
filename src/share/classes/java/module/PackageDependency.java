@@ -32,8 +32,8 @@ import java.util.Set;
 
 
 /**
- * This interface represents a package-level import dependency in a module
- * definition.
+ * This interface represents an import dependency on a module definition
+ * based on an exported package's name.
  * <p>
  * @see java.module.ImportDependency
  * @see java.module.VersionConstraint
@@ -45,9 +45,9 @@ import java.util.Set;
 public interface PackageDependency extends ImportDependency {
 
     /**
-     * Returns the name of the package to import.
+     * Returns the exported package's name.
      *
-     * @return the name of the package to import.
+     * @return the exported package's name.
      */
     public String getName();
 
@@ -59,9 +59,11 @@ public interface PackageDependency extends ImportDependency {
     public VersionConstraint getVersionConstraint();
 
     /**
-     * Returns true if the imported package is re-exported; otherwise, returns false.
+     * Returns true if this {@code PackageDependency} is re-exported;
+     * otherwise, returns false.
      *
-     * @return true if the imported package is re-exported; otherwise, returns false.
+     * @return true if this {@code PackageDependency} is re-exported;
+     *         otherwise, returns false.
      */
     public boolean isReexported();
 
@@ -69,7 +71,8 @@ public interface PackageDependency extends ImportDependency {
      * Returns true if this {@code PackageDependency} is optional;
      * otherwise, returns false.
      *
-     * @return true if this {@code PackageDependency} is optional; otherwise, returns false.
+     * @return true if this {@code PackageDependency} is optional;
+     *         otherwise, returns false.
      */
     public boolean isOptional();
 

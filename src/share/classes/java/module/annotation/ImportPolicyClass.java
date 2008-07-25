@@ -32,9 +32,9 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the import policy class of a module definition. The class must
- * implement {@link java.module.ImportPolicy}; it must also be  declared as
- * public, and have a public default constructor. This metadata annotation is
- * applied to a Java module. For example,
+ * implement {@link java.module.ImportPolicy}. The class must be declared
+ * {@code public}, and must have a public constructor which takes no argument.
+ * This metadata annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java
@@ -51,7 +51,8 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ImportPolicyClass {
 
     /**
-     * The name of the import policy class.
+     * The name of the import policy class. The value must not have the
+     * {@code .class} extension appended.
      */
     String value();
 }

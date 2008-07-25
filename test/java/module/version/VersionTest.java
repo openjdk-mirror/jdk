@@ -62,7 +62,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 0);
             check(version.getMicroNumber() == 0);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(1, 2, 3);
@@ -70,7 +70,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 2);
             check(version.getMicroNumber() == 3);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(9, 8, 7);
@@ -78,7 +78,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 8);
             check(version.getMicroNumber() == 7);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
@@ -86,7 +86,7 @@ public class VersionTest {
             check(version.getMinorNumber() == Integer.MAX_VALUE);
             check(version.getMicroNumber() == Integer.MAX_VALUE);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(0, 0, 0, 0);
@@ -94,7 +94,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 0);
             check(version.getMicroNumber() == 0);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(1, 2, 3, 4);
@@ -102,7 +102,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 2);
             check(version.getMicroNumber() == 3);
             check(version.getUpdateNumber() == 4);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(9, 8, 7, 6);
@@ -110,7 +110,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 8);
             check(version.getMicroNumber() == 7);
             check(version.getUpdateNumber() == 6);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
@@ -118,17 +118,17 @@ public class VersionTest {
             check(version.getMinorNumber() == Integer.MAX_VALUE);
             check(version.getMicroNumber() == Integer.MAX_VALUE);
             check(version.getUpdateNumber() == Integer.MAX_VALUE);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
-            // Test constructors that take null qualifer
-            String qualifier = null;
+            // Test constructors that take no qualifer
+            String qualifier = "";
             version = Version.valueOf(0, 0, 0, qualifier);
             check(version.getMajorNumber() == 0);
             check(version.getMinorNumber() == 0);
             check(version.getMicroNumber() == 0);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(1, 2, 3, qualifier);
@@ -136,7 +136,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 2);
             check(version.getMicroNumber() == 3);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(9, 8, 7, qualifier);
@@ -144,7 +144,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 8);
             check(version.getMicroNumber() == 7);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, qualifier);
@@ -152,7 +152,7 @@ public class VersionTest {
             check(version.getMinorNumber() == Integer.MAX_VALUE);
             check(version.getMicroNumber() == Integer.MAX_VALUE);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(0, 0, 0, 0, qualifier);
@@ -160,7 +160,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 0);
             check(version.getMicroNumber() == 0);
             check(version.getUpdateNumber() == 0);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(1, 2, 3, 4, qualifier);
@@ -168,7 +168,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 2);
             check(version.getMicroNumber() == 3);
             check(version.getUpdateNumber() == 4);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(9, 8, 7, 6, qualifier);
@@ -176,7 +176,7 @@ public class VersionTest {
             check(version.getMinorNumber() == 8);
             check(version.getMicroNumber() == 7);
             check(version.getUpdateNumber() == 6);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             version = Version.valueOf(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, qualifier);
@@ -184,7 +184,7 @@ public class VersionTest {
             check(version.getMinorNumber() == Integer.MAX_VALUE);
             check(version.getMicroNumber() == Integer.MAX_VALUE);
             check(version.getUpdateNumber() == Integer.MAX_VALUE);
-            check(version.getQualifier() == null);
+            check(version.getQualifier().isEmpty());
             pass();
 
             // Test constructors that take full qualifier
@@ -875,8 +875,6 @@ public class VersionTest {
             pass();
 
             version = Version.valueOf(1, 2, 3);
-
-            System.out.println(version.toString());
 
             check(version.toString().equals("1.2.3"));
             pass();

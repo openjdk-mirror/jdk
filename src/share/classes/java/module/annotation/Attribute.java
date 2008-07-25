@@ -31,8 +31,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an attribute. This metadata annotation is used as nested
- * annotation inside other enclosing annotations. For
+ * Indicates an attribute in a module definition. This metadata annotation
+ * is used as nested annotation inside other enclosing annotations. For
  * example,
  * <blockquote><pre>
  *    //

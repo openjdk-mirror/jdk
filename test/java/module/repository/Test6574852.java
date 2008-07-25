@@ -43,7 +43,7 @@ public class Test6574852 {
         System.out.println("url=" + url);
         Repository repo = Modules.newURLRepository(
             "test", url, null,
-            RepositoryConfig.getSystemRepository());
+            RepositoryConfig.getApplicationRepository());
 
         try {
             repo.initialize();

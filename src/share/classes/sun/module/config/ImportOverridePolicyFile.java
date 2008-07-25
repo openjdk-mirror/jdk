@@ -203,9 +203,9 @@ public final class ImportOverridePolicyFile implements ImportOverridePolicy {
                 String key;
 
                 if (dep instanceof ModuleDependency) {
-                    key = "module:" + dep.getName();
+                    key = "module:" + ((ModuleDependency) dep).getName();
                 } else if (dep instanceof PackageDependency) {
-                    key = "package:" + dep.getName();
+                    key = "package:" + ((PackageDependency) dep).getName();
                 } else {
                     // import dependency is not recognized
                     throw new IllegalArgumentException("The type of import dependency is not supported: " + dep);

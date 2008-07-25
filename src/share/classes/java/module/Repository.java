@@ -41,11 +41,11 @@ import sun.module.config.DefaultVisibilityPolicy;
 import sun.module.repository.RepositoryConfig;
 
 /**
- * This class represents a repository.  A repository is responsible for
- * storing, discovering, and retrieving {@linkplain ModuleDefinition module
- * definitions}.
+ * This class represents a repository. A repository is responsible
+ * for storing, discovering, and retrieving {@linkplain
+ * ModuleDefinition module definitions}.
  * <p>
- * A {@code Repository} is {@linkplain #isActive active} when it has been
+ * A repository is {@linkplain #isActive active} when it has been
  * {@linkplain #initialize() initialized} but not {@linkplain #shutdown()
  * shutdown}.   When a repository is no longer needed, a program should
  * shutdown the repository to release the resources.
@@ -57,24 +57,25 @@ import sun.module.repository.RepositoryConfig;
  * module definition to its parent repository before attempting to find
  * the module definition itself. The virtual machine's built-in repository,
  * called the <i>bootstrap repository</i>, does not itself have a parent
- * but may serve as the parent of a {@code Repository} instance.
+ * but may serve as the parent of a {@code Repository} instance. The second
+ * built-in repository, called the <i>system repository</i>, is the
+ * repository for installed modules in the system, and it may also serve
+ * as the parent of a {@code Repository} instance. The third built-in
+ * repository, called the <i>application repository</i>,
+ * is the default parent for new {@code Repository} instances.
  * <p>
  * The system's {@linkplain #getVisibilityPolicy visibility policy} controls
- * which module definitions be visible in a repository.
+ * which module definitions are visible in a repository.
  * <p>
  * Applications implement subclasses of {@code Repository} in order to
  * extend the manner in which the Java virtual machine dynamically
- * finds module definitions. Typically, repository implementors
- * should override the
- * {@link #doInitialize()} and {@link #doShutdown()} methods.
- * <p>
- * There are two default repositories provided by the Java platform: the
- * <i>bootstrap repository</i> and the <i>system repository</i>. The
- * <i>bootstrap repository</i> exposes the standard module definitions
- * for the Java platform and is the only repository that does not have
- * a parent.  All module definitions whose name begins with "java." must
- * be exposed by the <i>bootstrap repository</i>.  The <i>system
- * repository</i> is the default parent for new {@code Repository} instances.
+ * finds module definitions. This specification does not require that a
+ * repository be implemented by a file system, a web server, or even a
+ * database. As long as the requirements of this specification are met,
+ * repository implementors can implement the functionalites however they
+ * see fit. Typically, repository implementations should override the
+ * {@link #doInitialize() doInitialize} and
+ * {@link #doShutdown() doShutdown} methods.
  *
  * @see java.module.ModuleDefinition
  * @see java.module.ModuleSystemPermission
@@ -90,7 +91,6 @@ public abstract class Repository {
 
     private final Repository parent;
     private final String name;
-    private final URI source;
 
     /**
      * Internal data structures for the repository.
@@ -132,7 +132,6 @@ public abstract class Repository {
      * it's ok to create a repository.
      *
      * @param name the repository name.
-     * @param source the source location.
      * @param parent the parent repository for delegation.
      * @throws SecurityException if a security manager exists and its
      *         {@code checkPermission} method denies access to create a new
@@ -140,13 +139,10 @@ public abstract class Repository {
      * @throws IllegalArgumentException if a circularity among the same
      *         repsoitory is detected.
      */
-    protected Repository(String name, URI source, Repository parent) {
+    protected Repository(String name, Repository parent) {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(new ModuleSystemPermission("createRepository"));
-        }
-        if (source == null && !(this instanceof BootstrapRepository)) {
-            throw new NullPointerException("source must not be null.");
         }
         if (name == null) {
             throw new NullPointerException("name must not be null.");
@@ -165,12 +161,11 @@ public abstract class Repository {
 
         this.parent = parent;
         this.name = name;
-        this.source = source;
     }
 
     /**
      * Creates a {@code Repository} instance with the
-     * {@linkplain #getSystemRepository system repository} as the
+     * {@linkplain #getApplicationRepository application repository} as the
      * parent for delegation.
      * <p>
      * If a security manager is present, this method calls the security
@@ -179,13 +174,12 @@ public abstract class Repository {
      * it's ok to create a repository.
      *
      * @param name the repository name.
-     * @param source the source location.
      * @throws SecurityException if a security manager exists and its
      *         {@code checkPermission} method denies access to create a new
      *         instance of repository.
      */
-    protected Repository(String name, URI source) {
-        this(name, source, getSystemRepository());
+    protected Repository(String name) {
+        this(name, getApplicationRepository());
     }
 
     /**
@@ -195,15 +189,6 @@ public abstract class Repository {
      */
     public final String getName()   {
         return name;
-    }
-
-    /**
-     * Returns the source location of this {@code Repository}.
-     *
-     * @return the source location.
-     */
-    public final URI getSourceLocation()    {
-        return source;
     }
 
     /**
@@ -220,7 +205,7 @@ public abstract class Repository {
      * Returns the bootstrap repository.
      * <p>
      * The bootstrap repository is an implementation-dependent instance of
-     * this class , and it is provided by the Java Runtime.
+     * this class, and it is provided by the Java Runtime.
      *
      * @return the bootstrap repository.
      */
@@ -229,9 +214,7 @@ public abstract class Repository {
     }
 
     /**
-     * Returns the system repository for delegation. This is the default
-     * delegation parent for new {@code Repository} instances, and is
-     * typically the repository used to start the application.
+     * Returns the system repository.
      * <p>
      * The system repository is an implementation-dependent instance of
      * this class, and it is provided by the Java Runtime.
@@ -240,6 +223,22 @@ public abstract class Repository {
      */
     public static Repository getSystemRepository()  {
         return RepositoryConfig.getSystemRepository();
+    }
+
+    /**
+     * Returns the application repository for delegation. This is the default
+     * delegation parent for new {@code Repository} instances, and is
+     * typically the repository used to start the application. If no
+     * repository was used, the application repository is the same as the
+     * {@linkplain #getSystemRepository() system repository}.
+     * <p>
+     * The application repository is an implementation-dependent instance of
+     * this class, and it is provided by the Java Runtime.
+     *
+     * @return the application repository.
+     */
+    public static Repository getApplicationRepository()  {
+        return RepositoryConfig.getApplicationRepository();
     }
 
     /**
@@ -287,13 +286,13 @@ public abstract class Repository {
      *           {@linkplain #shutdown() shutdown},
      *           throws an {@code IllegalStateException}.</p></li>
      *
-     *   <li><p> Invoke the {@link #doInitialize()} method.</p></li>
+     *   <li><p> Invoke the {@link #doInitialize} method.</p></li>
      *
      *   <li><p> Fire a {@link RepositoryEvent.Type#REPOSITORY_INITIALIZED
      *           <tt>REPOSITORY_INITIALIZED</tt>} event.</p></li>
      * </ol>
      *
-     * <p> Subclasses of <tt>Repository</tt> are encouraged to override {@link
+     * <p> Subclasses of {@code Repository} are encouraged to override {@link
      * #doInitialize()} method, rather than this method.</p>
      *
      * @throws IllegalStateException if this {@code Repository} has been
@@ -323,26 +322,26 @@ public abstract class Repository {
      * Initializes this {@code Repository}. This method should be overridden
      * by repository implementations to initialize the repository by load
      * module archives and construct module definitions, and will be invoked
-     * by the {@link #initialize()} method.
+     * by the {@link #initialize() initialize} method.
      * <p>
      * If the module archives are loaded successfully by this method,
-     * the implementation should return the information of the module archives
-     * as a list of {@code ModuleArchiveInfo}s. The implementation should NOT
-     * invoke the {@link #addModuleArchiveInfo(ModuleArchiveInfo)} method with
-     * the information of the module archives.
+     * the implementation must return the information of the module archives
+     * as a list of {@code ModuleArchiveInfo}s. The implementation must not
+     * invoke the {@link #addModuleArchiveInfo(ModuleArchiveInfo) addModuleArchiveInfo}
+     * method with the information of the module archives.
      * <p>
      * If new module definition(s) are constructed successfully by this method,
-     * the implementation should add the module definitions to this
+     * the implementation must add the module definitions to this
      * {@code Repository} by invoking the
-     * {@link #addModuleDefinitions(Set)} method or the
-     * {@link #addModuleDefinition(ModuleDefinition)} method.
+     * {@link #addModuleDefinitions(Set) addModuleDefinitions} method or the
+     * {@link #addModuleDefinition(ModuleDefinition) addModuleDefinition}
+     * method.
      * <p>
      * The default implementation of this method throws an {@code IOException}.
      *
      * @return a list of {@code ModuleArchiveInfo}s that represents the module
      *         archives loaded during initialization.
      * @throws IOException if an I/O error occurs.
-     * @see #initialize()
      */
     protected List<ModuleArchiveInfo> doInitialize() throws IOException {
         throw new IOException("Repository's initialization is not yet implemented.");
@@ -369,15 +368,15 @@ public abstract class Repository {
      *   <li><p> For each module definition in this {@code Repository}, invoke
      *           its module system's
      *           {@link ModuleSystem#disableModuleDefinition(ModuleDefinition)
-     *           <tt>disableModuleDefinition(ModuleDefinition)</tt>}
+     *           disableModuleDefinition}
      *           method and {@link ModuleSystem#releaseModule(ModuleDefinition)
-     *           <tt>releaseModule(ModuleDefinition)</tt>} method.</p></li>
+     *           releaseModule} method.</p></li>
      *
      *   <li><p> Fire a single {@link RepositoryEvent.Type#MODULE_DEFINITION_REMOVED
      *           <tt>MODULE_DEFINITION_REMOVED</tt>} event if there is one or
      *           more module definitions in this {@code Repository}.</p></li>
      *
-     *   <li><p> Fire a {@link RepositoryEvent.Type#REPOSITORY_SHUTDOWN
+     *   <li><p> Fire a {@linkplain RepositoryEvent.Type#REPOSITORY_SHUTDOWN
      *           <tt>REPOSITORY_SHUTDOWN</tt>} event.</p></li>
      * </ol>
      *
@@ -395,7 +394,7 @@ public abstract class Repository {
      *
      *   <li><p> Invoke the {@link #doShutdown()} method.</p></li>
      *
-     *   <li><p> Invoke the {@link #removeModuleDefinitions(Set)}
+     *   <li><p> Invoke the {@link #removeModuleDefinitions(Set) removeModuleDefinitions}
      *           method with the set of module definitions in this
      *           {@code Repository}.</p></li>
      *
@@ -403,7 +402,7 @@ public abstract class Repository {
      *           <tt>REPOSITORY_SHUTDOWN</tt>} event.</p></li>
      * </ol>
      *
-     * <p> Subclasses of <tt>Repository</tt> are encouraged to override {@link
+     * <p> Subclasses of {@code Repository} are encouraged to override {@link
      * #doShutdown()}, rather than this method.</p>
      *
      * @throws SecurityException if a security manager exists and its
@@ -441,20 +440,24 @@ public abstract class Repository {
     /**
      * Shutdown this {@code Repository}. This method should be overridden
      * by repository implementations, and will be invoked by the
-     * {@link #shutdown()} method. The default implementation is a no-op.
+     * {@link #shutdown shutdown} method. The default implementation is a no-op.
      *
      * @throws IOException if an I/O error occurs.
-     * @see #shutdown()
      */
     protected void doShutdown() throws IOException {
         // no-op
     }
 
     /**
-     * Enable or disable that this {@code Repository} is shutdown when the
-     * Java Module System terminates. Shutdown will be attempted only during
-     * the normal termination of the virtual machine, as defined by the Java
-     * Language Specification. By default, shutdown on exit is disabled.
+     * Enables or disables that this {@code Repository} is
+     * {@link #shutdown() shutdown} when the virtual machine
+     * terminates. By default, shutdown on exit is disabled.
+     * <p>
+     * The virtual machine will only attempt to shutdown the repositories
+     * during normal termination, as defined by the Java Language
+     * Specification. The virtual machine imposes no order on
+     * {@link #shutdown() shutdown} method calls among {@code Repository}
+     * instances. Shutdown may be called in any order or even concurrently.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with a
@@ -510,13 +513,12 @@ public abstract class Repository {
      * {@code Repository} is active when it has been
      * {@linkplain #initialize() initialized} but not
      * {@linkplain #shutdown() shutdown}. This method should be overridden
-     * by subclasses of {@code Repository} if the {@link initialize()} and
-     * {@link shutdown()} methods are also overridden.
+     * by subclasses of {@code Repository} if the
+     * {@link #initialize() initialize} and
+     * {@link #shutdown() shutdown} methods are also overridden.
      *
      * @return true if this {@code Repository} is active; otherwise, returns
      *         false.
-     * @see #initialize()
-     * @see #shutdown()
      */
     public synchronized boolean isActive() {
         return active;
@@ -548,7 +550,7 @@ public abstract class Repository {
     }
 
     /**
-     * Find a module definition across multiple repositories through
+     * Finds a module definition across multiple repositories through
      * the delegation model. Equivalent to:
      * <pre>
      *      find(name, VersionConstraint.DEFAULT);</pre>
@@ -564,7 +566,7 @@ public abstract class Repository {
     }
 
     /**
-     * Find a module definition across multiple repositories through the
+     * Finds a module definition across multiple repositories through the
      * delegation model. Equivalent to:
      * <pre>
      *      find(Query.module(name, versionConstraint))</pre>
@@ -601,7 +603,7 @@ public abstract class Repository {
     }
 
     /**
-     * Find all module definitions across multiple repositories through the
+     * Finds all module definitions across multiple repositories through the
      * delegation model. Equivalent to:
      * <pre>
      *      find(Query.ANY);</pre>
@@ -616,49 +618,44 @@ public abstract class Repository {
     }
 
     /**
-     * Find all matching module definitions across multiple repositories
+     * Finds all matching module definitions across multiple repositories
      * through the delegation model. This method performs the following:
      * <p><ol>
-     *      <li><p> Invoke the {@link #getParent()} method to determine the
-     *              parent repository.</p></li>
-     *
-     *      <li><p> If the parent repository is {@code null}, invoke
-     *              the {@link #findModuleDefinitions(Query)} method to obtain
-     *              the set of module definitions and return.</p></li>
+     *      <li><p> If the {@linkplain #getParent() parent repository} is
+     *              {@code null}, invoke the
+     *              {@link #findModuleDefinitions(Query) findModuleDefinitions}
+     *              method to obtain the set of module definitions and return.</p></li>
      *
      *      <li><p> Invoke the {@link #find(Query)} method of the parent
      *              repository to obtain the set of module definitions
      *              <i>P</i>.</p></li>
      *
-     *      <li><p> Invoke the {@link #findModuleDefinitions(Query)} method
+     *      <li><p> Invoke the {@link #findModuleDefinitions(Query) findModuleDefinitions} method
      *              to obtain the set of module definitions <i>C</i>.</p></li>
      *
      *      <li><p> If the name of any module definition in <i>C</i> begins with
      *             "java.", throw a {@code SecurityException}.</p></li>
      *
      *      <li><p> For each module definition in <i>C</i>, invoke the
-     *              {@link VisibilityPolicy#isVisible(ModuleDefinition)
-     *              <tt>isVisible()</tt>} method of the {@link VisibilityPolicy}
+     *              {@linkplain VisibilityPolicy#isVisible(ModuleDefinition)
+     *              isVisible} method of the {@link VisibilityPolicy}
      *              object returned from {@link #getVisibilityPolicy()} to
      *              determine if the module definition is visible. If not,
      *              remove the module definition from <i>C</i>.</p></li>
      *
      *      <li><p> Determine the set of module definitions <i>R</i> as
-     *              follows:</p></li>
+     *              follows and return <i>R</i>:</p></li>
      *          <ul>
      *          <li><p> All module definitions in <i>P</i> are in <i>R</i>.</p></li>
      *          <li><p> For each module definition in <i>C</i>, it is in
      *                  <i>R</i> if and only if the module definition with the
-     *                  same name and version is not present in <i>P</i>.</p></li>
+     *                  same name and version does not exist in <i>P</i>.</p></li>
      *          </ul>
-     *
-     *      <li><p> Return <i>R</i> as the result.</p></li>
      * </ol></p>
      *
      * @param constraint the constraint.
      * @return the list of matching module definitions.
      * @throws IllegalStateException if this {@code Repository} is not active.
-     * @see #findModuleDefinitions(Query)
      */
     public final List<ModuleDefinition> find(Query constraint) {
         assertActive();
@@ -710,17 +707,21 @@ public abstract class Repository {
     }
 
     /**
-     * Find all matching module definitions in this {@code Repository}. This
-     * method should be overridden by repository implementations only for
+     * Finds all matching module definitions in this {@code Repository}. This
+     * method should be overridden by repository implementations for
      * optimization, and will be invoked by the {@link #find(Query)} method.
-     * The default implementation determines the result by matching each
+     * Implementation of this method must not return any module definition with
+     * name beginning with "java." in the result unless this
+     * {@code Repository} is the
+     * {@linkplain #getBootstrapRepository() bootstrap repository}.
+     * <p>
+     * The default implementation returns the result by matching each
      * module definition in this {@code Repository} with the specified
      * constraint.
      *
      * @param constraint the constraint.
      * @return the list of matching module definitions.
      * @throws IllegalStateException if this {@code Repository} is not active.
-     * @see find(Query)
      */
     protected synchronized List<ModuleDefinition> findModuleDefinitions(Query constraint) {
         assertActive();
@@ -753,8 +754,8 @@ public abstract class Repository {
      *           {@linkplain #isActive() active},
      *           throws an {@code IllegalStateException}.</p></li>
      *
-     *   <li><p> Invoke the {@link #getModuleArchiveInfos()} method to
-     *           determine the list of {@code ModuleArchiveInfo}s, and return
+     *   <li><p> Invoke the {@link #getModuleArchiveInfos() getModuleArchiveInfos}
+     *           method to determine the list of {@code ModuleArchiveInfo}s, and return
      *           the result.</p></li>
      * </ul>
      * The default implementation of this method throws an
@@ -773,7 +774,7 @@ public abstract class Repository {
     }
 
     /**
-     * Install a module archive into this {@code Repository}. This method
+     * Installs a module archive into this {@code Repository}. This method
      * should be overridden by repository implementations as follows:
      * <p><ol>
      *   <li><p> If a security manager is present, calls the security
@@ -789,31 +790,33 @@ public abstract class Repository {
      *           {@linkplain #isActive() active},
      *           throws an {@code IllegalStateException}.</p></li>
      *
-     *   <li><p> Invoke the {@link #isReadOnly()} method to check if this
-     *           {@code Repository} is read-only. If it returns {@code false},
+     *   <li><p> If this {@code Repository} is
+     *           {@linkplain #isReadOnly() read only},
      *           throws an {@code UnsupportedOperationException}.</p></li>
      *
      *   <li><p> Perform the actual installation of the module archive and this
      *           is repository implementation specific.</p></li>
      *
      *   <li><p> If the module archive is installed successfully, invoke the
-     *           {@link #addModuleArchiveInfo(ModuleArchiveInfo)} method.
+     *           {@link #addModuleArchiveInfo(ModuleArchiveInfo) addModuleArchiveInfo} method.
      *           </p></li>
      * </ol>
+     * <p> A repository implementation may check additional conditions beyond
+     * what are required in this method before installing a module archive.
      *
-     * <p> If the repository implementations change the set of module
-     * definitions after the installation of the module archive, they should
-     * perform the following:
+     * <p> A repository implementation may change the set of module definitions
+     * in the repository after the installation of the module archive. The
+     * repository implementation must do the following if such a change occurs:
      * <p><ul>
      *   <li><p> If a new module definition is added, invoke the
-     *           {@link #addModuleDefinition(ModuleDefinition)} method with
-     *           that module definition.
+     *           {@link #addModuleDefinition(ModuleDefinition) addModuleDefinition}
+     *           method with that module definition.
      *           </p></li>
      *
      *   <li><p> If an existing module definition is replaced, invoke the
-     *           {@link #removeModuleDefinition(ModuleDefinition)}
+     *           {@link #removeModuleDefinition(ModuleDefinition) removeModuleDefinition}
      *           method with the old module definition, and invoke the
-     *           {@link #addModuleDefinition(ModuleDefinition)}
+     *           {@link #addModuleDefinition(ModuleDefinition) addModuleDefinition}
      *           method with the new module definition.</p></li>
      * </ul>
      * The default implementation of this method throws an
@@ -840,7 +843,7 @@ public abstract class Repository {
     }
 
     /**
-     * Uninstall a module archive from this {@code Repository}. This method
+     * Uninstalls a module archive from this {@code Repository}. This method
      * should be overridden by repository implementations as follows:
      * <p><ol>
      *   <li><p> If a security manager is present, calls the security
@@ -856,31 +859,34 @@ public abstract class Repository {
      *           {@linkplain #isActive active},
      *           throws an {@code IllegalStateException}.</p></li>
      *
-     *   <li><p> Invoke the {@link #isReadOnly()} method to check if this
-     *           {@code Repository} is read-only. If it returns {@code false},
+     *   <li><p> If this {@code Repository} is
+     *           {@linkplain #isReadOnly() read only},
      *           throws an {@code UnsupportedOperationException}.</p></li>
      *
      *   <li><p> Perform the actual uninstallation of the module archive and
      *           this is repository implementation specific.</p></li>
      *
      *   <li><p> If the module archive is uninstalled successfully, invoke the
-     *           {@link #removeModuleArchiveInfo(ModuleArchiveInfo)} method.
+     *           {@link #removeModuleArchiveInfo(ModuleArchiveInfo) removeModuleArchiveInfo}
+     *           method.
      *           </p></li>
      * </ol>
+     * <p> A repository implementation may check additional conditions beyond
+     * what are required in this method before uninstalling a module archive.
      *
-     * <p> If the repository implementations change the set of module
-     * definitions after the uninstallation of the module archive, they
-     * should perform the following:
+     * <p> A repository implementation may change the set of module definitions
+     * in the repository after the uninstallation of the module archive. The
+     * repository implementation must do the following if such a change occurs:
      * <p><ul>
      *   <li><p> If an existing module definition is removed, invoke the
-     *           {@link #removeModuleDefinition(ModuleDefinition)} method
-     *           with that module definition.
+     *           {@link #removeModuleDefinition(ModuleDefinition) removeModuleDefinition}
+     *           method with that module definition.
      *           </p></li>
      *
      *   <li><p> If an existing module definition is replaced, invoke the
-     *           {@link #removeModuleDefinition(ModuleDefinition)}
+     *           {@link #removeModuleDefinition(ModuleDefinition) removeModuleDefinition}
      *           method with the old module definition, and invoke the
-     *           {@link #addModuleDefinition(ModuleDefinition)}
+     *           {@link #addModuleDefinition(ModuleDefinition) addModuleDefinition}
      *           method with the new module definition.</p></li>
      * </ul>
      * The default implementation of this method throws an
@@ -903,7 +909,7 @@ public abstract class Repository {
     }
 
     /**
-     * Reload the module archives in this {@code Repository}. This method
+     * Reloads the module archives in this {@code Repository}. This method
      * should be overridden and implemented by repository implementations
      * as follows:
      * <p><ol>
@@ -917,49 +923,51 @@ public abstract class Repository {
      *           {@linkplain #isActive active},
      *           throws an {@code IllegalStateException}.</p></li>
      *
-     *   <li><p> Invoke the {@link #supportsReload()} method to check if this
-     *           {@code Repository} supports reload. If it returns {@code false},
+     *   <li><p> If this {@code Repository} does not
+     *           {@linkplain #supportsReload() support reload},
      *           throws an {@code UnsupportedOperationException}.</p></li>
      *
      *   <li><p> Perform the actual reload of module definitions and this is
      *           repository implementation specific.</p></li>
      * </ol>
-     * <p> If the repository implementations change the set of module archives
-     * after reload, they should perform the following:
+     * <p> A repository implementation may change the set of module archives
+     * in the repository after reload.  The repository implementation must do
+     * the following if such a change occurs:
      * <p><ul>
      *   <li><p> If a new module archive is added, invoke the
-     *           {@link #addModuleArchiveInfo(ModuleArchiveInfo)}
+     *           {@link #addModuleArchiveInfo(ModuleArchiveInfo) addModuleArchiveInfo}
      *           method with that module archive's information.
      *           </p></li>
      *
      *   <li><p> If an existing module archive is removed, invoke the
-     *           {@link #removeModuleArchiveInfo(ModuleArchiveInfo)} method
-     *           with that module archive's information.
+     *           {@link #removeModuleArchiveInfo(ModuleArchiveInfo) removeModuleArchiveInfo}
+     *           method with that module archive's information.
      *           </p></li>
      *
      *   <li><p> If an existing module archive is replaced, invoke the
-     *           {@link #removeModuleArchiveInfo(ModuleArchiveInfo)}
+     *           {@link #removeModuleArchiveInfo(ModuleArchiveInfo) removeModuleArchiveInfo}
      *           method with the old module archive's information, and invoke the
-     *           {@link #addModuleArchiveInfo(ModuleArchiveInfo)}
+     *           {@link #addModuleArchiveInfo(ModuleArchiveInfo) addModuleArchiveInfo}
      *           method with the new module archive's information.</p></li>
      * </ul>
-     * <p> If the repository implementations change the set of module
-     * definitions after reload, they should perform the following:
+     * <p> A repository implementation may change the set of module definitions
+     * in the repository after the installation of the module archive. The repository
+     * implementation must do the following if such a change occurs:
      * <p><ul>
      *   <li><p> If a new module definition is added, invoke the
-     *           {@link #addModuleDefinition(ModuleDefinition)}
+     *           {@link #addModuleDefinition(ModuleDefinition) addModuleDefinition}
      *           method with that module definition.
      *           </p></li>
      *
      *   <li><p> If an existing module definition is removed, invoke the
-     *           {@link #removeModuleDefinition(ModuleDefinition)} method
-     *           with that module definition.
+     *           {@link #removeModuleDefinition(ModuleDefinition) removeModuleDefinition}
+     *           method with that module definition.
      *           </p></li>
      *
      *   <li><p> If an existing module definition is replaced, invoke the
-     *           {@link #removeModuleDefinition(ModuleDefinition)}
+     *           {@link #removeModuleDefinition(ModuleDefinition) removeModuleDefinition}
      *           method with the old module definition, and invoke the
-     *           {@link #addModuleDefinition(ModuleDefinition)}
+     *           {@link #addModuleDefinition(ModuleDefinition) addModuleDefinition}
      *           method with the new module definition.</p></li>
      * </ul>
      * The default implementation of this method throws an
@@ -1010,7 +1018,7 @@ public abstract class Repository {
      * if this {@code Repository} already contains
      * one of more of the specified module definitions.
      *
-     * @param moduleDef a set of module definitions to be added
+     * @param mds a set of module definitions to be added
      * @return true if the module definitions in this {@code Repository}
      *         changed as a result of the call.
      * @throws IllegalStateException if this {@code Repository} has been
@@ -1055,9 +1063,9 @@ public abstract class Repository {
      * If the module definition is removed successfully, this method invokes
      * its module system's
      * {@link ModuleSystem#disableModuleDefinition(ModuleDefinition)
-     * <tt>disableModuleDefinition(ModuleDefinition)</tt>} method and the
+     * disableModuleDefinition} method and the
      * {@link ModuleSystem#releaseModule(ModuleDefinition)
-     * <tt>releaseModule(ModuleDefinition)</tt>} method.</p></li>
+     * releaseModule} method.</p></li>
      *
      * @param moduleDef module definition to be removed
      * @return true if the module definitions in this {@code Repository}
@@ -1083,10 +1091,10 @@ public abstract class Repository {
      * For each module definition that is removed successfully, this method
      * invokes its module system's
      * {@link ModuleSystem#disableModuleDefinition(ModuleDefinition)
-     * <tt>disableModuleDefinition(ModuleDefinition)</tt>}
+     * disableModuleDefinition}
      * method and
      * {@link ModuleSystem#releaseModule(ModuleDefinition)
-     * <tt>releaseModule(MOduleDefinition)</tt>} method.
+     * releaseModule} method.
      *
      * @param mds the set of module definitions to be removed
      * @return true if the module definitions in this {@code Repository}
@@ -1313,8 +1321,9 @@ public abstract class Repository {
     }
 
     /**
-     * Processes repository event occuring in this {@code Repository} by
-     * dispatching them to any registered {@code RepositoryListener} objects.
+     * Processes repository event occurring in this {@code Repository} by
+     * dispatching them to any registered {@code RepositoryListener} objects
+     * asynchronously.
      *
      * @param event the repository event
      */
@@ -1379,13 +1388,8 @@ public abstract class Repository {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("repository ");
         builder.append(getName());
-        if (getSourceLocation() != null) {
-            builder.append(" (");
-            builder.append(getSourceLocation());
-            builder.append(")");
-        }
+        builder.append(" repository");
         return builder.toString();
     }
 

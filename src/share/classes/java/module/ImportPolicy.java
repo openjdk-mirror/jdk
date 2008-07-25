@@ -68,7 +68,7 @@ public interface ImportPolicy {
      * constraints for resolving, and it is passed in one of the parameters of
      * this method.
      * <p>
-     * All implementations should return a map of import dependencies and
+     * Implementations must return a map of import dependencies and
      * version constraints after resolving the imports. If an import cannot
      * be resolved and the import dependency is mandatory (i.e. non-optional),
      * {@code UnsatisfiedDependencyException} must be thrown. If an import

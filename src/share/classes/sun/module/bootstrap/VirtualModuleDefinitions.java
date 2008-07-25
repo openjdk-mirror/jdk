@@ -43,6 +43,7 @@ import java.module.annotation.ServiceProvider;
 import java.module.annotation.ServiceProviders;
 import java.module.annotation.Services;
 import java.module.annotation.Version;
+import java.net.URL;
 import java.security.CodeSigner;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -502,6 +503,11 @@ public final class VirtualModuleDefinitions {
         @Override
         public Set<CodeSigner> getCodeSigners() {
             return codeSigners;
+        }
+
+        @Override
+        public URL getLocation() {
+            return null;
         }
 
         @Override

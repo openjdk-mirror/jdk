@@ -32,16 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the exported resources in a module definition. This metadata
- * annotation is applied to a Java module.
- * <p>
- * The string that specifies the exported resource may contain wildcard:<p>
- * 1. {@code '?'} matches a single character.<p>
- * 2. {@code '*'} matches zero or more characters.<p>
- * 3. {@code '**'} matches zero or more directories.<p>
- * There is also a shorthand. If the string ends with {@code '/'}, it is
- * treated as if {@code '**'} has been appended.
- * <p>
- * For examples,
+ * annotation is applied to a Java module. For examples,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java
@@ -72,9 +63,17 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ExportResources {
 
     /**
-     * The exported resources in a module definition. Each exported resource
-     * must be a relative path to the root of the module archive, using
-     * {@code '/'} as path separator and no leading {@code '/'}.
+     * The exported resources in a module definition. The string that specifies
+     * each exported resource must be a relative path to the root of the module
+     * archive, using {@code '/'} as the path separator and with no leading
+     * {@code '/'}. The string may contain wildcard:<p>
+     * <ol>
+     *      <li> {@code '?'} matches a single character.</li>
+     *      <li> {@code '*'} matches zero or more characters.</li>
+     *      <li> {@code '**'} matches zero or more directories.</li>
+     * </ol><p>
+     * If the string ends with {@code '/'}, it must be treated as if
+     * {@code '**'} has been appended.
      */
     String[] value();
 }

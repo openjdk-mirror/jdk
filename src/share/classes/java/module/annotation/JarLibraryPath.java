@@ -49,9 +49,9 @@ import java.lang.annotation.RetentionPolicy;
 public @interface JarLibraryPath {
 
     /**
-     * The path for searching JAR files in the module archive. It must be a
-     * relative path to the root of the module archive, using {@code '/'} as
-     * path separator and no leading {@code '/'}.
+     * The path for searching JAR files in the module archive. The value must
+     * be specified as a relative path to the root of the module archive, using
+     * {@code '/'} as the path separator and with no leading {@code '/'}.
      */
     String value();
 }

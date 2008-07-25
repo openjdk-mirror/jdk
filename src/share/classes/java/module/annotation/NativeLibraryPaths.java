@@ -32,7 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Indicates the paths for searching native libraries in the module archive for
- * different platforms and architectures. This metadata annotation is applied
+ * multiple platforms and architectures. This metadata annotation is applied
  * to a Java module. For example,
  * <blockquote><pre>
  *    //
@@ -55,7 +55,7 @@ public @interface NativeLibraryPaths {
 
     /**
      * An array of paths for searching native libraries in the module archive
-     * for different platforms and architectures.
+     * for multiple platforms and architectures.
      */
     NativeLibraryPath[] value();
 }

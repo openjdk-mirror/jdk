@@ -73,7 +73,7 @@ public final class ExtensionModuleLoader extends SecureClassLoader {
 
         List<ModuleDefinition> extensionModuleDefs = new ArrayList<ModuleDefinition>();
         final Repository bootstrapRepository = Repository.getBootstrapRepository();
-        Repository extensionRepository = RepositoryConfig.getSystemRepository(false);
+        Repository extensionRepository = RepositoryConfig.getApplicationRepository(false);
 
         if (extensionRepository != bootstrapRepository) {
 
@@ -90,7 +90,7 @@ public final class ExtensionModuleLoader extends SecureClassLoader {
             } else {
                 // Locating the system extension repository by looking up the immediate child
                 // of the extension repository, starting from the system repository.
-                Repository systemExtensionRepository = RepositoryConfig.getSystemRepository(false);
+                Repository systemExtensionRepository = RepositoryConfig.getApplicationRepository(false);
 
                 while (systemExtensionRepository.getParent() != extensionRepository) {
                     systemExtensionRepository = systemExtensionRepository.getParent();

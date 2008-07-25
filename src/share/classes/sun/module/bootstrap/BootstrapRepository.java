@@ -56,7 +56,7 @@ public final class BootstrapRepository extends Repository {
     }
 
     private BootstrapRepository() {
-        super("bootstrap", null, null);
+        super("bootstrap", null);
     }
 
     /**

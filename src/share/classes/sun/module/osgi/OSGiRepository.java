@@ -59,6 +59,8 @@ public class OSGiRepository extends Repository {
     private Map<String, Map<ModuleArchiveInfo, OSGiModuleDefinition>> contentMapping =
         new HashMap<String, Map<ModuleArchiveInfo, OSGiModuleDefinition> >();
 
+    private URI source;
+
     /**
      * Returns the OSGi repository.
      *
@@ -67,8 +69,18 @@ public class OSGiRepository extends Repository {
      */
     public OSGiRepository(String name, URI source, Repository parent,
                           Map<String, String> config) throws IOException {
-        super(name, source, parent);
+        super(name, parent);
+        this.source = source;
         this.config = config;
+    }
+
+    /**
+     * Returns the source location of this {@code Repository}.
+     *
+     * @return the source location.
+     */
+    public final URI getSourceLocation()    {
+        return source;
     }
 
     @Override

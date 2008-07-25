@@ -31,11 +31,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the version constraint that a <i>target module</i> requires its
- * <i>resource modules</i> to satisfy. The version constraint is either a
- * version, a version range, or a combination of both, following the format
- * described in the {@link java.module.VersionConstraint} class. This metadata
- * annotation is applied to a Java module. For example,
+ * Indicates the version constraint which a
+ * <a href="../../../java/util/ResourceBundle.html"><i>target module</i></a>
+ * requires its <i>resource modules</i> to satisfy. This metadata annotation
+ * is applied to a Java module which is a <i>target module</i>. For example,
  * <blockquote><pre>
  *    //
  *    // org/foo/xml/module-info.java
@@ -52,8 +51,11 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ResourceModuleConstraint {
     /**
-     * The version constraint that this <i>target module</i> requires its
-     * <i>resource modules</i> to satisfy.
+     * The version constraint which this
+     * <a href="../../../java/util/ResourceBundle.html"><i>target module</i></a>
+     * requires its <i>resource modules</i> to satisfy. The value must
+     * follow the
+     * {@linkplain java.module.VersionConstraint version constraint format}.
      */
     String value() default "0.0.0.0+";
 }

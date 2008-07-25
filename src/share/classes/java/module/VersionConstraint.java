@@ -72,19 +72,20 @@ import java.util.StringTokenizer;
  *    1.*                       ~ [1, 2)                        ~ 1 <= x < 2
  *    1.2.*                     ~ [1.2, 1.3)                    ~ 1.2 <= x < 1.3
  *    1.2.3.*                   ~ [1.2.3, 1.2.4)                ~ 1.2.3 <= x < 1.2.4</pre>
- * It is possible to group two or more version ranges together as an union of
- * ranges, using the {@code ';'} character as separator.
- * <pre>
- *    [1.2.3.4, 2.0);2.*;3+     ~ 1.2.3.4 <= x < infinity
- *    1.*;[2.0, 2.7.3)          ~ 1.0.0 <= x < 2.7.3</pre>
  * <p>
  * <h3>Version constraint</h3>
- * A version constraint is a mechanism in expressing versioning requirement
- * through versions and version ranges. The version and the version range are
- * really shorthands in establishing compatibility. If more arbitrary range,
- * version inclusion, or version exclusion is needed, the version and the
- * version range can be used as building blocks to express the versioning
- * requirement.
+ * Version constraint is a mechanism in expressing versioning requirement
+ * in the Java Module System, using versions and version ranges as building
+ * blocks. Version and version range are really shorthands in establishing
+ * compatibility, and they can be used to express more arbitrary range,
+ * version inclusion, or version exclusion if needed.
+ * <p>
+ * A version constraint is either a version, a version range, or combination
+ * of both; versions and version ranges are grouped together using the
+ * {@code ';'} character. For examples,
+ * <pre>
+ *    [1.2.3.4, 2.0);2.*;3+     ~ 1.2.3.4 <= x < infinity
+ *    1.*;[3.0, 3.7.3)          ~ 1.0.0 <= x < 2.0.0, or 3.0.0 <= x < 3.7.3</pre>
  * <p>
  * The grammar for the version constraint is as follows:
  * <pre>
@@ -107,6 +108,7 @@ import java.util.StringTokenizer;
  * where {@code alpha} is an alphabetic character, {@code a-z, A-Z}.
  *       {@code digit} is a decimal digit, {@code 0-9}.
  * <p>
+ *
  * Applications can obtain {@code VersionConstraint} objects by calling the
  * {@link #valueOf(String) valueOf} factory method.
  *

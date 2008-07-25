@@ -27,6 +27,7 @@ package sun.module.repository.cache;
 
 import java.io.File;
 import java.module.ModuleContent;
+import java.net.URL;
 import java.util.Set;
 import java.security.CodeSigner;
 
@@ -63,6 +64,11 @@ final class LocalModuleContent extends CacheModuleContent {
         // Module metadata does not need to be compared because the
         // original bytes were extracted directly from the JAM file.
         return false;
+    }
+
+    @Override
+    public URL getLocation() {
+        return mdInfo.getCodeBase();
     }
 
     @Override

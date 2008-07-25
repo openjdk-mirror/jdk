@@ -31,8 +31,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an array of attributes. This metadata annotation can be applied
- * to a Java module. For example,
+ * Indicates an array of attributes in a module definition. This metadata
+ * annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java

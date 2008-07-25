@@ -257,6 +257,102 @@ import java.util.jar.JarEntry;
  * and one for widgets, <code>WidgetResource</code> (<code>WidgetResources_fr</code>,
  * <code>WidgetResources_de</code>, ...); breaking up the resources however you like.
  *
+ * <span style="color: rgb(204, 0, 0);">
+ * <h4>Resource modules</h4>
+ *
+ * Resource bundles can be packaged in a separate <i>resource module</i>. Each
+ * resource module contains resources of a specific locale for a module
+ * which is called its <i>target module</i>. If a {@code getBundle()} call
+ * is issued from an application module, it will look for resource bundles,
+ * if any, in the resource modules provided by the application. A resource
+ * module cannot be a target module for other resource modules.
+ *
+ * <h5>Module search strategy</h5>
+ *
+ * Modules are examined in the order specified in
+ * {@code Control.getCandidateLocales()}.
+ * The default search strategy for locating resource modules is as follows:
+ * {@code getBundle} uses the target module name, the specified locale, and
+ * the default locale (obtained from {@code Locale.getDefault}) to generate
+ * a sequence of candidate resource module names. If the specified locale's
+ * language, country, and variant are all empty strings, then the target
+ * module's name is the only candidate resource module name. Otherwise,
+ * the following sequence is generated from the attribute values of the
+ * specified locale (language1, country1, and variant1)
+ * and of the default locale (language2, country2, and variant2):
+ *
+ * <ul>
+ *   <li>&lt;target-module-name&gt;.locale_&lt;language1&gt;_&lt;country1&gt;_&lt;variant1&gt;</li>
+ *   <li>&lt;target-module-name&gt;.locale_&lt;language1&gt;_&lt;country1&gt;</li>
+ *   <li>&lt;target-module-name&gt;.locale_&lt;language1&gt;</li>
+ *   <li>&lt;target-module-name&gt;.locale_&lt;language2&gt;_&lt;country2&gt;_&lt;variant2&gt;</li>
+ *   <li>&lt;target-module-name&gt;.locale_&lt;language2&gt;_&lt;country2&gt;</li>
+ *   <li>&lt;target-module-name&gt;.locale_&lt;language2&gt;</li>
+ *   <li>&lt;target-module-name&gt;</li>
+ * </ul>
+ *
+ * Candidate resource module names where the final component is an empty string
+ * are omitted. For example, if country1 is an empty string, the second candidate
+ * resource module name is omitted.  getBundle then iterates over the candidate
+ * resource module names to find the first one for which it can instantiate an
+ * actual resource bundle. For each candidate resource module name, it will find
+ * the highest version of the resource module in the repository that:
+ *
+ * <ul>
+ *   <li>The version of the target module is within the version constraint that
+ *       is specified in the resource module, and</li>
+ *   <li>The version of the resource module is within the version constraint that
+ *       is specified in the target module.</li>
+ * </ul>
+ *
+ * If such a resource module is found, it will attempt to create the resource bundle
+ * from that resource module using a candidate bundle name.  The candidate bundle
+ * name is generated as using the package name in the base name, the locale,
+ * and the class name in the base name:
+ * <pre>
+ *      packageName + ".locale" + &lt;locale&gt; + "." + className + "_" + &lt;locale&gt;
+ * </pre>
+ *
+ * <h5>Precedence of each resource bundle</h5>
+ *
+ * If there are multiple instances of the same resource bundle exist in multiple
+ * modules (e.g. the target module and its resource modules), one in the most
+ * restrictive module is loaded. For example, {@code x.y.z.CoolResourceBundle} bundle
+ * exists in {@code org.foo.bar}, {@code org.foo.bar.locale_fr}, and
+ * {@code org.foo.bar.locale_fr_CH}, then the one in
+ * {@code org.foo.bar.locale_fr_CH} is loaded in {@code fr_CH} locale.
+ *
+ * <h5>Package resources for locales in less restrictive locale's resource module</h5>
+ *
+ * Resources for locales can be packaged in less restrictive locale's resource
+ * module, for example, the {@code x.y.z.CoolResourceBundle} bundle could
+ * reside in the {@code org.foo.bar.locale_fr} and {@code org.foo.bar.locale_de}
+ * resource module.  However, the {@code x.y.z.CoolResourceBundle} bundle in the
+ * {@code org.foo.bar.locale_fr} resource module will never be loaded in
+ * {@code de} locale.
+ *
+ * <h5>Class loader for resource module</h5>
+ *
+ * Resource modules are loaded with the different class loaders from the
+ * target module. This implies that a {@code getBundle()} call can cause a
+ * {@code Control.newBundle()} call with a class loader which is not the
+ * one specified in the originating {@code getBundle()} call.
+ *
+ * <h5>Definiting class loader for resource bundle</h5>
+ *
+ * If the resource bundle from the resource module is a
+ * {@code PropertyResourceBundle}, the resource bundle property file is
+ * retrieved through the {@code getResource} method of the resource
+ * module's classloader, and it will converted into a
+ * {@code PropertyResourceBundle} class and defined in the
+ * class loader of the target module.
+ * <p>
+ * If the resource bundle from the resource module is a
+ * {@code ListResourceBundle}, the resource bundle is loaded and defined
+ * through the {@code loadClass} method of the resource module's
+ * class loader.
+ * </span>
+ *
  * @see ListResourceBundle
  * @see PropertyResourceBundle
  * @see MissingResourceException

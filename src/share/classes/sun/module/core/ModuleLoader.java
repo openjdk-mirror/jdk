@@ -95,9 +95,9 @@ final class ModuleLoader extends SecureClassLoader {
             StringBuilder sb = new StringBuilder();
             sb.append("module:");
             sb.append(moduleDef.getRepository().getName());
-            if (moduleDef.getRepository().getSourceLocation() != null) {
+            if (content.getLocation() != null) {
                 sb.append("/");
-                sb.append(moduleDef.getRepository().getSourceLocation().toString());
+                sb.append(content.getLocation().toString());
             }
             sb.append("!/");
             sb.append(moduleDef.getName());

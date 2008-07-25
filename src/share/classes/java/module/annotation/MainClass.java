@@ -31,9 +31,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates the main class of a module definition. The main class name must
- * not have the {@code .class} extension appended. This metadata annotation is
- * applied to a Java module. For example,
+ * Indicates the main class of a module definition. The main class must be
+ * declared {@code public}. The main class must have a {@code main} method
+ * which is declared {@code public}, {@code static}, and {@code void}; the
+ * {@code main} method must accept a single argument that is an array of
+ * strings. This metadata annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java
@@ -42,9 +44,6 @@ import java.lang.annotation.RetentionPolicy;
  *    &#064;MainClass("com.wombat.xyz.Main")
  *    module com.wombat.xyz;
  * </pre></blockquote>
- * The main class must have a {@code main} method which is declared public,
- * static, and void; the method must accept a single argument that is an array
- * of strings.
  *
  * @since 1.7
  */
@@ -52,7 +51,8 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MainClass {
     /**
-     * The name of the main class.
+     * The name of the main class. The value must not have the
+     * {@code .class} extension appended.
      */
     String value();
 }

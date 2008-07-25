@@ -84,16 +84,16 @@ public class LocalRepositoryTest {
         }
         File expandDir = makeTestDir("LocalRepoExpand");
 
-        // Check that getSystemRepository() doesn't return null and is
+        // Check that getApplicationRepository() doesn't return null and is
         // configured OK.
-        Repository systemRepo = Repository.getSystemRepository();
-        check(systemRepo != null);
+        Repository appRepo = Repository.getApplicationRepository();
+        check(appRepo != null);
 
         Map<String, String> config = new HashMap<String, String>();
         config.put("sun.module.repository.LocalRepository.cacheDirectory",
                 expandDir.getAbsolutePath());
         Repository repo = Modules.newLocalRepository(
-            "test", srcDir, config, systemRepo);
+            "test", srcDir, config, appRepo);
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repo));
@@ -107,7 +107,7 @@ public class LocalRepositoryTest {
         try {
             config.put("sun.module.repository.LocalRepository.sourceLocationMustExist", "true");
             r2 = Modules.newLocalRepository(
-                "test", new File("doesNotExist"), config, systemRepo);
+                "test", new File("doesNotExist"), config, appRepo);
             fail();
         } catch (IOException ex) {
             check(ex.getMessage().contains("does not exist or is not a directory"));
@@ -175,8 +175,9 @@ public class LocalRepositoryTest {
         // Verify that we can reload from a read-only location
         boolean readOnlyChangeOK = (srcDir.setWritable(false) == true);
         repo.reload();
+
         if (readOnlyChangeOK) {
-  //          check(repo.isReadOnly());
+//            check(repo.isReadOnly());
         }
 
         // Check initial module is installed

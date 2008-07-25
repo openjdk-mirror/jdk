@@ -24,7 +24,7 @@
  */
 
 /**
- * Provides metadata annotations for modules in the JAM (JAva Module) module system.
+ * Provides metadata annotations for the modules in the JAM (JAva Module) module system.
  *
  * @since 1.7
  */

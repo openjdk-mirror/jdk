@@ -32,41 +32,50 @@ import java.util.Set;
 
 
 /**
- * This interface represents an import dependency in a module definition.
+ * This interface represents a generic import dependency on a module definition.
+ * All import dependency interfaces must extend this interface.
  * <p>
  * @see java.module.VersionConstraint
  * @see java.io.Serializable
  *
  * @since 1.7
  * @serial include
+ * @see ModuleDependency
+ * @see PackageDependency
  */
 public interface ImportDependency extends java.io.Serializable {
 
     /**
-     * Returns the name of the import.
+     * Returns the name in the context of this {@code ImportDependency}.
      *
-     * @return the name of the import.
+     * @return the name in the context of this {@code ImportDependency}.
      */
     public String getName();
 
     /**
-     * Returns the version constraint of the import.
+     * Returns the version constraint in the context of this
+     * {@code ImportDependency}.
      *
-     * @return the version constraint of the import.
+     * @return the version constraint in the context of this
+     *         {@code ImportDependency}.
      */
     public VersionConstraint getVersionConstraint();
 
     /**
-     * Returns true if the import is re-exported; otherwise, returns false.
+     * Returns true if this {@code ImportDependency} is re-exported;
+     * otherwise, returns false.
      *
-     * @return true if the import is re-exported; otherwise, returns false.
+     * @return true if this {@code ImportDependency} is re-exported;
+     *         otherwise, returns false.
      */
     public boolean isReexported();
 
     /**
-     * Returns true if the import is optional; otherwise, returns false.
+     * Returns true if this {@code ImportDependency} is optional;
+     * otherwise, returns false.
      *
-     * @return true if the import is optional; otherwise, returns false.
+     * @return true if this {@code ImportDependency} is optional;
+     *         otherwise, returns false.
      */
     public boolean isOptional();
 

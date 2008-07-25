@@ -72,6 +72,7 @@ public class Main {
                 "wrong version: expected " + expectedVersion + ", got " + v);
         }
 
+/*
         Repository r = md.getRepository();
         String src = r.getSourceLocation().toString();
         String repoName = "repo" + repoNum + "/";
@@ -79,6 +80,7 @@ public class Main {
             throw new Exception(
                 "wrong repository: expected " + repoName + ", got " + src);
         }
+ */
     }
 
     static void checkRepo(Class clazz) {

@@ -192,7 +192,7 @@ public final class ModuleLauncher {
                 + jamFileName + " not found");
         }
 
-        // The directory which houses the jam becomes the system repository.
+        // The directory which houses the jam becomes the application repository.
         File baseDir = new File(jamFileName).getAbsoluteFile().getParentFile();
         repository = Modules.newLocalRepository(
                 "application",
@@ -213,7 +213,7 @@ public final class ModuleLauncher {
         if (definition == null) {
             throw new Exception("could not find module for " + jamFileName);
         }
-        RepositoryConfig.setSystemRepository(repository);
+        RepositoryConfig.setApplicationRepository(repository);
         return definition;
     }
 
@@ -235,7 +235,7 @@ public final class ModuleLauncher {
 
         // Repository processing
         if (repositoryName == null) {
-            // Assume the current directory as the system repository.
+            // Assume the current directory as the application repository.
             repository = Modules.newLocalRepository(
                     "application",
                     new File(".").getAbsoluteFile(), null,
@@ -267,7 +267,7 @@ public final class ModuleLauncher {
                         RepositoryConfig.getSystemRepository());
             }
         }
-        RepositoryConfig.setSystemRepository(repository);
+        RepositoryConfig.setApplicationRepository(repository);
         ModuleDefinition definition = getModuleDefinition(repository, moduleName);
         if (definition == null) {
             throw new IllegalArgumentException("Module not found: " + moduleName);

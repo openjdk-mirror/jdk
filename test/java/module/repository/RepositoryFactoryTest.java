@@ -51,12 +51,12 @@ public class RepositoryFactoryTest {
                                     "RepositoryFactoryTestDir");
         userRepoDir.mkdirs();
 
-        // Check that getSystemRepository() doesn't return null and is
+        // Check that getApplicationRepository() doesn't return null and is
         // configured OK.
-        Repository systemRepo = Repository.getSystemRepository();
-        check(systemRepo != null);
+        Repository appRepo = Repository.getApplicationRepository();
+        check(appRepo != null);
 
-        Repository r = systemRepo;
+        Repository r = appRepo;
         int count = 0;
         String[] expectedName = new String[] {
             "user", "global", "system-extension", "extension", "bootstrap"

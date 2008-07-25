@@ -58,6 +58,9 @@ import java.util.regex.Pattern;
  *
  *      <p><li> If {@code update} is not specified, it is treated as {@code 0}.
  *              </li></p>
+ *
+ *      <p><li> If {@code qualifier} is not specified, it is treated as an empty string.
+ *              </li></p>
  * </ul></p>
  *
  * For example,
@@ -85,14 +88,15 @@ import java.util.regex.Pattern;
  *       {@code digit} is a decimal digit, {@code 0-9}.
  * <p>
  * When two versions are compared, {@code major}, {@code minor},
- * {@code micro}, and {@code update} are compared numerically while
- * {@code qualifier} is compared through string comparison lexicographically.
- * Two versions are equivalent if and only if the major numbers, the minor
- * numbers, the micro numbers, the update numbers, and the qualifiers each
- * are equal respectively. If the major numbers, the minor numbers, the
- * micro numbers, and the update numbers of two versions are equal
- * respectively but one version has a qualifier while the other has
- * none, the latter is considered a higher version. For example,
+ * {@code micro}, and {@code update} must be compared numerically while
+ * {@code qualifier} must be compared through string comparison
+ * lexicographically. Two versions are equivalent if and only if the
+ * major numbers, the minor numbers, the micro numbers, the update
+ * numbers, and the qualifiers each are equal respectively. If the
+ * major numbers, the minor numbers, the micro numbers, and the
+ * update numbers of two versions are equal respectively but one
+ * version has a qualifier while the other has none, the latter
+ * must be treated as a higher version. For example,
  * <pre>
  *      1 < 1.2 < 1.3.1 < 2
  *
@@ -164,7 +168,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
         }
 
         // Parse qualifier
-        String qualifier = null;
+        String qualifier = "";
         int qualifierIndex = version.indexOf('-');
         if (qualifierIndex > 0) {
             qualifier = version.substring(qualifierIndex + 1);
@@ -192,7 +196,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      * Returns a {@code Version} object holding the specified version number.
      * Equivalent to:
      * <pre>
-     *      valueOf(major, minor, micro, 0, null)</pre>
+     *      valueOf(major, minor, micro, 0, "")</pre>
      *
      * @param major the major version number.
      * @param minor the minor version number.
@@ -201,13 +205,13 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      *         negative.
      */
     public static Version valueOf(int major, int minor, int micro) {
-        return Version.valueOf(major, minor, micro, 0, null);
+        return Version.valueOf(major, minor, micro, 0, "");
     }
 
     /**
      * Returns a {@code Version} object holding the specified version number.
-     * If the version number has no qualifier, {@code qualifier} is
-     * {@code null}. Equivalent to:
+     * If the version number has no qualifier, {@code qualifier} is an
+     * empty string. Equivalent to:
      * <pre>
      *      valueOf(major, minor, micro, 0, qualifier)</pre>
      *
@@ -226,7 +230,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      * Returns a {@code Version} object holding the specified version number.
      * Equivalent to:
      * <pre>
-     *      valueOf(major, minor, micro, update, null)</pre>
+     *      valueOf(major, minor, micro, update, "")</pre>
      *
      * @param major the major version number.
      * @param minor the minor version number.
@@ -236,13 +240,13 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      *         negative.
      */
     public static Version valueOf(int major, int minor, int micro, int update) {
-        return Version.valueOf(major, minor, micro, update, null);
+        return Version.valueOf(major, minor, micro, update, "");
     }
 
     /**
      * Returns a {@code Version} object holding the specified version number.
      * If the version number has no qualifier, {@code qualifier} is
-     * {@code null}.
+     * an empty string.
      *
      * @param major the major version number.
      * @param minor the minor version number.
@@ -253,6 +257,10 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
      *         negative, or if qualifier contains illegal characters.
      */
     public static Version valueOf(int major, int minor, int micro, int update, String qualifier) {
+        if (qualifier == null) {
+            throw new NullPointerException("qualifier must not be null.");
+        }
+
         // we could add a basic caching scheme here to reuse Version objects
         int[] components = new int[4];
         components[0] = major;
@@ -284,7 +292,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
         if (components[3] < 0)
             throw new IllegalArgumentException("Update version number must not be negative: " + components[3]);
 
-        if (qualifier != null && qualifierPattern.matcher(qualifier).matches() == false)
+        if (qualifier.isEmpty() == false && qualifierPattern.matcher(qualifier).matches() == false)
             throw new IllegalArgumentException("qualifier must contain only legal character: " + qualifier);
 
         // this constructor is private, and it claims the ownership of
@@ -331,7 +339,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
 
     /**
      * Returns the qualifier. If this {@code Version} has no qualifier, this
-     * method returns {@code null}.
+     * method returns an empty string.
      *
      * @return the qualifier.
      */
@@ -449,20 +457,20 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
 
         // Is there a qualifier?
         String qualifier2 = version.getQualifier();
-        if (qualifier != null)  {
-            if (qualifier2 == null) {
+        if (qualifier.isEmpty() == false)  {
+            if (qualifier2.isEmpty()) {
                 return -1;
             }
             return qualifier.compareTo(qualifier2);
         }
-        return qualifier2 == null ? 0 : 1;
+        return qualifier2.isEmpty() ? 0 : 1;
     }
 
     /**
      * Returns a {@code Version} instance, with the qualifier omitted.
      */
     Version trimQualifier() {
-        if (getQualifier() == null)
+        if (getQualifier().isEmpty())
             return this;
         else
             return Version.valueOf(getMajorNumber(), getMinorNumber(),
@@ -500,7 +508,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
         for (int n : components) {
             result = 37 * result + n;
         }
-        result = 37 * result + (qualifier != null ? qualifier.hashCode() : 0);
+        result = 37 * result + (qualifier.isEmpty() == false ? qualifier.hashCode() : 0);
         return result;
     }
 
@@ -530,7 +538,7 @@ public final class Version implements Comparable<Version>, java.io.Serializable 
             }
         }
 
-        if (qualifier != null)  {
+        if (qualifier.isEmpty() == false)  {
             buffer.append('-');
             buffer.append(qualifier);
         }

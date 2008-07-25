@@ -56,7 +56,7 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         new URLRepositoryReloadTest().runMain(args);
     }
 
-    void runTest0(Repository repo, boolean fileBased) throws Throwable {
+    void runTest0(Repository repo, URL repoURL, boolean fileBased) throws Throwable {
 
         // Enables shadow file copies in the repository if we're running
         // on Windows. This is to prevent file locking in the
@@ -78,10 +78,11 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
          * Of course this only works if install and uninstall work.
          */
         check(repoConfig != null);
+
         Repository repoWork = Modules.newURLRepository(
             "repoWork",
-            fileBasedRepo.getSourceLocation().toURL(), repoConfig,
-            RepositoryConfig.getSystemRepository());
+            fileBasedURL, repoConfig,
+            RepositoryConfig.getApplicationRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repoWork));
@@ -91,8 +92,8 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
 
         Repository repoTest = Modules.newURLRepository(
             "repoTest",
-            repo.getSourceLocation().toURL(), repoConfig,
-            RepositoryConfig.getSystemRepository());
+            repoURL, repoConfig,
+            RepositoryConfig.getApplicationRepository());
 
         // Only REPOSITORY_INITIALIZED event should be fired.
         check(ec.initializeEventExists(repoTest));

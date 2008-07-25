@@ -59,7 +59,7 @@ import sun.security.util.PropertyExpander;
  * Repositories can be configured automatically via configuration files, or by
  * setting a system property to the name of a configuration file.
  * <p>
- * The initial call to {@code getSystemRepository} causes repositories to be
+ * The initial call to {@code getApplicationRepository} causes repositories to be
  * configured via a configuration file, with the system repository set to the
  * configured repository that is most distant (in the parent-child distance of
  * repository instances).
@@ -91,14 +91,14 @@ public final class RepositoryConfig
         });
     }
 
-    /** Application's system repository. */
-    private static Repository systemRepository = Repository.getBootstrapRepository();
+    /** Application's repository. */
+    private static Repository applicationRepository = Repository.getBootstrapRepository();
 
     /**
-     * True if setSystemRepository ever completes normally: this allows for
+     * True if setApplicationRepository ever completes normally: this allows for
      * it being changed at most once from its default.
      */
-    private static boolean systemRepositoryWasSet = false;
+    private static boolean applicationRepositoryWasSet = false;
 
     /** True once configRepositories has completed. */
     private static boolean configDone = false;
@@ -106,8 +106,8 @@ public final class RepositoryConfig
     /** True once the repositories are all initialized. */
     private static boolean initialized = false;
 
-    /** Last repository in the configuration. */
-    private static Repository lastRepository;
+    /** System repository in the configuration. */
+    private static Repository systemRepository;
 
     /** Attribute which designates the parent of a repository. */
     private static final String parentAttr = "parent";
@@ -140,39 +140,40 @@ public final class RepositoryConfig
         new HashMap<String, RepositoryFactory>();
 
     /**
-     * Sets the system repository.
-     * @param r {@code Repository} that will be the system repository
+     * Sets the application repository.
+     * @param r {@code Repository} that will be the application repository
      * SecurityException if a security manager exists and its
      * <tt>checkPermission</tt> method denies access to shutdown the
      * repository.
-     * @throws IllegalArgumentException if the system repository has already
+     * @throws IllegalArgumentException if the application repository has already
      * been set via this method.
      * @throws SecurityException if a security manager exists and its
      * {@code checkPermission} method denies access to set the system
      * repository.
      */
-    public static void setSystemRepository(Repository r) throws IllegalArgumentException {
+    public static void setApplicationRepository(Repository r) throws IllegalArgumentException {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
-            sm.checkPermission(new ModuleSystemPermission("setSystemRepository"));
+            sm.checkPermission(new ModuleSystemPermission("setApplicationRepository"));
         }
-        if (systemRepositoryWasSet) {
-            throw new IllegalArgumentException("System repository is already set.");
+        if (applicationRepositoryWasSet) {
+            throw new IllegalArgumentException("Application repository is already set.");
         } else {
-            systemRepository = r;
-            systemRepositoryWasSet = true;
+            applicationRepository = r;
+            applicationRepositoryWasSet = true;
         }
     }
 
     /**
-     * Returns the current system repository, or if one has not been set (for
+     * Returns the current application repository, or if one has not been set (for
      * example, by the ModuleLauncher), creates it first.
+     *
      * @param initializeAll initialize all repositories
-     * @return the system repository
+     * @return the application repository
      */
-    public static synchronized Repository getSystemRepository(boolean initializeAll) {
+    public static synchronized Repository getApplicationRepository(boolean initializeAll) {
         if (!configDone) {
-            systemRepository = configRepositories();
+            applicationRepository = configRepositories();
         }
         // XXX: Will revisit the bootstrapping issue
         //
@@ -185,7 +186,7 @@ public final class RepositoryConfig
         //
         if (initializeAll && !initialized) {
             initialized = true;
-            for (Repository r = systemRepository; r != null; r = r.getParent()) {
+            for (Repository r = applicationRepository; r != null; r = r.getParent()) {
                 try {
                     if (!r.isActive()) {
                         r.initialize();
@@ -195,11 +196,11 @@ public final class RepositoryConfig
                 }
             }
         }
-        return systemRepository;
+        return applicationRepository;
     }
 
-    public static synchronized Repository getSystemRepository() {
-        return getSystemRepository(true);
+    public static synchronized Repository getApplicationRepository() {
+        return getApplicationRepository(true);
     }
 
     /**
@@ -209,9 +210,9 @@ public final class RepositoryConfig
      * @return the repository configured to be farthest from the bootstrap
      * repository.
      */
-    public static synchronized Repository getLastRepository() {
-        getSystemRepository(); // Force initialization
-        return lastRepository;
+    public static synchronized Repository getSystemRepository() {
+        getApplicationRepository(); // Force initialization
+        return systemRepository;
     }
 
     /**
@@ -307,10 +308,10 @@ public final class RepositoryConfig
         if (!configProps.isEmpty()) {
             LinkedHashMap<String, Map<String, String>> orderedConfig =
                 getConfigFromProps(configProps);
-            lastRepository = createRepositories(orderedConfig);
+            systemRepository = createRepositories(orderedConfig);
             configDone = true;
         }
-        return lastRepository;
+        return systemRepository;
     }
 
     /**

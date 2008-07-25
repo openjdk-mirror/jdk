@@ -47,7 +47,7 @@ public class Test6574851 {
                     System.getProperty("test.scratch", "."),
                     "Test6574851-DoesNotExist").getCanonicalFile().toURI().toURL(),
                 config,
-                RepositoryConfig.getSystemRepository());
+                RepositoryConfig.getApplicationRepository());
             fail();
         } catch (IOException ex) {
             pass();

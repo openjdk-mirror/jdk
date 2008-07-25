@@ -31,15 +31,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Indicates an array of service-providers that a module definition defines.
- * A service is a well-known set of interfaces and (usually abstract) classes.
- * A service-provider is a specific implementation of a service. The classes
- * in a service-provider typically implement the interfaces and subclass the
- * classes defined in the service itself. If a module definition defines a
- * service-provider, it should import the module definition which defines the
- * service. It should also contain and export the set of interfaces and classes
- * that are part of the service-provider. This metadata annotation is applied
- * to a Java module. For example,
+ * Indicates an array of
+ *  <a href="../../../java/util/ServiceLoader.html"><i>service providers</i></a>
+ * which are defined in a module definition. The module definition must export the
+ * <i>service providers</i>' types; it must import the module definitions which
+ * define the <i>services</i> implemented by the <i>service providers</i>.
+ * This metadata annotation is applied to a Java module. For example,
  * <p>
  * <blockquote><pre>
  *    //
@@ -60,6 +57,7 @@ import java.lang.annotation.RetentionPolicy;
  * </pre></blockquote>
  * @see java.module.annotation.ServiceProvider
  * @see java.module.annotation.Services
+ * @see java.util.ServiceLoader
  * @since 1.7
  */
 @Target({ElementType.MODULE})
@@ -67,7 +65,7 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ServiceProviders {
 
     /**
-     * An array of service-providers.
+     * An array of <i>service providers</i>.
      */
     ServiceProvider[] value();
 }

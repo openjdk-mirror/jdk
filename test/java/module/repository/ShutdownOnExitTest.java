@@ -182,7 +182,7 @@ public class ShutdownOnExitTest {
             config.put("sun.module.repository.LocalRepository.uninstallOnShutdown",
                        "true");
             Repository repo = Modules.newLocalRepository(
-                "test", srcDir, config, Repository.getSystemRepository());
+                "test", srcDir, config, Repository.getApplicationRepository());
 
             // Create a JAM and install it
             File jamDir = makeTestDir("ShutdownOnExitJam");

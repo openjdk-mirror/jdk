@@ -28,6 +28,7 @@ package sun.module.core;
 import java.module.ImportDependency;
 import java.module.Module;
 import java.module.ModuleDefinition;
+import java.module.ModuleDependency;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,7 +51,8 @@ public final class ModuleUtils {
      */
     public static void expandReexports(Module m, List<Module> modules, boolean includeAll) {
         for (ImportDependency dep : m.getModuleDefinition().getImportDependencies()) {
-            if ((includeAll == false) && (dep.isReexported() == false)) {
+            ModuleDependency moduleDep = (ModuleDependency) dep;
+            if ((includeAll == false) && (moduleDep.isReexported() == false)) {
                 continue;
             }
             // Find the actual module that imported via 'dep'
@@ -58,7 +60,7 @@ public final class ModuleUtils {
             // name, just comparing names is fine.
             // Note that due to optional imports, we cannot assume
             // that module[i] corresponds to import[i]
-            String name = dep.getName();
+            String name = moduleDep.getName();
             for (Module importedModule : m.getImportedModules()) {
                 if (!importedModule.getModuleDefinition().getName().equals(name)) {
                     continue;
