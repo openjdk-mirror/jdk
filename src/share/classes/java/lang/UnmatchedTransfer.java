@@ -32,6 +32,7 @@ package java.lang;
  * @author gafter
  */
 public class UnmatchedTransfer extends RuntimeException {
+
     /** The Jump that causes the control transfer. */
     private final Jump jump;
 
@@ -48,7 +49,7 @@ public class UnmatchedTransfer extends RuntimeException {
     /**
      * Cause the transfer to occur.
      */
-    public Nothing transfer() {
-        return jump.transfer();
+    public RuntimeException transfer() {
+	return jump.transfer();
     }
 }

@@ -28,23 +28,25 @@ package java.lang;
 /**
  * Class used to implement transfers from within a lambda.
  * This should only be thrown when the target of the transfer is on
- * the call stack of the current thread.
+ * the call stack of the current thread.  Note: ideally, Jump would
+ * be placed in an exception hierarchy aside from Throwable, to help
+ * preserve transparency of transfers implemented using this
+ * mechanism.
  *
  * @author gafter
  */
-public class Jump extends RuntimeException {
+public abstract class Jump extends RuntimeException {
     /**
      * Returns the thread in which the transfer target is executing.
      */
-    public Thread thread() {
-        return Thread.currentThread();
-    }
+    public abstract Thread thread();
 
     /**
      * Cause the transfer to occur.
      */
-    public Nothing transfer() {
-        throw this;
+    public RuntimeException transfer() {
+        return (Thread.currentThread() == thread())
+            ? this : new UnmatchedTransfer(this);
     }
 
     /**
