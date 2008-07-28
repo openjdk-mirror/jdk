@@ -37,8 +37,15 @@ public class UnmatchedTransfer extends RuntimeException {
     private final Jump jump;
 
     public UnmatchedTransfer(Jump jump) {
+	super(jump.thread() == null
+	      ? "late transfer"
+	      : "transfer in wrong thread",
+	      jump);
         this.jump = jump;
+	if (jump.thread() == Thread.currentThread())
+	    throw new IllegalStateException(this);
     }
+
     /**
      * Returns the thread in which the transfer target is executing.
      */
@@ -47,7 +54,8 @@ public class UnmatchedTransfer extends RuntimeException {
     }
 
     /**
-     * Cause the transfer to occur.
+     * Return the exception to be thrown to cause the transfer to
+     * occur.
      */
     public RuntimeException transfer() {
 	return jump.transfer();
