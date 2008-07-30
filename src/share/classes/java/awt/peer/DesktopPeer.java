@@ -40,6 +40,7 @@ import java.awt.Desktop.Action;
  *
  */
 public interface DesktopPeer {
+
     /**
      * Returns whether the given action is supported on the current platform.
      * @param action the action type to be tested if it's supported on the
@@ -47,7 +48,7 @@ public interface DesktopPeer {
      * @return <code>true</code> if the given action is supported on
      *         the current platform; <code>false</code> otherwise.
      */
-    public boolean isSupported(Action action);
+    boolean isSupported(Action action);
 
     /**
      * Launches the associated application to open the given file. The
@@ -58,7 +59,7 @@ public interface DesktopPeer {
      * @throws IOException If the given file has no associated application,
      *         or the associated application fails to be launched.
      */
-    public void open(File file) throws IOException;
+    void open(File file) throws IOException;
 
     /**
      * Launches the associated editor and opens the given file for editing. The
@@ -69,7 +70,7 @@ public interface DesktopPeer {
      * @throws IOException If the given file has no associated editor, or
      *         the associated application fails to be launched.
      */
-    public void edit(File file) throws IOException;
+    void edit(File file) throws IOException;
 
     /**
      * Prints the given file with the native desktop printing facility, using
@@ -79,7 +80,7 @@ public interface DesktopPeer {
      * @throws IOException If the given file has no associated application
      *         that can be used to print it.
      */
-    public void print(File file) throws IOException;
+    void print(File file) throws IOException;
 
     /**
      * Launches the mail composing window of the user default mail client,
@@ -93,7 +94,7 @@ public interface DesktopPeer {
      * @throws IOException If the user default mail client is not found,
      *         or it fails to be launched.
      */
-    public void mail(URI mailtoURL) throws IOException;
+    void mail(URI mailtoURL) throws IOException;
 
     /**
      * Launches the user default browser to display the given URI.
@@ -102,5 +103,5 @@ public interface DesktopPeer {
      * @throws IOException If the user default browser is not found,
      *         or it fails to be launched.
      */
-    public void browse(URI url) throws IOException;
+    void browse(URI url) throws IOException;
 }
