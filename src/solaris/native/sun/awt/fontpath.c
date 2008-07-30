@@ -150,15 +150,26 @@ jboolean isDisplayLocal(JNIEnv *env) {
     static jboolean isLocalSet = False;
     jboolean ret;
 
-    if (isLocalSet) {
-        return isLocal;
+    if (! isLocalSet) {
+      jclass geCls = (*env)->FindClass(env, "java/awt/GraphicsEnvironment");
+      jmethodID getLocalGE = (*env)->GetStaticMethodID(env, geCls,
+                                                 "getLocalGraphicsEnvironment",
+                                           "()Ljava/awt/GraphicsEnvironment;");
+      jobject ge = (*env)->CallStaticObjectMethod(env, geCls, getLocalGE);
+
+      jclass sgeCls = (*env)->FindClass(env,
+                                        "sun/java2d/SunGraphicsEnvironment");
+      if ((*env)->IsInstanceOf(env, ge, sgeCls)) {
+        jmethodID isDisplayLocal = (*env)->GetMethodID(env, sgeCls,
+                                                       "isDisplayLocal",
+                                                       "()Z");
+        isLocal = (*env)->CallBooleanMethod(env, ge, isDisplayLocal);
+      } else {
+        isLocal = True;
+      }
+      isLocalSet = True;
     }
 
-    isLocal = JNU_CallStaticMethodByName(env, NULL,
-                                         "sun/awt/X11GraphicsEnvironment",
-                                         "isDisplayLocal",
-                                         "()Z").z;
-    isLocalSet = True;
     return isLocal;
 }
 

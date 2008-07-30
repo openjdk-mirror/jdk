@@ -346,4 +346,8 @@ public class Win32GraphicsEnvironment
 
         return new WFontConfiguration(this, preferLocaleFonts,preferPropFonts);
     }
+
+    public boolean isDisplayLocal() {
+        return true;
+    }
 }
