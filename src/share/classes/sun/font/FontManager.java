@@ -67,8 +67,6 @@ import java.awt.geom.Rectangle2D;
 import java.lang.reflect.Constructor;
 
 import sun.java2d.Disposer;
-import sun.java2d.SunGraphicsEnvironment.T1Filter;
-import sun.java2d.SunGraphicsEnvironment.TTFilter;
 import sun.security.action.GetPropertyAction;
 
 /*
@@ -76,6 +74,66 @@ import sun.security.action.GetPropertyAction;
  * font files/native font resources and the Java and native font scalers.
  */
 public abstract class FontManager implements FontSupport {
+
+    private static class TTFilter implements FilenameFilter {
+        public boolean accept(File dir,String name) {
+            /* all conveniently have the same suffix length */
+            int offset = name.length()-4;
+            if (offset <= 0) { /* must be at least A.ttf */
+                return false;
+            } else {
+                return(name.startsWith(".ttf", offset) ||
+                       name.startsWith(".TTF", offset) ||
+                       name.startsWith(".ttc", offset) ||
+                       name.startsWith(".TTC", offset));
+            }
+        }
+    }
+
+    private static class T1Filter implements FilenameFilter {
+        public boolean accept(File dir,String name) {
+            if (noType1Font) {
+                return false;
+            }
+            /* all conveniently have the same suffix length */
+            int offset = name.length()-4;
+            if (offset <= 0) { /* must be at least A.pfa */
+                return false;
+            } else {
+                return(name.startsWith(".pfa", offset) ||
+                       name.startsWith(".pfb", offset) ||
+                       name.startsWith(".PFA", offset) ||
+                       name.startsWith(".PFB", offset));
+            }
+        }
+    }
+
+     private static class TTorT1Filter implements FilenameFilter {
+        public boolean accept(File dir, String name) {
+
+            /* all conveniently have the same suffix length */
+            int offset = name.length()-4;
+            if (offset <= 0) { /* must be at least A.ttf or A.pfa */
+                return false;
+            } else {
+                boolean isTT =
+                    name.startsWith(".ttf", offset) ||
+                    name.startsWith(".TTF", offset) ||
+                    name.startsWith(".ttc", offset) ||
+                    name.startsWith(".TTC", offset);
+                if (isTT) {
+                    return true;
+                } else if (noType1Font) {
+                    return false;
+                } else {
+                    return(name.startsWith(".pfa", offset) ||
+                           name.startsWith(".pfb", offset) ||
+                           name.startsWith(".PFA", offset) ||
+                           name.startsWith(".PFB", offset));
+                }
+            }
+        }
+    }
 
     public static final int FONTFORMAT_NONE      = -1;
     public static final int FONTFORMAT_TRUETYPE  = 0;
@@ -154,7 +212,6 @@ public abstract class FontManager implements FontSupport {
     public static boolean isSolaris8; // needed to check for JA wavedash fix.
     public static boolean isSolaris9; // needed to check for songti font usage.
     private boolean loaded1dot0Fonts = false;
-    static SunGraphicsEnvironment sgEnv;
     boolean loadedAllFonts = false;
     boolean loadedAllFontFiles = false;
     static TrueTypeFont eudcFont;
@@ -194,8 +251,8 @@ public abstract class FontManager implements FontSupport {
     /* No need to keep consing up new instances - reuse a singleton.
      * The trade-off is that these objects don't get GC'd.
      */
-    public static final TTFilter ttFilter = new TTFilter();
-    public static final T1Filter t1Filter = new T1Filter();
+    public static final FilenameFilter ttFilter = new TTFilter();
+    public static final FilenameFilter t1Filter = new T1Filter();
 
     private Font[] allFonts;
     private String[] allFamilies; // cache for default locale only
@@ -278,7 +335,7 @@ public abstract class FontManager implements FontSupport {
 
     static {
 
-        if (SunGraphicsEnvironment.debugFonts) {
+        if (debugFonts) {
             logger = Logger.getLogger("sun.java2d", null);
             logging = logger.getLevel() != Level.OFF;
         }
@@ -342,6 +399,20 @@ public abstract class FontManager implements FontSupport {
                File lucidaFile =
                    new File(jreFontDirName + File.separator + lucidaFileName);
                isOpenJDK = !lucidaFile.exists();
+
+               String debugLevel =
+                   System.getProperty("sun.java2d.debugfonts");
+
+               if (debugLevel != null && !debugLevel.equals("false")) {
+                   debugFonts = true;
+                   logger = Logger.getLogger("sun.java2d");
+                   if (debugLevel.equals("warning")) {
+                       logger.setLevel(Level.WARNING);
+                   } else if (debugLevel.equals("severe")) {
+                       logger.setLevel(Level.SEVERE);
+                   }
+               }
+
                return null;
            }
         });
@@ -1103,7 +1174,6 @@ public abstract class FontManager implements FontSupport {
         String nameAndStyle = name.toLowerCase(Locale.ENGLISH) + style;
         String fileName = jreFontMap.get(nameAndStyle);
         if (fileName != null) {
-            initSGEnv(); /* ensure jreFontDirName is initialised */
             fileName = SunGraphicsEnvironment.jreFontDirName +
                 File.separator + fileName;
             if (deferredFontFiles.get(fileName) != null) {
@@ -1399,21 +1469,6 @@ public abstract class FontManager implements FontSupport {
         }
     }
 
-    static void initSGEnv() {
-        if (sgEnv == null) {
-            GraphicsEnvironment ge =
-                GraphicsEnvironment.getLocalGraphicsEnvironment();
-            if (ge instanceof HeadlessGraphicsEnvironment) {
-                HeadlessGraphicsEnvironment hgEnv =
-                    (HeadlessGraphicsEnvironment)ge;
-                sgEnv = (SunGraphicsEnvironment)
-                    hgEnv.getSunGraphicsEnvironment();
-            } else {
-                sgEnv = (SunGraphicsEnvironment)ge;
-            }
-        }
-    }
-
     /* This is implemented only on windows and is called from code that
      * executes only on windows. This isn't pretty but its not a precedent
      * in this file. This very probably should be cleaned up at some point.
@@ -1455,7 +1510,7 @@ public abstract class FontManager implements FontSupport {
         if (noType1) {
             filter = ttFilter;
         } else {
-            filter = new SunGraphicsEnvironment.TTorT1Filter();
+            filter = new TTorT1Filter();
         }
         return (String[])AccessController.doPrivileged(new PrivilegedAction() {
             public Object run() {
@@ -2139,15 +2194,6 @@ public abstract class FontManager implements FontSupport {
                     }
                 }
             }
-        }
-
-        /* If reach here its possible that this is in a client which never
-         * loaded the GraphicsEnvironment, so we haven't even loaded ANY of
-         * the fonts from the environment. Do so now and recurse.
-         */
-        if (sgEnv == null) {
-            initSGEnv();
-            return findFont2D(name, style, fallback);
         }
 
         if (isWindows) {
@@ -3047,7 +3093,6 @@ public abstract class FontManager implements FontSupport {
             return;
         }
 
-        initSGEnv();
         if (!maybeMultiAppContext()) {
             gAltJAFont = true;
         } else {
@@ -3066,8 +3111,6 @@ public abstract class FontManager implements FontSupport {
     }
 
     public synchronized void preferLocaleFonts() {
-
-        initSGEnv();
 
         /* Test if re-ordering will have any effect */
         if (!FontConfiguration.willReorderForStartupLocale()) {
@@ -3107,8 +3150,6 @@ public abstract class FontManager implements FontSupport {
             return;
         }
 
-        initSGEnv();
-
         if (!maybeMultiAppContext()) {
             if (gPropPref == true) {
                 return;
@@ -3136,7 +3177,7 @@ public abstract class FontManager implements FontSupport {
     private static HashSet<String> installedNames = null;
     private static HashSet<String> getInstalledNames() {
         if (installedNames == null) {
-           Locale l = sgEnv.getSystemStartupLocale();
+           Locale l = getSystemStartupLocale();
            String[] installedFamilies = getInstance().getInstalledFontFamilyNames(l);
            Font[] installedFonts = getInstance().getAllInstalledFonts();
            HashSet<String> names = new HashSet<String>();
@@ -3178,9 +3219,6 @@ public abstract class FontManager implements FontSupport {
         if (!isCreatedFont(font)) {
             return false;
         }
-        if (sgEnv == null) {
-            initSGEnv();
-        }
         /* We want to ensure that this font cannot override existing
          * installed fonts. Check these conditions :
          * - family name is not that of an installed font
@@ -3200,7 +3238,7 @@ public abstract class FontManager implements FontSupport {
          * except for themselves.
          */
         HashSet<String> names = getInstalledNames();
-        Locale l = sgEnv.getSystemStartupLocale();
+        Locale l = getSystemStartupLocale();
         String familyName = font.getFamily(l).toLowerCase();
         String fullName = font.getFontName(l).toLowerCase();
         if (names.contains(familyName) || names.contains(fullName)) {
@@ -3281,7 +3319,7 @@ public abstract class FontManager implements FontSupport {
             return null;
         }
 
-        Locale l = sgEnv.getSystemStartupLocale();
+        Locale l = getSystemStartupLocale();
         synchronized (familyTable) {
             TreeMap<String, String> map = new TreeMap<String, String>();
             for (FontFamily f : familyTable.values()) {
@@ -3309,7 +3347,7 @@ public abstract class FontManager implements FontSupport {
             return null;
         }
 
-        Locale l = sgEnv.getSystemStartupLocale();
+        Locale l = getSystemStartupLocale();
         synchronized (nameTable) {
             Font[] fonts = new Font[nameTable.size()];
             int i=0;
@@ -4602,7 +4640,7 @@ public abstract class FontManager implements FontSupport {
          * as the start-up system locale, rather than loading all fonts.
          */
         FontManager fm = FontManager.getInstance();
-        if (requestedLocale.equals(SunGraphicsEnvironment.getSystemStartupLocale()) &&
+        if (requestedLocale.equals(getSystemStartupLocale()) &&
             fm.getFamilyNamesFromPlatform(familyNames, requestedLocale)) {
             /* Augment platform names with JRE font family names */
             getJREFontFamilyNames(familyNames, requestedLocale);
@@ -4658,6 +4696,49 @@ public abstract class FontManager implements FontSupport {
                 familyNames.put(name.toLowerCase(requestedLocale), name);
             }
         }
+    }
+
+    /**
+     * Default locale can be changed but we need to know the initial locale
+     * as that is what is used by native code. Changing Java default locale
+     * doesn't affect that.
+     * Returns the locale in use when using native code to communicate
+     * with platform APIs. On windows this is known as the "system" locale,
+     * and it is usually the same as the platform locale, but not always,
+     * so this method also checks an implementation property used only
+     * on windows and uses that if set.
+     */
+    private static Locale systemLocale = null;
+    private static Locale getSystemStartupLocale() {
+        if (systemLocale == null) {
+            systemLocale = (Locale)
+                java.security.AccessController.doPrivileged(
+                                    new java.security.PrivilegedAction() {
+            public Object run() {
+                /* On windows the system locale may be different than the
+                 * user locale. This is an unsupported configuration, but
+                 * in that case we want to return a dummy locale that will
+                 * never cause a match in the usage of this API. This is
+                 * important because Windows documents that the family
+                 * names of fonts are enumerated using the language of
+                 * the system locale. BY returning a dummy locale in that
+                 * case we do not use the platform API which would not
+                 * return us the names we want.
+                 */
+                String fileEncoding = System.getProperty("file.encoding", "");
+                String sysEncoding = System.getProperty("sun.jnu.encoding");
+                if (sysEncoding != null && !sysEncoding.equals(fileEncoding)) {
+                    return Locale.ROOT;
+                }
+
+                String language = System.getProperty("user.language", "en");
+                String country  = System.getProperty("user.country","");
+                String variant  = System.getProperty("user.variant","");
+                return new Locale(language, country, variant);
+            }
+        });
+        }
+        return systemLocale;
     }
 
     // End: Refactored from SunGraphicsEnviroment.

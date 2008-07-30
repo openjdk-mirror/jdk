@@ -81,7 +81,6 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
     public static boolean isWindows;
     public static boolean noType1Font;
     private static Font defaultFont;
-    public static boolean debugFonts = false;
     protected static Logger logger = null;
     public static String jreLibDirName;
     public static String jreFontDirName;
@@ -103,18 +102,6 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
                     File.separator + "lib";
                 jreFontDirName = jreLibDirName + File.separator + "fonts";
 
-                String debugLevel =
-                    System.getProperty("sun.java2d.debugfonts");
-
-                if (debugLevel != null && !debugLevel.equals("false")) {
-                    debugFonts = true;
-                    logger = Logger.getLogger("sun.java2d");
-                    if (debugLevel.equals("warning")) {
-                        logger.setLevel(Level.WARNING);
-                    } else if (debugLevel.equals("severe")) {
-                        logger.setLevel(Level.SEVERE);
-                    }
-                }
                 return null;
             }
         });
@@ -213,49 +200,6 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
         }
     }
 
-    /**
-     * Default locale can be changed but we need to know the initial locale
-     * as that is what is used by native code. Changing Java default locale
-     * doesn't affect that.
-     * Returns the locale in use when using native code to communicate
-     * with platform APIs. On windows this is known as the "system" locale,
-     * and it is usually the same as the platform locale, but not always,
-     * so this method also checks an implementation property used only
-     * on windows and uses that if set.
-     */
-    private static Locale systemLocale = null;
-    public static Locale getSystemStartupLocale() {
-        if (systemLocale == null) {
-            systemLocale = (Locale)
-                java.security.AccessController.doPrivileged(
-                                    new java.security.PrivilegedAction() {
-            public Object run() {
-                /* On windows the system locale may be different than the
-                 * user locale. This is an unsupported configuration, but
-                 * in that case we want to return a dummy locale that will
-                 * never cause a match in the usage of this API. This is
-                 * important because Windows documents that the family
-                 * names of fonts are enumerated using the language of
-                 * the system locale. BY returning a dummy locale in that
-                 * case we do not use the platform API which would not
-                 * return us the names we want.
-                 */
-                String fileEncoding = System.getProperty("file.encoding", "");
-                String sysEncoding = System.getProperty("sun.jnu.encoding");
-                if (sysEncoding != null && !sysEncoding.equals(fileEncoding)) {
-                    return Locale.ROOT;
-                }
-
-                String language = System.getProperty("user.language", "en");
-                String country  = System.getProperty("user.country","");
-                String variant  = System.getProperty("user.variant","");
-                return new Locale(language, country, variant);
-            }
-        });
-        }
-        return systemLocale;
-    }
-
     public String[] getAvailableFontFamilyNames(Locale requestedLocale) {
         FontManager fm = FontManager.getInstance();
         String[] installed = fm.getInstalledFontFamilyNames(requestedLocale);
@@ -286,66 +230,6 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
 
     public String[] getAvailableFontFamilyNames() {
         return getAvailableFontFamilyNames(Locale.getDefault());
-    }
-
-    public static class TTFilter implements FilenameFilter {
-        public boolean accept(File dir,String name) {
-            /* all conveniently have the same suffix length */
-            int offset = name.length()-4;
-            if (offset <= 0) { /* must be at least A.ttf */
-                return false;
-            } else {
-                return(name.startsWith(".ttf", offset) ||
-                       name.startsWith(".TTF", offset) ||
-                       name.startsWith(".ttc", offset) ||
-                       name.startsWith(".TTC", offset));
-            }
-        }
-    }
-
-    public static class T1Filter implements FilenameFilter {
-        public boolean accept(File dir,String name) {
-            if (noType1Font) {
-                return false;
-            }
-            /* all conveniently have the same suffix length */
-            int offset = name.length()-4;
-            if (offset <= 0) { /* must be at least A.pfa */
-                return false;
-            } else {
-                return(name.startsWith(".pfa", offset) ||
-                       name.startsWith(".pfb", offset) ||
-                       name.startsWith(".PFA", offset) ||
-                       name.startsWith(".PFB", offset));
-            }
-        }
-    }
-
-     public static class TTorT1Filter implements FilenameFilter {
-        public boolean accept(File dir, String name) {
-
-            /* all conveniently have the same suffix length */
-            int offset = name.length()-4;
-            if (offset <= 0) { /* must be at least A.ttf or A.pfa */
-                return false;
-            } else {
-                boolean isTT =
-                    name.startsWith(".ttf", offset) ||
-                    name.startsWith(".TTF", offset) ||
-                    name.startsWith(".ttc", offset) ||
-                    name.startsWith(".TTC", offset);
-                if (isTT) {
-                    return true;
-                } else if (noType1Font) {
-                    return false;
-                } else {
-                    return(name.startsWith(".pfa", offset) ||
-                           name.startsWith(".pfb", offset) ||
-                           name.startsWith(".PFA", offset) ||
-                           name.startsWith(".PFB", offset));
-                }
-            }
-        }
     }
 
     /* The majority of the register functions in this class are

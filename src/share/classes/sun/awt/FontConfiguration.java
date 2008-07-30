@@ -77,7 +77,7 @@ public abstract class FontConfiguration {
      * one to ensure proper static initialisation takes place.
      */
     public FontConfiguration(FontManager fm) {
-        if (SunGraphicsEnvironment.debugFonts && logger == null) {
+        if (FontManager.debugFonts && logger == null) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         fontManager = fm;
@@ -153,17 +153,17 @@ public abstract class FontConfiguration {
                     loadBinary(in);
                 }
                 in.close();
-                if (SunGraphicsEnvironment.debugFonts) {
+                if (FontManager.debugFonts) {
                     logger.config("Read logical font configuration from " + f);
                 }
             } catch (IOException e) {
-                if (SunGraphicsEnvironment.debugFonts) {
+                if (FontManager.debugFonts) {
                     logger.config("Failed to read logical font configuration from " + f);
                 }
             }
         }
         String version = getVersion();
-        if (!"1".equals(version) && SunGraphicsEnvironment.debugFonts) {
+        if (!"1".equals(version) && FontManager.debugFonts) {
             logger.config("Unsupported fontconfig version: " + version);
         }
     }
@@ -1092,7 +1092,7 @@ public abstract class FontConfiguration {
             } else {
                 exists = Boolean.valueOf((new File(fileName)).exists());
                 existsMap.put(fileName, exists);
-                if (SunGraphicsEnvironment.debugFonts &&
+                if (FontManager.debugFonts &&
                     exists == Boolean.FALSE) {
                     logger.warning("Couldn't locate font file " + fileName);
                 }
@@ -2016,7 +2016,7 @@ public abstract class FontConfiguration {
                         throw new Exception();
                     }
                 } catch (Exception e) {
-                    if (SunGraphicsEnvironment.debugFonts && logger != null) {
+                    if (FontManager.debugFonts && logger != null) {
                         logger.config("Failed parsing " + key +
                                   " property of font configuration.");
 

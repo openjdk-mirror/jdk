@@ -50,7 +50,7 @@ public class MFontConfiguration extends FontConfiguration {
 
     public MFontConfiguration(FontManager fm) {
         super(fm);
-        if (SunGraphicsEnvironment.debugFonts) {
+        if (FontManager.debugFonts) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         initTables();
@@ -61,7 +61,7 @@ public class MFontConfiguration extends FontConfiguration {
                               boolean preferLocaleFonts,
                               boolean preferPropFonts) {
         super(fm, preferLocaleFonts, preferPropFonts);
-        if (SunGraphicsEnvironment.debugFonts) {
+        if (FontManager.debugFonts) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         initTables();
