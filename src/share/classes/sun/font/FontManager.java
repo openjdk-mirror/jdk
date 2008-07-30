@@ -62,12 +62,13 @@ import java.awt.geom.Rectangle2D;
 import java.lang.reflect.Constructor;
 
 import sun.java2d.Disposer;
+import sun.security.action.GetPropertyAction;
 
 /*
  * Interface between Java Fonts (java.awt.Font) and the underlying
  * font files/native font resources and the Java and native font scalers.
  */
-public final class FontManager {
+public abstract class FontManager {
 
     public static final int FONTFORMAT_NONE      = -1;
     public static final int FONTFORMAT_TRUETYPE  = 0;
@@ -83,6 +84,11 @@ public final class FontManager {
 
     public static final int QUADPATHTYPE = 1;
     public static final int CUBICPATHTYPE = 2;
+
+    /**
+     * The singleton instance of FontManager.
+     */
+    private static FontManager instance;
 
     /* Pool of 20 font file channels chosen because some UTF-8 locale
      * composite fonts can use up to 16 platform fonts (including the
@@ -282,6 +288,41 @@ public final class FontManager {
 
     /* Initialise ptrs used by JNI methods */
     private static native void initIDs();
+
+    /**
+     * Returns the singleton instance of FontManager.
+     *
+     * @return the singleton instance of FontManager
+     */
+    public static synchronized FontManager getInstance() {
+
+        if (instance == null) {
+            String fmClassName = AccessController.doPrivileged(
+                    new GetPropertyAction("sun.font.fontmanager",
+                                          "sun.awt.X11FontManager"));
+            if (fmClassName != null) {
+                try {
+                    Class fmClass = Class.forName(fmClassName);
+                    instance = (FontManager) fmClass.newInstance();
+                } catch (ClassNotFoundException ex) {
+                    InternalError err = new InternalError();
+                    err.initCause(ex);
+                    throw err;
+                } catch (InstantiationException ex) {
+                    InternalError err = new InternalError();
+                    err.initCause(ex);
+                    throw err;
+                } catch (IllegalAccessException ex) {
+                    InternalError err = new InternalError();
+                    err.initCause(ex);
+                    throw err;
+                }
+            } else {
+                instance = new DefaultFontManager();
+            }
+        }
+        return instance;
+    }
 
     public static void addToPool(FileFont font) {
 
@@ -2339,7 +2380,7 @@ public final class FontManager {
         return getFont2D(font).supportsEncoding(encoding);
     }
 
-    public synchronized static native String getFontPath(boolean noType1Fonts);
+    public abstract String getFontPath(boolean noType1Fonts);
     public synchronized static native void setNativeFontPath(String fontPath);
 
 
@@ -3293,7 +3334,7 @@ public final class FontManager {
         return physFont;
     }
 
-    private static String[] getPlatformFontDirs() {
+    private String[] getPlatformFontDirs() {
         String path = getFontPath(true);
         StringTokenizer parser =
             new StringTokenizer(path, File.pathSeparator);
@@ -3311,7 +3352,7 @@ public final class FontManager {
      * name of the font. The second element is the file name.
      */
     private static String[] defaultPlatformFont = null;
-    public static String[] getDefaultPlatformFont() {
+    public String[] getDefaultPlatformFont() {
 
         if (defaultPlatformFont != null) {
             return defaultPlatformFont;

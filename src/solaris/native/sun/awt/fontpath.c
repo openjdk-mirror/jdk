@@ -516,8 +516,8 @@ static char *getPlatformFontPathChars(JNIEnv *env, jboolean noType1) {
     return path;
 }
 
-JNIEXPORT jstring JNICALL Java_sun_font_FontManager_getFontPath
-(JNIEnv *env, jclass obj, jboolean noType1) {
+JNIEXPORT jstring JNICALL Java_sun_font_DefaultFontManager_getFontPath
+(JNIEnv *env, jobject thiz, jboolean noType1) {
     jstring ret;
     static char *ptr = NULL; /* retain result across calls */
 

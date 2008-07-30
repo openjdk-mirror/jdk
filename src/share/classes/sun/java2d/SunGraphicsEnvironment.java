@@ -175,7 +175,7 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
                     equals(System.getProperty("sun.java2d.noType1Font"));
 
                 if (isOpenJDK()) {
-                    String[] fontInfo = FontManager.getDefaultPlatformFont();
+                    String[] fontInfo = FontManager.getInstance().getDefaultPlatformFont();
                     defaultFontName = fontInfo[0];
                     defaultFontFileName = fontInfo[1];
                 } else {
@@ -403,7 +403,7 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
      */
     protected String getPlatformFontPath(boolean noType1Font) {
         if (fontPath == null) {
-            fontPath = FontManager.getFontPath(noType1Font);
+            fontPath = FontManager.getInstance().getFontPath(noType1Font);
         }
         return fontPath;
     }

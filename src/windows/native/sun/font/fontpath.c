@@ -33,7 +33,7 @@
 #define BSIZE (max(512, MAX_PATH+1))
 
 
-JNIEXPORT jstring JNICALL Java_sun_font_FontManager_getFontPath(JNIEnv *env, jclass obj, jboolean noType1)
+JNIEXPORT jstring JNICALL Java_sun_font_DefaultFontManager_getFontPath(JNIEnv *env, jobject thiz, jboolean noType1)
 {
     char windir[BSIZE];
     char sysdir[BSIZE];
