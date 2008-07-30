@@ -2135,24 +2135,3 @@ COLORREF DesktopColor2RGB(int colorIndex) {
     return ((GetRValue(sysColor)<<16) | (GetGValue(sysColor)<<8) |
             (GetBValue(sysColor)) | 0xff000000);
 }
-
-
-/*
- * Class:     sun_awt_SunToolkit
- * Method:    closeSplashScreen
- * Signature: ()V
- */
-extern "C" JNIEXPORT void JNICALL
-Java_sun_awt_SunToolkit_closeSplashScreen(JNIEnv *env, jclass cls)
-{
-    typedef void (*SplashClose_t)();
-    HMODULE hSplashDll = GetModuleHandle(_T("splashscreen.dll"));
-    if (!hSplashDll) {
-        return; // dll not loaded
-    }
-    SplashClose_t splashClose = (SplashClose_t)GetProcAddress(hSplashDll,
-        "SplashClose");
-    if (splashClose) {
-        splashClose();
-    }
-}

@@ -238,25 +238,3 @@ Java_sun_awt_UNIXToolkit_nativeSync(JNIEnv *env, jobject this)
     AWT_UNLOCK();
 #endif /* !HEADLESS */
 }
-
-/*
- * Class:     sun_awt_SunToolkit
- * Method:    closeSplashScreen
- * Signature: ()V
- */
-JNIEXPORT void JNICALL
-Java_sun_awt_SunToolkit_closeSplashScreen(JNIEnv *env, jclass cls)
-{
-    typedef void (*SplashClose_t)();
-    SplashClose_t splashClose;
-    void* hSplashLib = dlopen(0, RTLD_LAZY);
-    if (!hSplashLib) {
-        return;
-    }
-    splashClose = (SplashClose_t)dlsym(hSplashLib,
-        "SplashClose");
-    if (splashClose) {
-        splashClose();
-    }
-    dlclose(hSplashLib);
-}

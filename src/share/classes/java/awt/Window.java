@@ -831,7 +831,15 @@ public class Window extends Container implements Accessible {
             return;
         }
         if (beforeFirstWindowShown.getAndSet(false)) {
-            SunToolkit.closeSplashScreen();
+	    try {
+		SplashScreen splash = SplashScreen.getSplashScreen();
+		if (splash != null) {
+		    splash.close();
+		}
+	    } catch (UnsupportedOperationException ex) {
+		// No need to do anything when splash screens are not
+		// supported.
+	    }
         }
     }
 

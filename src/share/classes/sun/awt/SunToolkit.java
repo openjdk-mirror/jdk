@@ -1766,14 +1766,6 @@ public abstract class SunToolkit extends Toolkit
     public abstract void ungrab(Window w);
 
 
-    /**
-     * Locates the splash screen library in a platform dependent way and closes
-     * the splash screen. Should be invoked on first top-level frame display.
-     * @see java.awt.SplashScreen
-     * @since 1.6
-     */
-    public static native void closeSplashScreen();
-
     /* The following methods and variables are to support retrieving
      * desktop text anti-aliasing settings
      */
