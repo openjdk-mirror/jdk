@@ -48,6 +48,14 @@ public final class FontManagerFactory {
 
     /** Our singleton instance. */
     private static FontManager instance = null;
+
+    private static final String DEFAULT_CLASS;
+    static {
+        if (FontManager.IS_WINDOWS)
+            DEFAULT_CLASS = "sun.awt.Win32FontManager";
+        else
+            DEFAULT_CLASS = "sun.awt.X11FontManager";
+    }
     
     /**
      * Get a valid FontManager implementation for the current platform.
@@ -62,7 +70,7 @@ public final class FontManagerFactory {
         
         String fmClassName = AccessController.doPrivileged(
                 new GetPropertyAction("sun.font.fontmanager",
-                                      "sun.awt.X11FontManager"));
+                                      DEFAULT_CLASS));
         
         try {
             @SuppressWarnings("unchecked")
