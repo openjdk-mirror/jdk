@@ -71,7 +71,7 @@ JNIEXPORT jstring JNICALL Java_sun_font_DefaultFontManager_getFontPath(JNIEnv *e
 /* This isn't used on windows, the implementation is added in case shared
  * code accidentally calls this method to prevent an UnsatisfiedLinkError
  */
-JNIEXPORT void JNICALL Java_sun_font_FontManager_setNativeFontPath
+JNIEXPORT void JNICALL Java_sun_font_FontManagerBase_setNativeFontPath
 (JNIEnv *env, jclass obj, jstring theString)
 {
     return;
@@ -539,7 +539,7 @@ static void registerFontW(GdiFontMapInfo *fmi, jobject fontToFileMap,
  * use it for lookups to reduce or avoid the need to search font files.
  */
 JNIEXPORT void JNICALL
-Java_sun_font_FontManager_populateFontFileNameMap
+Java_sun_font_FontManagerBase_populateFontFileNameMap
 (JNIEnv *env, jclass obj, jobject fontToFileMap,
  jobject fontToFamilyMap, jobject familyToFontListMap, jobject locale)
 {

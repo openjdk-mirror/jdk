@@ -26,6 +26,7 @@
 package sun.font;
 
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Point2D;
@@ -36,7 +37,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class PhysicalStrike extends FontStrike {
 
     static final long INTMASK = 0xffffffffL;
-
+    static boolean longAddresses;
+    static {
+        switch (StrikeCache.nativeAddressSize) {
+        case 8: longAddresses = true; break;
+        case 4: longAddresses = false; break;
+        default: throw new RuntimeException("Unexpected address size");
+        }
+    }
+    
     private PhysicalFont physicalFont;
     protected CharToGlyphMapper mapper;
     /* the ScalerContext is a native structure pre-filled with the

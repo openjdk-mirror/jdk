@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.Vector;
 import sun.font.CompositeFontDescriptor;
 import sun.font.FontManager;
+import sun.font.FontManagerFactory;
 import sun.java2d.SunGraphicsEnvironment;
 
 /**
@@ -77,7 +78,7 @@ public abstract class FontConfiguration {
      * one to ensure proper static initialisation takes place.
      */
     public FontConfiguration(FontManager fm) {
-        if (FontManager.debugFonts && logger == null) {
+        if (fm.debugFonts() && logger == null) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         fontManager = fm;
@@ -153,17 +154,17 @@ public abstract class FontConfiguration {
                     loadBinary(in);
                 }
                 in.close();
-                if (FontManager.debugFonts) {
+                if (fontManager.debugFonts()) {
                     logger.config("Read logical font configuration from " + f);
                 }
             } catch (IOException e) {
-                if (FontManager.debugFonts) {
+                if (fontManager.debugFonts()) {
                     logger.config("Failed to read logical font configuration from " + f);
                 }
             }
         }
         String version = getVersion();
-        if (!"1".equals(version) && FontManager.debugFonts) {
+        if (!"1".equals(version) && fontManager.debugFonts()) {
             logger.config("Unsupported fontconfig version: " + version);
         }
     }
@@ -174,8 +175,8 @@ public abstract class FontConfiguration {
 
         File fallbackDir = new File(fallbackDirName);
         if (fallbackDir.exists() && fallbackDir.isDirectory()) {
-            String[] ttfs = fallbackDir.list(FontManager.ttFilter);
-            String[] t1s = fallbackDir.list(FontManager.t1Filter);
+            String[] ttfs = fallbackDir.list(fontManager.getTrueTypeFilter());
+            String[] t1s = fallbackDir.list(fontManager.getType1Filter());
             int numTTFs = (ttfs == null) ? 0 : ttfs.length;
             int numT1s = (t1s == null) ? 0 : t1s.length;
             int len = numTTFs + numT1s;
@@ -418,7 +419,7 @@ public abstract class FontConfiguration {
                     nameIDs[index] = getComponentFontID(coreScripts[index],
                                                fontIndex, styleIndex);
                     if (preferLocaleFonts && localeMap != null &&
-                        sun.font.FontManager.usingAlternateFontforJALocales()) {
+                            fontManager.usingAlternateFontforJALocales()) {
                         nameIDs[index] = remapLocaleMap(fontIndex, styleIndex,
                                                         coreScripts[index], nameIDs[index]);
                     }
@@ -433,7 +434,7 @@ public abstract class FontConfiguration {
                     short id = getComponentFontID(fallbackScripts[i],
                                                fontIndex, styleIndex);
                     if (preferLocaleFonts && localeMap != null &&
-                        sun.font.FontManager.usingAlternateFontforJALocales()) {
+                            fontManager.usingAlternateFontforJALocales()) {
                         id = remapLocaleMap(fontIndex, styleIndex, fallbackScripts[i], id);
                     }
                     if (preferPropFonts) {
@@ -1074,7 +1075,7 @@ public abstract class FontConfiguration {
      */
     HashMap<String, Boolean> existsMap;
     public boolean needToSearchForFile(String fileName) {
-        if (!FontManager.isLinux) {
+        if (!FontManager.IS_LINUX) {
             return false;
         } else if (existsMap == null) {
            existsMap = new HashMap<String, Boolean>();
@@ -1092,7 +1093,7 @@ public abstract class FontConfiguration {
             } else {
                 exists = Boolean.valueOf((new File(fileName)).exists());
                 existsMap.put(fileName, exists);
-                if (FontManager.debugFonts &&
+                if (fontManager.debugFonts() &&
                     exists == Boolean.FALSE) {
                     logger.warning("Couldn't locate font file " + fileName);
                 }
@@ -2016,7 +2017,8 @@ public abstract class FontConfiguration {
                         throw new Exception();
                     }
                 } catch (Exception e) {
-                    if (FontManager.debugFonts && logger != null) {
+                    if (FontManagerFactory.getInstance().debugFonts() && 
+                        logger != null) {
                         logger.config("Failed parsing " + key +
                                   " property of font configuration.");
 

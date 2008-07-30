@@ -29,14 +29,17 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import javax.swing.plaf.FontUIResource;
 import java.util.StringTokenizer;
+
+import sun.font.FontConfigManager;
 import sun.font.FontManager;
+import sun.font.FontManagerFactory;
 
 /**
  * @author Shannon Hickey
  * @author Leif Samuelsson
  */
 class PangoFonts {
-
+    
     public static final String CHARS_DIGITS = "0123456789";
 
     /**
@@ -66,8 +69,7 @@ class PangoFonts {
             fontScale = at.getScaleY();
         }
     }
-
-
+ 
     /**
      * Parses a String containing a pango font description and returns
      * a Font object.
@@ -193,8 +195,8 @@ class PangoFonts {
         }
 
         String fcFamilyLC = family.toLowerCase();
-        FontManager fm = FontManager.getInstance();
-        if (FontManager.mapFcName(fcFamilyLC) != null) {
+        FontManager fm = FontManagerFactory.getInstance();
+        if (FontConfigManager.mapFcName(fcFamilyLC) != null) {
             /* family is a Fc/Pango logical font which we need to expand. */
            return fm.getFontConfigFUIR(fcFamilyLC, style, size);
         } else {

@@ -113,7 +113,7 @@ public class FileFontStrike extends PhysicalStrike {
     private static native boolean initNative();
     private static boolean isXPorLater = false;
     static {
-        if (FontManager.isWindows && !FontManager.useT2K &&
+        if (FontManager.IS_WINDOWS && !FontManager.USE_T2K &&
             !GraphicsEnvironment.isHeadless()) {
             isXPorLater = initNative();
         }
@@ -200,7 +200,7 @@ public class FileFontStrike extends PhysicalStrike {
             this.disposer = new FontStrikeDisposer(fileFont, desc);
             initGlyphCache();
             pScalerContext = NullFontScaler.getNullScalerContext();
-            FontManager.getInstance().deRegisterBadFont(fileFont);
+            FontManagerFactory.getInstance().deRegisterBadFont(fileFont);
             return;
         }
         /* First, see if native code should be used to create the glyph.
@@ -210,8 +210,8 @@ public class FileFontStrike extends PhysicalStrike {
          * except that the advance returned by GDI is always overwritten by
          * the JDK rasteriser supplied one (see getGlyphImageFromWindows()).
          */
-        if (FontManager.isWindows && isXPorLater &&
-            !FontManager.useT2K &&
+        if (FontManager.IS_WINDOWS && isXPorLater &&
+            !FontManager.USE_T2K &&
             !GraphicsEnvironment.isHeadless() &&
             !fileFont.useJavaRasterizer &&
             (desc.aaHint == INTVAL_TEXT_ANTIALIAS_LCD_HRGB ||
@@ -240,8 +240,9 @@ public class FileFontStrike extends PhysicalStrike {
                 }
             }
         }
-        if (FontManager.logging && FontManager.isWindows) {
-            FontManager.logger.info
+        FontManager fm = FontManagerFactory.getInstance();
+        if (fm.isLogging() && FontManager.IS_WINDOWS) {
+            fm.getLogger().info
                 ("Strike for " + fileFont + " at size = " + intPtSize +
                  " use natives = " + useNatives +
                  " useJavaRasteriser = " + fileFont.useJavaRasterizer +
@@ -297,7 +298,7 @@ public class FileFontStrike extends PhysicalStrike {
     }
 
     long getGlyphImageFromNative(int glyphCode) {
-        if (FontManager.isWindows) {
+        if (FontManager.IS_WINDOWS) {
             return getGlyphImageFromWindows(glyphCode);
         } else {
             return getGlyphImageFromX11(glyphCode);
@@ -365,8 +366,9 @@ public class FileFontStrike extends PhysicalStrike {
         } else {
             if (useNatives) {
                 glyphPtr = getGlyphImageFromNative(glyphCode);
-                if (glyphPtr == 0L && FontManager.logging) {
-                    FontManager.logger.info
+                FontManager fm = FontManagerFactory.getInstance();
+                if (glyphPtr == 0L && fm.isLogging()) {
+                    fm.getLogger().info
                         ("Strike for " + fileFont +
                          " at size = " + intPtSize +
                          " couldn't get native glyph for code = " + glyphCode);
@@ -527,7 +529,7 @@ public class FileFontStrike extends PhysicalStrike {
 
         if (segmentedCache) {
             int numSegments = (numGlyphs + SEGSIZE-1)/SEGSIZE;
-            if (FontManager.longAddresses) {
+            if (longAddresses) {
                 glyphCacheFormat = SEGLONGARRAY;
                 segLongGlyphImages = new long[numSegments][];
                 this.disposer.segLongGlyphImages = segLongGlyphImages;
@@ -537,7 +539,7 @@ public class FileFontStrike extends PhysicalStrike {
                  this.disposer.segIntGlyphImages = segIntGlyphImages;
              }
         } else {
-            if (FontManager.longAddresses) {
+            if (longAddresses) {
                 glyphCacheFormat = LONGARRAY;
                 longGlyphImages = new long[numGlyphs];
                 this.disposer.longGlyphImages = longGlyphImages;

@@ -107,8 +107,9 @@ public class FontFamily {
 
     public void setFont(Font2D font, int style) {
         if (font.getRank() > familyRank) {
-            if (FontManager.logging) {
-                FontManager.logger.warning("Rejecting adding " + font +
+            FontManager fm = FontManagerFactory.getInstance();
+            if (fm.isLogging()) {
+                fm.getLogger().warning("Rejecting adding " + font +
                                            " of lower rank " + font.getRank() +
                                            " to family " + this +
                                            " of rank " + familyRank);

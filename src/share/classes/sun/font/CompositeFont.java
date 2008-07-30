@@ -54,14 +54,17 @@ public final class CompositeFont extends Font2D {
     int numGlyphs = 0;
     int localeSlot = -1; // primary slot for this locale.
 
+    private FontManager fm = null;
+    
     /* See isStdComposite() for when/how this is used */
     boolean isStdComposite = true;
 
     public CompositeFont(String name, String[] compFileNames,
                          String[] compNames, int metricsSlotCnt,
                          int[] exclRanges, int[] maxIndexes,
-                         boolean defer) {
+                         boolean defer, FontManager fm) {
 
+        this.fm = fm;
         handle = new Font2DHandle(this);
         fullName = name;
         componentFileNames = compFileNames;
@@ -85,13 +88,13 @@ public final class CompositeFont extends Font2D {
          * The caller could be responsible for this, but for now it seems
          * better that it is handled internally to the CompositeFont class.
          */
-        if (FontManager.eudcFont != null) {
+        if (fm.getEUDCFont() != null) {
             numSlots++;
             if (componentNames != null) {
                 componentNames = new String[numSlots];
                 System.arraycopy(compNames, 0, componentNames, 0, numSlots-1);
                 componentNames[numSlots-1] =
-                    FontManager.eudcFont.getFontName(null);
+                    fm.getEUDCFont().getFontName(null);
             }
             if (componentFileNames != null) {
                 componentFileNames = new String[numSlots];
@@ -99,7 +102,7 @@ public final class CompositeFont extends Font2D {
                                   componentFileNames, 0, numSlots-1);
             }
             components = new PhysicalFont[numSlots];
-            components[numSlots-1] = FontManager.eudcFont;
+            components[numSlots-1] = fm.getEUDCFont();
             deferredInitialisation = new boolean[numSlots];
             if (defer) {
                 for (int i=0; i<numSlots-1; i++) {
@@ -165,7 +168,7 @@ public final class CompositeFont extends Font2D {
          * it is harmless that we do not know a slot is already initialised
          * and just need to discover that and mark it so.
          */
-        synchronized (FontManager.getInstance()) {
+        synchronized (FontManagerFactory.getInstance()) {
             components = new PhysicalFont[numSlots];
             components[0] = physFont;
             System.arraycopy(compFont.components, 0,
@@ -235,7 +238,6 @@ public final class CompositeFont extends Font2D {
          * This global lock is rarely likely to be an issue as there
          * are only going to be a few calls into this code.
          */
-        FontManager fm = FontManager.getInstance();
         synchronized (fm) {
             if (componentNames == null) {
                 componentNames = new String[numSlots];
@@ -333,7 +335,6 @@ public final class CompositeFont extends Font2D {
         if (deferredInitialisation[slot]) {
             doDeferredInitialisation(slot);
         }
-        FontManager fm = FontManager.getInstance();
         try {
             PhysicalFont font = components[slot];
             if (font == null) {

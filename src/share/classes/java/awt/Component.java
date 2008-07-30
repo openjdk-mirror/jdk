@@ -2764,7 +2764,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public FontMetrics getFontMetrics(Font font) {
         // REMIND: PlatformFont flag should be obsolete soon...
-        if (sun.font.FontManager.usePlatformFontMetrics()) {
+        sun.font.FontManager fm = sun.font.FontManagerFactory.getInstance();
+        if (fm.usePlatformFontMetrics()) {
             if (peer != null &&
                 !(peer instanceof LightweightPeer)) {
                 return peer.getFontMetrics(font);

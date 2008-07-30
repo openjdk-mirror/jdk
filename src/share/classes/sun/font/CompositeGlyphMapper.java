@@ -214,7 +214,7 @@ public final class CompositeGlyphMapper extends CharToGlyphMapper {
             if (code < FontManager.MIN_LAYOUT_CHARCODE) {
                 continue;
             }
-            else if (FontManager.isComplexCharCode(code)) {
+            else if (FontManagerFactory.getInstance().isComplexCharCode(code)) {
                 return true;
             }
             else if (code >= 0x10000) {

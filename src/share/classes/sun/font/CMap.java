@@ -232,7 +232,7 @@ abstract class CMap {
                  * fonts are using gb2312 encoding, have to use this
                  * workaround to make Solaris zh_CN locale work.  -sherman
                  */
-                if (FontManager.isSolaris && font.platName != null &&
+                if (FontManager.IS_SOLARIS && font.platName != null &&
                     (font.platName.startsWith(
                      "/usr/openwin/lib/locale/zh_CN.EUC/X11/fonts/TrueType") ||
                      font.platName.startsWith(
@@ -407,8 +407,9 @@ abstract class CMap {
             subtableLength = buffer.getInt(offset+4) & INTMASK;
         }
         if (offset+subtableLength > buffer.capacity()) {
-            if (FontManager.logging) {
-                FontManager.logger.warning("Cmap subtable overflows buffer.");
+            FontManager fm = FontManagerFactory.getInstance();
+            if (fm.isLogging()) {
+                fm.getLogger().warning("Cmap subtable overflows buffer.");
             }
         }
         switch (subtableFormat) {

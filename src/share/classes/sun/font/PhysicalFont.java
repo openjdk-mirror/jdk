@@ -36,6 +36,8 @@ import java.nio.channels.FileChannel;
 
 public abstract class PhysicalFont extends Font2D {
 
+    protected static final short US_LCID = 0x0409;  // US English - default
+    
     protected String platName;
     // nativeNames is a String or a (possibly null) String[].
     protected Object nativeNames;

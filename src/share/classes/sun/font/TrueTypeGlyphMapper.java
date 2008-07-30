@@ -60,9 +60,9 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
         missingGlyph = 0; /* standard for TrueType fonts */
         ByteBuffer buffer = font.getTableBuffer(TrueTypeFont.maxpTag);
         numGlyphs = buffer.getChar(4); // offset 4 bytes in MAXP table.
-        if (FontManager.isSolaris && isJAlocale && font.supportsJA()) {
+        if (FontManager.IS_SOLARIS && isJAlocale && font.supportsJA()) {
             needsJAremapping = true;
-            if (FontManager.isSolaris8 &&
+            if (FontManager.IS_SOLARIS_8 &&
                 getGlyphFromCMAP(JA_WAVE_DASH_CHAR) == missingGlyph) {
                 remapJAWaveDash = true;
             }
@@ -82,8 +82,9 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
                 glyphCode >= FileFontStrike.INVISIBLE_GLYPHS) {
                 return glyphCode;
             } else {
-                if (FontManager.logging) {
-                    FontManager.logger.warning
+                FontManager fm = FontManagerFactory.getInstance();
+                if (fm.isLogging()) {
+                    fm.getLogger().warning
                         (font + " out of range glyph id=" +
                          Integer.toHexString((int)glyphCode) +
                          " for char " + Integer.toHexString(charCode));
@@ -97,11 +98,12 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
     }
 
     private void handleBadCMAP() {
-        if (FontManager.logging) {
-            FontManager.logger.severe("Null Cmap for " + font +
+        FontManager fm = FontManagerFactory.getInstance();
+        if (fm.isLogging()) {
+            fm.getLogger().severe("Null Cmap for " + font +
                                       "substituting for this font");
         }
-        FontManager.getInstance().deRegisterBadFont(font);
+        FontManagerFactory.getInstance().deRegisterBadFont(font);
         /* The next line is not really a solution, but might
          * reduce the exceptions until references to this font2D
          * are gone.
@@ -245,7 +247,7 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
             if (code < FontManager.MIN_LAYOUT_CHARCODE) {
                 continue;
             }
-            else if (FontManager.isComplexCharCode(code)) {
+            else if (FontManagerFactory.getInstance().isComplexCharCode(code)) {
                 return true;
             }
             else if (code >= 0x10000) {

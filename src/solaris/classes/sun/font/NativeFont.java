@@ -242,7 +242,7 @@ public class NativeFont extends PhysicalFont {
                 mapper = new NativeGlyphMapper(this);
             } else {
                 /* we need to delegate */
-                FontManager fm = FontManager.getInstance();
+                FontManager fm = FontManagerFactory.getInstance();
                 delegateFont = fm.getDefaultPhysicalFont();
                 mapper = delegateFont.getMapper();
             }
@@ -255,7 +255,7 @@ public class NativeFont extends PhysicalFont {
             return new NativeStrike(this, desc);
         } else {
             if (delegateFont == null) {
-                FontManager fm = FontManager.getInstance();
+                FontManager fm = FontManagerFactory.getInstance();
                 delegateFont = fm.getDefaultPhysicalFont();
             }
             /* If no FileFont's are found, delegate font may be
@@ -316,7 +316,7 @@ public class NativeFont extends PhysicalFont {
 
     PhysicalFont getDelegateFont() {
         if (delegateFont == null) {
-            FontManager fm = FontManager.getInstance();
+            FontManager fm = FontManagerFactory.getInstance();
             delegateFont = fm.getDefaultPhysicalFont();
         }
         return delegateFont;

@@ -575,7 +575,7 @@ static int shouldSetXFontPath(JNIEnv *env) {
 }
 #endif /* !HEADLESS */
 
-JNIEXPORT void JNICALL Java_sun_font_FontManager_setNativeFontPath
+JNIEXPORT void JNICALL Java_sun_font_FontManagerBase_setNativeFontPath
 (JNIEnv *env, jclass obj, jstring theString) {
 #ifdef HEADLESS
     return;
@@ -611,7 +611,7 @@ JNIEXPORT void JNICALL Java_sun_font_FontManager_setNativeFontPath
  * use it for lookups to reduce or avoid the need to search font files.
  */
 JNIEXPORT void JNICALL
-Java_sun_font_FontManager_populateFontFileNameMap
+Java_sun_font_FontManagerBase_populateFontFileNameMap
 (JNIEnv *env, jclass obj, jobject fontToFileMap,
  jobject fontToFamilyMap, jobject familyToFontListMap, jobject locale)
 {
@@ -857,7 +857,7 @@ static char **getFontConfigLocations() {
 #define TEXT_AA_LCD_VBGR 7
 
 JNIEXPORT jint JNICALL
-Java_sun_font_FontManager_getFontConfigAASettings
+Java_sun_font_FontConfigManager_getFontConfigAASettings
 (JNIEnv *env, jclass obj, jstring localeStr, jstring fcNameStr) {
 
     FcNameParseFuncType FcNameParse;
@@ -968,7 +968,7 @@ Java_sun_font_FontManager_getFontConfigAASettings
 
 
 JNIEXPORT void JNICALL
-Java_sun_font_FontManager_getFontConfig
+Java_sun_font_FontConfigManager_getFontConfig
 (JNIEnv *env, jclass obj, jstring localeStr, jobjectArray fontInfoArray) {
 
     FcNameParseFuncType FcNameParse;
@@ -989,9 +989,9 @@ Java_sun_font_FontManager_getFontConfig
     jfieldID fcNameID, familyNameID, fontFileID;
 
     jclass fontInfoArrayClass =
-        (*env)->FindClass(env, "[Lsun/font/FontManager$FontConfigInfo;");
+        (*env)->FindClass(env, "[Lsun/font/FontConfigManager$FontConfigInfo;");
     jclass fontInfoClass =
-        (*env)->FindClass(env, "sun/font/FontManager$FontConfigInfo");
+        (*env)->FindClass(env, "sun/font/FontConfigManager$FontConfigInfo");
 
     if (fontInfoArray == NULL || fontInfoClass == NULL) {
         return;

@@ -259,7 +259,8 @@ public final class GlyphLayout {
              */
             int aa =
                 FontStrikeDesc.getAAHintIntVal(frc.getAntiAliasingHint(),
-                                               FontManager.getFont2D(font),
+                                               FontManagerFactory.getInstance().
+                                                   getFont2D(font),
                                                (int)Math.abs(ptSize));
             int fm = FontStrikeDesc.getFMHintIntVal
                 (frc.getFractionalMetricsHint());
@@ -405,7 +406,7 @@ public final class GlyphLayout {
 
         int lang = -1; // default for now
 
-        Font2D font2D = FontManager.getFont2D(font);
+        Font2D font2D = FontManagerFactory.getInstance().getFont2D(font);
 
         _textRecord.init(text, offset, lim, min, max);
         int start = offset;

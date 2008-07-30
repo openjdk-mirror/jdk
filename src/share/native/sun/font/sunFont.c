@@ -75,7 +75,7 @@ void initLCDGammaTables();
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL
-Java_sun_font_FontManager_getPlatformFontVar(JNIEnv *env, jclass cl) {
+Java_sun_font_FontManagerBase_getPlatformFontVar(JNIEnv *env, jclass cl) {
     char *c = getenv("JAVA2D_USEPLATFORMFONT");
     if (c) {
         return JNI_TRUE;
@@ -88,7 +88,7 @@ Java_sun_font_FontManager_getPlatformFontVar(JNIEnv *env, jclass cl) {
 FontManagerNativeIDs sunFontIDs;
 
 JNIEXPORT void JNICALL
-Java_sun_font_FontManager_initIDs
+Java_sun_font_FontManagerBase_initIDs
     (JNIEnv *env, jclass cls) {
 
      jclass tmpClass = (*env)->FindClass(env, "java/awt/Font");
@@ -206,7 +206,7 @@ JNIEXPORT FontManagerNativeIDs getSunFontIDs() {
 }
 
 JNIEXPORT jobject JNICALL
-Java_sun_font_FontManager_getFont2D(
+Java_sun_font_FontManagerBase_getFont2D(
   JNIEnv *env,
   jclass clsFM,
   jobject javaFont) {
@@ -215,7 +215,7 @@ Java_sun_font_FontManager_getFont2D(
 }
 
 JNIEXPORT void JNICALL
-Java_sun_font_FontManager_setFont2D(
+Java_sun_font_FontManagerBase_setFont2D(
   JNIEnv *env,
   jclass clsFM,
   jobject javaFont,
@@ -224,7 +224,7 @@ Java_sun_font_FontManager_setFont2D(
 }
 
 JNIEXPORT void JNICALL
-Java_sun_font_FontManager_setCreatedFont(
+Java_sun_font_FontManagerBase_setCreatedFont(
   JNIEnv *env,
   jclass clsFM,
   jobject javaFont) {
@@ -232,7 +232,7 @@ Java_sun_font_FontManager_setCreatedFont(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_sun_font_FontManager_isCreatedFont(
+Java_sun_font_FontManagerBase_isCreatedFont(
   JNIEnv *env,
   jclass clsFM,
   jobject javaFont) {

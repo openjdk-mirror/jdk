@@ -40,6 +40,7 @@ import sun.awt.FontConfiguration;
 import sun.awt.X11FontManager;
 import sun.awt.X11GraphicsEnvironment;
 import sun.font.FontManager;
+import sun.font.FontManagerFactory;
 import sun.java2d.SunGraphicsEnvironment;
 import java.nio.charset.Charset;
 
@@ -50,7 +51,7 @@ public class MFontConfiguration extends FontConfiguration {
 
     public MFontConfiguration(FontManager fm) {
         super(fm);
-        if (FontManager.debugFonts) {
+        if (fm.debugFonts()) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         initTables();
@@ -61,7 +62,7 @@ public class MFontConfiguration extends FontConfiguration {
                               boolean preferLocaleFonts,
                               boolean preferPropFonts) {
         super(fm, preferLocaleFonts, preferPropFonts);
-        if (FontManager.debugFonts) {
+        if (fm.debugFonts()) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         initTables();
@@ -92,7 +93,7 @@ public class MFontConfiguration extends FontConfiguration {
         reorderMap.put("UTF-8.th", "thai");
         reorderMap.put("UTF-8.zh.TW", "chinese-big5");
         reorderMap.put("UTF-8.zh.HK", split("chinese-big5,chinese-hkscs"));
-        if (sun.font.FontManager.isSolaris8) {
+        if (sun.font.FontManager.IS_SOLARIS_8) {
             reorderMap.put("UTF-8.zh.CN", split("chinese-gb2312,chinese-big5"));
         } else {
             reorderMap.put("UTF-8.zh.CN",
@@ -102,7 +103,7 @@ public class MFontConfiguration extends FontConfiguration {
                        split("chinese-big5,chinese-hkscs,chinese-gb18030-0,chinese-gb18030-1"));
         reorderMap.put("Big5", "chinese-big5");
         reorderMap.put("Big5-HKSCS", split("chinese-big5,chinese-hkscs"));
-        if (! sun.font.FontManager.isSolaris8 && ! sun.font.FontManager.isSolaris9) {
+        if (! sun.font.FontManager.IS_SOLARIS_8 && ! sun.font.FontManager.IS_SOLARIS_9) {
             reorderMap.put("GB2312", split("chinese-gbk,chinese-gb2312"));
         } else {
             reorderMap.put("GB2312","chinese-gb2312");

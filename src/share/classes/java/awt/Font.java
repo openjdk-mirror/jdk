@@ -54,6 +54,7 @@ import sun.font.CompositeFont;
 import sun.font.Font2D;
 import sun.font.Font2DHandle;
 import sun.font.FontManager;
+import sun.font.FontManagerFactory;
 import sun.font.GlyphLayout;
 import sun.font.FontLineMetrics;
 import sun.font.CoreMetrics;
@@ -460,8 +461,8 @@ public class Font implements java.io.Serializable
     }
 
     private Font2D getFont2D() {
-        FontManager fm = FontManager.getInstance();
-        if (fm.usingPerAppContextComposites &&
+        FontManager fm = FontManagerFactory.getInstance();
+        if (fm.usingPerAppContextComposites() &&
             font2DHandle != null &&
             font2DHandle.font2D instanceof CompositeFont &&
             ((CompositeFont)(font2DHandle.font2D)).isStdComposite()) {
@@ -567,7 +568,7 @@ public class Font implements java.io.Serializable
         if (created) {
             if (handle.font2D instanceof CompositeFont &&
                 handle.font2D.getStyle() != style) {
-                FontManager fm = FontManager.getInstance();
+                FontManager fm = FontManagerFactory.getInstance();
                 this.font2DHandle = fm.getNewComposite(null, style, handle);
             } else {
                 this.font2DHandle = handle;
@@ -582,7 +583,7 @@ public class Font implements java.io.Serializable
         /* Font2D instances created by this method track their font file
          * so that when the Font2D is GC'd it can also remove the file.
          */
-        FontManager fm = FontManager.getInstance();
+        FontManager fm = FontManagerFactory.getInstance();
         this.font2DHandle = fm.createFont2D(fontFile, fontFormat, isCopy).handle;
         this.name = this.font2DHandle.font2D.getFontName(Locale.getDefault());
         this.style = Font.PLAIN;
@@ -635,7 +636,7 @@ public class Font implements java.io.Serializable
             }
             if (handle.font2D instanceof CompositeFont) {
                 if (newStyle != -1 || newName != null) {
-                    FontManager fm = FontManager.getInstance();
+                    FontManager fm = FontManagerFactory.getInstance();
                     this.font2DHandle =
                         fm.getNewComposite(newName, newStyle, handle);
                 }
@@ -2252,7 +2253,9 @@ public class Font implements java.io.Serializable
             (values.getKerning() == 0 && values.getLigatures() == 0 &&
               values.getBaselineTransform() == null);
         if (simple) {
-            simple = !FontManager.isComplexText(chars, beginIndex, limit);
+            simple = !FontManagerFactory.getInstance().isComplexText(chars,
+                                                                     beginIndex,
+                                                                     limit);
         }
 
         if (simple) {

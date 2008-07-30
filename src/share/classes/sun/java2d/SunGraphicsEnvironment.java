@@ -63,6 +63,7 @@ import sun.awt.SunDisplayChanger;
 import sun.font.CompositeFontDescriptor;
 import sun.font.Font2D;
 import sun.font.FontManager;
+import sun.font.FontManagerFactory;
 import sun.font.NativeFont;
 
 /**
@@ -186,7 +187,7 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
      * Returns all fonts available in this environment.
      */
     public Font[] getAllFonts() {
-        FontManager fm = FontManager.getInstance();
+        FontManager fm = FontManagerFactory.getInstance();
         Font[] installedFonts = fm.getAllInstalledFonts();
         Font[] created = fm.getCreatedFonts();
         if (created == null || created.length == 0) {
@@ -201,7 +202,7 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
     }
 
     public String[] getAvailableFontFamilyNames(Locale requestedLocale) {
-        FontManager fm = FontManager.getInstance();
+        FontManager fm = FontManagerFactory.getInstance();
         String[] installed = fm.getInstalledFontFamilyNames(requestedLocale);
         /* Use a new TreeMap as used in getInstalledFontFamilyNames
          * and insert all the keys in lower case, so that the sort order
@@ -286,11 +287,11 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
      * call it.
      */
     public static boolean fontSupportsDefaultEncoding(Font font) {
-        return FontManager.fontSupportsDefaultEncoding(font);
+        return FontManagerFactory.getInstance().fontSupportsDefaultEncoding(font);
     }
 
     public static void useAlternateFontforJALocales() {
-        FontManager.useAlternateFontforJALocales();
+        FontManagerFactory.getInstance().useAlternateFontforJALocales();
     }
 
     /* If (as we do on X11) need to set a platform font path,
