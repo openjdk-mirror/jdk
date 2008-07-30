@@ -1292,7 +1292,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
                 enabled = true;
                 ComponentPeer peer = this.peer;
                 if (peer != null) {
-                    peer.enable();
+                    peer.setEnabled(true);
                     if (visible) {
                         updateCursorImmediately();
                     }
@@ -1341,7 +1341,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
                 }
                 ComponentPeer peer = this.peer;
                 if (peer != null) {
-                    peer.disable();
+                    peer.setEnabled(false);
                     if (visible) {
                         updateCursorImmediately();
                     }
@@ -1433,7 +1433,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
                 mixOnShowing();
                 ComponentPeer peer = this.peer;
                 if (peer != null) {
-                    peer.show();
+                    peer.setVisible(true);
                     createHierarchyEvents(HierarchyEvent.HIERARCHY_CHANGED,
                                           this, parent,
                                           HierarchyEvent.SHOWING_CHANGED,
@@ -1503,7 +1503,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
                 }
                 ComponentPeer peer = this.peer;
                 if (peer != null) {
-                    peer.hide();
+                    peer.setVisible(false);
                     createHierarchyEvents(HierarchyEvent.HIERARCHY_CHANGED,
                                           this, parent,
                                           HierarchyEvent.SHOWING_CHANGED,
@@ -2402,7 +2402,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         if (dim == null || !(isPreferredSizeSet() || isValid())) {
             synchronized (getTreeLock()) {
                 prefSize = (peer != null) ?
-                    peer.preferredSize() :
+                    peer.getPreferredSize() :
                     getMinimumSize();
                 dim = prefSize;
             }
@@ -2472,7 +2472,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         if (dim == null || !(isMinimumSizeSet() || isValid())) {
             synchronized (getTreeLock()) {
                 minSize = (peer != null) ?
-                    peer.minimumSize() :
+                    peer.getMinimumSize() :
                     size();
                 dim = minSize;
             }
@@ -3147,7 +3147,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     private Insets getInsets_NoClientCode() {
         ComponentPeer peer = this.peer;
         if (peer instanceof ContainerPeer) {
-            return (Insets)((ContainerPeer)peer).insets().clone();
+            return (Insets)((ContainerPeer)peer).getInsets().clone();
         }
         return new Insets(0, 0, 0, 0);
     }
@@ -6635,7 +6635,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
 
                 // Hide peer first to stop system events such as cursor moves.
                 if (visible) {
-                    p.hide();
+                    p.setVisible(false);
                 }
 
                 peer = null; // Stop peer updates.

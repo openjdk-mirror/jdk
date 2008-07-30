@@ -587,7 +587,7 @@ abstract class MComponentPeer implements ComponentPeer, DropTargetPeer, X11Compo
                     // but return true for compatibility.
                     return true;
                 } else if (getNativeFocusedWindow() != parentWindow) {
-                    WindowPeer wpeer = (WindowPeer)parentWindow.getPeer();
+                    MWindowPeer wpeer = (MWindowPeer)parentWindow.getPeer();
                     boolean res = wpeer.requestWindowFocus();
                     if (focusLog.isLoggable(Level.FINER)) {
                         focusLog.log(Level.FINER, "Requested window focus: " + res);
