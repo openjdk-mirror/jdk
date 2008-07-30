@@ -408,27 +408,6 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
         return fontPath;
     }
 
-    private String[] platformFontDirs;
-    /**
-     * Get all directories which contain installed fonts.
-     */
-    public String[] getPlatformFontDirs() {
-        if (platformFontDirs == null) {
-            String path = getPlatformFontPath(noType1Font);
-            StringTokenizer parser =
-                new StringTokenizer(path, File.pathSeparator);;
-            ArrayList<String> pathList = new ArrayList<String>();
-            try {
-                while (parser.hasMoreTokens()) {
-                    pathList.add(parser.nextToken());
-                }
-            } catch (NoSuchElementException e) {
-            }
-            platformFontDirs = pathList.toArray(new String[0]);
-        }
-        return platformFontDirs;
-    }
-
     /**
      * Whether registerFontFile expects absolute or relative
      * font file names.
@@ -458,13 +437,14 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
         if (discoveredAllFonts) {
             return;
         }
+        final FontManager fm = FontManager.getInstance();
         /* Use lock specific to the font system */
         synchronized (lucidaFontName) {
             if (debugFonts) {
                 Thread.dumpStack();
                 logger.info("SunGraphicsEnvironment.loadFonts() called");
             }
-            FontManager.initialiseDeferredFonts();
+            fm.initialiseDeferredFonts();
 
             java.security.AccessController.doPrivileged(
                                     new java.security.PrivilegedAction() {
@@ -477,14 +457,14 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
                         // this will find all fonts including those already
                         // registered. But we have checks in place to prevent
                         // double registration.
-                        if (!FontManager.gotFontsFromPlatform()) {
+                        if (! fm.gotFontsFromPlatform()) {
                             registerFontsOnPath(fontPath, false,
                                                 Font2D.UNKNOWN_RANK,
                                                 false, true);
                             loadedAllFontFiles = true;
                         }
                     }
-                    FontManager.registerOtherFontFiles(registeredFontFiles);
+                    fm.registerOtherFontFiles(registeredFontFiles);
                     discoveredAllFonts = true;
                     return null;
                 }
@@ -544,7 +524,8 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
      * - we know the fontconfig fonts are all in the windows registry
      */
     private boolean isNameForRegisteredFile(String fontName) {
-        String fileName = FontManager.getFileNameForFontName(fontName);
+        FontManager fm = FontManager.getInstance();
+        String fileName = fm.getFileNameForFontName(fontName);
         if (fileName == null) {
             return false;
         }
@@ -565,7 +546,8 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
              * then be stale.
              */
 
-            Font2D[] allfonts = FontManager.getRegisteredFonts();
+            FontManager fm = FontManager.getInstance();
+            Font2D[] allfonts = fm.getRegisteredFonts();
             for (int i=0; i < allfonts.length; i++) {
                 if (!(allfonts[i] instanceof NativeFont)) {
                     fontMapNames.put(allfonts[i].getFontName(null),
@@ -573,7 +555,7 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
                 }
             }
 
-            String[] platformNames =  FontManager.getFontNamesFromPlatform();
+            String[] platformNames =  fm.getFontNamesFromPlatform();
             if (platformNames != null) {
                 for (int i=0; i<platformNames.length; i++) {
                     if (!isNameForRegisteredFile(platformNames[i])) {
@@ -611,7 +593,8 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
      */
     public Font[] getAllFonts() {
         Font[] installedFonts = getAllInstalledFonts();
-        Font[] created = FontManager.getCreatedFonts();
+        FontManager fm = FontManager.getInstance();
+        Font[] created = fm.getCreatedFonts();
         if (created == null || created.length == 0) {
             return installedFonts;
         } else {
@@ -672,8 +655,9 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
      */
     protected void getJREFontFamilyNames(TreeMap<String,String> familyNames,
                                          Locale requestedLocale) {
-        FontManager.registerDeferredJREFonts(jreFontDirName);
-        Font2D[] physicalfonts = FontManager.getPhysicalFonts();
+        FontManager fm = FontManager.getInstance();
+        fm.registerDeferredJREFonts(jreFontDirName);
+        Font2D[] physicalfonts = fm.getPhysicalFonts();
         for (int i=0; i < physicalfonts.length; i++) {
             if (!(physicalfonts[i] instanceof NativeFont)) {
                 String name =
@@ -711,14 +695,14 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
          * names for the current default locale so long as it is the same
          * as the start-up system locale, rather than loading all fonts.
          */
+        FontManager fm = FontManager.getInstance();
         if (requestedLocale.equals(getSystemStartupLocale()) &&
-            FontManager.getFamilyNamesFromPlatform(familyNames,
-                                                    requestedLocale)) {
+            fm.getFamilyNamesFromPlatform(familyNames, requestedLocale)) {
             /* Augment platform names with JRE font family names */
             getJREFontFamilyNames(familyNames, requestedLocale);
         } else {
             loadFontFiles();
-            Font2D[] physicalfonts = FontManager.getPhysicalFonts();
+            Font2D[] physicalfonts = fm.getPhysicalFonts();
             for (int i=0; i < physicalfonts.length; i++) {
                 if (!(physicalfonts[i] instanceof NativeFont)) {
                     String name =
@@ -751,7 +735,8 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
          * the tree map and just insert new entries, but not so much as
          * to justify the extra internal interface.
          */
-        TreeMap<String, String> map = FontManager.getCreatedFontFamilyNames();
+        FontManager fm = FontManager.getInstance();
+        TreeMap<String, String> map = fm.getCreatedFontFamilyNames();
         if (map == null || map.size() == 0) {
             return installed;
         } else {
@@ -938,13 +923,13 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
             fontFormat = FontManager.FONTFORMAT_NATIVE;
         }
         registeredFontFiles.add(fontFileName);
+        FontManager fm = FontManager.getInstance();
         if (defer) {
-            FontManager.registerDeferredFont(fontFileName,
-                                             fontFileName, nativeNames,
-                                             fontFormat, false, fontRank);
+            fm.registerDeferredFont(fontFileName, fontFileName, nativeNames,
+                                    fontFormat, false, fontRank);
         } else {
-            FontManager.registerFontFile(fontFileName, nativeNames,
-                                         fontFormat, false, fontRank);
+            fm.registerFontFile(fontFileName, nativeNames, fontFormat, false,
+                                fontRank);
         }
     }
 
@@ -1015,9 +1000,9 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
             fontNames[fontCount] = fullName;
             nativeNames[fontCount++] = getNativeNames(fullName, null);
         }
-        FontManager.registerFonts(fontNames, nativeNames, fontCount,
-                                  fontFormat, useJavaRasterizer, fontRank,
-                                  defer);
+        FontManager fm = FontManager.getInstance();
+        fm.registerFonts(fontNames, nativeNames, fontCount, fontFormat,
+                         useJavaRasterizer, fontRank, defer);
         return;
     }
 
@@ -1150,7 +1135,8 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
                     true,
                     altNameCache);
             } else {
-                FontManager.registerCompositeFont(
+                FontManager fm = FontManager.getInstance();
+                fm.registerCompositeFont(
                     descriptor.getFaceName(),
                     componentFileNames, componentFaceNames,
                     descriptor.getCoreComponentCount(),

@@ -112,7 +112,7 @@ import java.awt.geom.NoninvertibleTransformException;
          double scale = Math.abs(desc.devTx.getScaleX());
          pScalerContext = createScalerContext(nameBytes, ptSize, scale);
          if (pScalerContext == 0L) {
-             FontManager.deRegisterBadFont(nativeFont);
+             FontManager.getInstance().deRegisterBadFont(nativeFont);
              pScalerContext = createNullScalerContext();
              numGlyphs = 0;
              if (FontManager.logging) {

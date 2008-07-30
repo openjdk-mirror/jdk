@@ -98,8 +98,8 @@ public abstract class FontManager {
      * the channels, as the font needs to do the open/close work.
      */
     private static final int CHANNELPOOLSIZE = 20;
-    private static int lastPoolIndex = 0;
-    private static FileFont fontFileCache[] = new FileFont[CHANNELPOOLSIZE];
+    private int lastPoolIndex = 0;
+    private FileFont fontFileCache[] = new FileFont[CHANNELPOOLSIZE];
 
     /* Need to implement a simple linked list scheme for fast
      * traversal and lookup.
@@ -110,28 +110,28 @@ public abstract class FontManager {
      * later if more are needed, eg for user-defined composites or locale
      * variants.
      */
-    private static int maxCompFont = 0;
-    private static CompositeFont [] compFonts = new CompositeFont[20];
-    private static ConcurrentHashMap<String, CompositeFont>
+    private int maxCompFont = 0;
+    private CompositeFont [] compFonts = new CompositeFont[20];
+    private ConcurrentHashMap<String, CompositeFont>
         compositeFonts = new ConcurrentHashMap<String, CompositeFont>();
-    private static ConcurrentHashMap<String, PhysicalFont>
+    private ConcurrentHashMap<String, PhysicalFont>
         physicalFonts = new ConcurrentHashMap<String, PhysicalFont>();
-    private static ConcurrentHashMap<String, PhysicalFont>
+    private ConcurrentHashMap<String, PhysicalFont>
         registeredFontFiles = new ConcurrentHashMap<String, PhysicalFont>();
 
     /* given a full name find the Font. Remind: there's duplication
      * here in that this contains the content of compositeFonts +
      * physicalFonts.
      */
-    private static ConcurrentHashMap<String, Font2D>
+    private ConcurrentHashMap<String, Font2D>
         fullNameToFont = new ConcurrentHashMap<String, Font2D>();
 
     /* TrueType fonts have localised names. Support searching all
      * of these before giving up on a name.
      */
-    private static HashMap<String, TrueTypeFont> localeFullNamesToFont;
+    private HashMap<String, TrueTypeFont> localeFullNamesToFont;
 
-    private static PhysicalFont defaultPhysicalFont;
+    private PhysicalFont defaultPhysicalFont;
 
     /* deprecated, unsupported hack - actually invokes a bug! */
     private static boolean usePlatformFontMetrics = false;
@@ -145,20 +145,22 @@ public abstract class FontManager {
     static boolean isSolaris;
     public static boolean isSolaris8; // needed to check for JA wavedash fix.
     public static boolean isSolaris9; // needed to check for songti font usage.
-    private static boolean loaded1dot0Fonts = false;
+    private boolean loaded1dot0Fonts = false;
     static SunGraphicsEnvironment sgEnv;
-    static boolean loadedAllFonts = false;
-    static boolean loadedAllFontFiles = false;
+    boolean loadedAllFonts = false;
+    boolean loadedAllFontFiles = false;
     static TrueTypeFont eudcFont;
-    static HashMap<String,String> jreFontMap;
-    static HashSet<String> jreLucidaFontFiles;
-    static String[] jreOtherFontFiles;
-    static boolean noOtherJREFontFiles = false; // initial assumption.
+    HashMap<String,String> jreFontMap;
+    HashSet<String> jreLucidaFontFiles;
+    String[] jreOtherFontFiles;
+    boolean noOtherJREFontFiles = false; // initial assumption.
+
+    public static boolean noType1Font;
 
     /* Used to indicate required return type from toArray(..); */
     private static String[] STR_ARRAY = new String[0];
 
-    private static void initJREFontMap() {
+    private void initJREFontMap() {
 
         /* Key is familyname+style value as an int.
          * Value is filename containing the font.
@@ -230,7 +232,6 @@ public abstract class FontManager {
             logger = Logger.getLogger("sun.java2d", null);
             logging = logger.getLevel() != Level.OFF;
         }
-        initJREFontMap();
 
         java.security.AccessController.doPrivileged(
                                     new java.security.PrivilegedAction() {
@@ -281,6 +282,8 @@ public abstract class FontManager {
                        }
                    }
                }
+               noType1Font =
+                   "true".equals(System.getProperty("sun.java2d.noType1Font"));
                return null;
            }
         });
@@ -324,7 +327,11 @@ public abstract class FontManager {
         return instance;
     }
 
-    public static void addToPool(FileFont font) {
+    protected FontManager() {
+        initJREFontMap();
+    }
+
+    public void addToPool(FileFont font) {
 
         FileFont fontFileToClose = null;
         int freeSlot = -1;
@@ -387,7 +394,7 @@ public abstract class FontManager {
      * REMIND: consider how to know when a createFont created font should
      * be closed.
      */
-    public static void removeFromPool(FileFont font) {
+    public void removeFromPool(FileFont font) {
         synchronized (fontFileCache) {
             for (int i=0; i<CHANNELPOOLSIZE; i++) {
                 if (fontFileCache[i] == font) {
@@ -486,7 +493,7 @@ public abstract class FontManager {
      * }
      * return fuir;
      */
-    public static FontUIResource getCompositeFontUIResource(Font font) {
+    public FontUIResource getCompositeFontUIResource(Font font) {
 
         FontUIResource fuir =
             new FontUIResource(font.getName(),font.getStyle(),font.getSize());
@@ -519,8 +526,8 @@ public abstract class FontManager {
         return fuir;
     }
 
-    public static Font2DHandle getNewComposite(String family, int style,
-                                               Font2DHandle handle) {
+    public Font2DHandle getNewComposite(String family, int style,
+                                        Font2DHandle handle) {
 
         if (!(handle.font2D instanceof CompositeFont)) {
             return handle;
@@ -556,13 +563,13 @@ public abstract class FontManager {
     private static native boolean isCreatedFont(Font font);
     private static native void setCreatedFont(Font font);
 
-    public static void registerCompositeFont(String compositeName,
-                                             String[] componentFileNames,
-                                             String[] componentNames,
-                                             int numMetricsSlots,
-                                             int[] exclusionRanges,
-                                             int[] exclusionMaxIndex,
-                                             boolean defer) {
+    public void registerCompositeFont(String compositeName,
+                                      String[] componentFileNames,
+                                      String[] componentNames,
+                                      int numMetricsSlots,
+                                      int[] exclusionRanges,
+                                      int[] exclusionMaxIndex,
+                                      boolean defer) {
 
         CompositeFont cf = new CompositeFont(compositeName,
                                              componentFileNames,
@@ -617,7 +624,7 @@ public abstract class FontManager {
         altNameCache.put(compositeName.toLowerCase(Locale.ENGLISH), cf);
     }
 
-    private static void addCompositeToFontList(CompositeFont f, int rank) {
+    private void addCompositeToFontList(CompositeFont f, int rank) {
 
         if (logging) {
             logger.info("Add to Family "+ f.familyName +
@@ -665,7 +672,7 @@ public abstract class FontManager {
      * If it returns null means this font was not registered and none
      * in that name is registered. The caller must find a substitute
      */
-    private static PhysicalFont addToFontList(PhysicalFont f, int rank) {
+    private PhysicalFont addToFontList(PhysicalFont f, int rank) {
 
         String fontName = f.fullName;
         String familyName = f.familyName;
@@ -787,7 +794,7 @@ public abstract class FontManager {
         }
     }
 
-    public static Font2D[] getRegisteredFonts() {
+    public Font2D[] getRegisteredFonts() {
         PhysicalFont[] physFonts = getPhysicalFonts();
         int mcf = maxCompFont; /* for MT-safety */
         Font2D[] regFonts = new Font2D[physFonts.length+mcf];
@@ -796,7 +803,7 @@ public abstract class FontManager {
         return regFonts;
     }
 
-    public static PhysicalFont[] getPhysicalFonts() {
+    public PhysicalFont[] getPhysicalFonts() {
         return physicalFonts.values().toArray(new PhysicalFont[0]);
     }
 
@@ -832,10 +839,10 @@ public abstract class FontManager {
         }
     }
 
-    private static final ConcurrentHashMap<String, FontRegistrationInfo>
+    private final ConcurrentHashMap<String, FontRegistrationInfo>
         deferredFontFiles =
         new ConcurrentHashMap<String, FontRegistrationInfo>();
-    private static final ConcurrentHashMap<String, Font2DHandle>
+    private final ConcurrentHashMap<String, Font2DHandle>
         initialisedFonts = new ConcurrentHashMap<String, Font2DHandle>();
 
     /* Remind: possibly enhance initialiseDeferredFonts() to be
@@ -844,13 +851,13 @@ public abstract class FontManager {
      * fonts reference the same font face name (cf the Solaris
      * euro fonts).
      */
-    public static synchronized void initialiseDeferredFonts() {
+    public synchronized void initialiseDeferredFonts() {
         for (String fileName : deferredFontFiles.keySet()) {
             initialiseDeferredFont(fileName);
         }
     }
 
-    public static synchronized void registerDeferredJREFonts(String jreDir) {
+    public synchronized void registerDeferredJREFonts(String jreDir) {
         for (FontRegistrationInfo info : deferredFontFiles.values()) {
             if (info.fontFilePath != null &&
                 info.fontFilePath.startsWith(jreDir)) {
@@ -868,7 +875,7 @@ public abstract class FontManager {
      * this method call, HashMap.get() and null reference test, then
      * a boolean test of noOtherJREFontFiles.
      */
-    private static PhysicalFont findJREDeferredFont(String name, int style) {
+    private PhysicalFont findJREDeferredFont(String name, int style) {
 
         PhysicalFont physicalFont;
         String nameAndStyle = name.toLowerCase(Locale.ENGLISH) + style;
@@ -943,7 +950,7 @@ public abstract class FontManager {
     }
 
     /* This skips JRE installed fonts. */
-    private static PhysicalFont findOtherDeferredFont(String name, int style) {
+    private PhysicalFont findOtherDeferredFont(String name, int style) {
         for (String fileName : deferredFontFiles.keySet()) {
             File file = new File(fileName);
             String dir = file.getParent();
@@ -964,7 +971,7 @@ public abstract class FontManager {
         return null;
     }
 
-    private static PhysicalFont findDeferredFont(String name, int style) {
+    private PhysicalFont findDeferredFont(String name, int style) {
 
         PhysicalFont physicalFont = findJREDeferredFont(name, style);
         if (physicalFont != null) {
@@ -974,12 +981,12 @@ public abstract class FontManager {
         }
     }
 
-    public static void registerDeferredFont(String fileNameKey,
-                                            String fullPathName,
-                                            String[] nativeNames,
-                                            int fontFormat,
-                                            boolean useJavaRasterizer,
-                                            int fontRank) {
+    public void registerDeferredFont(String fileNameKey,
+                                     String fullPathName,
+                                     String[] nativeNames,
+                                     int fontFormat,
+                                     boolean useJavaRasterizer,
+                                     int fontRank) {
         FontRegistrationInfo regInfo =
             new FontRegistrationInfo(fullPathName, nativeNames, fontFormat,
                                      useJavaRasterizer, fontRank);
@@ -987,7 +994,7 @@ public abstract class FontManager {
     }
 
 
-    public static synchronized
+    public synchronized
          PhysicalFont initialiseDeferredFont(String fileNameKey) {
 
         if (fileNameKey == null) {
@@ -1033,11 +1040,11 @@ public abstract class FontManager {
      * derived from this file, and may be null. See addToFontList for
      * some explanation of this.
      */
-    public static PhysicalFont registerFontFile(String fileName,
-                                                String[] nativeNames,
-                                                int fontFormat,
-                                                boolean useJavaRasterizer,
-                                                int fontRank) {
+    public PhysicalFont registerFontFile(String fileName,
+                                         String[] nativeNames,
+                                         int fontFormat,
+                                         boolean useJavaRasterizer,
+                                         int fontRank) {
 
         PhysicalFont regFont = registeredFontFiles.get(fileName);
         if (regFont != null) {
@@ -1092,7 +1099,7 @@ public abstract class FontManager {
         return physicalFont;
     }
 
-    public static void registerFonts(String[] fileNames,
+    public void registerFonts(String[] fileNames,
                                      String[][] nativeNames,
                                      int fontCount,
                                      int fontFormat,
@@ -1116,7 +1123,7 @@ public abstract class FontManager {
      * system is not useful and the graphics environment cannot sustain
      * the Java platform.
      */
-    public static PhysicalFont getDefaultPhysicalFont() {
+    public PhysicalFont getDefaultPhysicalFont() {
         if (defaultPhysicalFont == null) {
             /* findFont2D will load all fonts before giving up the search.
              * If the JRE Lucida isn't found (eg because the JRE fonts
@@ -1149,7 +1156,7 @@ public abstract class FontManager {
         return defaultPhysicalFont;
     }
 
-    public static CompositeFont getDefaultLogicalFont(int style) {
+    public CompositeFont getDefaultLogicalFont(int style) {
         return (CompositeFont)findFont2D("dialog", style, NO_FALLBACK);
     }
 
@@ -1201,27 +1208,27 @@ public abstract class FontManager {
      * Eg "arial bold" -> ARIALBD.TTF.
      * For TTC files, there is a mapping for each font in the file.
      */
-    private static HashMap<String,String> fontToFileMap = null;
+    private HashMap<String,String> fontToFileMap = null;
 
     /* Obtained from Platform APIs (windows only)
      * Map from lower-case font full name to the name of its font family
      * Eg "arial bold" -> "Arial"
      */
-    private static HashMap<String,String> fontToFamilyNameMap = null;
+    private HashMap<String,String> fontToFamilyNameMap = null;
 
     /* Obtained from Platform APIs (windows only)
      * Map from a lower-case family name to a list of full names of
      * the member fonts, eg:
      * "arial" -> ["Arial", "Arial Bold", "Arial Italic","Arial Bold Italic"]
      */
-    private static HashMap<String,ArrayList<String>> familyToFontListMap= null;
+    private HashMap<String,ArrayList<String>> familyToFontListMap= null;
 
     /* The directories which contain platform fonts */
-    private static String[] pathDirs = null;
+    private String[] pathDirs = null;
 
-    private static boolean haveCheckedUnreferencedFontFiles;
+    private boolean haveCheckedUnreferencedFontFiles;
 
-    private static String[] getFontFilesFromPath(boolean noType1) {
+    private String[] getFontFilesFromPath(boolean noType1) {
         final FilenameFilter filter;
         if (noType1) {
             filter = SunGraphicsEnvironment.ttFilter;
@@ -1278,7 +1285,7 @@ public abstract class FontManager {
      * missing font(s) we are looking for.
      * Open each of these files to find out.
      */
-    private static void resolveWindowsFonts() {
+    private void resolveWindowsFonts() {
 
         ArrayList<String> unmappedFontNames = null;
         for (String font : fontToFamilyNameMap.keySet()) {
@@ -1423,7 +1430,7 @@ public abstract class FontManager {
      * with the ones in the directory listing approach, and for each
      * in the latter list that is missing from the former list, register it.
      */
-    private static synchronized void checkForUnreferencedFontFiles() {
+    private synchronized void checkForUnreferencedFontFiles() {
         if (haveCheckedUnreferencedFontFiles) {
             return;
         }
@@ -1489,8 +1496,8 @@ public abstract class FontManager {
         }
     }
 
-    private static void resolveFontFiles(HashSet<String> unmappedFiles,
-                                         ArrayList<String> unmappedFonts) {
+    private void resolveFontFiles(HashSet<String> unmappedFiles,
+                                  ArrayList<String> unmappedFonts) {
 
         Locale l = SunToolkit.getStartupLocale();
 
@@ -1521,11 +1528,10 @@ public abstract class FontManager {
         }
     }
 
-    private static synchronized HashMap<String,String> getFullNameToFileMap() {
+    private synchronized HashMap<String,String> getFullNameToFileMap() {
         if (fontToFileMap == null) {
 
-            initSGEnv();
-            pathDirs = sgEnv.getPlatformFontDirs();
+            pathDirs = getPlatformFontDirs(noType1Font);
 
             fontToFileMap = new HashMap<String,String>(100);
             fontToFamilyNameMap = new HashMap<String,String>(100);
@@ -1544,7 +1550,7 @@ public abstract class FontManager {
         return fontToFileMap;
     }
 
-    private static void logPlatformFontInfo() {
+    private void logPlatformFontInfo() {
         for (int i=0; i< pathDirs.length;i++) {
             logger.info("fontdir="+pathDirs[i]);
         }
@@ -1562,7 +1568,7 @@ public abstract class FontManager {
     }
 
     /* Note this return list excludes logical fonts and JRE fonts */
-    public static String[] getFontNamesFromPlatform() {
+    public String[] getFontNamesFromPlatform() {
         if (getFullNameToFileMap().size() == 0) {
             return null;
         }
@@ -1578,16 +1584,16 @@ public abstract class FontManager {
         return fontNames.toArray(STR_ARRAY);
     }
 
-    public static boolean gotFontsFromPlatform() {
+    public boolean gotFontsFromPlatform() {
         return getFullNameToFileMap().size() != 0;
     }
 
-    public static String getFileNameForFontName(String fontName) {
+    public String getFileNameForFontName(String fontName) {
         String fontNameLC = fontName.toLowerCase(Locale.ENGLISH);
         return fontToFileMap.get(fontNameLC);
     }
 
-    private static PhysicalFont registerFontFile(String file) {
+    private PhysicalFont registerFontFile(String file) {
         if (new File(file).isAbsolute() &&
             !registeredFontFiles.contains(file)) {
             int fontFormat = FONTFORMAT_NONE;
@@ -1616,7 +1622,7 @@ public abstract class FontManager {
      * to register those again, but we do want to register other registry
      * installed fonts.
      */
-    public static void registerOtherFontFiles(HashSet registeredFontFiles) {
+    public void registerOtherFontFiles(HashSet registeredFontFiles) {
         if (getFullNameToFileMap().size() == 0) {
             return;
         }
@@ -1625,7 +1631,7 @@ public abstract class FontManager {
         }
     }
 
-    public static boolean
+    public boolean
         getFamilyNamesFromPlatform(TreeMap<String,String> familyNames,
                                    Locale requestedLocale) {
         if (getFullNameToFileMap().size() == 0) {
@@ -1641,7 +1647,7 @@ public abstract class FontManager {
     /* Path may be absolute or a base file name relative to one of
      * the platform font directories
      */
-    private static String getPathName(String s) {
+    private String getPathName(String s) {
         File f = new File(s);
         if (f.isAbsolute()) {
             return s;
@@ -1678,7 +1684,7 @@ public abstract class FontManager {
      * because so much of the logic is intertwined with the logic in
      * findFont2D.
      */
-    private static Font2D findFontFromPlatform(String lcName, int style) {
+    private Font2D findFontFromPlatform(String lcName, int style) {
         if (getFullNameToFileMap().size() == 0) {
             return null;
         }
@@ -1768,7 +1774,7 @@ public abstract class FontManager {
         return font;
     }
 
-    private static ConcurrentHashMap<String, Font2D> fontNameCache =
+    private ConcurrentHashMap<String, Font2D> fontNameCache =
         new ConcurrentHashMap<String, Font2D>();
 
     /*
@@ -1778,7 +1784,7 @@ public abstract class FontManager {
      * exist only in some other style. For non-native fonts the scaler
      * may be able to emulate the required style.
      */
-    public static Font2D findFont2D(String name, int style, int fallback) {
+    public Font2D findFont2D(String name, int style, int fallback) {
         String lowerCaseName = name.toLowerCase(Locale.ENGLISH);
         String mapName = lowerCaseName + dotStyleStr(style);
         Font2D font;
@@ -2372,7 +2378,7 @@ public abstract class FontManager {
         lcidMap = map;
     }
 
-    public static int getNumFonts() {
+    public int getNumFonts() {
         return physicalFonts.size()+maxCompFont;
     }
 
@@ -2384,11 +2390,11 @@ public abstract class FontManager {
     public synchronized static native void setNativeFontPath(String fontPath);
 
 
-    private static Thread fileCloser = null;
-    static Vector<File> tmpFontFiles = null;
+    private Thread fileCloser = null;
+    Vector<File> tmpFontFiles = null;
 
-    public static Font2D createFont2D(File fontFile, int fontFormat,
-                                      boolean isCopy)
+    public Font2D createFont2D(File fontFile, int fontFormat,
+                               boolean isCopy)
         throws FontFormatException {
 
         String fontFilePath = fontFile.getPath();
@@ -2419,7 +2425,7 @@ public abstract class FontManager {
         }
         if (isCopy) {
             font2D.setFileToRemove(fontFile);
-            synchronized (FontManager.class) {
+            synchronized (this) {
 
                 if (tmpFontFiles == null) {
                     tmpFontFiles = new Vector<File>();
@@ -2484,7 +2490,7 @@ public abstract class FontManager {
     /* remind: used in X11GraphicsEnvironment and called often enough
      * that we ought to obsolete this code
      */
-    public synchronized static String getFullNameByFileName(String fileName) {
+    public synchronized String getFullNameByFileName(String fileName) {
         PhysicalFont[] physFonts = getPhysicalFonts();
         for (int i=0;i<physFonts.length;i++) {
             if (physFonts[i].platName.equals(fileName)) {
@@ -2506,7 +2512,7 @@ public abstract class FontManager {
      * crashing This code assumes a PhysicalFont parameter as it doesn't
      * make sense for a Composite to be "bad".
      */
-    public static synchronized void deRegisterBadFont(Font2D font2D) {
+    public synchronized void deRegisterBadFont(Font2D font2D) {
         if (!(font2D instanceof PhysicalFont)) {
             /* We should never reach here, but just in case */
             return;
@@ -2522,8 +2528,8 @@ public abstract class FontManager {
      * This encapsulates all the work that needs to be done when a
      * Font2D is replaced by a different Font2D.
      */
-    public static synchronized void replaceFont(PhysicalFont oldFont,
-                                                PhysicalFont newFont) {
+    public synchronized void replaceFont(PhysicalFont oldFont,
+                                         PhysicalFont newFont) {
 
         if (oldFont.handle.font2D != oldFont) {
             /* already done */
@@ -2618,7 +2624,7 @@ public abstract class FontManager {
         }
     }
 
-    private static synchronized void loadLocaleNames() {
+    private synchronized void loadLocaleNames() {
         if (localeFullNamesToFont != null) {
             return;
         }
@@ -2646,7 +2652,7 @@ public abstract class FontManager {
      * a bogus font name is used and we need to check all possible names
      * before returning the default case.
      */
-    private static Font2D findFont2DAllLocales(String name, int style) {
+    private Font2D findFont2DAllLocales(String name, int style) {
 
         if (logging) {
             logger.info("Searching localised font names for:" + name);
@@ -2675,7 +2681,7 @@ public abstract class FontManager {
         }
 
         /* If it wasn't a family name, it should be a full name. */
-        synchronized (FontManager.class) {
+        synchronized (this) {
             font = localeFullNamesToFont.get(name);
         }
         if (font != null) {
@@ -2763,15 +2769,15 @@ public abstract class FontManager {
     private static final Object altJAFontKey       = new Object();
     private static final Object localeFontKey       = new Object();
     private static final Object proportionalFontKey = new Object();
-    public static boolean usingPerAppContextComposites = false;
-    private static boolean usingAlternateComposites = false;
+    public boolean usingPerAppContextComposites = false;
+    private boolean usingAlternateComposites = false;
 
     /* These values are used only if we are running as a standalone
      * application, as determined by maybeMultiAppContext();
      */
     private static boolean gAltJAFont = false;
-    private static boolean gLocalePref = false;
-    private static boolean gPropPref = false;
+    private boolean gLocalePref = false;
+    private boolean gPropPref = false;
 
     /* This method doesn't check if alternates are selected in this app
      * context. Its used by the FontMetrics caching code which in such
@@ -2786,11 +2792,11 @@ public abstract class FontManager {
      * logical font definitions we may need to revisit this if GTK reports
      * combined metrics instead. For now though this test can be simple.
      */
-    static boolean maybeUsingAlternateCompositeFonts() {
+    boolean maybeUsingAlternateCompositeFonts() {
        return usingAlternateComposites || usingPerAppContextComposites;
     }
 
-    public static boolean usingAlternateCompositeFonts() {
+    public boolean usingAlternateCompositeFonts() {
         return (usingAlternateComposites ||
                 (usingPerAppContextComposites &&
                 AppContext.getAppContext().get(CompositeFont.class) != null));
@@ -2837,7 +2843,7 @@ public abstract class FontManager {
         }
     }
 
-    public static synchronized void preferLocaleFonts() {
+    public synchronized void preferLocaleFonts() {
 
         initSGEnv();
 
@@ -2870,7 +2876,7 @@ public abstract class FontManager {
         }
     }
 
-    public static synchronized void preferProportionalFonts() {
+    public synchronized void preferProportionalFonts() {
 
         /* If no proportional fonts are configured, there's no need
          * to take any action.
@@ -2926,12 +2932,12 @@ public abstract class FontManager {
     /* Keys are used to lookup per-AppContext Hashtables */
     private static final Object regFamilyKey  = new Object();
     private static final Object regFullNameKey = new Object();
-    private static Hashtable<String,FontFamily> createdByFamilyName;
-    private static Hashtable<String,Font2D>     createdByFullName;
-    private static boolean fontsAreRegistered = false;
-    private static boolean fontsAreRegisteredPerAppContext = false;
+    private Hashtable<String,FontFamily> createdByFamilyName;
+    private Hashtable<String,Font2D>     createdByFullName;
+    private boolean fontsAreRegistered = false;
+    private boolean fontsAreRegisteredPerAppContext = false;
 
-    public static boolean registerFont(Font font) {
+    public boolean registerFont(Font font) {
         /* This method should not be called with "null".
          * It is the caller's responsibility to ensure that.
          */
@@ -3027,7 +3033,7 @@ public abstract class FontManager {
     }
 
     /* Remove from the name cache all references to the Font2D */
-    private static void removeFromCache(Font2D font) {
+    private void removeFromCache(Font2D font) {
         if (font == null) {
             return;
         }
@@ -3040,7 +3046,7 @@ public abstract class FontManager {
     }
 
     // It may look odd to use TreeMap but its more convenient to the caller.
-    public static TreeMap<String, String> getCreatedFontFamilyNames() {
+    public TreeMap<String, String> getCreatedFontFamilyNames() {
 
         Hashtable<String,FontFamily> familyTable;
         if (fontsAreRegistered) {
@@ -3068,7 +3074,7 @@ public abstract class FontManager {
         }
     }
 
-    public static Font[] getCreatedFonts() {
+    public Font[] getCreatedFonts() {
 
         Hashtable<String,Font2D> nameTable;
         if (fontsAreRegistered) {
@@ -3201,7 +3207,7 @@ public abstract class FontManager {
     /* This array has the array elements created in Java code and is
      * passed down to native to be filled in.
      */
-    private static FontConfigInfo[] fontConfigFonts;
+    private FontConfigInfo[] fontConfigFonts;
 
     /* Return an array of FontConfigInfo structs describing the primary
      * font located for each of fontconfig/GTK/Pango's logical font names.
@@ -3216,7 +3222,7 @@ public abstract class FontManager {
      * In that event this method would need to return directly the array
      * to be used by the caller in case it subsequently changed.
      */
-    private static void initFontConfigFonts() {
+    private void initFontConfigFonts() {
 
         if (fontConfigFonts != null) {
             return;
@@ -3255,7 +3261,7 @@ public abstract class FontManager {
         }
     }
 
-    private static PhysicalFont registerFromFcInfo(FontConfigInfo fcInfo) {
+    private PhysicalFont registerFromFcInfo(FontConfigInfo fcInfo) {
 
         /* If it's a TTC file we need to know that as we will need to
          * make sure we return the right font */
@@ -3334,7 +3340,7 @@ public abstract class FontManager {
         return physFont;
     }
 
-    private String[] getPlatformFontDirs() {
+    private String[] getPlatformFontDirs(boolean noType1Fonts) {
         String path = getFontPath(true);
         StringTokenizer parser =
             new StringTokenizer(path, File.pathSeparator);
@@ -3362,7 +3368,7 @@ public abstract class FontManager {
         if (isWindows) {
             info[0] = "Arial";
             info[1] = "c:\\windows\\fonts";
-            final String[] dirs = getPlatformFontDirs();
+            final String[] dirs = getPlatformFontDirs(true);
             if (dirs.length > 1) {
                 String dir = (String)
                     AccessController.doPrivileged(new PrivilegedAction() {
@@ -3428,7 +3434,7 @@ public abstract class FontManager {
      * We need to return a Composite font which has as the font in
      * its first slot one obtained from fontconfig.
      */
-    private static CompositeFont getFontConfigFont(String name, int style) {
+    private CompositeFont getFontConfigFont(String name, int style) {
 
         name = name.toLowerCase();
 
@@ -3534,8 +3540,8 @@ public abstract class FontManager {
      * such as whether we should prefer embedded bitmaps over antialiasing.
      * There's no way to express that via a Font at present.
      */
-    public static FontUIResource getFontConfigFUIR(String fcFamily,
-                                                   int style, int size) {
+    public FontUIResource getFontConfigFUIR(String fcFamily,
+                                            int style, int size) {
 
         String mappedName = mapFcName(fcFamily);
         if (mappedName == null) {
@@ -3788,10 +3794,10 @@ public abstract class FontManager {
      * in case when scaler reports this.
      */
 
-    public static FontScaler getScaler(Font2D font,
-                                       int indexInCollection,
-                                       boolean supportsCJK,
-                                       int filesize) {
+    public FontScaler getScaler(Font2D font,
+                                int indexInCollection,
+                                boolean supportsCJK,
+                                int filesize) {
         FontScaler scaler = null;
 
         try {

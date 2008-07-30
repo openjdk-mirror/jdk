@@ -28,6 +28,8 @@ package java.awt;
 
 import java.awt.image.BufferedImage;
 import java.util.Locale;
+
+import sun.font.FontManager;
 import sun.java2d.HeadlessGraphicsEnvironment;
 import sun.java2d.SunGraphicsEnvironment;
 
@@ -332,7 +334,8 @@ public abstract class GraphicsEnvironment {
         if (font == null) {
             throw new NullPointerException("font cannot be null.");
         }
-        return sun.font.FontManager.registerFont(font);
+        FontManager fm = FontManager.getInstance();
+        return fm.registerFont(font);
     }
 
     /**
@@ -356,7 +359,8 @@ public abstract class GraphicsEnvironment {
      * @since 1.5
      */
     public void preferLocaleFonts() {
-        sun.font.FontManager.preferLocaleFonts();
+        FontManager fm = FontManager.getInstance();
+        fm.preferLocaleFonts();
     }
 
     /**
@@ -376,7 +380,8 @@ public abstract class GraphicsEnvironment {
      * @since 1.5
      */
     public void preferProportionalFonts() {
-        sun.font.FontManager.preferProportionalFonts();
+        FontManager fm = FontManager.getInstance();
+        fm.preferProportionalFonts();
     }
 
     /**

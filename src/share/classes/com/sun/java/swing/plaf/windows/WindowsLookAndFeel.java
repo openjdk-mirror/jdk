@@ -2348,7 +2348,8 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
                     }
                 }
                 else {
-                    font = FontManager.getCompositeFontUIResource(font);
+                    FontManager fm = FontManager.getInstance();
+                    font = fm.getCompositeFontUIResource(font);
                 }
                 return font;
 

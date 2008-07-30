@@ -460,16 +460,17 @@ public class Font implements java.io.Serializable
     }
 
     private Font2D getFont2D() {
-        if (FontManager.usingPerAppContextComposites &&
+        FontManager fm = FontManager.getInstance();
+        if (fm.usingPerAppContextComposites &&
             font2DHandle != null &&
             font2DHandle.font2D instanceof CompositeFont &&
             ((CompositeFont)(font2DHandle.font2D)).isStdComposite()) {
-            return FontManager.findFont2D(name, style,
+            return fm.findFont2D(name, style,
                                           FontManager.LOGICAL_FALLBACK);
         } else if (font2DHandle == null) {
             font2DHandle =
-                FontManager.findFont2D(name, style,
-                                       FontManager.LOGICAL_FALLBACK).handle;
+                fm.findFont2D(name, style,
+                              FontManager.LOGICAL_FALLBACK).handle;
         }
         /* Do not cache the de-referenced font2D. It must be explicitly
          * de-referenced to pick up a valid font in the event that the
@@ -566,8 +567,8 @@ public class Font implements java.io.Serializable
         if (created) {
             if (handle.font2D instanceof CompositeFont &&
                 handle.font2D.getStyle() != style) {
-                this.font2DHandle =
-                    FontManager.getNewComposite(null, style, handle);
+                FontManager fm = FontManager.getInstance();
+                this.font2DHandle = fm.getNewComposite(null, style, handle);
             } else {
                 this.font2DHandle = handle;
             }
@@ -581,8 +582,8 @@ public class Font implements java.io.Serializable
         /* Font2D instances created by this method track their font file
          * so that when the Font2D is GC'd it can also remove the file.
          */
-        this.font2DHandle =
-            FontManager.createFont2D(fontFile, fontFormat, isCopy).handle;
+        FontManager fm = FontManager.getInstance();
+        this.font2DHandle = fm.createFont2D(fontFile, fontFormat, isCopy).handle;
         this.name = this.font2DHandle.font2D.getFontName(Locale.getDefault());
         this.style = Font.PLAIN;
         this.size = 1;
@@ -634,8 +635,9 @@ public class Font implements java.io.Serializable
             }
             if (handle.font2D instanceof CompositeFont) {
                 if (newStyle != -1 || newName != null) {
+                    FontManager fm = FontManager.getInstance();
                     this.font2DHandle =
-                        FontManager.getNewComposite(newName, newStyle, handle);
+                        fm.getNewComposite(newName, newStyle, handle);
                 }
             } else if (newName != null) {
                 this.createdFont = false;

@@ -589,7 +589,8 @@ public class Type1Font extends FileFont {
 
     protected synchronized FontScaler getScaler() {
         if (scaler == null) {
-            scaler = FontManager.getScaler(this, 0, false, fileSize);
+            FontManager fm = FontManager.getInstance();
+            return fm.getScaler(this, 0, false, fileSize);
         }
 
         return scaler;

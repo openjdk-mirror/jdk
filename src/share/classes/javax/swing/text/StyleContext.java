@@ -264,7 +264,8 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
                 f = new Font(family, style, size);
             }
             if (! FontManager.fontSupportsDefaultEncoding(f)) {
-                f = FontManager.getCompositeFontUIResource(f);
+                FontManager fm = FontManager.getInstance();
+                f = fm.getCompositeFontUIResource(f);
             }
             FontKey key = new FontKey(family, style, size);
             fontTable.put(key, f);

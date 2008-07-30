@@ -279,7 +279,7 @@ public class TrueTypeFont extends FileFont {
                 });
                 disposerRecord.channel = raf.getChannel();
                 fileSize = (int)disposerRecord.channel.size();
-                FontManager.addToPool(this);
+                FontManager.getInstance().addToPool(this);
             } catch (NullPointerException e) {
                 close();
                 throw new FontFormatException(e.toString());
@@ -1180,7 +1180,7 @@ public class TrueTypeFont extends FileFont {
 
     protected synchronized FontScaler getScaler() {
         if (scaler == null) {
-            scaler = FontManager.getScaler(this, fontIndex,
+            scaler = FontManager.getInstance().getScaler(this, fontIndex,
                 supportsCJK, fileSize);
         }
         return scaler;

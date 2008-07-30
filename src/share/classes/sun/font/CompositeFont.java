@@ -165,7 +165,7 @@ public final class CompositeFont extends Font2D {
          * it is harmless that we do not know a slot is already initialised
          * and just need to discover that and mark it so.
          */
-        synchronized (FontManager.class) {
+        synchronized (FontManager.getInstance()) {
             components = new PhysicalFont[numSlots];
             components[0] = physFont;
             System.arraycopy(compFont.components, 0,
@@ -235,7 +235,8 @@ public final class CompositeFont extends Font2D {
          * This global lock is rarely likely to be an issue as there
          * are only going to be a few calls into this code.
          */
-        synchronized (FontManager.class) {
+        FontManager fm = FontManager.getInstance();
+        synchronized (fm) {
             if (componentNames == null) {
                 componentNames = new String[numSlots];
             }
@@ -251,22 +252,21 @@ public final class CompositeFont extends Font2D {
                  */
                 if (componentFileNames != null &&
                     componentFileNames[slot] != null) {
-                    components[slot] = FontManager.initialiseDeferredFont
-                        (componentFileNames[slot]);
+                    components[slot] =
+                        fm.initialiseDeferredFont(componentFileNames[slot]);
                 }
 
                 if (components[slot] == null) {
-                    components[slot] = FontManager.getDefaultPhysicalFont();
+                    components[slot] = fm.getDefaultPhysicalFont();
                 }
                 String name = components[slot].getFontName(null);
                 if (componentNames[slot] == null) {
                     componentNames[slot] = name;
                 } else if (!componentNames[slot].equalsIgnoreCase(name)) {
                     components[slot] =
-                        (PhysicalFont)
-                        FontManager.findFont2D(componentNames[slot],
-                                               style,
-                                               FontManager.PHYSICAL_FALLBACK);
+                        (PhysicalFont) fm.findFont2D(componentNames[slot],
+                                                     style,
+                                                FontManager.PHYSICAL_FALLBACK);
                 }
             }
             deferredInitialisation[slot] = false;
@@ -333,21 +333,22 @@ public final class CompositeFont extends Font2D {
         if (deferredInitialisation[slot]) {
             doDeferredInitialisation(slot);
         }
+        FontManager fm = FontManager.getInstance();
         try {
             PhysicalFont font = components[slot];
             if (font == null) {
                 try {
-                    font = (PhysicalFont)FontManager.
+                    font = (PhysicalFont) fm.
                         findFont2D(componentNames[slot], style,
                                    FontManager.PHYSICAL_FALLBACK);
                     components[slot] = font;
                 } catch (ClassCastException cce) {
-                    font = FontManager.getDefaultPhysicalFont();
+                    font = fm.getDefaultPhysicalFont();
                 }
             }
             return font;
         } catch (Exception e) {
-            return FontManager.getDefaultPhysicalFont();
+            return fm.getDefaultPhysicalFont();
         }
     }
 

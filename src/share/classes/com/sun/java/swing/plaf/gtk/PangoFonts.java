@@ -193,13 +193,14 @@ class PangoFonts {
         }
 
         String fcFamilyLC = family.toLowerCase();
+        FontManager fm = FontManager.getInstance();
         if (FontManager.mapFcName(fcFamilyLC) != null) {
             /* family is a Fc/Pango logical font which we need to expand. */
-           return FontManager.getFontConfigFUIR(fcFamilyLC, style, size);
+           return fm.getFontConfigFUIR(fcFamilyLC, style, size);
         } else {
             /* It's a physical font which we will create with a fallback */
             Font font = new FontUIResource(family, style, size);
-            return FontManager.getCompositeFontUIResource(font);
+            return fm.getCompositeFontUIResource(font);
         }
     }
 
