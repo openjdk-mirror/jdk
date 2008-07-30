@@ -50,6 +50,7 @@ import sun.awt.AWTAutoShutdown;
 import sun.awt.SunToolkit;
 import sun.awt.UNIXToolkit;
 import sun.awt.GlobalCursorManager;
+import sun.awt.X11FontManager;
 import sun.awt.datatransfer.DataTransferer;
 
 import java.awt.dnd.DragSource;
@@ -124,7 +125,7 @@ public class MToolkit extends UNIXToolkit implements Runnable {
          * and when we know that MToolkit is the one that will be used,
          * since XToolkit doesn't need the X11 font path set
          */
-        X11GraphicsEnvironment.setNativeFontPath();
+        X11FontManager.setNativeFontPath();
 
         motifdnd = ((Boolean)java.security.AccessController.doPrivileged(
             new GetBooleanAction("awt.dnd.motifdnd"))).booleanValue();

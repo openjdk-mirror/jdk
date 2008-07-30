@@ -37,7 +37,9 @@ import java.util.logging.Logger;
 import java.util.Properties;
 import java.util.Scanner;
 import sun.awt.FontConfiguration;
+import sun.awt.X11FontManager;
 import sun.awt.X11GraphicsEnvironment;
+import sun.font.FontManager;
 import sun.java2d.SunGraphicsEnvironment;
 import java.nio.charset.Charset;
 
@@ -46,8 +48,8 @@ public class MFontConfiguration extends FontConfiguration {
     private static FontConfiguration fontConfig = null;
     private static Logger logger;
 
-    public MFontConfiguration(SunGraphicsEnvironment environment) {
-        super(environment);
+    public MFontConfiguration(FontManager fm) {
+        super(fm);
         if (SunGraphicsEnvironment.debugFonts) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
@@ -55,10 +57,10 @@ public class MFontConfiguration extends FontConfiguration {
     }
 
 
-    public MFontConfiguration(SunGraphicsEnvironment environment,
+    public MFontConfiguration(FontManager fm,
                               boolean preferLocaleFonts,
                               boolean preferPropFonts) {
-        super(environment, preferLocaleFonts, preferPropFonts);
+        super(fm, preferLocaleFonts, preferPropFonts);
         if (SunGraphicsEnvironment.debugFonts) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
@@ -310,7 +312,7 @@ public class MFontConfiguration extends FontConfiguration {
             !needToSearchForFile(fileName)) {
             return fileName;
         }
-        return ((X11GraphicsEnvironment) environment).getFileNameFromXLFD(componentFontName);
+        return ((X11FontManager) fontManager).getFileNameFromXLFD(componentFontName);
     }
 
     /**

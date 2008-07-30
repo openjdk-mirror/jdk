@@ -49,6 +49,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
 import sun.font.CompositeFontDescriptor;
+import sun.font.FontManager;
 import sun.java2d.SunGraphicsEnvironment;
 
 /**
@@ -68,18 +69,18 @@ public abstract class FontConfiguration {
     private static Logger logger;
     protected static boolean isProperties = true;
 
-    protected SunGraphicsEnvironment environment;
+    protected FontManager fontManager;
     protected boolean preferLocaleFonts;
     protected boolean preferPropFonts;
 
     /* A default FontConfiguration must be created before an alternate
      * one to ensure proper static initialisation takes place.
      */
-    public FontConfiguration(SunGraphicsEnvironment environment) {
+    public FontConfiguration(FontManager fm) {
         if (SunGraphicsEnvironment.debugFonts && logger == null) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
-        this.environment = environment;
+        fontManager = fm;
         this.preferLocaleFonts = false;
         this.preferPropFonts = false;
         setOsNameAndVersion();  /* static initialization */
@@ -90,10 +91,10 @@ public abstract class FontConfiguration {
         initFontConfig();
     }
 
-    public FontConfiguration(SunGraphicsEnvironment environment,
+    public FontConfiguration(FontManager fm,
                              boolean preferLocaleFonts,
                              boolean preferPropFonts) {
-        this.environment = environment;
+        fontManager = fm;
         this.preferLocaleFonts = preferLocaleFonts;
         this.preferPropFonts = preferPropFonts;
         /* fontConfig should be initialised by default constructor, and
@@ -173,8 +174,8 @@ public abstract class FontConfiguration {
 
         File fallbackDir = new File(fallbackDirName);
         if (fallbackDir.exists() && fallbackDir.isDirectory()) {
-            String[] ttfs = fallbackDir.list(SunGraphicsEnvironment.ttFilter);
-            String[] t1s = fallbackDir.list(SunGraphicsEnvironment.t1Filter);
+            String[] ttfs = fallbackDir.list(FontManager.ttFilter);
+            String[] t1s = fallbackDir.list(FontManager.t1Filter);
             int numTTFs = (ttfs == null) ? 0 : ttfs.length;
             int numT1s = (t1s == null) ? 0 : t1s.length;
             int len = numTTFs + numT1s;
@@ -190,7 +191,7 @@ public abstract class FontConfiguration {
                 installedFallbackFontFiles[i+numTTFs] =
                     fallbackDir + File.separator + t1s[i];
             }
-            environment.registerFontsInDir(fallbackDirName);
+            fontManager.registerFontsInDir(fallbackDirName);
         }
     }
 
@@ -925,8 +926,8 @@ public abstract class FontConfiguration {
     public CompositeFontDescriptor[] get2DCompositeFontInfo() {
         CompositeFontDescriptor[] result =
                 new CompositeFontDescriptor[NUM_FONTS * NUM_STYLES];
-        String defaultFontFile = environment.getDefaultFontFile();
-        String defaultFontFaceName = environment.getDefaultFontFaceName();
+        String defaultFontFile = fontManager.getDefaultFontFile();
+        String defaultFontFaceName = fontManager.getDefaultFontFaceName();
 
         for (int fontIndex = 0; fontIndex < NUM_FONTS; fontIndex++) {
             String fontName = publicFontNames[fontIndex];
@@ -1073,7 +1074,7 @@ public abstract class FontConfiguration {
      */
     HashMap<String, Boolean> existsMap;
     public boolean needToSearchForFile(String fileName) {
-        if (!environment.isLinux) {
+        if (!FontManager.isLinux) {
             return false;
         } else if (existsMap == null) {
            existsMap = new HashMap<String, Boolean>();
