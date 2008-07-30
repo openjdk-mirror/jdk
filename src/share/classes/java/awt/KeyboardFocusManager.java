@@ -58,6 +58,7 @@ import java.util.logging.Logger;
 
 import sun.awt.AppContext;
 import sun.awt.HeadlessToolkit;
+import sun.awt.KeyboardFocusManagerPeerProviderHelper;
 import sun.awt.SunToolkit;
 import sun.awt.CausedFocusEvent;
 import sun.awt.KeyboardFocusManagerPeerProvider;
@@ -422,8 +423,8 @@ public abstract class KeyboardFocusManager
     }
 
     private void initPeer() {
-        Toolkit tk = Toolkit.getDefaultToolkit();
-        KeyboardFocusManagerPeerProvider peerProvider = (KeyboardFocusManagerPeerProvider)tk;
+        KeyboardFocusManagerPeerProvider peerProvider =
+            new KeyboardFocusManagerPeerProviderHelper();
         peer = peerProvider.createKeyboardFocusManagerPeer(this);
     }
 
