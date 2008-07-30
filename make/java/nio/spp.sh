@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 #
 # Copyright 2000-2001 Sun Microsystems, Inc.  All Rights Reserved.

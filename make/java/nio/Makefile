@@ -166,6 +166,7 @@ include $(BUILDDIR)/common/Library.gmk
 # Generate source files
 #
 
+SH=/bin/bash
 SPP = spp.sh
 SPP_CMD = $(SH) $(SPP)
 
