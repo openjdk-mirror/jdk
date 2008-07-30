@@ -547,4 +547,13 @@ public interface FontManager {
     * @param font
     */
    public void addToPool(FileFont font);
+
+   /**
+   * Used by windows printing to assess if a font is likely to
+   * be layout compatible with JDK
+   * TrueType fonts should be, but if they have no GPOS table,
+   * but do have a GSUB table, then they are probably older
+   * fonts GDI handles differently.
+   */
+  public boolean textLayoutIsCompatible(Font font);
 }

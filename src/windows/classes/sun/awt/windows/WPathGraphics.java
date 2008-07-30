@@ -65,6 +65,7 @@ import sun.font.CharToGlyphMapper;
 import sun.font.CompositeFont;
 import sun.font.Font2D;
 import sun.font.FontManager;
+import sun.font.FontManagerFactory;
 import sun.font.PhysicalFont;
 import sun.font.TrueTypeFont;
 
@@ -73,6 +74,11 @@ import sun.print.ProxyGraphics2D;
 
 class WPathGraphics extends PathGraphics {
 
+    /**
+     * Our instance of FontManager. 
+     */
+    private FontManager fm = FontManagerFactory.getInstance();
+    
     /**
      * For a drawing application the initial user space
      * resolution is 72dpi.
@@ -294,7 +300,7 @@ class WPathGraphics extends PathGraphics {
          * fail that case. Just do a quick check whether its a TrueTypeFont
          * - ie not a Type1 font etc, and let drawString() resolve the rest.
          */
-        Font2D font2D = FontManager.getFont2D(font);
+        Font2D font2D = fm.getFont2D(font);
         if (font2D instanceof CompositeFont ||
             font2D instanceof TrueTypeFont) {
             return 1;
@@ -320,14 +326,14 @@ class WPathGraphics extends PathGraphics {
      */
     private boolean strNeedsTextLayout(String str, Font font) {
         char[] chars = str.toCharArray();
-        boolean isComplex = FontManager.isComplexText(chars, 0, chars.length);
+        boolean isComplex = fm.isComplexText(chars, 0, chars.length);
         if (!isComplex) {
             return false;
         } else if (!useGDITextLayout) {
             return true;
         } else {
             if (preferGDITextLayout ||
-                (isXP() && FontManager.textLayoutIsCompatible(font))) {
+                (isXP() && fm.textLayoutIsCompatible(font))) {
                 return false;
             } else {
                 return true;
@@ -498,7 +504,7 @@ class WPathGraphics extends PathGraphics {
         float awScale = getAwScale(scaleFactorX, scaleFactorY);
         int iangle = getAngle(ptx);
 
-        Font2D font2D = FontManager.getFont2D(font);
+        Font2D font2D = fm.getFont2D(font);
         if (font2D instanceof TrueTypeFont) {
             textOut(str, font, (TrueTypeFont)font2D, frc,
                     scaledFontSizeY, iangle, awScale,
@@ -693,7 +699,7 @@ class WPathGraphics extends PathGraphics {
                                    glyphAdvPos, 0,      //destination
                                    glyphPos.length/2);  //num points
 
-        Font2D font2D = FontManager.getFont2D(font);
+        Font2D font2D = fm.getFont2D(font);
         if (font2D instanceof TrueTypeFont) {
             String family = font2D.getFamilyName(null);
             int style = font.getStyle() | font2D.getStyle();
@@ -792,7 +798,7 @@ class WPathGraphics extends PathGraphics {
              char[] chars = str.toCharArray();
              int len = chars.length;
              GlyphVector gv = null;
-             if (!FontManager.isComplexText(chars, 0, len)) {
+             if (!fm.isComplexText(chars, 0, len)) {
                  gv = font.createGlyphVector(frc, str);
              }
              if (gv == null) {

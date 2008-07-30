@@ -2,15 +2,27 @@
 
 package sun.awt;
 
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
+import sun.awt.windows.WFontConfiguration;
 import sun.font.DefaultFontManager;
 import sun.font.FontManager;
+import sun.java2d.HeadlessGraphicsEnvironment;
+import sun.java2d.SunGraphicsEnvironment;
 
 public class Win32FontManager extends DefaultFontManager {
 
+    // FIXME: Windows build still needs to be abstracted from
+    // SunGraphicEnvironment
+    
+    // please, don't reference sgEnv in any other code in this class
+    // use getGraphicsEnvironment.
+    @Deprecated
+    private static SunGraphicsEnvironment sgEnv = null;
+    
     /* Unlike the shared code version, this expects a base file name -
      * not a full path name.
      * The font configuration file has base file names and the FontConfiguration
@@ -27,9 +39,9 @@ public class Win32FontManager extends DefaultFontManager {
         registeredFontFiles.add(fontFileName);
 
         int fontFormat;
-        if (ttFilter.accept(null, fontFileName)) {
+        if (getTrueTypeFilter().accept(null, fontFileName)) {
             fontFormat = FontManager.FONTFORMAT_TRUETYPE;
-        } else if (t1Filter.accept(null, fontFileName)) {
+        } else if (getType1Filter().accept(null, fontFileName)) {
             fontFormat = FontManager.FONTFORMAT_TYPE1;
         } else {
             /* on windows we don't use/register native fonts */
@@ -77,4 +89,44 @@ public class Win32FontManager extends DefaultFontManager {
         }
     }
 
+    @Override
+    protected FontConfiguration createFontConfiguration() {
+        
+        return new WFontConfiguration(this);
+    }
+
+    @Override
+    public FontConfiguration createFontConfiguration(boolean preferLocaleFonts,
+            boolean preferPropFonts) {
+        
+        return new WFontConfiguration(this,
+                                      preferLocaleFonts,preferPropFonts);
+    }
+
+    private GraphicsEnvironment getGraphicsEnvironment() {
+
+        if (sgEnv != null)
+            return sgEnv;
+        
+        sgEnv = null;
+        
+        GraphicsEnvironment ge =
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
+        
+        if (!(ge instanceof SunGraphicsEnvironment)) {
+            throw new UnsupportedOperationException("Windows build currently " +
+                        "only supports SunGraphicsEnvironment");
+        }
+        
+        if (ge instanceof HeadlessGraphicsEnvironment) {
+            HeadlessGraphicsEnvironment hgEnv =
+                (HeadlessGraphicsEnvironment)ge;
+                    sgEnv = (SunGraphicsEnvironment)
+                        hgEnv.getSunGraphicsEnvironment();
+        } else {
+            sgEnv = (SunGraphicsEnvironment)ge;
+        }       
+        
+        return sgEnv;
+    }
 }

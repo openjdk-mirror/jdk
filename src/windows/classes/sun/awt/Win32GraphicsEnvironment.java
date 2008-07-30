@@ -41,6 +41,7 @@ import sun.awt.windows.WFontConfiguration;
 import sun.awt.windows.WPrinterJob;
 import sun.awt.windows.WToolkit;
 import sun.font.FontManager;
+import sun.font.FontManagerFactory;
 import sun.java2d.SunGraphicsEnvironment;
 import sun.java2d.SurfaceManagerFactory;
 import sun.java2d.WindowsSurfaceManagerFactory;
@@ -248,7 +249,8 @@ public class Win32GraphicsEnvironment
             new java.security.PrivilegedAction() {
                 public Object run() {
                     File f1 = new File(pathName);
-                    String[] ls = f1.list(new TTFilter());
+                    String[] ls = f1.list(FontManagerFactory.getInstance().
+                            getTrueTypeFilter());
                     if (ls == null) {
                         return null;
                     }
@@ -271,13 +273,14 @@ public class Win32GraphicsEnvironment
 
     // Implements SunGraphicsEnvironment.createFontConfiguration.
     protected FontConfiguration createFontConfiguration() {
-        return new WFontConfiguration(this);
+        return new WFontConfiguration(FontManagerFactory.getInstance());
     }
 
     public FontConfiguration createFontConfiguration(boolean preferLocaleFonts,
                                                      boolean preferPropFonts) {
 
-        return new WFontConfiguration(this, preferLocaleFonts,preferPropFonts);
+        return new WFontConfiguration(FontManagerFactory.getInstance(),
+                preferLocaleFonts,preferPropFonts);
     }
 
     public boolean isDisplayLocal() {

@@ -3409,7 +3409,8 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
      * but do have a GSUB table, then they are probably older
      * fonts GDI handles differently.
      */
-    public static boolean textLayoutIsCompatible(Font font) {
+    @Override
+    public boolean textLayoutIsCompatible(Font font) {
 
         Font2D font2D = FontManagerFactory.getInstance().getFont2D(font);
         if (font2D instanceof TrueTypeFont) {

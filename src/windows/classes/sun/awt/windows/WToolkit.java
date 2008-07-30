@@ -40,6 +40,7 @@ import sun.awt.AWTAutoShutdown;
 import sun.awt.SunToolkit;
 import sun.awt.Win32GraphicsDevice;
 import sun.awt.Win32GraphicsEnvironment;
+import sun.font.FontManagerFactory;
 import sun.java2d.opengl.OGLRenderQueue;
 
 import sun.print.PrintJob2D;
@@ -557,7 +558,7 @@ public class WToolkit extends SunToolkit implements Runnable {
 
     public FontMetrics getFontMetrics(Font font) {
         // REMIND: platform font flag should be removed post-merlin.
-        if (sun.font.FontManager.usePlatformFontMetrics()) {
+        if (FontManagerFactory.getInstance().usePlatformFontMetrics()) {
             return WFontMetrics.getFontMetrics(font);
         }
         return super.getFontMetrics(font);
