@@ -9,8 +9,7 @@
 > export
 m1.MainA
 >> begin class m1.MainA
-    ModuleDefinition moduleDef = module.getModuleDefinition();
-    Repository r = moduleDef.getRepository();
+    Repository r = moduleDefinition.getRepository();
 
     try {
         ModuleDefinition md2 = r.find("m2");

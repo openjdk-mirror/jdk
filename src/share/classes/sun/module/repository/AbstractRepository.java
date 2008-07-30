@@ -42,6 +42,7 @@ import java.module.Repository;
 import java.module.RepositoryEvent;
 import java.module.Version;
 import java.module.annotation.PlatformBinding;
+import java.nio.ByteBuffer;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -88,6 +89,8 @@ abstract class AbstractRepository extends Repository {
 
     private URI source;
 
+    private ModuleSystem moduleSystem;
+
     /**
      * Creates a new <code>AbstractRepository</code> instance, and initializes it
      * using information from the given {@code config}.
@@ -112,6 +115,10 @@ abstract class AbstractRepository extends Repository {
         super(name, parent);
         this.config = config;
         this.source = source;
+
+        // All module definitions in the repository are associated with
+        // the same JAM module system instance.
+        this.moduleSystem = Modules.getModuleSystem();
         initialize();
     }
 
@@ -152,8 +159,8 @@ abstract class AbstractRepository extends Repository {
 
         try {
             // Initialize the repository under doPrivileged()
-            return (List<ModuleArchiveInfo>) AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
-                public Object run() throws Exception {
+            return AccessController.doPrivileged(new PrivilegedExceptionAction<List<ModuleArchiveInfo> >() {
+                public List<ModuleArchiveInfo> run() throws Exception {
                     return doInitialize2();
                 }
             });
@@ -291,9 +298,9 @@ abstract class AbstractRepository extends Repository {
             if (mdInfo.supportsRunningPlatformArch()) {
                 // Constructs a module definition
                 ModuleDefinition md = Modules.newModuleDefinition(
-                                            mdInfo.getMetadataBytes(),
+                                            ByteBuffer.wrap(mdInfo.getMetadataBytes()),
                                             mdInfo.getModuleContent(),
-                                            this, true);
+                                            this, true, moduleSystem);
                 // Add the module definition into the internal data structure
                 addModuleDefinition(md);
 
@@ -429,9 +436,9 @@ abstract class AbstractRepository extends Repository {
 
             // Constructs a module definition from the module archive.
             ModuleDefinition md = Modules.newModuleDefinition(
-                                    mdInfo.getMetadataBytes(),
+                                    ByteBuffer.wrap(mdInfo.getMetadataBytes()),
                                     mdInfo.getModuleContent(),
-                                    this, true);
+                                    this, true, moduleSystem);
 
             // Updates the internal data structures so the repository would
             // recognize this module archive info and the module definition.
@@ -480,9 +487,9 @@ abstract class AbstractRepository extends Repository {
 
                 // Constructs a module definition
                 ModuleDefinition md = Modules.newModuleDefinition(
-                                            mdInfo.getMetadataBytes(),
+                                            ByteBuffer.wrap(mdInfo.getMetadataBytes()),
                                             mdInfo.getModuleContent(),
-                                            this, true);
+                                            this, true, moduleSystem);
 
                 // Add the module definition into the internal data structure
                 addModuleDefinition(md);

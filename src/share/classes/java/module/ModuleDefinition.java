@@ -432,9 +432,6 @@ public abstract class ModuleDefinition {
         builder.append(getName());
         builder.append(" v");
         builder.append(getVersion());
-        builder.append(" (");
-        builder.append(getRepository().getName());
-        builder.append(" repository)");
         return builder.toString();
     }
 }

@@ -24,7 +24,7 @@ m1.MainA
 > import
 import java.net.URL;
 > run
-        ModuleDefinition moduleDef = module.getModuleDefinition();
+        ModuleDefinition moduleDef = moduleDefinition;
         ClassLoader cl = module.getClassLoader();
         Repository repository = moduleDef.getRepository();
 

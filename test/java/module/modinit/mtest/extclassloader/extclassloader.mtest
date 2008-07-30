@@ -25,7 +25,7 @@ m1.MainA
         testExtensionModuleLoader();
 > body
     private void testExtensionModuleLoader() throws Exception {
-        Repository r = module.getModuleDefinition().getRepository();
+        Repository r = moduleDefinition.getRepository();
         String testScratch = System.getProperty("test.scratch", ".");
 
         // Create source location for a URLRepository

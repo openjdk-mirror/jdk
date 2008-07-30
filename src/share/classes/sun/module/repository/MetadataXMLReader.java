@@ -98,7 +98,28 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
         InputStream schemaStream = null;
         InputStream repoStream = null;
 
+        // Save context class loader
+        Thread t = Thread.currentThread();
+        ClassLoader cl = t.getContextClassLoader();
+
         try {
+            // Set context class loader to a bootstrap class loader wrapper.
+            t.setContextClassLoader(new ClassLoader(null) {});
+
+            // SchemaFactory will use the context class loader to search for
+            // providers. However, this has caused undesirable effect in
+            // bootstrapping. More specifically, the system repository,
+            // extension class loader, extension module loader may still being
+            // setup when this method is invoked, and accessing the context
+            // class loader (usually it is the system class loader) would
+            // not be appropriate. To workaround the issue, force the
+            // SchemaFactory to look for providers in the bootstrap class loader
+            // by setting the context class loader to a bootstrap class loader
+            // wrapper.
+            //
+            // Note: setting the context class loader to null can't workaround
+            // the issue because SchemaFactory uses the system class
+            // loader if context class loader is null.
             SchemaFactory f = SchemaFactory.newInstance("http://www.w3.org/2001/XMLSchema");
 
             // Read the soruce into a byte array so it does not need to be downloaded
@@ -128,6 +149,9 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
 
             return moduleTypeReader.urlModuleInfos;
         } finally {
+            // Restore context class loader
+            t.setContextClassLoader(cl);
+
             JamUtils.close(repoStream);
             JamUtils.close(schemaStream);
         }

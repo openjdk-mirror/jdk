@@ -26,22 +26,26 @@
 package sun.module.core;
 
 import java.io.*;
+import java.module.*;
+import java.module.annotation.ClassesDirectoryPath;
 import java.nio.channels.Channels;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
+import java.security.AccessControlContext;
+import java.security.CodeSigner;
+import java.security.CodeSource;
+import java.security.Permissions;
+import java.security.PermissionCollection;
+import java.security.ProtectionDomain;
+import java.security.SecureClassLoader;
 import java.util.*;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.jar.Attributes;
 import java.util.jar.Attributes.Name;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLStreamHandler;
-import java.security.CodeSigner;
-import java.security.CodeSource;
-import java.security.SecureClassLoader;
 
-import java.module.*;
-import java.module.annotation.ClassesDirectoryPath;
 
 /**
  * Class loader implementation for the module system.
@@ -52,36 +56,34 @@ final class ModuleLoader extends SecureClassLoader {
 
     final static boolean DEBUG = ModuleImpl.DEBUG;
 
-    private final Module module;
     private final ModuleDefinition moduleDef;
     private final ModuleContent content;
-    private final ClassLoader parent;
+    private final CodeSource cs;
 
+    private Module module = null;
     private List<Module> importedModules;
-    private CodeSource cs = null;
     private Manifest manifest = null;
     private boolean manifestSet = false;
     private String classesDirectoryPath = null;
 
-    ModuleLoader(Module module, final ModuleDefinition moduleDef)
-            throws ModuleInitializationException {
+    ModuleLoader(ModuleDefinition moduleDef, final ModuleContent content, CodeSource cs) {
         super();
-        this.parent = getParent();
-        this.module = module;
         this.moduleDef = moduleDef;
-        Module coreModule = moduleDef.getRepository().find("java.se.core").getModuleInstance();
-        importedModules = Collections.singletonList(coreModule);
-        content = java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction<ModuleContent>() {
-                        public ModuleContent run() {
-                            return moduleDef.getModuleContent();
-                        }
-                    });
+        this.content = content;
+        this.cs = cs;
+
+        try {
+            Module coreModule = moduleDef.getRepository().find("java.se.core").getModuleInstance();
+            importedModules = Collections.singletonList(coreModule);
+        } catch (ModuleInitializationException e) {
+            // no-op
+        }
+
         ClassesDirectoryPath classesDirectoryPathAnnotation = moduleDef.getAnnotation(ClassesDirectoryPath.class);
         if (classesDirectoryPathAnnotation != null) {
             classesDirectoryPath = classesDirectoryPathAnnotation.value();
             if (classesDirectoryPath.startsWith("/"))  {
-                throw new ModuleInitializationException("Path in @ClassesDirectoryPath must not start with '/'.");
+                System.err.println("Path in @ClassesDirectoryPath must not start with '/'.");
             }
             if (classesDirectoryPath.endsWith("/")) {
                 // TODO: use logging
@@ -89,43 +91,39 @@ final class ModuleLoader extends SecureClassLoader {
                 classesDirectoryPath = classesDirectoryPath.substring(0, classesDirectoryPath.length() - 1);
             }
         }
-
-        try {
-            // constructs module URL and module's code source
-            StringBuilder sb = new StringBuilder();
-            sb.append("module:");
-            sb.append(moduleDef.getRepository().getName());
-            if (content.getLocation() != null) {
-                sb.append("/");
-                sb.append(content.getLocation().toString());
-            }
-            sb.append("!/");
-            sb.append(moduleDef.getName());
-            sb.append("/");
-            sb.append(moduleDef.getVersion());
-
-            URL moduleURL = new URL(sb.toString());
-
-            // This is currently the very first call the module system would
-            // call into ModuleContent in a module definition. In the
-            // case of URLRepository, this would trigger the JAM file to be
-            // downloaded and the module metadata is compared (and potentially
-            // throws exception if there is a mismatch between the
-            // MODULE.METADATA file and that in the JAM file.
-            List<CodeSigner> codeSigners = new ArrayList<CodeSigner>(content.getCodeSigners());
-            cs = new CodeSource(moduleURL, codeSigners.toArray(new CodeSigner[codeSigners.size()]));
-        } catch (IOException e) {
-            throw new ModuleInitializationException("cannot construct module's code source", e);
-        }
     }
 
     @Override
     public Module getModule() {
+        if (module == null) {
+            throw new IllegalStateException("Module instance has not been fully initialized.");
+        }
         return module;
     }
 
-    void setImportedModules(List<Module> importedModules) {
+    void setModule(Module module, List<Module> importedModules) {
+        this.module = module;
         this.importedModules = importedModules;
+    }
+
+    private AccessControlContext restrictedAccessControlContext = null;
+
+    /**
+     * Returns a restricted access control context which has the
+     * same permissions as the classes loaded by this module class
+     * loader.
+     */
+    AccessControlContext getRestrictedAccessControlContext()  {
+        if (restrictedAccessControlContext == null) {
+            // Set up a virtual protection domain exactly as the protection
+            // domain of the class loaded by the module class loader.
+            ProtectionDomain[] domains = new ProtectionDomain[1];
+            PermissionCollection perms = getPermissions(cs);
+            domains[0] = new ProtectionDomain(cs, perms, this, null);
+
+            restrictedAccessControlContext = new AccessControlContext(domains);
+        }
+        return restrictedAccessControlContext;
     }
 
     /**

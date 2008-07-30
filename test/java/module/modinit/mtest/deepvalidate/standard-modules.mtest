@@ -9,7 +9,7 @@
 > export
 m1.MainA
 >> begin class m1.MainA
-    Repository r = module.getModuleDefinition().getRepository();
+    Repository r = moduleDefinition.getRepository();
     ModuleDefinition seMD = r.find("java.se");
     Module m = seMD.getModuleInstance();
 

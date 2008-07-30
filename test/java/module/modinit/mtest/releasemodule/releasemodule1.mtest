@@ -25,8 +25,8 @@ m1.MainA
 > export
 m2.MainB
 >> begin class m2.MainB
-    ModuleDefinition md1 = module.getModuleDefinition().getRepository().find("m1");
-    ModuleDefinition md2 = module.getModuleDefinition();
+    ModuleDefinition md1 = moduleDefinition.getRepository().find("m1");
+    ModuleDefinition md2 = moduleDefinition;
     Module m1 = null;
     Module m2 = null;
 

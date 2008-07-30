@@ -27,10 +27,15 @@ package java.module;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.net.URL;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import sun.module.core.JamModuleDefinition;
+import sun.module.core.ModuleSystemImpl;
 import sun.module.config.DefaultImportOverridePolicy;
 import sun.module.config.DefaultVisibilityPolicy;
 import sun.module.config.ModuleSystemConfig;
@@ -57,8 +62,8 @@ import sun.module.repository.URLRepository;
  * The JAM module system provides a concrete {@link ModuleDefinition}
  * implementation for JAM modules. Applications can obtain the
  * {@code ModuleDefinition} objects by calling the
- * {@link #newModuleDefinition(byte[], ModuleContent,Repository,boolean)
- * <tt>newModuleDefinition</tt>} factory method.
+ * {@link #newModuleDefinition(java.nio.ByteBuffer,ModuleContent,Repository,boolean)
+ * <tt>newModuleDefinition</tt>} factory methods.
  * <p>
  * <h3> Repository</h3>
  * The JAM module system provides two concrete repository implementations:
@@ -312,7 +317,21 @@ import sun.module.repository.URLRepository;
  */
 public class Modules {
 
-    static  {
+    private static WeakHashMap<ThreadGroup, ModuleSystem> moduleSystemMap = new WeakHashMap<ThreadGroup, ModuleSystem>();
+
+    // Default import override policy
+    private static ImportOverridePolicy importOverridePolicy;
+
+    // Default visibility policy
+    private static VisibilityPolicy visibilityPolicy;
+
+
+    static
+    {
+        // Construct a JAM module system instance for the main thread group
+        // as early as possible.
+        getModuleSystem();
+
         // Load the import override policy and the visibililty policy as early
         // as possible. This is to avoid potential deadlock when setting up
         // the extension module loader that may cause these polcies to be
@@ -322,30 +341,39 @@ public class Modules {
         getVisibilityPolicy();
     }
 
-    // ModuleSystem implementation for JAM module system.
-    private static ModuleSystem defaultImpl = null;
-
-    // Default import override policy
-    private static ImportOverridePolicy importOverridePolicy;
-
-    // Default visibility policy
-    private static VisibilityPolicy visibilityPolicy;
-
     // private constructor to prevent instantiation and subclassing
     private Modules() {
         // empty
     }
 
     /**
-     * Returns the JAM module system.
+     * Returns a JAM module system instance.
+     * <p>
+     * Each JAM module system instance must create all new threads in a
+     * {@link java.lang.ThreadGroup}. If a security manager is present,
+     * this method returns a JAM module system instance which uses the
+     * {@linkplain java.lang.SecurityManager#getThreadGroup()
+     * thread group of the system's security manager}; otherwise,
+     * this method returns a JAM module system instance which uses the
+     * thread group of the current thread.
      *
-     * @return the JAM module system.
+     * @return an instance of the JAM module system.
      */
     public static synchronized ModuleSystem getModuleSystem()  {
-        if (defaultImpl == null)  {
-            defaultImpl = sun.module.core.ModuleSystemImpl.INSTANCE;
+        SecurityManager sm = System.getSecurityManager();
+        final ThreadGroup group = (sm != null) ? sm.getThreadGroup() :
+                                  Thread.currentThread().getThreadGroup();
+
+        ModuleSystem ms = moduleSystemMap.get(group);
+        if (ms == null) {
+            ms = AccessController.doPrivileged(new PrivilegedAction<ModuleSystem>() {
+                        public ModuleSystem run() {
+                            return new ModuleSystemImpl(group);
+                        }
+                    });
+            moduleSystemMap.put(group, ms);
         }
-        return defaultImpl;
+        return ms;
     }
 
     /**
@@ -681,11 +709,15 @@ public class Modules {
 
     /**
      * Returns a new {@code ModuleDefinition} instance for a JAM module.
+     * Equivalent to:
+     * <pre>
+     *      newModuleDefinition(metadata, content, repository, moduleReleasable, getModuleSystem());</pre>
      *
-     * <p>This method will typically be called by repository implementations
+     * The content of the byte buffer is copied.
+     * This method will typically be called by repository implementations
      * and not by applications.
      *
-     * @param metadata an array of bytes which is the content of the
+     * @param metadata a byte buffer which contains the content of the
      *        module metadata file
      * @param content the {@code ModuleContent} to be used to access the
      *   contents of the module definition
@@ -698,8 +730,37 @@ public class Modules {
      *         is not recognized or is not well formed.
      * @return a new {@code ModuleDefinition}.
      */
-    public static ModuleDefinition newModuleDefinition(byte[] metadata,
+    public static ModuleDefinition newModuleDefinition(ByteBuffer metadata,
             ModuleContent content, Repository repository, boolean moduleReleasable)
+            throws ModuleFormatException {
+        return newModuleDefinition(metadata, content, repository, moduleReleasable, getModuleSystem());
+    }
+
+    /**
+     * Returns a new {@code ModuleDefinition} instance for a JAM module.
+     * <p>
+     * The content of the byte buffer is copied.
+     * This method will typically be called by repository implementations
+     * and not by applications.
+     *
+     * @param metadata a byte buffer which contains the content of the
+     *        module metadata file
+     * @param content the {@code ModuleContent} to be used to access the
+     *   contents of the module definition
+     * @param repository the {@code Repository} in which the module definition
+     *        is associated with
+     * @param moduleReleasable true if the module instance instantiated from
+     *        this {@code ModuleDefinition} is releasable from its module
+     *        system
+     * @param moduleSystem the {@code ModuleSystem} instance to be associated with
+     *        the module definition.
+     * @throws ModuleFormatException if the content of module metadata file
+     *         is not recognized or is not well formed.
+     * @return a new {@code ModuleDefinition}.
+     */
+    public static ModuleDefinition newModuleDefinition(ByteBuffer metadata,
+            ModuleContent content, Repository repository, boolean moduleReleasable,
+            ModuleSystem moduleSystem)
             throws ModuleFormatException {
         if (metadata == null) {
             throw new NullPointerException("metadata must not be null.");
@@ -710,8 +771,13 @@ public class Modules {
         if (repository == null) {
             throw new NullPointerException("repository must not be null.");
         }
-        return new JamModuleDefinition
-            (getModuleSystem(),
-             null, null, metadata, null, content, repository, moduleReleasable);
+        if (moduleSystem == null)  {
+            throw new NullPointerException("moduleSystem must not be null.");
+        }
+
+        byte[] metadataBytes = new byte[metadata.remaining()];
+        metadata.get(metadataBytes);  // get bytes out of byte buffer.
+        return new JamModuleDefinition(moduleSystem,
+                 null, null, metadataBytes, null, content, repository, moduleReleasable);
     }
 }

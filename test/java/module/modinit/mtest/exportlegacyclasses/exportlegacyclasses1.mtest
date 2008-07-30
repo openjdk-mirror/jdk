@@ -15,7 +15,7 @@
 m1.MainA
 >> begin class m1.MainA
     // m1 should only export m1.MainA
-    Set<String> memberClasses = module.getModuleDefinition().getMemberClasses();
+    Set<String> memberClasses = moduleDefinition.getMemberClasses();
     if (memberClasses == null) {
         throw new Exception("getMemberClasses() should never return null.");
     }
@@ -28,7 +28,7 @@ m1.MainA
         || memberClasses.contains("x.y.z") == false) {
         throw new Exception("Missing member classes in m1.");
     }
-    Set<String> exportedClasses = module.getModuleDefinition().getExportedClasses();
+    Set<String> exportedClasses = moduleDefinition.getExportedClasses();
     if (exportedClasses == null) {
         throw new Exception("getExportedClasses() should never return null.");
     }
@@ -42,7 +42,7 @@ m1.MainA
 
     Module m2;
     try {
-        ModuleDefinition md2 = module.getModuleDefinition().getRepository().find("m2");
+        ModuleDefinition md2 = moduleDefinition.getRepository().find("m2");
         m2 = md2.getModuleInstance();
     }
     catch (ModuleInitializationException mie) {

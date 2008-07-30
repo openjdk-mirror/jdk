@@ -33,8 +33,8 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Indicates the class of the initializer of a module definition. The class
  * must implement {@link java.module.ModuleInitializer}. The class must be
- * declared {@code public}, and must have a public constructor which takes no
- * argument. This metadata annotation is applied to a Java module. For example,
+ * conrete, and must have a zero-argument public constructor. This metadata
+ * annotation is applied to a Java module. For example,
  * <blockquote><pre>
  *    //
  *    // com/wombat/xyz/module-info.java

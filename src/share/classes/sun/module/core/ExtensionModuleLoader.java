@@ -155,7 +155,7 @@ public final class ExtensionModuleLoader extends SecureClassLoader {
                 // Expand the list of reexported module instances for the specified
                 // extension module instance
                 List<Module> reexportedModules = new ArrayList<Module>();
-                ModuleUtils.expandReexports(m, reexportedModules, true);
+                ModuleUtils.expandReexports(m, reexportedModules);
 
                 // Add the reexported module instances and the extension
                 // module instance.

@@ -22,7 +22,7 @@ m1.Main
         } else if (InitializerImpl.INIT_COUNT > 1) {
             throw new Exception("Module initializer's initialize() in m1 is called more than once");
         }
-        ModuleDefinition moduleDef = module.getModuleDefinition();
+        ModuleDefinition moduleDef = moduleDefinition;
         Repository r = moduleDef.getRepository();
         ModuleSystem ms = moduleDef.getModuleSystem();
         ms.releaseModule(moduleDef);
@@ -81,10 +81,10 @@ implements ModuleInitializer
     static volatile int INIT_COUNT = 0;
     static volatile int RELEASE_COUNT = 0;
 
-    public void initialize(Module module) {
+    public void initialize(ModuleDefinition moduleDef) {
         INIT_COUNT++;
     }
-    public void release(Module module) {
+    public void release() {
         RELEASE_COUNT++;
     }
 >> end class
@@ -104,10 +104,10 @@ implements ModuleInitializer
     public static volatile int INIT_COUNT = 0;
     public static volatile int RELEASE_COUNT = 0;
 
-    public void initialize(Module module) {
+    public void initialize(ModuleDefinition moduleDef) {
         INIT_COUNT++;
     }
-    public void release(Module module) {
+    public void release() {
         RELEASE_COUNT++;
     }
 >> end class

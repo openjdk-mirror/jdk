@@ -29,10 +29,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This interface represents an import override policy in the JAM
- * module system. An import override policy allows deployers to
- * control the resolution of a module instance in the JAM module system
- * by narrowing the version constraints in the import dependencies.
+ * This interface represents an import override policy in the JAM module
+ * system. The import override policy controls the
+ * <a href="ModuleSystem.html#Resolution">resolution</a> of
+ * all initializing module instances in the module system by narrowing
+ * the version constraints in the import dependencies of the module
+ * instances.
+ * <p>
+ * The system's import override policy can be
+ * obtained by invoking the {@link Modules#getImportOverridePolicy()
+ * <tt>getImportOverridePolicy</tt>} method of the {@code Modules} class.
+ * Similarly, the system's import override policy can be set
+ * by invoking the {@link Modules#setImportOverridePolicy(ImportOverridePolicy)
+ * <tt>setImportOverridePolicy</tt>} method of the {@code Modules} class.
  * <p>
  * @see java.module.ImportDependency
  * @see java.module.ModuleDefinition
@@ -43,23 +52,35 @@ import java.util.Map;
 public interface ImportOverridePolicy {
 
     /**
-     * Returns a map of import dependencies and overridden version constraints
-     * for the specified module definition.
+     * Returns a map from {@link ImportDependency} objects to
+     * {@link VersionConstraint} objects for an initializing module
+     * instance of the specified module definition.
      * <p>
-     * The returned map must contain the same set of import dependencies as
-     * in the given {@code map}. For each import dependency in the returned
-     * map, the overridden version constraint must be within the boundary of
-     * the original version constraint of the import dependency
-     * that is returned from the specified module definition's
-     * {@link ModuleDefinition#getImportDependencies() getImportDependencies}
-     * method.
+     * The given {@code constraints} is constructed from the initializing
+     * module instance's
+     * {@linkplain ModuleDefinition#getImportDependencies imports}.
+     * Implementations of this method should construct a map containing
+     * the elements in the given {@code constraints}, override the
+     * appropriate version constraints of the import dependencies
+     * in the map, and return the map as the result.
+     * <p>
+     * The set of import dependencies in the returned map must be equal
+     * to the set of imports of the initializing module instance.
+     * For each import dependency in the returned map, the corresponding
+     * version constraint <i>R</i> may be {@code null} if the import
+     * dependency is
+     * {@linkplain ImportDependency#isOptional() optional}
+     * and should be ignored by the module system during
+     * <a href="ModuleSystem.html#Resolution">resolution</a>. Otherwise,
+     * <i>R</i> must be within the boundary of the declared version constraint
+     * in the initializing module instance's imports.
      *
-     * @param importer the importing module definition.
-     * @param map an unmodifiable map of import dependencies and
-     *        overridden version constraints.
-     * @return the map of import dependencies and overridden version
-     *         constraints.
+     * @param moduleDef the module definition.
+     * @param constraints an unmodifiable map from {@link ImportDependency}
+     *        objects to overridden {@link VersionConstraint} objects.
+     * @return a map from {@link ImportDependency} objects to
+     *         overridden {@link VersionConstraint} objects.
      */
-    public abstract Map<ImportDependency, VersionConstraint> narrow(ModuleDefinition importer,
-                Map<ImportDependency, VersionConstraint> map);
+    public abstract Map<ImportDependency, VersionConstraint> narrow(ModuleDefinition moduleDef,
+                Map<ImportDependency, VersionConstraint> constraints);
 }
