@@ -658,7 +658,7 @@ public class X11FontManager extends DefaultFontManager {
         return;
     }
 
-    protected void getPlatformFontPathFromFontConfig() {
+    public void getPlatformFontPathFromFontConfig() {
         if (fontConfigDirs == null) {
             fontConfigDirs = getFontConfiguration().getAWTFontPathSet();
             if (debugFonts() && fontConfigDirs != null) {
