@@ -62,6 +62,11 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 
+/**
+ * The common base class for all Toolkit implementations. It provides a set
+ * of default implementations (e.g. for the image handling) and extends
+ * functionality of Toolkit in some other places (e.g. Tray support).
+ */
 public abstract class SunToolkit extends Toolkit
     implements WindowClosingSupport, WindowClosingListener,
     ComponentFactory, InputMethodSupport {
@@ -150,6 +155,14 @@ public abstract class SunToolkit extends Toolkit
         }
     }
 
+    /**
+     * Returns <code>true</code> when Swing's RepaintManager should use one
+     * buffer per window for improved rendering, <code>false</code> otherwise.
+     *
+     * @return <code>true</code> when Swing's RepaintManager should use one
+     *         buffer per window for improved rendering, <code>false</code>
+     *         otherwise
+     */
     public boolean useBufferPerWindow() {
         return false;
     }
@@ -213,11 +226,40 @@ public abstract class SunToolkit extends Toolkit
         DragGestureEvent dge)
         throws InvalidDnDOperationException;
 
+    /**
+     * Creates the peer for the tray icon. If {@link #isTraySupported()}
+     * returns <code>false</code> it is sufficient to return <code>null</code>
+     * here.
+     *
+     * @param target the AWT TrayIcon to create the peer for
+     *
+     * @return the peer for the tray icon
+     *
+     * @throws HeadlessException when AWT is running in headless mode
+     *
+     * @throws AWTException if something goes wrong
+     */
     public abstract TrayIconPeer createTrayIcon(TrayIcon target)
         throws HeadlessException, AWTException;
 
+    /**
+     * Create the peer for the system tray support. If
+     * {@link #isTraySupported()} returns <code>false</code> it is sufficient
+     * to return <code>null</code> here.
+     *
+     * @return the system tray peer, or <code>null</code> if system tray is
+     *         not supported by the system
+     */
     public abstract SystemTrayPeer createSystemTray(SystemTray target);
 
+    /**
+     * Determines if system tray is supported or not. If this method returns
+     * <code>false</code>, it is ok for {@link #createSystemTray(SystemTray)}
+     * to return <code>null</code>.
+     *
+     * @return <code>true</code> if system tray is supported,
+     *         <code>false</code> otherwise
+     */
     public abstract boolean isTraySupported();
 
     public abstract FontPeer getFontPeer(String name, int style);
@@ -791,7 +833,19 @@ public abstract class SunToolkit extends Toolkit
     public Dimension getScreenSize() {
         return new Dimension(getScreenWidth(), getScreenHeight());
     }
+
+    /**
+     * Returns the width of the screen.
+     *
+     * @return the width of the screen
+     */
     protected abstract int getScreenWidth();
+
+    /**
+     * Returns the height of the screen.
+     *
+     * @return the height of the screen
+     */
     protected abstract int getScreenHeight();
 
     public FontMetrics getFontMetrics(Font font) {
@@ -1922,7 +1976,13 @@ public abstract class SunToolkit extends Toolkit
         }
     }
 
-
+    /**
+     * Returns <code>true</code> if the desktop API ({@link java.awt.Desktop}
+     * is supported, <code>false</code> otherwise.
+     *
+     * @return <code>true</code> if the desktop API is supported,
+     *         <code>false</code> otherwise
+     */
     public abstract boolean isDesktopSupported();
 
     /*
