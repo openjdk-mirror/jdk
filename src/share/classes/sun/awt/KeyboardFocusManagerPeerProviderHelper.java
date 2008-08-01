@@ -27,6 +27,12 @@ package sun.awt;
 import java.awt.HeadlessException;
 import java.awt.KeyboardFocusManager;
 import java.awt.peer.KeyboardFocusManagerPeer;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+
+import sun.security.action.GetPropertyAction;
 
 /**
  * Helper class for accessing instances of KeyboardFocusManagerPeer.
@@ -35,13 +41,69 @@ import java.awt.peer.KeyboardFocusManagerPeer;
  */
 public class KeyboardFocusManagerPeerProviderHelper
     implements KeyboardFocusManagerPeerProvider {
-   
+    
+    @SuppressWarnings({ "unused", "unchecked" })
+    private static Constructor kfmpConst;
+    
+    @SuppressWarnings("unchecked")
     public KeyboardFocusManagerPeer createKeyboardFocusManagerPeer(KeyboardFocusManager manager) throws HeadlessException {
 
-        // TODO: refactore so that we can pass a different
-        //  KeyboardFocusManagerPeer implementation
-        // based on some system property.
-        KeyboardFocusManagerPeerImpl peer = new KeyboardFocusManagerPeerImpl(manager);
+        String fmClassName = AccessController.doPrivileged(
+                new GetPropertyAction("sun.font.keyboardfocusmanager",
+                                      "sun.awt.KeyboardFocusManagerPeerImpl"));
+        
+        KeyboardFocusManagerPeer peer = null;
+        
+        try {
+            ClassLoader cl = (ClassLoader)
+                AccessController.doPrivileged(new PrivilegedAction() {
+                    public Object run() {
+                        return ClassLoader.getSystemClassLoader();
+                    }
+                });
+            
+            Class fmClass = Class.forName(fmClassName, true, cl);
+            kfmpConst =
+                fmClass.getDeclaredConstructor(KeyboardFocusManager.class);
+            
+            peer = (KeyboardFocusManagerPeer) kfmpConst.newInstance(manager);
+            
+        } catch (ClassNotFoundException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+              
+        } catch (InstantiationException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+              
+        } catch (IllegalAccessException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+            
+        } catch (SecurityException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+            
+        } catch (NoSuchMethodException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+            
+        } catch (IllegalArgumentException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+            
+        } catch (InvocationTargetException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+        }
+
         return peer;
     }
 
