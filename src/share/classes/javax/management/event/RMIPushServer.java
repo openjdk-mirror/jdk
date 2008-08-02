@@ -1,5 +1,5 @@
 /*
- * Copyright 2001 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,25 +23,26 @@
  * have any questions.
  */
 
-// stdafx.h : include file for standard system include files,
-//  or project specific include files that are used frequently, but
-//      are changed infrequently
-//
+package javax.management.event;
 
-#if !defined(AFX_STDAFX_H__C592D6C3_027D_11D5_8DFB_080020C19238__INCLUDED_)
-#define AFX_STDAFX_H__C592D6C3_027D_11D5_8DFB_080020C19238__INCLUDED_
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import javax.management.remote.NotificationResult;
 
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
-
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-
-#include <stdio.h>
-
-// TODO: reference additional headers your program requires here
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Visual C++ will insert additional declarations immediately before the previous line.
-
-#endif // !defined(AFX_STDAFX_H__C592D6C3_027D_11D5_8DFB_080020C19238__INCLUDED_)
+/**
+ * The {@link RMIPushEventRelay} exports an RMI object of this class and
+ * sends a client stub for that object to the associated
+ * {@link RMIPushEventForwarder} in a remote MBean server.  The
+ * {@code RMIPushEventForwarder} then sends notifications to the
+ * RMI object.
+ */
+public interface RMIPushServer extends Remote {
+    /**
+     * <p>Dispatch the notifications in {@code nr} to the {@link RMIPushEventRelay}
+     * associated with this object.</p>
+     * @param nr the notification result to dispatch.
+     * @throws java.rmi.RemoteException if the remote invocation of this method
+     * failed.
+     */
+    public void receive(NotificationResult nr) throws RemoteException;
+}

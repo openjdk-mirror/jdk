@@ -1,5 +1,5 @@
 #
-# Copyright 1998-2005 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -24,25 +24,22 @@
 #
 
 #
-# Makefile for building the winver tool
+# Makefile for build spp tool
 #
 
 BUILDDIR = ../..
+PACKAGE = build.tools.spp
 PRODUCT = tools
-PROGRAM = winver
+PROGRAM = spp
 include $(BUILDDIR)/common/Defs.gmk
 
-build: permissions
 
-permissions:
-ifeq ($(PLATFORM),windows)
-	$(CHMOD) a+x bin/winver.exe
-endif
+BUILDTOOL_SOURCE_ROOT = $(BUILDDIR)/tools/src
+BUILDTOOL_MAIN        = $(PKGDIR)/Spp.java
 
 #
-# Rules.
+# Build tool jar rules.
 #
-include $(BUILDDIR)/common/Rules.gmk
+include $(BUILDDIR)/common/BuildToolJar.gmk
 
-.PHONY: permissions
 

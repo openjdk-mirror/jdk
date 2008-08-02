@@ -1,5 +1,5 @@
 /*
- * Copyright 2001 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,27 +23,24 @@
  * have any questions.
  */
 
-// getver.cpp : Defines the entry point for the console application.
-//
+package com.sun.jmx.event;
 
-#include "stdafx.h"
-#include <windows.h>
+import javax.management.event.*;
 
-int main(int argc, char* argv[])
-{
-        OSVERSIONINFO verInfo;
+/**
+ * Implemented by objects which are using an {@link EventClient} to
+ * subscribe for Notifications.
+ *
+ */
+public interface EventClientFactory {
+    /**
+     * Returns the {@code EventClient} that the object implementing this
+     * interface uses to subscribe for Notifications. This method returns
+     * {@code null} if no {@code EventClient} can be used - e.g. because
+     * the underlying server does not have any {@link EventDelegate}.
+     *
+     * @return an {@code EventClient} or {@code null}.
+     **/
+    public EventClient getEventClient();
 
-        memset(&verInfo,0,sizeof(verInfo));
-        verInfo.dwOSVersionInfoSize = sizeof(verInfo);
-
-        if (GetVersionEx(&verInfo))
-        {
-                printf("%d %d %s",verInfo.dwMajorVersion,verInfo.dwMinorVersion,verInfo.szCSDVersion);
-        }
-        else
-        {
-                printf("No version info available");
-        }
-
-        return 0;
 }

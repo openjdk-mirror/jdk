@@ -1,5 +1,5 @@
 /*
- * Copyright 1997-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1997-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -136,8 +136,6 @@ static int getFD(JNIEnv *env, jobject this) {
  */
 JNIEXPORT void JNICALL
 Java_java_net_PlainSocketImpl_initProto(JNIEnv *env, jclass cls) {
-    char *s;
-
     psi_fdID = (*env)->GetFieldID(env, cls , "fd",
                                   "Ljava/io/FileDescriptor;");
     CHECK_NULL(psi_fdID);
@@ -183,7 +181,6 @@ Java_java_net_PlainSocketImpl_socketCreate(JNIEnv *env, jobject this,
                                            jboolean stream) {
     jobject fdObj, ssObj;
     int fd;
-    int arg = -1;
 
     if (socketExceptionCls == NULL) {
         jclass c = (*env)->FindClass(env, "java/net/SocketException");
@@ -290,7 +287,6 @@ Java_java_net_PlainSocketImpl_socketConnect(JNIEnv *env, jobject this,
             while (1) {
 #ifndef USE_SELECT
                 {
-fprintf(stdout,"\nNATIVE: fd = %d] ", fd);
                     struct pollfd pfd;
                     pfd.fd = fd;
                     pfd.events = POLLOUT;
@@ -672,8 +668,6 @@ Java_java_net_PlainSocketImpl_socketAccept(JNIEnv *env, jobject this,
 
     /* accepted fd */
     jint newfd;
-
-    jthrowable error;
 
     SOCKADDR him;
     int len;
@@ -1087,7 +1081,6 @@ Java_java_net_PlainSocketImpl_socketGetOption(JNIEnv *env, jobject this,
 JNIEXPORT void JNICALL
 Java_java_net_PlainSocketImpl_socketSendUrgentData(JNIEnv *env, jobject this,
                                              jint data) {
-    char *buf;
     /* The fd field */
     jobject fdObj = (*env)->GetObjectField(env, this, psi_fdID);
     int n, fd;

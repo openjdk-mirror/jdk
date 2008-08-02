@@ -1,5 +1,5 @@
 #
-# Copyright 2001-2006 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright 2001-2008 Sun Microsystems, Inc.  All Rights Reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -155,6 +155,7 @@ CORE_PKGS =                                      \
   javax.lang.model.type                          \
   javax.lang.model.util                          \
   javax.management                               \
+  javax.management.event                         \
   javax.management.loading                       \
   javax.management.monitor                       \
   javax.management.relation                      \
