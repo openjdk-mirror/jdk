@@ -37,13 +37,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.module.ImportDependency;
 import java.module.Module;
 import java.module.Modules;
+import java.module.ModuleArchiveInfo;
 import java.module.ModuleContent;
 import java.module.ModuleDefinition;
 import java.module.ModuleDependency;
@@ -77,7 +77,7 @@ public final class JamModuleDefinition extends ModuleDefinition {
     private final String name;
     private final Version version;
     private byte[] metadata;
-    private final Callable<byte[]> metadataHandle;
+    private final ModuleArchiveInfo mai;
     private final ModuleContent content;
     private final Repository repository;
     private final boolean moduleReleasable;
@@ -93,43 +93,17 @@ public final class JamModuleDefinition extends ModuleDefinition {
 
     public JamModuleDefinition(ModuleSystem moduleSystem,
             String name, Version version, byte[] metadata,
-            Callable<byte[]> metadataHandle, ModuleContent content,
+            ModuleContent content,
+            ModuleArchiveInfo mai,
             Repository repository, boolean moduleReleasable) {
         this.moduleSystem = moduleSystem;
         this.name = name;
         this.version = version;
         this.metadata = metadata;
-        this.metadataHandle = metadataHandle;
+        this.mai = mai;
         this.content = content;
         this.repository = repository;
         this.moduleReleasable = moduleReleasable;
-    }
-
-    //
-    // The module metadata arrangement below is temporary until the
-    // full JSR 294 reflective APIs are in place
-    //
-
-    /**
-     * Returns the contents of the MODULE-INF/MODULE.METADATA file.
-     *
-     * @return the contents of the MODULE-INF/MODULE.METADATA file.
-     */
-    synchronized byte[] getMetadata() {
-        if (metadata != null) {
-            if (metadata.length == 0) {
-                throw new RuntimeException("metadata is not available.");
-            }
-            return metadata;
-        }
-        try {
-            metadata = metadataHandle.call();
-            return metadata;
-        } catch (Exception e) {
-            // XXX
-            metadata = new byte[0];
-            throw new RuntimeException(e);
-        }
     }
 
     private volatile ModuleInfo moduleInfo;
@@ -139,7 +113,7 @@ public final class JamModuleDefinition extends ModuleDefinition {
             synchronized (this) {
                 if (moduleInfo == null) {
                     // XXX check name and version against metadata
-                    moduleInfo = ModuleInfo.getModuleInfo(getMetadata());
+                    moduleInfo = ModuleInfo.getModuleInfo(metadata);
                 }
             }
         }
@@ -517,10 +491,19 @@ public final class JamModuleDefinition extends ModuleDefinition {
     }
 
     @Override
+    public ModuleArchiveInfo getModuleArchiveInfo() {
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            sm.checkPermission(new ModuleSystemPermission("getModuleArchiveInfo"));
+        }
+        return mai;
+    }
+
+    @Override
     public ModuleContent getModuleContent() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
-            sm.checkPermission(new ModuleSystemPermission("accessModuleContent"));
+            sm.checkPermission(new ModuleSystemPermission("getModuleContent"));
         }
         return content;
     }

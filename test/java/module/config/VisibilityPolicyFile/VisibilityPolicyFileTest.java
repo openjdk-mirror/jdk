@@ -25,6 +25,7 @@ import java.lang.annotation.Annotation;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.module.ImportDependency;
+import java.module.ModuleArchiveInfo;
 import java.module.ModuleDefinition;
 import java.module.ModuleContent;
 import java.module.ModuleSystem;
@@ -132,6 +133,11 @@ public class VisibilityPolicyFileTest {
 
         @Override
         public ModuleSystem getModuleSystem() {
+            return null;
+        }
+
+        @Override
+        public ModuleArchiveInfo getModuleArchiveInfo() {
             return null;
         }
 

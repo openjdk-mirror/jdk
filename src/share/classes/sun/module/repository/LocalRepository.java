@@ -36,6 +36,7 @@ import java.module.Modules;
 import java.module.Query;
 import java.module.Repository;
 import java.module.Version;
+import java.nio.ByteBuffer;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -50,12 +51,8 @@ import sun.module.repository.cache.Cache;
 import sun.module.repository.cache.ModuleDefInfo;
 
 /**
- * A repository for module definitions stored in the repository interchange
- * directory on the file system.
- * <p>
- * When the repository is initialized, the source location is interpreted by
- * the <code>LocalRepository</code> instance as a directory where the module
- * definitions are stored in the repository interchange directory.
+ * This class represents the Local repository in the JAM module system.
+ * See the {@link java.module.Modules} class for more details.
  *
  * @see java.module.ModuleArchiveInfo
  * @see java.module.ModuleDefinition
@@ -66,12 +63,6 @@ import sun.module.repository.cache.ModuleDefInfo;
 public final class LocalRepository extends AbstractRepository {
     /** Prefix of all properties use to configure this repository. */
     private static final String PROPERTY_PREFIX = "sun.module.repository.LocalRepository.";
-
-    /**
-     * True iff the sourceDirectory is writable.  Note that this can change upon
-     * {@link #reload()}.
-     */
-    private boolean readOnly;
 
     /**
      * Directory in which JAM files are installed, derived from the source
@@ -147,6 +138,8 @@ public final class LocalRepository extends AbstractRepository {
                            Map<String, String> config,
                            Repository parent) throws IOException {
         super(name, source, (config == null ? DEFAULT_CONFIG : config), parent);
+
+        initialize();
     }
 
     //
@@ -176,6 +169,7 @@ public final class LocalRepository extends AbstractRepository {
      * @param config Map of configuration names to their values
      * @throws IOException if the repository cannot be initialized
      */
+    @Override
     protected List<ModuleArchiveInfo> doInitialize2() throws IOException {
         if (config == null) {
             throw new NullPointerException("config must not be null");
@@ -195,7 +189,6 @@ public final class LocalRepository extends AbstractRepository {
         }
 
         sourceDirectory = JamUtils.getFile(getSourceLocation().toURL());
-        readOnly = (sourceDirectory.canWrite() == false);
         if (sourceDirectory.isDirectory() == false) {
             if (sourceLocMustExist) {
                 missingDir("source", sourceDirectory);
@@ -213,53 +206,45 @@ public final class LocalRepository extends AbstractRepository {
 
         List<ModuleArchiveInfo> result = new ArrayList<ModuleArchiveInfo>();
 
+        File[] jamFiles = sourceDirectory.listFiles(JamUtils.JAM_JAR_FILTER);
+        if (jamFiles == null) {
+            return result;
+        }
+
         // Iterates the JAM files in the source directory, and cook them
         // one-by-one.
-        File[] jamFiles = sourceDirectory.listFiles(JamUtils.JAM_JAR_FILTER);
+        for (File file : jamFiles) {
+            try {
+                // Put the jam file into the repository cache and cook it
+                ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(getSourceLocation().toURL(), file);
 
-        if (jamFiles != null) {
-            Map<ModuleArchiveInfo, ModuleDefInfo> mdInfoMap =
-                                        new HashMap<ModuleArchiveInfo, ModuleDefInfo>();
+                // Constructs a module archive info
+                JamModuleArchiveInfo mai  = new JamModuleArchiveInfo(
+                    this, mdInfo.getName(), mdInfo.getVersion(),
+                    mdInfo.getPlatform(), mdInfo.getArch(),
+                    file.getAbsolutePath(), file.lastModified(),
+                    mdInfo.getMetadataByteBuffer(),
+                    mdInfo.getModuleContent());
 
-            for (File file : jamFiles) {
-                try {
-                    // XXX Log this action
-
-                    // Put the jam file into the repository cache and cook it
-                    ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(getSourceLocation().toURL(), file);
-
-                    // Constructs a module archive info
-                    JamModuleArchiveInfo mai  = new JamModuleArchiveInfo(
-                        this, mdInfo.getName(), mdInfo.getVersion(),
-                        mdInfo.getPlatform(), mdInfo.getArch(),
-                        file.getAbsolutePath(), file.lastModified());
-
-                    mdInfoMap.put(mai, mdInfo);
-
-                    // Adds the module archive info into the data structure.
-                    result.add(mai);
-                } catch (Exception ex) {
-                    // XXX log warning but otherwise ignore
-                    System.err.println("Failed to load module from " + file + ": " + ex);
-                }
+                result.add(mai);
+            } catch (Exception ex) {
+                // XXX log warning but otherwise ignore
+                System.err.println("Failed to load module from " + file + ": " + ex);
             }
-
-            // It is certainly possible that the source directory may contain more
-            // than one module with the same name and same version, e.g.
-            // duplicate module with different JAM filename, or platform neutral
-            // module vs platform specific module.
-            //
-            // Constructs the module definitions from the module archives
-            // based on the current platform and architecture.
-            addModuleDefinitions(constructModuleDefinitions(mdInfoMap));
         }
+
+        // The source directory may contain more than one module with the
+        // same name and same version, e.g. duplicate module with different
+        // JAM filename, or portable module vs platform specific module.
+
+        // Constructs the module definitions from the module archives
+        // based on the current platform and architecture.
+        addModuleDefinitions(constructModuleDefinitions(result));
 
         return result;
     }
 
-    /**
-     * Install a module archive from a URL.
-     */
+    @Override
     protected ModuleArchiveInfo doInstall(URL url) throws IOException {
         InputStream is = null;
         File tmpFile = null;
@@ -288,13 +273,13 @@ public final class LocalRepository extends AbstractRepository {
 
             // Check to see if there exists a module archive that has
             // the same name, version, and platform binding.
-            for (ModuleArchiveInfo a : list()) {
+            for (ModuleArchiveInfo a : getModuleArchiveInfos()) {
                 JamModuleArchiveInfo mai = (JamModuleArchiveInfo) a;
 
                 if (mai.getName().equals(mdInfo.getName())
                     && mai.getVersion().equals(mdInfo.getVersion()))  {
-                    if (mai.isPlatformArchNeutral()) {
-                        if (mdInfo.isPlatformArchNeutral()) {
+                    if (mai.isPortable()) {
+                        if (mdInfo.isPortable()) {
                             throw new IllegalStateException("A module definition with the same name,"
                                 + " version, and platform binding is already installed");
                         }
@@ -334,7 +319,7 @@ public final class LocalRepository extends AbstractRepository {
             JamUtils.copyFile(tmpFile, jamFile);
 
             // Put the JAM file into the repository cache, cook it, and
-            // update the internal data structure to reflect the change.
+            // reflect the change.
             return addModuleArchiveInternal(jamFile);
         } catch(IOException ioe) {
             // Something went wrong, remove the jam file in the source
@@ -351,15 +336,8 @@ public final class LocalRepository extends AbstractRepository {
         }
     }
 
-    /**
-     * Uninstall a module archive.
-     */
+    @Override
     protected boolean doUninstall(ModuleArchiveInfo mai) throws IOException {
-        // Checks if the module archive still exists.
-        if (!list().contains(mai)) {
-            return false;
-        }
-
         // Remove the module archive if it is the same one that was installed,
         // as determined by timestamp.  Don't remove if the timestamp is
         // different, as that could mean a file has been copied over the
@@ -376,40 +354,34 @@ public final class LocalRepository extends AbstractRepository {
         }
 
         // Remove the module archive and the corresponding module definition
-        // (if it has been created) from the internal data structures so this
-        // repository wont'recognize it anymore.
+        // (if it has been created) so this repository wont'recognize them
+        // anymore.
         removeModuleArchiveInternal(mai);
 
         return true;
     }
 
-    /**
-     * Reload all module archives.
-     */
+    @Override
     protected void doReload() throws IOException {
-        readOnly = (sourceDirectory.canWrite() == false);
-
-        // Build a list of modules to uninstall, and of modules currently
-        // installed that won't be uninstalled by this reload.
-        List<ModuleArchiveInfo> uninstallCandidates = new ArrayList<ModuleArchiveInfo>();
+        Set<ModuleArchiveInfo> uninstalledJams = new HashSet<ModuleArchiveInfo>();
         Set<File> existingJams = new HashSet<File>();
-        for (ModuleArchiveInfo mai : list()) {
+
+        for (ModuleArchiveInfo mai : getModuleArchiveInfos()) {
             File f = new File(mai.getFileName());
             long modTime = mai.getLastModified();
-            // Uninstall if source file is missing, or if it has been updated on disk.
+
+            // A module archive is considered "uninstalled" if source file is
+            // missing, or if it has been updated on disk.
             if (!f.isFile() || (modTime != 0 && f.lastModified() != modTime)) {
-                uninstallCandidates.add(mai);
+                uninstalledJams.add(mai);
             } else {
                 existingJams.add(f);
             }
         }
 
-        // Remove modules from the internal data structures for which there
-        // is no corresponding JAM file in the source directory.
-        for (ModuleArchiveInfo mai : uninstallCandidates) {
-            // Removes the module archive and the corresponding module
-            // definition from the internal data structure so this
-            // repository won't recognize it anymore.
+        // Removes the module archive and the corresponding module
+        // definition from the repository.
+        for (ModuleArchiveInfo mai : uninstalledJams) {
             removeModuleArchiveInternal(mai);
         }
 
@@ -419,36 +391,33 @@ public final class LocalRepository extends AbstractRepository {
             if (!existingJams.contains(file))  {
                 try {
                     // Put the JAM file into the repository cache, cook it,
-                    // and update the internal data structure of this
-                    // repository to reflect the change.
+                    // and reflect the change.
                     addModuleArchiveInternal(file);
                 } catch(IOException ioe) {
                     // XXX: if reload() throws exception, there is no gurantee
-                    // that the internal data structure of the repository
-                    // remains the same as before reload() is called.
+                    // that the set of module archives and module definitions
+                    // in the repository remains the same as before reload()
+                    // is called.
                     throw ioe;
                 }
             }
         }
 
-        // It is possible that a platform specific module (that matches the
-        // running platform/arch) have been uninstalled, but there is a
-        // platform neutral module with the same name and version already
-        // installed previously (i.e. not newly installed) in the repository.
-        // In this case, the repository does not have any module definition for
-        // this module name/version, and we'll need to construct a new module
-        // definition and sync up the internal data structure again.
+        // A repository may have both portable module and platform specific
+        // modules with the same name and version installed, and it has
+        // constructed a module definition from one of the platform specific
+        // module. If this platform specific module is uninstalled, the
+        // repository will need to construct a new module definition from
+        // the portable module.
         reconstructModuleDefinitionsIfNecessary();
     }
 
-    /**
-     * Shutdown the repository.
-     */
+    @Override
     protected void doShutdown2() throws IOException {
         // XXX This is a hook for testing shutdownOnExit.
         if (uninstallOnShutdown) {
             // Only remove what was installed
-            for (ModuleArchiveInfo mai : list()) {
+            for (ModuleArchiveInfo mai : getModuleArchiveInfos()) {
                 try {
                     uninstall(mai);
                 } catch(Exception e) {
@@ -458,17 +427,11 @@ public final class LocalRepository extends AbstractRepository {
         }
     }
 
-    /**
-     * @return true if this repository is read-only; false otherwise
-     */
     @Override
     public boolean isReadOnly() {
-        return readOnly;
+        return (sourceDirectory.canWrite() == false);
     }
 
-    /**
-     * @return true
-     */
     @Override
     public boolean supportsReload() {
         return true;

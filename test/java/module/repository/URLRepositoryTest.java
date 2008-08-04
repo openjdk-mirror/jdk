@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.JarFile;
 import sun.module.JamUtils;
-import sun.module.repository.MetadataXMLWriter;
 import sun.module.repository.RepositoryConfig;
 import sun.module.repository.RepositoryUtils;
 import sun.module.repository.URLRepository;

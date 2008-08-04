@@ -242,13 +242,36 @@ public abstract class Repository {
     }
 
     /**
-     * Returns the system's default visibility policy for module definitions
-     * in the repositories.
+     * Returns the system's visibility policy for module definitions in the
+     * repositories.
      * <p>
-     * The default class of the visibility policy can be overridden using the
-     * {@code java.module.visibility.policy.classname} system property.
+     * If the system has no visibility policy installed, this method returns
+     * an instance of the default {@code VisibilityPolicy} implementation.
+     * <p>
+     * The default {@code VisibilityPolicy} implementation can be changed
+     * by setting the value of the "visibility.policy.classname" property
+     * (in the Java module properties file) to the fully qualified name of
+     * the desired {@code VisibilityPolicy} implementation. The Java module
+     * properties file is located in the file named
+     * {@code <JAVA_HOME>/lib/module/module.properties}. {@code <JAVA_HOME>}
+     * refers to the value of the {@code java.home} system property, and
+     * specifies the directory where the JRE is installed.
+     * <p>
+     * The default {@code VisibilityPolicy} implementation can also be
+     * changed by setting the value of the
+     * {@code java.module.visibility.policy.classname} system property to the
+     * fully qualified name of the desired {@code VisibilityPolicy}
+     * implementation.
+     * <p>
+     * If a security manager is present, this method calls the security
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("getVisibilityPolicy")}
+     * permission to ensure it's ok to get the system's visibility policy.
      *
-     * @return the system's default visibility policy for module definitions.
+     * @return the system's visibility policy for module definitions.
+     * @throws SecurityException if a security manager exists and its
+     *         {@code checkPermission} method denies access to get the
+     *         system's visibility policy.
      */
     public static VisibilityPolicy getVisibilityPolicy() {
         return Modules.getVisibilityPolicy();

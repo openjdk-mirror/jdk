@@ -25,14 +25,16 @@
 
 package sun.module.repository;
 
+import java.lang.ModuleInfo;
 import java.module.ModuleArchiveInfo;
+import java.module.ModuleContent;
 import java.module.Repository;
 import java.module.Version;
-
+import java.nio.ByteBuffer;
 
 /**
  * This class represents the information of an installed module archive
- * in a repository for the JAM (JAva Module) module system.
+ * in a repository for the JAM module system.
  *
  * @see java.module.Repository
  * @see java.module.Version
@@ -40,37 +42,39 @@ import java.module.Version;
  * @since 1.7
  */
 public final class JamModuleArchiveInfo implements ModuleArchiveInfo {
-    private Repository repository;
+    private final Repository repository;
+    private ByteBuffer metadataByteBuffer;
+    private ModuleContent moduleContent;
+    private final String path;
 
     // These fields are a reflection of the information in the module archive.
-    private String name;
-    private Version version;
-    private String platform;
-    private String arch;
-    private String fileName;
-    private long lastModified;
+    private final String name;
+    private final Version version;
+    private final String platform;
+    private final String arch;
+    private final String fileName;
+    private final long lastModified;
 
     /**
      * Constructs a new {@code JamModuleArchiveInfo} instance.
      * <p>
-     * If the module archive is platform and architecture neutral,
-     * both {@code platform} and {@code arch} must be null.
+     * If the module archive is portable, both {@code platform} and
+     * {@code arch} must be null.
      *
      * @param repository the repository
      * @param name the name of the module definition in the module archive.
      * @param version the version of the module definition in the module archive.
      * @param platform the platform which the module archive targets.
      * @param arch the architecture which the module archive targets.
-     * @param fileName the filename of the module archive.
-     * @param lastModified the last modified time of the module archive.
-     * @throws NullPointerException if repository is null, name is null,
-     *         version is null, or the last modified time is less than 0. It
-     *         is also thrown if platform is null but arch is not null, or
-     *         platform is not null but arch is null.
+     * @param path relative path to the source location (for URLRepository)
+     * @throws NullPointerException if repository is null, name is null, or
+     *         version is null. It is also thrown if platform is null but
+     *         arch is not null, or platform is not null but arch is null.
      */
-    public JamModuleArchiveInfo(Repository repository, String name,
-                             Version version, String platform, String arch,
-                             String fileName, long lastModified) {
+    public JamModuleArchiveInfo(Repository repository,
+                                String name, Version version,
+                                String platform, String arch,
+                                String path) {
         if (repository == null) {
             throw new IllegalArgumentException("repository must not be null.");
         }
@@ -86,112 +90,221 @@ public final class JamModuleArchiveInfo implements ModuleArchiveInfo {
                 "platform and arch must be either both provided, or neither provided.");
         }
 
-        if (lastModified <0) {
+        this.repository = repository;
+        this.metadataByteBuffer = null;
+        this.moduleContent = null;
+        this.name = name;
+        this.version = version;
+        this.platform = platform;
+        this.arch = arch;
+        this.path = path;
+        this.fileName = null;
+        this.lastModified = 0;
+    }
+
+    /**
+     * Constructs a new {@code JamModuleArchiveInfo} instance.
+     * <p>
+     * If the module archive is portable, both {@code platform} and
+     * {@code arch} must be null.
+     *
+     * @param repository the repository
+     * @param name the name of the module definition in the module archive.
+     * @param version the version of the module definition in the module archive.
+     * @param platform the platform which the module archive targets.
+     * @param arch the architecture which the module archive targets.
+     * @param fileName the filename of the module archive.
+     * @param lastModified the last modified time of the module archive.
+     * @param metadataByteBuffer the metadata byte buffer
+     * @param moduleContent the ModuleContent object
+     * @throws NullPointerException if repository is null, name is null,
+     *         version is null, last modified time is less than 0,
+     *         metadataByteBuffer is null or moduleContent is null. It
+     *         is also thrown if platform is null but arch is not null, or
+     *         platform is not null but arch is null.
+     */
+    public JamModuleArchiveInfo(Repository repository, String name,
+                             Version version, String platform, String arch,
+                             String fileName, long lastModified,
+                             ByteBuffer metadataByteBuffer,
+                             ModuleContent moduleContent) {
+        if (repository == null) {
+            throw new IllegalArgumentException("repository must not be null.");
+        }
+        if (name == null) {
+            throw new IllegalArgumentException("name must not be null.");
+        }
+        if (version == null) {
+            throw new IllegalArgumentException(
+                "version must not be null.");
+        }
+        if ((platform == null ^ arch == null)) {
+            throw new IllegalArgumentException(
+                "platform and arch must be either both provided, or neither provided.");
+        }
+        if (lastModified < 0) {
             throw new IllegalArgumentException(
                 "lastModified must be greater than or equal to 0.");
         }
+        if (metadataByteBuffer == null) {
+            throw new IllegalArgumentException(
+                "metadataByteBuffer must not be null.");
+        }
+        if (moduleContent == null) {
+            throw new IllegalArgumentException(
+                "moduleContent must not be null.");
+        }
 
         this.repository = repository;
+        this.metadataByteBuffer = metadataByteBuffer;
+        this.moduleContent = moduleContent;
         this.name = name;
         this.version = version;
         this.platform = platform;
         this.arch = arch;
         this.fileName = fileName;
         this.lastModified = lastModified;
+        this.path = null;
     }
 
-    /**
-     * Returns the repository where the module archive is stored.
-     *
-     * @return the repository.
-     */
     @Override
     public Repository getRepository() {
         return repository;
     }
 
-    /**
-     * Returns the name of the module definition in the module archive.
-     *
-     * @return the name of the module definition in the module archive.
-     */
     @Override
     public String getName() {
         return name;
     }
 
-    /**
-     * Returns the version of the module definition in the module archive.
-     *
-     * @return the version of the module definition in the module archive.
-     */
     @Override
     public Version getVersion() {
         return version;
     }
 
-    /**
-     * Returns the name of the platform which the module archive targets.
-     * The value should be one of the possible values
-     * of the system property {@code "os.platform"}.
-     *
-     * @return the name of the platform. If the module archive has no
-     *          platform binding, returns null.
-     */
     @Override
     public String getPlatform() {
         return platform;
     }
 
-    /**
-     * Returns the name of the architecture of the module archive targets.
-     * The value should be one of the possible values of the system property {@code "os.arch"}.
-     *
-     * @return the name of the architecture. If the module archive has no
-     *          platform binding, returns null.
-     */
     @Override
     public String getArch() {
         return arch;
     }
 
-    /**
-     * Determines if the module archive is platform and architecture neutral.
-     *
-     * @return true if the module archive is platform
-     *         and architecture neutral; otherwise return false.
-     */
-    public boolean isPlatformArchNeutral() {
-        return (platform == null && arch == null);
-    }
-
-    /**
-     * Returns the filename of the module archive.
-     *
-     * @return the filename of the module archive. If the module archive does not
-     *          have a filename, return null.
-     */
     @Override
     public String getFileName() {
         return fileName;
     }
 
-    /**
-     * Returns the last modified time of the module archive in the repository. The
-     * result is the number of milliseconds since January 1, 1970 GMT.
-     *
-     * @return the time the module archive was last modified, or 0 if not known.
-     */
     @Override
     public long getLastModified() {
         return lastModified;
     }
 
+    public String getPath() {
+        return path;
+    }
+
+    String getCanonicalizedPath()  {
+        return getCanonicalizedPath('/');
+    }
+
+    String getCanonicalizedPath(char separatorChar)  {
+        if (path != null) {
+            return path;
+        }
+
+        if (isPortable()) {
+            return getName() + separatorChar + getVersion();
+        } else {
+            return getName() + separatorChar
+                   + getVersion() + separatorChar
+                   + getPlatform() + "-" + getArch();
+        }
+    }
+
+    /**
+     * Determines if the module archive is portable.
+     *
+     * @return true if the module archive is portable; otherwise return false.
+     */
+    boolean isPortable() {
+        return (platform == null && arch == null);
+    }
+
+    /**
+     * Returns the metadata byte buffer.
+     *
+     * @return the metadata byte buffer, or null if not known.
+     */
+    ByteBuffer getMetadataByteBuffer() {
+        return metadataByteBuffer;
+    }
+
+    /**
+     * Set the metadata byte buffer.
+     *
+     * @param bf a byte buffer which contains the metadata
+     */
+    void setMetadataByteBuffer(ByteBuffer bf) {
+        metadataByteBuffer = bf;
+    }
+
+    /**
+     * Returns the module content.
+     *
+     * @return the module content, or null if not known.
+     */
+    ModuleContent getModuleContent() {
+        return moduleContent;
+    }
+
+    /**
+     * Set the module content
+     *
+     * @param content the module content
+     */
+    void setModuleContent(ModuleContent content) {
+        moduleContent = content;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null || !(other instanceof JamModuleArchiveInfo)) {
+            return false;
+        }
+
+        JamModuleArchiveInfo jmai = (JamModuleArchiveInfo) other;
+        if (!name.equals(jmai.name) || !version.equals(jmai.version)) {
+            return false;
+        }
+
+        if (isPortable() && jmai.isPortable()) {
+            return true;
+        } else if (isPortable() || jmai.isPortable()) {
+            return false;
+        } else {
+            return (platform.equals(jmai.platform)
+                    && arch.equals(jmai.arch));
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        // Hash code is based on name, version, platform, and arch
+        int rc = name.hashCode();
+        rc = 31 * rc + version.hashCode();
+        rc = 31 * rc + (platform == null ? 0 : platform.hashCode());
+        rc = 31 * rc + (arch == null ? 0 : arch.hashCode());
+        return rc;
+    }
+
     /**
      * Returns a {@code String} object representing this
-     * {@code ModuleArchiveInfo}.
+     * {@code JamModuleArchiveInfo}.
      *
-     * @return a string representation of the {@code ModuleArchiveInfo} object.
+     * @return a string representation of the {@code JamModuleArchiveInfo} object.
      */
     @Override
     public String toString()    {
@@ -203,7 +316,7 @@ public final class JamModuleArchiveInfo implements ModuleArchiveInfo {
         builder.append(name);
         builder.append(" v");
         builder.append(version);
-        if (!isPlatformArchNeutral()) {
+        if (!isPortable()) {
             builder.append(",platform-arch=");
             builder.append(platform);
             builder.append("-");

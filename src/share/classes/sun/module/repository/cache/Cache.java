@@ -181,7 +181,7 @@ import sun.module.repository.RepositoryUtils;
                                         String platform, String arch) throws IOException  {
         String path;
         if (platform == null || arch == null) {
-            // platform neutral module
+            // portable module
             path = name + "/" + version;
         } else {
             // platform specific module
