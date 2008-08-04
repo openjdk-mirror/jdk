@@ -1206,7 +1206,7 @@ public class DefaultMXBeanMappingFactory extends MXBeanMappingFactory {
             // Also remember the set of properties in that constructor
             // so we can test unambiguity.
             Set<BitSet> getterIndexSets = newSet();
-            for (Constructor constr : annotatedConstrList) {
+            for (Constructor<?> constr : annotatedConstrList) {
                 String[] propertyNames =
                     constr.getAnnotation(propertyNamesClass).value();
 
