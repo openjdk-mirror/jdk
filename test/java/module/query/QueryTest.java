@@ -26,6 +26,7 @@ import java.module.Version;
 import java.module.VersionConstraint;
 import java.module.Query;
 import java.module.ImportDependency;
+import java.module.ModuleArchiveInfo;
 import java.module.ModuleDefinition;
 import java.module.ModuleContent;
 import java.module.ModuleSystem;
@@ -146,6 +147,11 @@ public class QueryTest {
 
         @Override
         public ModuleSystem getModuleSystem() {
+            return null;
+        }
+
+        @Override
+        public ModuleArchiveInfo getModuleArchiveInfo() {
             return null;
         }
 

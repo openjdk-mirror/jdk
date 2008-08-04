@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.module.Repository;
 import java.module.Version;
 import java.net.URL;
 import java.net.URLConnection;
@@ -52,21 +53,28 @@ import sun.module.JamUtils;
 /**
  * Reads from data from a {@code URL} which conforms to the
  * <tt>RepositoryMetadata.xml</tt> schema, providing a set of
- * {@code URLModuleInfo} instances.
+ * {@code JamModuleArchiveInfo} instances.
  * @since 1.7
  */
 public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
-    /** URLModuleInfo corresponding to data read from repository-metadata.xml. */
-    private final Set<URLModuleInfo> urlModuleInfos = new HashSet<URLModuleInfo>();
+
+    private Repository repository;
+
+    /** JamModuleArchiveInfo corresponding to data read from repository-metadata.xml. */
+    private final Set<JamModuleArchiveInfo> result = new HashSet<JamModuleArchiveInfo>();
 
     /** For handling errors. */
     private Locator locator;
 
-    /** Repository's source location. */
-    private final String sourceLocation;
+    /** URL connection to the repository metadata file. */
+    private final URLConnection conn;
 
-    /** Builds up information used to create elements of {@codeurlModuleInfos}. */
-    private MutableURLModuleInfo urlModuleInfo;
+    /** Builds up information during parsing. */
+    private String moduleName;
+    private String moduleVersion;
+    private String platform;
+    private String arch;
+    private String path;
 
     /**
      * The setting of @{code expect} determines how the next invocation of
@@ -81,20 +89,21 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
     private Kind expect = Kind.NONE;
 
     /**
-     * Returns information from given URL as a set
-     * of URLModuleInfo instances.  Validates the data aginst the
-     * schema in {@code java/module/RepositoryMetadata.xml}.
+     * Returns information from given URL as a set of
+     * JamModuleArchiveInfo instances.  Validates the data aginst the
+     * schema in {@code java/module/repository-metadata-schema.xml}.
      *
-     * @param source {@code URL} to a file which conforms to
-     * the <tt>RepositoryMetadata.xml</tt> schema.
-     * @return a {@code Set<URLModuleInfo>}, with one {@code URLModuleInfo} for each
-     * <tt>module</tt> entry in the <tt>repository-metadata.xml</tt>.
+     * @param conn {@code URLConnection} to read the repository metadata file.
+     * @return a {@code Set<JamModuleArchiveInfo>}, with one
+     *         {@code JamModuleArchiveInfo} for each
+     *         <tt>module</tt> entry in the repository metadata file.
      * @throws NullPointerException if any argument is null.
-     * @throws IllegalArgumentException if the {@code source} has duplicate entries
-     * (note that the <tt>path</tt> element is not considered when checking for
-     * duplicates, though other elements are).
+     * @throws IllegalArgumentException if the repository metadata file has
+     *         duplicate entries (note that the <tt>path</tt> element is not
+     *         considered when checking for duplicates, though other elements
+     *         are).
      */
-    public static Set<URLModuleInfo> read(URL source) throws SAXException, IOException {
+    public static Set<JamModuleArchiveInfo> read(Repository repository, URLConnection conn) throws SAXException, IOException {
         InputStream schemaStream = null;
         InputStream repoStream = null;
 
@@ -124,13 +133,13 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
 
             // Read the soruce into a byte array so it does not need to be downloaded
             // more than once.
-            repoStream = source.openStream();
+            repoStream = conn.getInputStream();
             byte[] byteBuffer = JamUtils.getInputStreamAsBytes(repoStream);
 
             // Validate schema
             schemaStream = new BufferedInputStream(
                     ClassLoader.getSystemResourceAsStream(
-                        "java/module/RepositoryMetadata.xml"));
+                        "java/module/repository-metadata-schema.xml"));
 
             StreamSource ss = new StreamSource(schemaStream);
             Schema s = f.newSchema(ss);
@@ -141,13 +150,13 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
             XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 
             MetadataXMLReader moduleTypeReader =
-                new MetadataXMLReader(source.toString());
+                new MetadataXMLReader(repository, conn);
             xmlReader.setErrorHandler(moduleTypeReader);
             xmlReader.setContentHandler(moduleTypeReader);
             is = new ByteArrayInputStream(byteBuffer);
             xmlReader.parse(new InputSource(is));;
 
-            return moduleTypeReader.urlModuleInfos;
+            return moduleTypeReader.result;
         } finally {
             // Restore context class loader
             t.setContextClassLoader(cl);
@@ -157,8 +166,9 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
         }
     }
 
-    private MetadataXMLReader(String sourceLocation) {
-        this.sourceLocation = sourceLocation;
+    private MetadataXMLReader(Repository repository, URLConnection conn) {
+        this.repository = repository;
+        this.conn = conn;
     }
 
     //
@@ -196,7 +206,11 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
     public void startElement(String ns, String name, String qname, Attributes attrs)
             throws SAXException {
         if ("module".equals(name)) {
-            urlModuleInfo = new MutableURLModuleInfo();
+            moduleName = null;
+            moduleVersion = null;
+            platform = null;
+            arch = null;
+            path = null;
         } else if ("name".equals(name)) {
             expect = Kind.NAME;
         } else if ("version".equals(name)) {
@@ -214,12 +228,23 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
     public void endElement(String ns, String name, String qname)
             throws SAXException, IllegalArgumentException {
         if ("module".equals(name)) {
-            URLModuleInfo mi = new URLModuleInfo(urlModuleInfo);
-            if (urlModuleInfos.contains(mi)) {
+            Version version = Version.valueOf(moduleVersion);
+
+            if (path != null) {
+                if (path.startsWith("/") || path.endsWith("/")) {
+                    throw new IllegalArgumentException(
+                        "The path must not have leading or trailing \"'\".");
+                }
+            }
+
+            JamModuleArchiveInfo jmai = new JamModuleArchiveInfo(repository,
+                                                moduleName, version,
+                                                platform, arch, path);
+            if (result.contains(jmai)) {
                 throw new IllegalArgumentException(
-                    "duplicate URLModuleInfo is not allowed in " + sourceLocation);
+                    "The repository metadata file has duplicate module entry.");
             } else {
-                urlModuleInfos.add(mi);
+                result.add(jmai);
             }
             expect = Kind.NONE;
         }
@@ -232,35 +257,23 @@ public class MetadataXMLReader extends DefaultHandler implements ErrorHandler {
         if (!tmp.trim().equals("")) {
             switch (expect) {
                 case NAME:
-                    urlModuleInfo.setName(tmp);
+                    moduleName = tmp;
                     break;
                 case VERSION:
-                    urlModuleInfo.setVersion(Version.valueOf(tmp));
+                    moduleVersion = tmp;
                     break;
                 case PLATFORM:
-                    urlModuleInfo.setPlatform(tmp);
+                    platform = tmp;
                     break;
                 case ARCH:
-                    urlModuleInfo.setArch(tmp);
+                    arch = tmp;
                     break;
                 case PATH:
-                    urlModuleInfo.setPath(tmp);
+                    path = tmp;
                     break;
                 case NONE:
                     break;
             }
         }
-    }
-
-    //
-    // Local implementation support
-    //
-
-    private static class MutableURLModuleInfo extends URLModuleInfo {
-        void setName(String name)         { this.name = name; }
-        void setVersion(Version version)   { this.version = version; }
-        void setPlatform(String platform) { this.platform = platform; }
-        void setArch(String arch)         { this.arch = arch; }
-        void setPath(String path)         { this.path = path; }
     }
 }

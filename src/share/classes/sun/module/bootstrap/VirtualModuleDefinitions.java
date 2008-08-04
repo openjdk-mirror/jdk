@@ -417,7 +417,7 @@ public final class VirtualModuleDefinitions {
             try {
                 moduleDefs.add(new JamModuleDefinition(moduleSystem,
                     null, null, metadata,
-                    null, new DummyModuleContent(),
+                    new DummyModuleContent(), null,
                     BootstrapRepository.getInstance(),
                     false));
             } catch (Exception e) {

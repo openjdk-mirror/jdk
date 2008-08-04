@@ -27,6 +27,7 @@ package sun.module.osgi;
 
 import java.lang.annotation.Annotation;
 import java.module.ImportDependency;
+import java.module.ModuleArchiveInfo;
 import java.module.ModuleContent;
 import java.module.ModuleDefinition;
 import java.module.ModuleSystem;
@@ -102,6 +103,13 @@ public class OSGiModuleDefinition extends ModuleDefinition {
     @Override
     public ModuleSystem getModuleSystem() {
         return OSGiModuleSystem.getModuleSystem();
+    }
+
+
+    @Override
+    public ModuleArchiveInfo getModuleArchiveInfo() {
+        // XXX: TODO
+        return null;
     }
 
     @Override

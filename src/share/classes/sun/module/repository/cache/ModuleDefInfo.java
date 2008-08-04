@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.module.ModuleContent;
 import java.module.Version;
 import java.module.annotation.PlatformBinding;
+import java.nio.ByteBuffer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import sun.module.JamUtils;
@@ -43,8 +44,8 @@ import sun.module.repository.RepositoryUtils;
     // Directory where this object lives.
     private final File entryDirectory;
 
-    // Byte array that represents the module metadata
-    private final byte[] metadataBytes;
+    // Byte buffer that contains the module metadata
+    private final ByteBuffer metadataByteBuffer;
 
     // ModuleInfo rectified from the module metadata
     private final ModuleInfo moduleInfo;
@@ -73,7 +74,7 @@ import sun.module.repository.RepositoryUtils;
      */
     ModuleDefInfo(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo) {
         this.entryDirectory = entryDirectory;
-        this.metadataBytes = metadataBytes;
+        this.metadataByteBuffer = ByteBuffer.wrap(metadataBytes);
         this.moduleInfo = moduleInfo;
 
         // Module name
@@ -100,11 +101,10 @@ import sun.module.repository.RepositoryUtils;
     }
 
     /**
-     * Returns the byte array of the module metadata.
+     * Returns a read-only byte buffer of the module metadata.
      */
-    public byte[] getMetadataBytes() {
-        // XXX make a copy
-        return metadataBytes;
+    public ByteBuffer getMetadataByteBuffer() {
+        return metadataByteBuffer.asReadOnlyBuffer();
     }
 
     /**
@@ -136,12 +136,12 @@ import sun.module.repository.RepositoryUtils;
      }
 
      /**
-      * Determines if the module definition is platform and architecture neutral.
+      * Determines if the module definition is portable.
       *
-      * @return true if the module archive is platform and architecture neutral;
-      *         return false otherwise.
+      * @return true if the module definition is portable; otherwise,
+      *         return false.
       */
-     public boolean isPlatformArchNeutral()  {
+     public boolean isPortable()  {
          return (getPlatform() == null && getArch() == null);
      }
 
@@ -150,7 +150,7 @@ import sun.module.repository.RepositoryUtils;
       * architecture.
       */
      public boolean supportsRunningPlatformArch()  {
-         if (isPlatformArchNeutral()) {
+         if (isPortable()) {
             return true;
          }
 

@@ -229,9 +229,25 @@ final class ModuleImpl extends Module {
     @Override
     public boolean supportsDeepValidation() {
         try {
-            // In order to support deep validation, member classes
-            // must be known.
-            moduleDef.getMemberClasses();
+            // Find the transitive closure of this module through imported dependency
+            Set<Module> closure = ModuleUtils.findImportedModulesClosure(this);
+
+            // Deep validation is supported only if the member classes in all
+            // modules in the transitive closure are known.
+            for (Module m : closure) {
+                ModuleDefinition md = m.getModuleDefinition();
+
+                // XXX: Workaround for virtual module for now ... until JSR 294
+                // support arrives
+                if (md.getName().equals("java.classpath")) {
+                    throw new UnsupportedOperationException();
+                } else if (md.getRepository() == Repository.getBootstrapRepository())  {
+                    continue;
+                }
+
+                md.getMemberClasses();
+            }
+
             return true;
         } catch (UnsupportedOperationException uoe) {
             return false;
@@ -240,46 +256,39 @@ final class ModuleImpl extends Module {
 
     @Override
     public void deepValidate() throws ModuleInitializationException {
-        if (supportsDeepValidation() == false) {
-            throw new UnsupportedOperationException(moduleDef.getName()
-                                + " module cannot be deep validated.");
-        }
-
-        // Find the transitive closure of this module through imported dependency
-        Set<Module> importedModulesClosure = ModuleUtils.findImportedModulesClosure(this);
-
-        // Continue with deep validation only if all modules in the
-        // transitive closure support deep validation.
-        for (Module m : importedModulesClosure) {
-            if (m.supportsDeepValidation() == false) {
-                ModuleDefinition md = m.getModuleDefinition();
-                throw new ModuleInitializationException("module " + toString(md)
-                    + " in the dependency transitive closure does not support deep validation.");
-            }
-        }
-
         Set<String> classNamespace = new HashSet<String>();
         Set<String> questionableClasses = new HashSet<String>();
 
-        for (Module m : importedModulesClosure) {
-            ModuleDefinition md = m.getModuleDefinition();
+        for (Module m : ModuleUtils.findImportedModulesClosure(this)) {
+            try {
+                ModuleDefinition md = m.getModuleDefinition();
 
-            // XXX: Workaround for virtual module for now ... until JSR 294
-            // support arrives
-            if (md.getRepository() == Repository.getBootstrapRepository()) {
-                continue;
-            }
-
-            Set<String> memberClasses = md.getMemberClasses();
-            for (String clazz : memberClasses) {
-                if (classNamespace.contains(clazz)) {
-                    // The member class already exists in the namespace. There is
-                    // a potential conflict.
-                    questionableClasses.add(clazz);
-                } else {
-                    // Add the class to the namespace
-                    classNamespace.add(clazz);
+                // XXX: Workaround for virtual module for now ... until JSR 294
+                // support arrives
+                if (md.getName().equals("java.classpath")) {
+                    throw new UnsupportedOperationException();
+                } else if (md.getRepository() == Repository.getBootstrapRepository())  {
+                    continue;
                 }
+
+                Set<String> memberClasses = md.getMemberClasses();
+
+                for (String clazz : memberClasses) {
+                    if (classNamespace.contains(clazz)) {
+                        // The member class already exists in the namespace.
+                        // There is a potential type consistency conflict.
+                        questionableClasses.add(clazz);
+                    }
+                }
+
+                // Add the member classes to the namespace
+                classNamespace.addAll(memberClasses);
+
+            } catch (UnsupportedOperationException uoe) {
+                    throw new ModuleInitializationException("Module " + moduleString
+                        + " cannot be deep validated because member classes in "
+                        + m.getModuleDefinition().toString()
+                        + "in the dependency transitive closure are unknown.");
             }
         }
 
@@ -287,8 +296,8 @@ final class ModuleImpl extends Module {
         // type conflict information could be reported more precisely through
         // exception.
         if (questionableClasses.size() > 0)
-            throw new ModuleInitializationException("The class namespace of module "
-                        + moduleString + " has potential type conflict.");
+            throw new ModuleInitializationException("Module "
+                        + moduleString + " has potential type consistency conflict.");
     }
 
     /**

@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.module.ImportDependency;
 import java.module.ImportOverridePolicy;
 import java.module.Modules;
+import java.module.ModuleArchiveInfo;
 import java.module.ModuleDefinition;
 import java.module.ModuleDependency;
 import java.module.ModuleContent;
@@ -134,6 +135,11 @@ public class ImportOverridePolicyFileTest {
 
         @Override
         public ModuleSystem getModuleSystem() {
+            return null;
+        }
+
+        @Override
+        public ModuleArchiveInfo getModuleArchiveInfo() {
             return null;
         }
 

@@ -45,7 +45,7 @@ final class LocalModuleContent extends CacheModuleContent {
      * Constructs a new local cache module content.
      */
     LocalModuleContent(LocalModuleDefInfo mdInfo) {
-        super(mdInfo.getEntryDirectory(), mdInfo.getMetadataBytes(), mdInfo.getModuleInfo());
+        super(mdInfo.getEntryDirectory(), mdInfo.getMetadataByteBuffer(), mdInfo.getModuleInfo());
         this.mdInfo = mdInfo;
     }
 
