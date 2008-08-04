@@ -73,7 +73,6 @@ import sun.font.NativeFont;
  * @see GraphicsDevice
  * @see GraphicsConfiguration
  */
-
 public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
     implements DisplayChangedListener {
 
@@ -139,7 +138,22 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
         return ret;
     }
 
+    /**
+     * Returns the number of screen devices of this graphics environment.
+     *
+     * @return the number of screen devices of this graphics environment
+     */
     protected abstract int getNumScreens();
+
+    /**
+     * Create and return the screen device with the specified number. The
+     * device with number <code>0</code> will be the default device (returned
+     * by {@link #getDefaultScreenDevice()}.
+     *
+     * @param screennum the number of the screen to create
+     *
+     * @return the created screen device
+     */
     protected abstract GraphicsDevice makeScreenDevice(int screennum);
 
     /**
