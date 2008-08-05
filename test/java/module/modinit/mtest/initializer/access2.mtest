@@ -24,7 +24,7 @@ implements ModuleInitializer
 > body
     static volatile boolean CALLED;
 
-    public void initialize(Module module) throws ModuleInitializationException {
+    public void initialize(ModuleDefinition moduleDef) throws ModuleInitializationException {
         CALLED = true;
         try {
             new m2.MainB().info("from module initializer");
@@ -40,7 +40,7 @@ implements ModuleInitializer
         }
     }
 
-    public void release(Module module) {
+    public void release() {
     }
 >> end class
 >>> end module

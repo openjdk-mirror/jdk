@@ -260,13 +260,13 @@ public abstract class ClassLoader {
      * <p>If this class loader is the
      * {@linkplain java.module.Module#getClassLoader module class loader}
      * of a {@link Module} instance, this method returns that
-     * {@code Module} object. Otherwise, it returns null.
+     * {@code Module} object. Otherwise, it returns {@code null}.
      *
      * @return the {@code Module} instance associated with
      *         this {@code ClassLoader}, or {@code null}.
-     * @throws IllegalStateException if a {@code Module} instance is
-     *         associated with this {@code ClassLoader} but the
-     *         {@code Module} instance has not been fully initialized.
+     * @throws IllegalStateException if the {@code Module} instance
+     *         associated with this {@code ClassLoader} has not
+     *         been <i>fully initialized</i>.
      * @since 1.7
      */
     public Module getModule() {

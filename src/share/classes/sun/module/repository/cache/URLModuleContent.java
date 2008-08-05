@@ -61,7 +61,7 @@ final class URLModuleContent extends CacheModuleContent {
      * Constructs a new URL module content.
      */
     URLModuleContent(URLModuleDefInfo mdInfo) {
-        super(mdInfo.getEntryDirectory(), mdInfo.getMetadataBytes(), mdInfo.getModuleInfo());
+        super(mdInfo.getEntryDirectory(), mdInfo.getMetadataByteBuffer(), mdInfo.getModuleInfo());
         this.mdInfo = mdInfo;
     }
 

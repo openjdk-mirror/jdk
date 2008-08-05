@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+
+This code is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 only, as
+published by the Free Software Foundation.  Sun designates this
+particular file as subject to the "Classpath" exception as provided
+by Sun in the LICENSE file that accompanied this code.
+
+This code is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+version 2 for more details (a copy is included in the LICENSE file that
+accompanied this code).
+
+You should have received a copy of the GNU General Public License version
+2 along with this work; if not, write to the Free Software Foundation,
+Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
+CA 95054 USA or visit www.sun.com if you need additional information or
+have any questions.
+-->
+
+<!--
+  This schema defines the structure of data downloaded by a URLRepository
+  when it is is initialized.  Data using this schema describes the modules
+  available in a URL Repository.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:annotation>
+        <xs:documentation xml:lang="en">
+            URL Repository Metadata Schema for Java Module System.
+            Copyright 2006 Sun Microsystems, Inc. All rights reserved.
+        </xs:documentation>
+    </xs:annotation>
+    <xs:element name="modules" type="ModulesType"/>
+    <xs:complexType name="ModulesType">
+        <xs:sequence>
+            <xs:element name="module" type="ModuleType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="ModuleType">
+        <xs:sequence>
+            <!-- Name of the JAM module. -->
+            <xs:element name="name" type="xs:string"/>
+            <!--
+                Version of the JAM module. It must conform to the version
+                format in the versioning scheme in the Java Module System.
+            -->
+            <xs:element name="version" type="xs:string"/>
+            <!--
+                Platform binding of the JAM module.
+            -->
+            <xs:element name="platform-binding"
+                        type="PlatformBindingType" minOccurs="0" maxOccurs="1"/>
+            <!--
+                Relative path to the files which belong to the specified
+                JAM module, including the module file (i.e.
+                MODULE.METADATA), the module archive (i.e. .jam file)
+                and/or the packed module archive (i.e. .jam.pack.gz
+                file). The path must be specified using '/' as the path
+                separator; it must have no leading and trailing '/'.
+                
+                URL repository implementations must treat the path as
+                
+                    <name>/<version>[/<platform>-<arch>]
+                
+                if this element is missing.
+            -->
+            <xs:element name="path" type="xs:string" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="PlatformBindingType">
+        <xs:sequence>
+            <!--
+                Name of the platform. It is one of the possible values
+                of the system property "os.platform".
+            -->
+            <xs:element name="platform" type="xs:string"/>
+            <!--
+                Architecture of the platform. It is one of the possible values
+                of the system property "os.arch".
+            -->
+            <xs:element name="arch" type="xs:string"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

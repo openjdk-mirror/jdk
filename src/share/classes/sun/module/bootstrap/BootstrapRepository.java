@@ -77,7 +77,7 @@ public final class BootstrapRepository extends Repository {
         for (ModuleDefinition md : moduleDefs) {
             moduleArchiveInfos.add(new JamModuleArchiveInfo(this,
                                         md.getName(), md.getVersion(),
-                                        null, null, null, 0));
+                                        null, null, null));
         }
     }
 

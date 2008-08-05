@@ -44,6 +44,8 @@ import java.module.Query;
 import java.module.Repository;
 import java.module.RepositoryEvent;
 import java.module.Version;
+import java.nio.ByteBuffer;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -63,57 +65,8 @@ import sun.module.repository.cache.Cache;
 import sun.module.repository.cache.ModuleDefInfo;
 
 /**
- * This class represents a repository that loads module definitions from a
- * codebase URL.
- * <p>
- * Information about the module definitions available from the codebase URL
- * must be published in a repository metadata file. The contents of the file
- * must follow the schema of the URL Repository metadata for the Java Module
- * System.
- * <p><i>
- *      {codebase}/repository-metadata.xml
- * <p></i>
- * When the repository is initialized, the repository metadata file (i.e.
- * repository-metadata.xml) would be downloaded from the codebase URL.
- * <p>
- * In the repository metadata file, each module definition is described with
- * a name, a version, a platform binding, and a path (relative to the codebase
- * URL where the module file, the module archive, and/or the packed module
- * archive are located). If no path and no platform binding is specified, the
- * default path is "{name}/{version}". If the path is not specified and the
- * module definition has platform binding, the default path is
- * "{name}/{version}/{platform}-{arch}".
- * <p>
- * After the URL repository instance successfully downloads the repository
- * metadata file, the module metadata file of each module definition
- * (i.e. MODULE.METADATA file) in the repository is downloaded based on the
- * information in the repository metadata file:
- * <p><i>
- *      {codebase}/{path}/MODULE.METADATA
- * <p></i>
- * If a module definition is platform-specific, its module metadata file is
- * downloaded if and only if the platform binding described in the
- * repository metadata file matches the platform and the architecture of the
- * system.
- * <p>
- * Module definitions are available for searches after the URL repository
- * instance is initialized. If a module instance is instantiated from a module
- * definition that has no platform binding, the module archive is downloaded
- * by probing in the following order:
- * <p><i>
- *      {codebase}/{path}/{name}-{version}.jam.pack.gz<p>
- *      {codebase}/{path}/{name}-{version}.jam
- * <p></i>
- * On the other hand, if a module instance is instantiated from a
- * platform-specific module definition, the module archive is downloaded by
- * probing in the following order:
- * <p><i>
- *      {codebase}/{path}/{name}-{version}-{platform}-{arch}.jam.pack.gz<p>
- *      {codebase}/{path}/{name}-{version}-{platform}-{arch}.jam
- * <p></i>
- * To ensure the integrity of the separately-hosted module file is in sync
- * with that in the module archive of the same module definition, they are
- * compared bit-wise against each other after the module archive is downloaded.
+ * This class represents the URL repository in the JAM module system.
+ * See the {@link java.module.Modules} class for more details.
  *
  * @see java.module.ModuleArchiveInfo
  * @see java.module.ModuleDefinition
@@ -123,6 +76,8 @@ import sun.module.repository.cache.ModuleDefInfo;
  * @since 1.7
  */
 public final class URLRepository extends AbstractRepository {
+
+    private static final String REPOSITORY_METADATA_XML = "repository-metadata.xml";
 
     /** Prefix of all properties use to configure this repository. */
     private static final String PROPERTY_PREFIX = "sun.module.repository.URLRepository.";
@@ -177,7 +132,10 @@ public final class URLRepository extends AbstractRepository {
 
     /** The architecture on which this URLRepository is running. */
     // Non-final to assist in testing.
-    private static String arch = RepositoryUtils.getArch();;
+    private static String arch = RepositoryUtils.getArch();
+
+    // Last modified date of the repository metadata file.
+    private long lastModified = 0;
 
     /**
      * Creates a new <code>URLRepository</code> instance, and initializes it
@@ -201,6 +159,8 @@ public final class URLRepository extends AbstractRepository {
                          Map<String, String> config,
                          Repository parent) throws IOException {
         super(name, codebase, (config == null ? DEFAULT_CONFIG : config), parent);
+
+        initialize();
     }
 
     //
@@ -227,6 +187,7 @@ public final class URLRepository extends AbstractRepository {
      * @param config Map of configuration names to their values
      * @throws IOException if the repository cannot be initialized.
      */
+    @Override
     protected final List<ModuleArchiveInfo> doInitialize2() throws IOException {
         String tmp = getSourceLocation().toURL().toExternalForm();
         if (tmp.endsWith("/")) {
@@ -262,79 +223,70 @@ public final class URLRepository extends AbstractRepository {
             arch = v;
         }
 
-        Set<URLModuleInfo> urlModuleInfoSet = null;
         try {
-            URL repoMD = new URL(canonicalizedCodebase + "repository-metadata.xml");
-            urlModuleInfoSet = MetadataXMLReader.read(repoMD);
+            URL repositoryMetadataURL = new URL(canonicalizedCodebase + REPOSITORY_METADATA_XML);
+            URLConnection conn = repositoryMetadataURL.openConnection();
+            lastModified = conn.getLastModified();
+            Set<JamModuleArchiveInfo> jmais = MetadataXMLReader.read(this, conn);
 
-            // Initializes the internal data structures based on the module
-            // info set.
-            return doInitialize2(urlModuleInfoSet);
+            // Initializes based on the module archive info set.
+            return doInitialize2(jmais);
         } catch (IOException ex) {
             // ignore IOException
             return new ArrayList<ModuleArchiveInfo>();
         } catch (Exception ex) {
             throw new IOException(
-                "Error processing repository-metadata.xml: " + ex.getMessage(), ex);
+                "Error processing " + REPOSITORY_METADATA_XML + ": " + ex.getMessage(), ex);
         }
     }
 
     /**
-     * Initialize the internal data structures of the repository based on the
-     * modules information in the module info set. Creates the appropriate
-     * module definitions if necessary.
+     * Initialize the repository based on the modules information in the
+     * module archive info set. Creates the appropriate module definitions
+     * if necessary.
      */
-    private List<ModuleArchiveInfo> doInitialize2(Set<URLModuleInfo> urlModuleInfoSet)
+    private List<ModuleArchiveInfo> doInitialize2(Set<JamModuleArchiveInfo> jmais)
                                         throws IOException {
         List<ModuleArchiveInfo> result = new ArrayList<ModuleArchiveInfo>();
 
-        if (urlModuleInfoSet != null) {
-            Map<ModuleArchiveInfo, ModuleDefInfo> mdInfoMap =
-                                        new HashMap<ModuleArchiveInfo, ModuleDefInfo>();
-            for (URLModuleInfo mi : urlModuleInfoSet) {
-                try {
-                    // Retrieves the module metadata
-                    ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(
-                                            canonicalizedCodebase,
-                                            mi.getName(), mi.getVersion(),
-                                            mi.getPlatform(), mi.getArch(),
-                                            mi.getCanonicalizedPath());
+        for (JamModuleArchiveInfo mai : jmais) {
+            try {
+                // Retrieves the module metadata
+                ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(
+                                        canonicalizedCodebase,
+                                        mai.getName(), mai.getVersion(),
+                                        mai.getPlatform(), mai.getArch(),
+                                        mai.getCanonicalizedPath());
 
-                    // Constructs a module archive info
-                    JamModuleArchiveInfo mai = new JamModuleArchiveInfo(
-                        this, mdInfo.getName(), mdInfo.getVersion(),
-                        mdInfo.getPlatform(), mdInfo.getArch(), null, 0);
+                // Set up the module archive info properly
+                mai.setMetadataByteBuffer(mdInfo.getMetadataByteBuffer());
+                mai.setModuleContent(mdInfo.getModuleContent());
 
-                    mdInfoMap.put(mai, mdInfo);
-
-                    // Adds the module archive info into the internal data structure.
-                    result.add(mai);
-                } catch (Exception ex) {
-                    // XXX log warning but otherwise ignore
-                    if (mi.getPlatform() == null && mi.getArch() == null) {
-                        System.err.println("Failed to load module " + mi.getName()
-                                           + " v" + mi.getVersion() + " from "
-                                           + getSourceLocation() + ": " + ex);
-                    } else {
-                        System.err.println("Failed to load module " + mi.getName()
-                                           + " v" + mi.getVersion() + " "
-                                           + mi.getPlatform() + "-" + mi.getArch()
-                                           + " from " + getSourceLocation() + ": " + ex);
-                    }
+                // Adds the module archive info to the result
+                result.add(mai);
+            } catch (Exception ex) {
+                // XXX log warning but otherwise ignore
+                if (mai.isPortable()) {
+                    System.err.println("Failed to load module " + mai.getName()
+                                       + " v" + mai.getVersion() + " from "
+                                       + getSourceLocation() + ": " + ex);
+                } else {
+                    System.err.println("Failed to load module " + mai.getName()
+                                       + " v" + mai.getVersion() + " "
+                                       + mai.getPlatform() + "-" + mai.getArch()
+                                       + " from " + getSourceLocation() + ": " + ex);
                 }
             }
-
-            // Constructs the module definitions from the module archives
-            // based on the specified platform and architecture.
-            addModuleDefinitions(constructModuleDefinitions(mdInfoMap, platform, arch));
         }
+
+        // Constructs the module definitions from the module archives
+        // based on the specified platform and architecture.
+        addModuleDefinitions(constructModuleDefinitions(result, platform, arch));
 
         return result;
     }
 
-    /**
-     * Install a module archive from a URL.
-     */
+    @Override
     protected ModuleArchiveInfo doInstall(URL url) throws IOException {
         InputStream is = null;
         File sourceFile = null;
@@ -368,13 +320,13 @@ public final class URLRepository extends AbstractRepository {
 
             // Check to see if there exists a module archive that has
             // the same name, version, and platform binding.
-            for (ModuleArchiveInfo ma : list()) {
+            for (ModuleArchiveInfo ma : getModuleArchiveInfos()) {
                 JamModuleArchiveInfo mai = (JamModuleArchiveInfo) ma;
 
                 if (mai.getName().equals(mdInfo.getName())
                     && mai.getVersion().equals(mdInfo.getVersion()))  {
-                    if (mai.isPlatformArchNeutral()) {
-                        if (mdInfo.isPlatformArchNeutral()) {
+                    if (mai.isPortable()) {
+                        if (mdInfo.isPortable()) {
                             throw new IllegalStateException("A module definition with the same name,"
                                 + " version, and platform binding is already installed");
                         }
@@ -385,6 +337,10 @@ public final class URLRepository extends AbstractRepository {
                     }
                 }
             }
+
+            JamModuleArchiveInfo mai = new JamModuleArchiveInfo(this, mdInfo.getName(),
+                                        mdInfo.getVersion(), mdInfo.getPlatform(),
+                                        mdInfo.getArch(), null);
 
             /*
              * Installing the module requires these steps:
@@ -404,15 +360,21 @@ public final class URLRepository extends AbstractRepository {
             // <source location>/<module-name>/<module-version>
             //    or
             // <source location>/<module-name>/<module-version>/<platform>-<arch>
-            File moduleDestDir= new File(sourceDir, getFilePath(mdInfo.getName(), mdInfo.getVersion(),
-                                         mdInfo.getPlatform(), mdInfo.getArch()));
+            File moduleDestDir= new File(sourceDir,
+                                        mai.getCanonicalizedPath(File.separatorChar));
+                                        // getFilePath(mdInfo.getName(), mdInfo.getVersion(),
+                                        // mdInfo.getPlatform(), mdInfo.getArch()));
             moduleDestDir.mkdirs();
 
             // Copy MODULE.METADATA file
             destMDFile = new File(moduleDestDir, JamUtils.MODULE_METADATA);
             BufferedOutputStream bos =
                 new BufferedOutputStream(new FileOutputStream(destMDFile));
-            byte[] metadataBytes = mdInfo.getMetadataBytes();
+
+            ByteBuffer metadataByteBuffer = mdInfo.getMetadataByteBuffer();
+            byte[] metadataBytes = new byte[metadataByteBuffer.remaining()];
+            metadataByteBuffer.get(metadataBytes);  // get bytes out of byte buffer.
+
             bos.write(metadataBytes, 0, metadataBytes.length);
             bos.flush();
             bos.close();
@@ -439,9 +401,7 @@ public final class URLRepository extends AbstractRepository {
             // Note that we create a temp ModuleArchiveInfo so we
             // could update the repository metadata before we
             // have a real ModuleArchiveInfo in step 4.
-            writeRepositoryMetadata(new JamModuleArchiveInfo(this, mdInfo.getName(),
-                                        mdInfo.getVersion(), mdInfo.getPlatform(),
-                                        mdInfo.getArch(), null, 0), true);
+            updateRepositoryMetadata(mai, true);
 
             // (4) Update internal data structures.
             return addModuleArchiveInternal(destJamFile);
@@ -464,50 +424,37 @@ public final class URLRepository extends AbstractRepository {
         }
     }
 
-    /**
-     * Uninstall a module archive.
-     */
+    @Override
     protected boolean doUninstall(ModuleArchiveInfo mai) throws IOException {
-        // Checks if the module archive still exists.
-        if (!list().contains(mai)) {
-            return false;
-        }
-
         // Source location
         File sourceDir = new File(getSourceLocation().toURL().getFile());
 
-        // Delete file/filesystem resources related to md, and then
-        // remove it from contents.
-        String moduleName = mai.getName();
-        Version moduleVersion = mai.getVersion();
-        String modulePlatform = mai.getPlatform();
-        String moduleArch = mai.getArch();
-
-        // This is the directory which contains MODULE.METADATA and JAM file.
+        // Delete files related to the module definition (e.g. MODULE.METADATA,
+        // .jam, .jam.pack.gz files), then remove the module's entry from
+        // the repository metadata file.
         //
-        // XXX moduleDir may not be right if the deployers have configured
-        // a custom path in the repository-metadata.xml before. Will fix.
-        File moduleDir = new File(sourceDir, getFilePath(moduleName,
-                                            moduleVersion, modulePlatform,
-                                            moduleArch));
+
+        // Directory which contains MODULE.METADATA and JAM file.
+        //
+        File moduleDir = new File(sourceDir, ((JamModuleArchiveInfo) mai).getCanonicalizedPath());
         verifyExistence(moduleDir);
 
 
         //
-        // A module archive could be platform neutral or platform specific,
+        // A module archive could be portable or platform specific,
         // and it resides under the same top directory for a given module
         // name and version:
         //
         // <source location>/<module-name>/<module-version>/
         // <source location>/<module-name>/<module-version>/<platform>-<arch>/
         //
-        // Thus, we cannot just blow away the directory because there
-        // could be a platform specific subdirectory for other platform
-        // specific module archives.
+        // We cannot just blow away the directory because there may
+        // exist some subdirectories for other platform specific
+        // module archives.
 
         // jam name has no file extension
-        String jamName = JamUtils.getJamFilename(moduleName, moduleVersion,
-                                                 modulePlatform, moduleArch);
+        String jamName = JamUtils.getJamFilename(mai.getName(), mai.getVersion(),
+                                                 mai.getPlatform(), mai.getArch());
 
         File packGzJamFile = new File(moduleDir, jamName + ".jam.pack.gz");
         File jamFile = new File(moduleDir, jamName + ".jam");
@@ -535,7 +482,7 @@ public final class URLRepository extends AbstractRepository {
 
             // Updated the repository metadata without the specified
             // module archive.
-            writeRepositoryMetadata(mai, false);
+            updateRepositoryMetadata((JamModuleArchiveInfo) mai, false);
 
             if (metadataFileToRemove != null) {
                 metadataFileToRemove.delete();
@@ -566,52 +513,57 @@ public final class URLRepository extends AbstractRepository {
                 rename(packGzJamFileToRemove, packGzJamFile);
             }
 
-            writeRepositoryMetadata(mai, true);
+            updateRepositoryMetadata((JamModuleArchiveInfo) mai, true);
+
             throw ex;
         }
 
-        // Remove the module archive and its corresponding module definition
-        // from the internal data structures
+        // Remove the module archive and its corresponding module definition.
         removeModuleArchiveInternal(mai);
 
         return true;
     }
 
-    /**
-     * Reload all module archives.
-     */
+    @Override
     protected void doReload() throws IOException {
         try {
             /**
-             * Since the repository-metadata.xml does not contain any
+             * Since the repository metadata file does not contain any
              * modification date information about the module metadata
              * and the .jam/.jam.pack.gz file, it is rather complicated
              * to detect actual change in individual module. For
              * simplicity, this implementation would simply drop all the
              * existing modules, and reload all module archives from the
              * codebase again.
-             *
-             * XXX: We should check the timestamp of the repository
-             * metadata and only reload if it has been modified. Also, for
-             * each MODULE.METADATA which is downloaded via a
-             * URLConnection, one can getLastModified(), and we could use
-             * the information to determine if a module has been updated.
              */
-            URL repoMD = new URL(canonicalizedCodebase + "repository-metadata.xml");
-            Set<URLModuleInfo> urlModuleInfoSet = MetadataXMLReader.read(repoMD);
+            URL repositoryMetadataURL = new URL(canonicalizedCodebase + REPOSITORY_METADATA_XML);
+            URLConnection conn = repositoryMetadataURL.openConnection();
+
+            long oldLastModified = lastModified;
+            lastModified = conn.getLastModified();
+
+            // Compare timestamp of repository metadata file to last known value
+            if (oldLastModified != 0 && oldLastModified == lastModified) {
+                // Repository metadata file has not been changed.
+                // Close the connection and return.
+                if (conn instanceof HttpURLConnection) {
+                    ((HttpURLConnection) conn).disconnect();
+                }
+                conn.getInputStream().close();
+                return;
+            }
+
+            Set<JamModuleArchiveInfo> jmais = MetadataXMLReader.read(this, conn);
 
             // Uninstall all existing module archives and module definitions
-            for (ModuleArchiveInfo mai : list()) {
+            for (ModuleArchiveInfo mai : getModuleArchiveInfos()) {
                 removeModuleArchiveInternal(mai);
             }
 
-            // Clear internal module archive/module definition mapping
-            contentMapping.clear();
-
             // Initializes the data structures based on the module info set again.
-            List<ModuleArchiveInfo> moduleArchiveInfos = doInitialize2(urlModuleInfoSet);
+            List<ModuleArchiveInfo> moduleArchiveInfos = doInitialize2(jmais);
 
-            // Adds the module archives into the internal data structure
+            // Adds the module archives into the repository
             for (ModuleArchiveInfo mai : moduleArchiveInfos) {
                 addModuleArchiveInfo(mai);
             }
@@ -634,10 +586,6 @@ public final class URLRepository extends AbstractRepository {
         // Nothing specific to do during shutdown. No-op.
     }
 
-    /**
-     * @return true if this repository is read-only, which is the case if it
-     * was created with any other than a file: URL.
-     */
     @Override
     public boolean isReadOnly() {
         try {
@@ -647,31 +595,28 @@ public final class URLRepository extends AbstractRepository {
         }
     }
 
-    /**
-     * @return true if this repository supports reload.
-     */
     @Override
     public boolean supportsReload() {
         return true;
     }
 
     /**
-     * Writes the repository's repository-metadata.xml file based on {@code
-     * contents}.
-     * @param mai {@code ModuleArchiveInfo} on behalf of which the metadata is
-     * written.
-     * @param writeMAI if true, then write the given {@code mai} in addition
-     * to the repository's other contents.
+     * Updates the repository metadata file.
+     *
+     * @param mai {@code JamModuleArchiveInfo} on behalf of which the metadata
+     *        is written.
+     * @param writeMAI true if the given {@code mai} should be written in
+     *        addition to the other module archive infos in the repository
      */
-    private void writeRepositoryMetadata(
-            ModuleArchiveInfo mai,
+    private void updateRepositoryMetadata(
+            JamModuleArchiveInfo mai,
             boolean writeMAI) throws IOException {
         URL repoMD = new URL(
             getSourceLocation().toURL().toExternalForm()
-            + "/repository-metadata.xml");
+            + "/" + REPOSITORY_METADATA_XML);
         File repoMDFile = new File(repoMD.getFile());
         File repoMDDir = repoMDFile.getParentFile();
-        File tmpRepoMDFile = new File(repoMDDir, "repository-metadata.xml.tmp");
+        File tmpRepoMDFile = new File(repoMDDir, REPOSITORY_METADATA_XML + ".tmp");
         if (tmpRepoMDFile.exists()) {
             if (!tmpRepoMDFile.delete()) {
                 throw new IOException(
@@ -681,9 +626,9 @@ public final class URLRepository extends AbstractRepository {
                         + tmpRepoMDFile);
             }
         }
-        RepoMDWriter writer = new RepoMDWriter(tmpRepoMDFile);
+        RepositoryMetadataWriter writer = new RepositoryMetadataWriter(tmpRepoMDFile);
         writer.begin();
-        for (ModuleArchiveInfo m : list()) {
+        for (ModuleArchiveInfo m : getModuleArchiveInfos()) {
             if (!writeMAI && m.equals(mai)) {
                 // Don't write this ModuleArchiveInfo if it matches that given
             } else {
@@ -691,7 +636,7 @@ public final class URLRepository extends AbstractRepository {
             }
         }
         if (writeMAI) {
-            writer.writeModule((JamModuleArchiveInfo) mai);
+            writer.writeModule(mai);
         }
 
         if (!writer.end()) {
@@ -727,14 +672,14 @@ public final class URLRepository extends AbstractRepository {
         }
     }
 
-    /** Writes XML for a repository-metadata.xml file. */
-    static class RepoMDWriter {
+    /** Writes XML for the repository metadata file. */
+    static class RepositoryMetadataWriter {
         private final PrintWriter pw;
         private int indent = 0;
         private static final int WIDTH = 4;
         private static final String spaces = "                                ";
 
-        RepoMDWriter(File out) throws IOException {
+        RepositoryMetadataWriter(File out) throws IOException {
             pw = new PrintWriter(
                 new BufferedOutputStream(
                     new FileOutputStream(out)), false);
@@ -759,7 +704,7 @@ public final class URLRepository extends AbstractRepository {
             indent++;
             output("<name>" + mai.getName() + "</name>");
             output("<version>" + mai.getVersion().toString() + "</version>");
-            if (!mai.isPlatformArchNeutral()) {
+            if (!mai.isPortable()) {
                 output("<platform-binding>");
                 indent++;
                 output("<platform>" + mai.getPlatform() + "</platform>");
@@ -767,10 +712,9 @@ public final class URLRepository extends AbstractRepository {
                 indent--;
                 output("</platform-binding>");
             }
-
-            // Note that we don't support <path>, since there's no way to
-            // specify that via Repository.install().
-
+            if (mai.getPath() != null) {
+                output("<path>" + mai.getPath() + "</path>");
+            }
             indent--;
             output("</module>");
         }
@@ -812,23 +756,6 @@ public final class URLRepository extends AbstractRepository {
         if (prev != null) {
             prev.renameTo(next);
         }
-    }
-
-    /**
-     * Returns file path for a module under codebase, based on module name,
-     * version, platform and architecture.
-     *
-     * @param name module name
-     * @param version module version
-     * @param platform target platform
-     * @param arch target architecture
-     * @return file path
-     */
-    private static String getFilePath(String name, Version version,
-                                      String platform, String arch) {
-        return name + File.separator + version
-               + ((platform == null) ? "" :
-                    File.separator + platform + "-" + arch);
     }
 
     protected void assertValidDirs() throws IOException {

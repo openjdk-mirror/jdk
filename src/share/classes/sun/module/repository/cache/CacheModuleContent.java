@@ -81,10 +81,11 @@ abstract class CacheModuleContent implements ModuleContent {
     /**
      * Constructs a new cache module content.
      */
-    CacheModuleContent(File entryDirectory, byte[] metadataBytes, ModuleInfo moduleInfo) {
+    CacheModuleContent(File entryDirectory, ByteBuffer metadataByteBuffer, ModuleInfo moduleInfo) {
         this.entryDirectory = entryDirectory;
-        this.metadataBytes = metadataBytes;
         this.moduleInfo = moduleInfo;
+        this.metadataBytes = new byte[metadataByteBuffer.remaining()];
+        metadataByteBuffer.asReadOnlyBuffer().get(this.metadataBytes);
     }
 
     /**
@@ -204,10 +205,6 @@ abstract class CacheModuleContent implements ModuleContent {
      * does not match what the module metadata we obtained earlier.
      */
     private void compareMetadataBytes(byte[] moduleMetadataBytes) throws IOException {
-
-    System.out.println(" " + metadataBytes.length);
-    System.out.println(" " + moduleMetadataBytes.length);
-
         if ((metadataBytes.length != moduleMetadataBytes.length)
             || Arrays.equals(metadataBytes, moduleMetadataBytes) == false) {
             throw new IOException("Mismatch between MODULE.METADATA file and the one in the JAM file");

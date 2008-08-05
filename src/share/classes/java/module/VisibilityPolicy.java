@@ -28,7 +28,7 @@ package java.module;
 /**
  * This interface represents the visibility policy for the module definitions.
  * <p>
- * The visibility policy is used to determine whether a module definition in a
+ * The visibility policy determines whether a module definition in a
  * repository is visible to the application at runtime, when the
  * {@link Repository#find(Query) <tt>find(Query)</tt>} method of the
  * {@code Repository} instance is invoked. The system's visibility policy can be

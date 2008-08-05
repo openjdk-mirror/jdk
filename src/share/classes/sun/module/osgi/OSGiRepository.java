@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import sun.module.repository.JamModuleArchiveInfo;
 import org.osgi.framework.Bundle;
 
 /**
@@ -112,11 +111,9 @@ public class OSGiRepository extends Repository {
     }
 
     private ModuleArchiveInfo newModuleArchiveInfo(Bundle bundle) {
-        return new JamModuleArchiveInfo(this,
+        return new OSGiModuleArchiveInfo(this,
                                      bundle.getSymbolicName(),
                                      BundleManifestMapper.getVersion(bundle),
-                                     null, /* XXX: platform neutral for now */
-                                     null,
                                      bundle.getLocation(), /* XXX: is it a valid filename? */
                                      bundle.getLastModified());
     }
@@ -196,16 +193,16 @@ public class OSGiRepository extends Repository {
         } else {
 
             // A module definition already exists for a given name and version
-            // (e.g. platform neutral vs platform specific module).
+            // (e.g. portable module vs platform specific module).
 
             // XXX: do we replace the existing module definition with a new one
             // if the newly installed module archive provides better
             // platform binding?
             //
-            // e.g. a platform neutral module is already installed and in use
+            // e.g. a portable module is already installed and in use
             // but now we just install a windows-x86 specific module (assuming
             // we're running on Windows as well), should we swap the module
-            // definition of the platform neutral module with that of a newly
+            // definition of the portable module with that of a newly
             // installed one?
             //
             // For simplicity, the answer is no. Otherwise, the behavior could
@@ -286,7 +283,7 @@ public class OSGiRepository extends Repository {
         // archive info
         OSGiModuleDefinition md = value.get(mai);
         if (md == null) {
-            // Module definition could be null if a platform neutral or
+            // Module definition could be null if a portable or
             // platform-specific module with the same name and version
             // already exists, but it's not the module archive that is
             // being removed. In this case, there is no module definition
@@ -319,7 +316,7 @@ public class OSGiRepository extends Repository {
             // module archive for the same module name/version. e.g. a platform
             // specific module is uninstalled but there exists a platform
             // neutral module in the repository. In this case, do we recreate
-            // the module definition for the platform neutral module and use
+            // the module definition for the portable module and use
             // it in the repository?
             //
             // For simplicity, the answer is no. If the user uninstalls a
@@ -327,7 +324,7 @@ public class OSGiRepository extends Repository {
             // expect that no module definition for the given module
             // name/version would be returned from the repository if it is
             // searched through find(). If the repository returns a
-            // module definition of the platform neutral module instead,
+            // module definition of the portable module instead,
             // the behavior could be very confusing and problematic.
         }
 

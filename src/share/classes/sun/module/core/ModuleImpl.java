@@ -25,13 +25,16 @@
 
 package sun.module.core;
 
+import java.lang.reflect.Constructor;
+import java.io.IOException;
 import java.module.*;
 import java.module.annotation.ModuleInitializerClass;
 import java.module.annotation.ImportPolicyClass;
 import java.module.annotation.AllowShadowing;
+import java.net.URL;
 import java.security.AccessController;
-import java.security.AccessControlContext;
-import java.security.ProtectionDomain;
+import java.security.CodeSource;
+import java.security.CodeSigner;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.*;
@@ -51,6 +54,8 @@ final class ModuleImpl extends Module {
     private final ModuleSystemImpl moduleSystem;
 
     private final ModuleDefinition moduleDef;
+
+    private final ModuleContent content;
 
     private final String moduleString;
 
@@ -79,11 +84,17 @@ final class ModuleImpl extends Module {
     // Used to signal completion of the initialization process
     private final Object initSignal = new Object();
 
-    ModuleImpl(ModuleSystemImpl moduleSystem, ModuleDefinition moduleDef) {
+    ModuleImpl(ModuleSystemImpl moduleSystem, final ModuleDefinition moduleDef) {
         this.moduleSystem = moduleSystem;
         this.moduleDef = moduleDef;
         this.moduleString = toString(moduleDef);
-        state = State.NEW;
+        this.content = java.security.AccessController.doPrivileged(
+                new java.security.PrivilegedAction<ModuleContent>() {
+                    public ModuleContent run() {
+                        return moduleDef.getModuleContent();
+                    }
+                });
+        this.state = State.NEW;
     }
 
     /**
@@ -132,6 +143,14 @@ final class ModuleImpl extends Module {
         ERROR
     }
 
+    boolean isFindingDirectImports() {
+        return state == State.NEW;
+    }
+
+    boolean isExecutingInitializer() {
+        return state == State.EXECUTE_INITIALIZER;
+    }
+
     @Override
     public ModuleDefinition getModuleDefinition() {
         return moduleDef;
@@ -141,14 +160,20 @@ final class ModuleImpl extends Module {
     public ClassLoader getClassLoader() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
-            sm.checkPermission(new RuntimePermission("createClassLoader"));
+            sm.checkPermission(new RuntimePermission("getClassLoader"));
         }
 
-        if (loader == null) {
-            throw new IllegalStateException("Classloader has not been created yet in module " + moduleString);
+        // Returns the module class loader only when the module instance
+        // has been fully initialized.
+        //
+        // The module instance is ready for class loading as soon as it
+        // reaches INITIALIZER_COMPLETE.
+        if (state.compareTo(State.INITIALIZER_COMPLETE) < 0) {
+            throw new IllegalStateException("Module instance " + moduleString
+                        + " has not been fully initialized.");
         }
 
-        return loader;
+        return getModuleLoader();
     }
 
     @Override
@@ -204,10 +229,25 @@ final class ModuleImpl extends Module {
     @Override
     public boolean supportsDeepValidation() {
         try {
-            // In order to support deep validation, member classes and exported
-            // classes must be available.
-            moduleDef.getMemberClasses();
-            moduleDef.getExportedClasses();
+            // Find the transitive closure of this module through imported dependency
+            Set<Module> closure = ModuleUtils.findImportedModulesClosure(this);
+
+            // Deep validation is supported only if the member classes in all
+            // modules in the transitive closure are known.
+            for (Module m : closure) {
+                ModuleDefinition md = m.getModuleDefinition();
+
+                // XXX: Workaround for virtual module for now ... until JSR 294
+                // support arrives
+                if (md.getName().equals("java.classpath")) {
+                    throw new UnsupportedOperationException();
+                } else if (md.getRepository() == Repository.getBootstrapRepository())  {
+                    continue;
+                }
+
+                md.getMemberClasses();
+            }
+
             return true;
         } catch (UnsupportedOperationException uoe) {
             return false;
@@ -216,46 +256,39 @@ final class ModuleImpl extends Module {
 
     @Override
     public void deepValidate() throws ModuleInitializationException {
-        if (supportsDeepValidation() == false) {
-            throw new UnsupportedOperationException(moduleDef.getName()
-                                + " module cannot be deep validated.");
-        }
-
-        // Find the transitive closure of this module through imported dependency
-        Set<Module> importedModulesClosure = ModuleUtils.findImportedModulesClosure(this);
-
-        // Continue with deep validation only if all modules in the
-        // transitive closure support deep validation.
-        for (Module m : importedModulesClosure) {
-            if (m.supportsDeepValidation() == false) {
-                ModuleDefinition md = m.getModuleDefinition();
-                throw new ModuleInitializationException("module " + toString(md)
-                    + " in the dependency transitive closure does not support deep validation.");
-            }
-        }
-
         Set<String> classNamespace = new HashSet<String>();
         Set<String> questionableClasses = new HashSet<String>();
 
-        for (Module m : importedModulesClosure) {
-            ModuleDefinition md = m.getModuleDefinition();
+        for (Module m : ModuleUtils.findImportedModulesClosure(this)) {
+            try {
+                ModuleDefinition md = m.getModuleDefinition();
 
-            // XXX: Workaround for virtual module for now ... until JSR 294
-            // support arrives
-            if (md.getRepository() == Repository.getBootstrapRepository()) {
-                continue;
-            }
-
-            Set<String> memberClasses = md.getMemberClasses();
-            for (String clazz : memberClasses) {
-                if (classNamespace.contains(clazz)) {
-                    // The member class already exists in the namespace. There is
-                    // a potential conflict.
-                    questionableClasses.add(clazz);
-                } else {
-                    // Add the class to the namespace
-                    classNamespace.add(clazz);
+                // XXX: Workaround for virtual module for now ... until JSR 294
+                // support arrives
+                if (md.getName().equals("java.classpath")) {
+                    throw new UnsupportedOperationException();
+                } else if (md.getRepository() == Repository.getBootstrapRepository())  {
+                    continue;
                 }
+
+                Set<String> memberClasses = md.getMemberClasses();
+
+                for (String clazz : memberClasses) {
+                    if (classNamespace.contains(clazz)) {
+                        // The member class already exists in the namespace.
+                        // There is a potential type consistency conflict.
+                        questionableClasses.add(clazz);
+                    }
+                }
+
+                // Add the member classes to the namespace
+                classNamespace.addAll(memberClasses);
+
+            } catch (UnsupportedOperationException uoe) {
+                    throw new ModuleInitializationException("Module " + moduleString
+                        + " cannot be deep validated because member classes in "
+                        + m.getModuleDefinition().toString()
+                        + "in the dependency transitive closure are unknown.");
             }
         }
 
@@ -263,8 +296,8 @@ final class ModuleImpl extends Module {
         // type conflict information could be reported more precisely through
         // exception.
         if (questionableClasses.size() > 0)
-            throw new ModuleInitializationException("The class namespace of module "
-                        + moduleString + " has potential type conflict.");
+            throw new ModuleInitializationException("Module "
+                        + moduleString + " has potential type consistency conflict.");
     }
 
     /**
@@ -328,16 +361,18 @@ final class ModuleImpl extends Module {
         }
         if (state != State.ERROR) {
             state = State.ERROR;
-            for (Module m : importedModules) {
-                if (m instanceof ModuleImpl) {
-                    ModuleImpl mi = (ModuleImpl) m;
-                    mi.removeImportingModule(this);
-                }
-                else {
-                    // Imported module instance is from other module system.
-                    //
-                    // TBD: May need a way to unregister an importer from a
-                    // module system in other module system.
+            if (importedModules != null) {
+                for (Module m : importedModules) {
+                    if (m instanceof ModuleImpl) {
+                        ModuleImpl mi = (ModuleImpl) m;
+                        mi.removeImportingModule(this);
+                    }
+                    else {
+                        // Imported module instance is from other module system.
+                        //
+                        // TBD: May need a way to unregister an importer from a
+                        // module system in other module system.
+                    }
                 }
             }
             // Reset imported and importing module instances
@@ -392,12 +427,22 @@ final class ModuleImpl extends Module {
             return true;
 
         case NEW:
-            findImports();
+            // Trigger the module content to be downloaded if the
+            // module definition is not local.
+            try {
+                content.getCodeSigners();
+            } catch (IOException e) {
+                fail(e, "Module " + moduleString + "s content is not available.");
+            }
+
+            findDirectImports();
             state = State.FOUND_DIRECT_IMPORTS;
             nextStep(); // recursive call
             return true;
 
         case FOUND_DIRECT_IMPORTS:
+            // Check if all imported module instances in the transitive closure
+            // are in the state FOUND_DIRECT_IMPORTS or later.
             r = checkDependencies(State.FOUND_DIRECT_IMPORTS);
             if (r) {
                 state = State.FOUND_ALL_IMPORTS;
@@ -412,6 +457,8 @@ final class ModuleImpl extends Module {
             return true;
 
         case VALIDATED:
+            // Check if all imported module instances in the transitive closure
+            // are in the state VALIDATED or later.
             r = checkDependencies(State.VALIDATED);
             if (r) {
                 state = State.EXECUTE_INITIALIZER;
@@ -421,17 +468,26 @@ final class ModuleImpl extends Module {
 
         case EXECUTE_INITIALIZER:
             callInitializeOnModuleInitializer();
+
             state = State.INITIALIZER_COMPLETE;
 
-            // Set the imported modules to delegate in the loader -
-            // reexports have been expanded.
-            loader.setImportedModules(importedModulesInLoader);
-            importedModulesInLoader = null;
+            if (loader != null) {
+                // If a module class loader has been created, set the
+                // imported modules to delegate in the loader -
+                // reexports have been expanded.
+                loader.setModule(this, importedModulesInLoader);
+                importedModulesInLoader = null;
+            } else {
+                // Otherwise, wait until getClassLoader() is
+                // invoked to create a module class loader.
+            }
 
             nextStep(); // recursive call
             return true;
 
         case INITIALIZER_COMPLETE:
+            // Check if all imported module instances in the transitive closure
+            // are in the state INITIALIZER_COMPLETE or later.
             r = checkDependencies(State.INITIALIZER_COMPLETE);
             if (r) {
                 state = State.READY;
@@ -467,10 +523,40 @@ final class ModuleImpl extends Module {
         }
     }
 
-    private void findImports() throws ModuleInitializationException {
+    /**
+     * Creates module class loader lazily.
+     */
+    private ModuleLoader getModuleLoader()  {
+        if (loader == null) {
+            final CodeSource cs = getCodeSource();
+
+            loader = java.security.AccessController.doPrivileged(
+                new java.security.PrivilegedAction<ModuleLoader>() {
+                    public ModuleLoader run() {
+                        return new ModuleLoader(moduleDef, content, cs);
+                    }
+                });
+
+            // If the loader has not been created and the module
+            // state is already INITIALIZER_COMPLETE or later,
+            // then need to set up the module class loader to
+            // be capable of loading member classes from the module
+            // instance and loading exported classes from the
+            // imported module modules.
+            if (state.compareTo(State.INITIALIZER_COMPLETE) >= 0) {
+                loader.setModule(this, importedModulesInLoader);
+                importedModulesInLoader = null;
+            }
+        }
+        return loader;
+    }
+
+    /**
+     * Finds module instances of all direct imports
+     */
+    private void findDirectImports() throws ModuleInitializationException {
         importedModules = new ArrayList<Module>();
         importingModules = new HashSet<Module>();
-        loader = new ModuleLoader(this, moduleDef);
 
         List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
         if (DEBUG) {
@@ -480,6 +566,11 @@ final class ModuleImpl extends Module {
         // Build version constraint map from the ImportDependencies
         Map<ImportDependency,VersionConstraint> versionConstraints = new HashMap<ImportDependency,VersionConstraint>();
         for (ImportDependency dep : importDependencies) {
+            if ((dep instanceof ModuleDependency) == false) {
+                // XXX: supports module dependency only at this point
+                fail(null, "Module " + moduleString + " has unsupported import dependency: "
+                     + dep);
+            }
             if (versionConstraints.put(dep, dep.getVersionConstraint()) != null) {
                 fail(null, "Module " + moduleString + " has duplicate import dependency: "
                      + dep);
@@ -487,32 +578,45 @@ final class ModuleImpl extends Module {
         }
         versionConstraints = Collections.unmodifiableMap(versionConstraints);
 
-        // Invoke ImportOverridePolicy
-        versionConstraints = callOverridePolicy(versionConstraints);
+        // Invoke import override policy
+        versionConstraints = callImportOverridePolicy(versionConstraints);
 
-        // Invoke default or custom import policy
+        // Invoke custom import policy
         Map<ImportDependency,VersionConstraint> result = callImportPolicy(versionConstraints);
 
         // Get a Module instance for each imported ModuleDefinition
         Repository repository = moduleDef.getRepository();
-        for (ImportDependency dep : moduleDef.getImportDependencies()) {
-            if ((dep instanceof ModuleDependency) == false) {
-                // XXX: supports module dependency only at this point
-                fail(null, "Unrecognized import dependency type in module " + moduleString
-                    + ": " + dep.toString());
-            }
-
-            ModuleDependency moduleDep = (ModuleDependency) dep;
-
+        for (ImportDependency dep : importDependencies) {
             // Retreives overriden version constraint for the dependency
             VersionConstraint vc = result.get(dep);
 
-            // Checks if this dependency is optional
+            // Resolution MUST ignore an optional import dependency if the
+            // corresponding version constraint is null.
+            //
             if (dep.isOptional() && vc == null) {
                 continue;
             }
 
-            ModuleDefinition importedMD = repository.find(moduleDep.getName(), vc);
+            ModuleDefinition importedMD = repository.find(dep.getName(), vc);
+
+            if (importedMD == null) {
+                if (dep.isOptional()) {
+                    // Resolution MUST ignore an optional import dependency if
+                    // the corresponding version constraint is not null and no
+                    // module definition in the repository can satisfy the
+                    // import dependency.
+                    //
+                    continue;
+                } else {
+                    // Resolution MUST fail if no module definition in the
+                    // repository can satisfy a mandatory import dependency
+                    // with the corresponding version constraint.
+                    fail(null,  moduleString
+                         + ": no module definition in the repository can satisfy the import dependency "
+                         + dep);
+                }
+            }
+
             ModuleSystem importedModuleSystem = importedMD.getModuleSystem();
             if (importedModuleSystem == moduleSystem) {
                 // Get the raw module instance from the module system.
@@ -529,121 +633,203 @@ final class ModuleImpl extends Module {
     }
 
     // Invoke ImportOverridePolicy
-    private Map<ImportDependency,VersionConstraint> callOverridePolicy
-                        (Map<ImportDependency,VersionConstraint> versionConstraints)
+    private Map<ImportDependency,VersionConstraint> callImportOverridePolicy
+                        (Map<ImportDependency,VersionConstraint> originalConstraints)
             throws ModuleInitializationException {
         ImportOverridePolicy overridePolicy = Modules.getImportOverridePolicy();
         if (overridePolicy == null) {
-            return versionConstraints;
+            return originalConstraints;
         }
+
+        // Invoke the ImportOverridePolicy.narrow() method.
+        //
         Map<ImportDependency,VersionConstraint> newConstraints
-            = overridePolicy.narrow(moduleDef, versionConstraints);
-        // check constraints, unless the override policy just returned
-        // the original constraints Map
-        if (newConstraints != versionConstraints) {
-            // make a copy before checking
-            newConstraints = new HashMap<ImportDependency,VersionConstraint>(newConstraints);
-            if (versionConstraints.size() != newConstraints.size()) {
+            = overridePolicy.narrow(moduleDef, originalConstraints);
+
+        // If nothing has been overridden, simply return.
+        if (newConstraints == originalConstraints) {
+            return originalConstraints;
+        }
+
+        //
+        // Check to ensure the result is acceptable.
+        //
+
+        // Just to be safe - make a copy of the result first to prevent
+        // the import override policy object from changing the result under
+        // our feets since the object could hold a reference of the result.
+        //
+        newConstraints = Collections.<ImportDependency,VersionConstraint>unmodifiableMap(newConstraints);
+
+        // Resolution MUST fail if the set of import dependencies in the
+        // originalConstraints is different than the set of import
+        // dependencies in the newConstraints.
+        //
+        Set<ImportDependency> keySet1 = originalConstraints.keySet();
+        Set<ImportDependency> keySet2 = newConstraints.keySet();
+        if (keySet1.containsAll(keySet2) == false
+            || keySet2.containsAll(keySet1) == false)  {
+            fail(null, "Import override policy error in module " + moduleString
+                 + ": the returned map does not contain the expected set of import "
+                 + "dependencies");
+        }
+
+        for (ImportDependency dep : keySet1) {
+            VersionConstraint originalConstraint = originalConstraints.get(dep);
+            VersionConstraint newConstraint = newConstraints.get(dep);
+
+            // Resolution MUST fail if the corresponding version constraint in
+            // newConstraint is null and the import dependency is mandatory.
+            //
+            if (newConstraint == null && dep.isOptional() == false) {
                 fail(null, "Import override policy error in module " + moduleString
-                     + ": size mismatch in the returned map of import "
-                     + "dependencies and overridden version constraints: "
-                     + versionConstraints.size() + " != " + newConstraints.size());
+                    + ": overridden version constraint is missing "
+                    + " for import dependency " + dep);
             }
-            for (Map.Entry<ImportDependency,VersionConstraint> entry : versionConstraints.entrySet()) {
-                ImportDependency dep = entry.getKey();
-                VersionConstraint constraint = entry.getValue();
-                VersionConstraint newConstraint = newConstraints.get(dep);
-                if (newConstraint == null) {
-                    fail(null, "Import override policy error in module " + moduleString
-                        + ": overridden version constraint missing in the "
-                        + "returned map for import"
-                        + " dependency " + dep);
-                }
-                if (constraint.contains(newConstraint) == false) {
-                    fail(null, "Import override policy error in module " + moduleString
-                        + ": overridden version constraint " + newConstraint
-                        + " for import dependency " + dep
-                        + " is outside the boundary of the original "
-                        + "version constraint "+ constraint);
-                }
+
+            // Resolution MUST fail if the corresponding version constraint in
+            // newConstraint is outside the ranges of the version constraint for
+            // the same import dependency in originalConstraint.
+            //
+            if (originalConstraint.contains(newConstraint) == false) {
+                fail(null, "Import override policy error in module " + moduleString
+                    + ": overridden version constraint " + newConstraint
+                    + " is outside the boundary of " + originalConstraint
+                    + " for import dependency " + dep);
             }
         }
-        return Collections.unmodifiableMap(newConstraints);
+        return newConstraints;
     }
 
-    // Invoke default or custom import policy
+    // Invoke custom import policy
     private Map<ImportDependency,VersionConstraint> callImportPolicy
-            (Map<ImportDependency,VersionConstraint> versionConstraints)
+            (final Map<ImportDependency,VersionConstraint> constraints)
             throws ModuleInitializationException {
-        ImportPolicyClass importClass = moduleDef.getAnnotation(ImportPolicyClass.class);
-        String importPolicyName = (importClass != null) ? importClass.value() : null;
-        if (importPolicyName == null) {
-            return DefaultImportPolicy.INSTANCE.getImports
-                (moduleDef, versionConstraints, null);
+        ImportPolicyClass importPolicyClass = moduleDef.getAnnotation(ImportPolicyClass.class);
+        if (importPolicyClass == null) {
+            return constraints;
         }
-        Class clazz;
-        Object obj;
+
+        final String importPolicyName = importPolicyClass.value();
         try {
-            clazz = Class.forName(importPolicyName, true, loader);
-            obj = clazz.newInstance();
-        } catch (Exception e) {
-            fail(e, "Cannot load import policy class in module "
-                 + moduleString + ": " + importPolicyName);
-            return null; // not reached
-        }
-        if (obj instanceof ImportPolicy == false) {
-            fail(null, clazz.getName() + " does not implement java.module.ImportPolicy in module " + moduleString);
-            // not reached
-        }
-        ImportPolicy importPolicy = (ImportPolicy)obj;
-        Map<ImportDependency,VersionConstraint> result = importPolicy.getImports(moduleDef,
-            versionConstraints, DefaultImportPolicy.INSTANCE);
-        // make copy before checking
-        result = new HashMap<ImportDependency, VersionConstraint>(result);
+            // Set the context class loader to null before calling import
+            // policy.
+            Thread.currentThread().setContextClassLoader(null);
 
-        // Verify that all the returned ImportDependency match the
-        // import dependencies in order, name, and version constraints
-        // and that no non-optional imports are missing
-        int n = result.size();
-        Set<ImportDependency> importDependencies = new HashSet<ImportDependency>(moduleDef.getImportDependencies());
-        if (n != importDependencies.size()) {
-            fail(null, "Import policy error in module " + moduleString
-                 + ": mismatch in number of imports in the returned map: "
-                 + n + " != " + importDependencies.size());
-        }
+            // Create the module class loader if one has not existed yet
+            final ModuleLoader cl = getModuleLoader();
 
-        if (!(importDependencies.containsAll(result.keySet())
-              && result.keySet().containsAll(importDependencies)))  {
-                fail(null, "Import policy error in module " + moduleString
-                    + ": the returned map does not contain all the import dependencies");
-        }
-
-        for (ImportDependency dep : importDependencies) {
-            ModuleDependency moduleDep = (ModuleDependency) dep;
-
-            VersionConstraint vc = result.get(dep);
-            if (vc == null) {
-                if (dep.isOptional() == false) {
-                    fail(null, "Import policy error in module " + moduleString
-                         + ": non-optional import dependency is missing in the returned map: "
-                         + moduleDep.getName() + " " + moduleDep.getVersionConstraint());
+            // Load the import policy class using its module class
+            // loader under a restricted access control context. This is
+            // necessary because the static initializer of the class will be
+            // called if it exists.
+            final Constructor<? extends ImportPolicy> ctor = AccessController.doPrivileged(
+                new PrivilegedExceptionAction<Constructor<? extends ImportPolicy> >() {
+                    public Constructor<? extends ImportPolicy> run() throws Exception {
+                        Class<? extends ImportPolicy> clazz =
+                                Class.forName(importPolicyName, true, cl).asSubclass(ImportPolicy.class);
+                        return clazz.getConstructor();
                 }
-                continue;
+            }, cl.getRestrictedAccessControlContext());
+
+            // Must set constructor accessible as the import policy
+            // may not be a public class.
+            ctor.setAccessible(true);
+
+            // Construct the import policy and invoke its getImports() method
+            // under the restricted access control context.
+            final Module module = this;
+            Map<ImportDependency,VersionConstraint> newConstraints = AccessController.doPrivileged(
+                new PrivilegedExceptionAction<Map<ImportDependency,VersionConstraint> >() {
+                    public Map<ImportDependency,VersionConstraint> run() throws Exception {
+                        ImportPolicy importPolicy = ctor.newInstance();
+                        return importPolicy.getImports(moduleDef, constraints, DefaultImportPolicy.INSTANCE);
+                }
+            }, cl.getRestrictedAccessControlContext());
+
+            // If nothing has been overridden, simply return
+            if (newConstraints == constraints) {
+                return constraints;
             }
-            if (dep.getVersionConstraint().contains(vc) == false) {
-                fail(null, "Import policy error in module " + moduleString
-                    + ": module dependency " + moduleDep.getName()
-                    + " in the returned map does not satisfy version constraint " + moduleDep.getVersionConstraint());
+
+            //
+            // Check to ensure the result is acceptable.
+            //
+
+            // Just to be safe - make a copy of the result first to prevent
+            // the import policy object from changing the result under
+            // our feets since the object could hold a reference of the result.
+            newConstraints = Collections.<ImportDependency,VersionConstraint>unmodifiableMap(newConstraints);
+
+            Set<ImportDependency> keySet1 = new HashSet<ImportDependency>(moduleDef.getImportDependencies());
+            Set<ImportDependency> keySet2 = newConstraints.keySet();
+
+            // Resolution MUST fail if the set of import dependencies in the
+            // result is different than the set of declared import
+            // dependencies.
+            //
+            if (!(keySet1.containsAll(keySet2)
+                  && keySet2.containsAll(keySet1)))  {
+                    fail(null, "Import policy error in module " + moduleString
+                        + ": the returned map does not contain the expected set of import dependencies");
             }
+
+            for (ImportDependency dep : keySet1) {
+                VersionConstraint vc = newConstraints.get(dep);
+
+                // Resolution MUST fail if the corresponding version constraint in
+                // the result is null and the import dependency is mandatory.
+                //
+                if (vc == null) {
+                    if (dep.isOptional() == false) {
+                        fail(null, "Import policy error in module " + moduleString
+                             + ": overridden version constraint is missing for import dependency " + dep);
+                    } else {
+                        continue;
+                    }
+                }
+
+                // Resolution MUST fail if the corresponding version constraint in
+                // the result is outside the declared ranges of the version constraint
+                // for the same import dependency.
+                //
+                if (dep.getVersionConstraint().contains(vc) == false) {
+                    fail(null, "Import policy error in module " + moduleString
+                    + ": overridden version constraint " + vc
+                    + " is outside the boundary of " + dep.getVersionConstraint()
+                    + " for import dependency " + dep);
+                }
+            }
+
+            return newConstraints;
+
+        } catch (PrivilegedActionException e) {
+            if (e.getCause() instanceof ClassNotFoundException) {
+                fail(e.getCause(), "Cannot load import policy class "
+                     + importPolicyName + " in module " + moduleString);
+            } else if (e.getCause() instanceof NoSuchMethodException) {
+                fail(e.getCause(), "Import policy class " + importPolicyName
+                     + " in module " + moduleString
+                     + " does not have zero-argument public constructor.");
+            } else if (e.getCause() instanceof ClassCastException) {
+                fail(e.getCause(), importPolicyName + " does not implement java.module.ImportPolicy in module " + moduleString);
+            } else {
+                // print exception if the initializer throws any
+                fail(e.getCause(), "Import policy exception in module " + moduleString);
+            }
+        } finally {
+            // Set the context class loader to null after calling module
+            // initializer.
+            Thread.currentThread().setContextClassLoader(null);
         }
 
-        return result;
+        return null;
     }
 
     // Default import policy implementation
     private static class DefaultImportPolicy implements ImportPolicy {
 
-        final static ImportPolicy INSTANCE = new DefaultImportPolicy();
+        private static ImportPolicy INSTANCE = new DefaultImportPolicy();
 
         private DefaultImportPolicy() {
             // empty
@@ -657,11 +843,12 @@ final class ModuleImpl extends Module {
             Repository rep = moduleDef.getRepository();
             List<ImportDependency> importDependencies = moduleDef.getImportDependencies();
             for (ImportDependency dep : importDependencies) {
-                // XXX handle only module dependency at this point
-                //
                 if ((dep instanceof ModuleDependency) == false) {
-                    continue;
+                    throw new ModuleInitializationException
+                        ("Default import policy error in module " + moduleString
+                         + ": unsupported import dependency " + dep);
                 }
+
                 ModuleDependency moduleDep = (ModuleDependency) dep;
 
                 String name = moduleDep.getName();
@@ -669,7 +856,7 @@ final class ModuleImpl extends Module {
                 if (constraint == null) {
                     throw new ModuleInitializationException
                         ("Default import policy error in module " + moduleString
-                         + ": overridden version constraint is missing for module dependency " + name);
+                         + ": overridden version constraint is missing for import dependency " + moduleDep);
                 }
                 ModuleDefinition importedMD = rep.find(name, constraint);
                 if (DEBUG) System.out.println("Imported module definition: " + importedMD);
@@ -677,12 +864,12 @@ final class ModuleImpl extends Module {
                     if (moduleDep.isOptional() == false) {
                         throw new ModuleInitializationException
                             ("Default import policy error in module " + moduleString
-                            + ": imported module " + dep.getName() + " "
+                            + ": imported module " + name + " "
                              + moduleDep.getVersionConstraint() + " is not found");
                     }
                     if (DEBUG) {
                         System.out.println("Optional import is not satisfied: "
-                                           + moduleDep.getName() + " " + moduleDep.getVersionConstraint());
+                                           + name + " " + moduleDep.getVersionConstraint());
                     }
                     continue;
                 }
@@ -692,10 +879,14 @@ final class ModuleImpl extends Module {
         }
     }
 
+    /**
+     * Checks the type consistency requirements with this module
+     * instance and its imported module instances.
+     */
     private void validate() throws ModuleInitializationException {
         // deal with re-exports
         importedModulesInLoader = new ArrayList<Module>();
-        ModuleUtils.expandReexports(this, importedModulesInLoader, true);
+        ModuleUtils.expandReexports(this, importedModulesInLoader);
 
         // Perform shallow validation
         shallowValidate(importedModulesInLoader);
@@ -704,15 +895,17 @@ final class ModuleImpl extends Module {
     }
 
     /**
-     * Check all dependencies of the specified Module.
-     *
+     * Checks all dependencies of the specified Module.
+     * <p>
      * Traverses the graph of all directly or indirectly imported modules.
-     * If any are in error state, call fail() and throw a
+     * If any are in ERROR state, call fail() and throw a
      * ModuleInitializationException.
+     * <p>
      * If all modules are at least in state "requiredState" return true,
      * otherwise return false.
+     * <p>
      * Note that we need to continue graph traversal even if we already
-     * found a module that is not ready in order to find modules in error
+     * found a module that is not ready in order to find modules in ERROR
      * state.
      */
     private boolean checkDependencies(State requiredState) throws ModuleInitializationException {
@@ -726,13 +919,15 @@ final class ModuleImpl extends Module {
             return ready;
         }
         if (module instanceof ModuleImpl == false) {
-            // foreign modules are already fully initialized
+            // module instances returned from a foreign module system
+            // are always fully initialized, i.e. READY.
             return true;
         }
-        ModuleImpl moduleImpl = (ModuleImpl)module;
+        ModuleImpl moduleImpl = (ModuleImpl) module;
         State implState = moduleImpl.state;
         if (implState == State.READY) {
-            // module already fully initialized, no need to check further.
+            // module instance has already been fully initialized, no
+            // need to check further.
             return true;
         }
         if (implState == State.ERROR) {
@@ -761,10 +956,10 @@ final class ModuleImpl extends Module {
     }
 
     /**
-     * Perform shallow validation.
+     * Perform shallow validation in the JAM module system.
      *
-     * @throws ModuleInitializationException if shallow validation
-     *         fails.
+     * @param importedModules list of (transitive) imported module instances
+     * @throws ModuleInitializationException if shallow validation fails.
      */
     private void shallowValidate(List<Module> importedModules) throws ModuleInitializationException {
         if (importedModules.contains(this)) {
@@ -809,66 +1004,77 @@ final class ModuleImpl extends Module {
         return packages;
     }
 
-    /**
-     * If the module initializer exists, invoke the initialize() method. The
-     * action is performed with the permissions possessed by the module's
-     * protection domain.
+    /*
+     * Constructor an module initializer object and invoke its initialize
+     * method if the module initializer class exist.
      */
-    private void callInitializeOnModuleInitializer()
+    void callInitializeOnModuleInitializer()
             throws ModuleInitializationException {
         ModuleInitializerClass moduleInitializerClass = moduleDef.getAnnotation(ModuleInitializerClass.class);
         if (moduleInitializerClass == null) {
             return;
         }
-        String moduleInitializerName = moduleInitializerClass.value();
-        Class clazz;
-        Object obj;
+
+        final String moduleInitializerName = moduleInitializerClass.value();
         try {
-            clazz = Class.forName(moduleInitializerName, true, loader);
-            obj = clazz.newInstance();
-        } catch (Exception e) {
-            fail(e, "Cannot load module initializer class in module "
-                 + moduleString + ": " + moduleInitializerName);
-            return; // not reached
-        }
-        if (obj instanceof ModuleInitializer == false) {
-            fail(null, clazz.getName() + " does not implement java.module.ModuleInitializer in module " + moduleString);
-            // not reached
-        }
+            // Set the context class loader to null before calling module
+            // initializer.
+            Thread.currentThread().setContextClassLoader(null);
 
-        try {
-            final ModuleInitializer initializer = (ModuleInitializer)obj;
-            final Module module = this;
+            // Create the module class loader if one has not existed yet
+            final ModuleLoader cl = getModuleLoader();
 
-            // Set up a virtual protection domain exactly as the protection
-            // domain of the module.
-            ProtectionDomain[] domains = new ProtectionDomain[1];
-            domains[0] = initializer.getClass().getProtectionDomain();
-            AccessControlContext context = new AccessControlContext(domains);
-
-            // Invoke the module initializer's initialize() method under the
-            // virtual protection domain.
-            AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
-                public Object run() throws Exception {
-                    initializer.initialize(module);
-                    return null;
+            // Load the module initializer class using its module class
+            // loader under a restricted access control context. This is
+            // necessary because the static initializer of the class will be
+            // called if it exists.
+            final Constructor<? extends ModuleInitializer> ctor = AccessController.doPrivileged(
+                new PrivilegedExceptionAction<Constructor<? extends ModuleInitializer> >() {
+                    public Constructor<? extends ModuleInitializer> run() throws Exception {
+                        Class<? extends ModuleInitializer> clazz =
+                                Class.forName(moduleInitializerName, true, cl).asSubclass(ModuleInitializer.class);
+                        return clazz.getConstructor();
                 }
-            }, context);
+            }, cl.getRestrictedAccessControlContext());
 
-            // Set moduleInitializer only after initialize() has been
-            // invoked successfully.
-            moduleInitializer = initializer;
+            // Must set constructor accessible as the module initializer
+            // may not be a public class.
+            ctor.setAccessible(true);
+
+            // Construct the module initializer and invoke its initialize() method
+            // under the restricted access control context.
+            moduleInitializer = AccessController.doPrivileged(
+                new PrivilegedExceptionAction<ModuleInitializer>() {
+                    public ModuleInitializer run() throws Exception {
+                        ModuleInitializer initializer = ctor.newInstance();
+                        initializer.initialize(moduleDef);
+                        return initializer;
+                }
+            }, cl.getRestrictedAccessControlContext());
+
         } catch (PrivilegedActionException e) {
-            // print exception if the initializer throws any
-            throw new ModuleInitializationException("Module initializer exception in module "
-                            + moduleString, e.getCause());
+            if (e.getCause() instanceof ClassNotFoundException) {
+                fail(e.getCause(), "Cannot load module initializer class "
+                     + moduleInitializerName + " in module " + moduleString);
+            } else if (e.getCause() instanceof NoSuchMethodException) {
+                fail(e.getCause(), "Module initializer class " + moduleInitializerName
+                     + " in module " + moduleString
+                     + " does not have zero-argument public constructor.");
+            } else if (e.getCause() instanceof ClassCastException) {
+                fail(e.getCause(), moduleInitializerName + " does not implement java.module.ModuleInitializer in module " + moduleString);
+            } else {
+                // print exception if the initializer throws any
+                fail(e.getCause(), "Module initializer exception in module " + moduleString);
+            }
+        } finally {
+            // Set the context class loader to null after calling module
+            // initializer.
+            Thread.currentThread().setContextClassLoader(null);
         }
     }
 
     /**
-     * If the module initializer exists, invoke the release() method. The
-     * action is performed with the permissions possessed by the module's
-     * protection domain.
+     * Invoke the release method of the module initializer object if it exists.
      */
     void callReleaseOnModuleInitializer() {
         if (moduleInitializer == null) {
@@ -876,23 +1082,21 @@ final class ModuleImpl extends Module {
         }
 
         try {
-            final ModuleInitializer initializer = moduleInitializer;
-            final Module module = this;
+            // Set the context class loader to null before calling module
+            // initializer.
+            Thread.currentThread().setContextClassLoader(null);
 
-            // Set up a virtual protection domain exactly as the protection
-            // domain of the module.
-            ProtectionDomain[] domains = new ProtectionDomain[1];
-            domains[0] = initializer.getClass().getProtectionDomain();
-            AccessControlContext context = new AccessControlContext(domains);
+            final ModuleInitializer initializer = moduleInitializer;
 
             // Invoke the module initializer's release() method under the
-            // virtual protection domain.
+            // restricted access control context.
             AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
                 public Object run() throws Exception {
-                    initializer.release(module);
+                    initializer.release();
                     return null;
                 }
-            }, context);
+            }, getModuleLoader().getRestrictedAccessControlContext());
+
         } catch (PrivilegedActionException pae) {
             // print exception if the initializer throws any
             pae.getCause().printStackTrace();
@@ -900,7 +1104,46 @@ final class ModuleImpl extends Module {
             // print exception if the initializer throws any
             e.printStackTrace();
         } finally {
+            // Set the context class loader to null after calling module
+            // initializer.
+            Thread.currentThread().setContextClassLoader(null);
+
+            // Make the module initializer object unreachable from the
+            // module instance for GC.
             moduleInitializer = null;
+        }
+    }
+
+    /**
+     * Returns the code source for the classes in this module instance.
+     */
+    private CodeSource getCodeSource() {
+        try {
+            // constructs module URL and module's code source
+            StringBuilder sb = new StringBuilder();
+            sb.append("module:");
+            sb.append(moduleDef.getRepository().getName());
+            if (content.getLocation() != null) {
+                sb.append("/");
+                sb.append(content.getLocation().toString());
+            }
+            sb.append("!/");
+            sb.append(moduleDef.getName());
+            sb.append("/");
+            sb.append(moduleDef.getVersion());
+
+            URL moduleURL = new URL(sb.toString());
+
+            // This is currently the very first call the module system would
+            // call into ModuleContent in a module definition. In the
+            // case of URLRepository, this would trigger the JAM file to be
+            // downloaded and the module metadata is compared (and potentially
+            // throws exception if there is a mismatch between the
+            // MODULE.METADATA file and that in the JAM file.
+            List<CodeSigner> codeSigners = new ArrayList<CodeSigner>(content.getCodeSigners());
+            return new CodeSource(moduleURL, codeSigners.toArray(new CodeSigner[codeSigners.size()]));
+        } catch (IOException e) {
+            throw new AssertionError("Internal module error: cannot construct module's code source: " + e);
         }
     }
 }

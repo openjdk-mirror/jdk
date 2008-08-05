@@ -12,8 +12,8 @@
 > export
 m1.MainA
 >> begin class m1.MainA
-    Repository r = module.getModuleDefinition().getRepository();
-    ModuleSystem ms = module.getModuleDefinition().getModuleSystem();
+    Repository r = moduleDefinition.getRepository();
+    ModuleSystem ms = moduleDefinition.getModuleSystem();
     ModuleDefinition md2 = r.find("m2");
     ModuleDefinition md3 = r.find("m3");
 

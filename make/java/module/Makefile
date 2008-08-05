@@ -58,7 +58,7 @@ SYSTEM_EXTENSION_DIR = $(LIBDIR)/module/ext
 #
 # Resources
 #
-REPOSITORY_METADATA_XML = $(PKGDIR)/RepositoryMetadata.xml
+REPOSITORY_METADATA_XML = $(PKGDIR)/repository-metadata-schema.xml
 
 LOCALE_SET_DEFINITION = jdk
 NEW_RESOURCE_BUNDLES_PROPERTIES = sun/module/tools/resources/messenger.properties
@@ -68,7 +68,7 @@ NEW_RESOURCE_BUNDLES_PROPERTIES = sun/module/tools/resources/messenger.propertie
 #
 include $(BUILDDIR)/common/Rules.gmk
 
-all: classes repository_metadata_xml
+all: classes repository_metadata_schema_xml
 
 build: properties visibilitypolicy importoverridepolicy repositoryprops systemextensiondir
 
@@ -102,9 +102,9 @@ clean clobber:: .delete.classlist
 	$(RM) -r $(CLASSBINDIR)/java/module
 	$(RM) $(PROPS_BUILD) $(VISIBILITY_POLICY_BUILD) $(IMPORT_OVERRIDE_POLICY_BUILD) $(REPOSITORY_PROPS_BUILD)
 
-repository_metadata_xml: $(CLASSBINDIR)/$(REPOSITORY_METADATA_XML)
+repository_metadata_schema_xml: $(CLASSBINDIR)/$(REPOSITORY_METADATA_XML)
 
 $(CLASSBINDIR)/%.xml: $(SHARE_SRC)/classes/%.xml
 	$(install-file)
 
-.PHONY: repository_metadata_xml
+.PHONY: repository_metadata_schema_xml

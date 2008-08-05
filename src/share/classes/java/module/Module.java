@@ -97,8 +97,6 @@ public abstract class Module {
      * @throws SecurityException if a security manager exists and its
      *         {@code checkPermission} method denies access to the class loader
      *         for this {@code Module}.
-     * @throws IllegalStateException if the class loader has not yet been
-     *         created during module initialization.
      */
     public abstract ClassLoader getClassLoader();
 
@@ -106,9 +104,6 @@ public abstract class Module {
      * Returns an unmodifiable list of imported module instances.
      *
      * @return an unmodifiable list of imported module instances.
-     * @throws IllegalStateException if the list of imported
-     *         module instances has not yet been created during module
-     *         initialization.
      */
     public abstract List<Module> getImportedModules();
 
@@ -175,9 +170,6 @@ public abstract class Module {
         builder.append(getModuleDefinition().getName());
         builder.append(" v");
         builder.append(getModuleDefinition().getVersion());
-        builder.append(" (");
-        builder.append(getModuleDefinition().getRepository().getName());
-        builder.append(" repository)");
 
         return builder.toString();
     }

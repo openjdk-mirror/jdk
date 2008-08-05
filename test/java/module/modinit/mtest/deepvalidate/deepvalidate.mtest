@@ -3,7 +3,8 @@
 # - m2 imports m3; no overlapped member class
 # - m4 imports m5 imports m6; overlapped member class in m4 and m6
 # - m7 imports m4, m6; overlapped member class in m4 and m6
-# - m8 imports java.classpath; deep validation should fail
+# - m8 imports m9 imports java.classpath; deep validation is not supported
+# - m10 imports m11 imports m11 imports m9 again; overlapped member class in m10 and m11
 #
 >>> begin module m1
 > annotations
@@ -17,7 +18,7 @@
 > export
 m1.MainA
 >> begin class m1.MainA
-    ModuleDefinition md = module.getModuleDefinition();
+    ModuleDefinition md = moduleDefinition;
     Repository r = md.getRepository();
     Module m1 = md.getModuleInstance();
 
@@ -70,6 +71,9 @@ m1.MainA
         m4.deepValidate();
         throw new Exception("m4's deep validation does not fail as expected.");
     }
+    catch (UnsupportedOperationException u) {
+        throw new Exception("m4's deep validation fails but unexpected exception is thrown: " + u);
+    }
     catch (ModuleInitializationException e) {
     }
     m5.deepValidate();
@@ -93,12 +97,20 @@ m1.MainA
     }
 
 
+    // m8 and m9 should NOT support deep validation.
     ModuleDefinition md8 = r.find("m8");
+    ModuleDefinition md9 = r.find("m9");
     Module m8 = md8.getModuleInstance();
+    Module m9 = md9.getModuleInstance();
 
     // m8 should NOT support deep validation
-    if (m8.supportsDeepValidation() == false) {
-        throw new Exception("m8 does not support deep validation as expected.");
+    if (m8.supportsDeepValidation() == true) {
+        throw new Exception("m8 unexpectedly supports deep validation.");
+    }
+
+    // m9 should NOT support deep validation
+    if (m9.supportsDeepValidation() == true) {
+        throw new Exception("m9 unexpectedly supports deep validation.");
     }
 
     // deep validation should fail for m8
@@ -108,6 +120,69 @@ m1.MainA
     }
     catch (UnsupportedOperationException u) {
         throw new Exception("m8's deep validation fails but unexpected exception is thrown: " + u);
+    }
+    catch (ModuleInitializationException e) {
+    }
+
+    // deep validation should fail for m9
+    try {
+        m9.deepValidate();
+        throw new Exception("m9's deep validation does not fail as expected.");
+    }
+    catch (UnsupportedOperationException u) {
+        throw new Exception("m9's deep validation fails but unexpected exception is thrown: " + u);
+    }
+    catch (ModuleInitializationException e) {
+    }
+    
+    // m10, m11 and m12 should NOT support deep validation
+    ModuleDefinition md10 = r.find("m10");
+    ModuleDefinition md11 = r.find("m11");
+    ModuleDefinition md12 = r.find("m12");
+    Module m10 = md10.getModuleInstance();
+    Module m11 = md11.getModuleInstance();
+    Module m12 = md12.getModuleInstance();
+
+    // m10, m11 and m12 should support deep validation
+    if (m10.supportsDeepValidation() == false) {
+        throw new Exception("m10 does not support deep validation as expected.");
+    }
+    if (m11.supportsDeepValidation() == false) {
+        throw new Exception("m11 does not support deep validation as expected.");
+    }
+    if (m12.supportsDeepValidation() == false) {
+        throw new Exception("m12 does not support deep validation as expected.");
+    }
+
+    // deep validation should fail for m10
+    try {
+        m10.deepValidate();
+        throw new Exception("m10's deep validation does not fail as expected.");
+    }
+    catch (UnsupportedOperationException u) {
+        throw new Exception("m10's deep validation fails but unexpected exception is thrown: " + u);
+    }
+    catch (ModuleInitializationException e) {
+    }
+    
+    // deep validation should fail for m11
+    try {
+        m11.deepValidate();
+        throw new Exception("m11's deep validation does not fail as expected.");
+    }
+    catch (UnsupportedOperationException u) {
+        throw new Exception("m11's deep validation fails but unexpected exception is thrown: " + u);
+    }
+    catch (ModuleInitializationException e) {
+    }
+    
+    // deep validation should fail for m12
+    try {
+        m12.deepValidate();
+        throw new Exception("m12's deep validation does not fail as expected.");
+    }
+    catch (UnsupportedOperationException u) {
+        throw new Exception("m12's deep validation fails but unexpected exception is thrown: " + u);
     }
     catch (ModuleInitializationException e) {
     }
@@ -194,13 +269,66 @@ m1.MainA
 @Version("1.0")
 @ImportModules({
     @ImportModule(name="java.se"),
-    @ImportModule(name="java.classpath")
+    @ImportModule(name="m9")
 })
 @sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "conflictTypeXYZ",
     "m8.MainH"
 })
 >> begin class m8.MainH
+>> end class
+>>> end module
+>>> begin module m9
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="java.classpath")
+})
+@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m9.MainH"
+})
+>> begin class m9.MainH
+>> end class
+>>> end module
+>>> begin module m10
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m11")
+})
+@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m10.MainH"
+})
+>> begin class m10.MainH
+>> end class
+>>> end module
+>>> begin module m11
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m12")
+})
+@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m11.MainH",
+    "conflictTypeXYZ"
+})
+>> begin class m11.MainH
+>> end class
+>>> end module
+>>> begin module m12
+> annotations
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="m10")
+})
+@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
+    "m12.MainH",
+    "conflictTypeXYZ"
+})
+>> begin class m12.MainH
 >> end class
 >>> end module
 >>> begin test m1

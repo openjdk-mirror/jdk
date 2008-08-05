@@ -27,11 +27,16 @@ package java.module;
 
 /**
  * This interface represents a module initializer of a module instance
- * specifically in the JAM module system. The
- * {@link #initialize(Module) initialize} method is invoked when
- * the module system initializes a module instance; the
- * {@link #release(Module) release} method is invoked when that module
- * instance is released from the module system.
+ * specifically in the JAM module system.
+ * <p>
+ * The
+ * {@link #initialize(ModuleDefinition) initialize} method is invoked when
+ * the module system initializes the module instance; the module system must
+ * cause the module initialization to fail if this method
+ * throws any exception. The
+ * {@link #release() release} method is invoked when the module system
+ * releases the module instance; the module system must
+ * ignore any exception being thrown in this method.
  * <p>
  * @see java.module.Module
  * @see java.module.ModuleDefinition
@@ -43,69 +48,34 @@ package java.module;
 public interface ModuleInitializer {
 
     /**
-     * This method is invoked when a module instance is initializing in the
-     * module system. It is invoked after the module instance has been shallow
-     * validated successfully, but before the module instance becomes ready.
+     * This method is invoked when a module instance is being initialized in the
+     * module system.
      * <p>
-     * If this method throws any exception during execution, it will cause the
-     * module instance's initialization to fail.
-     * <p>
-     * Note that when this method is invoked, it is possible that some of the
-     * imported modules are still in the middle of the initialization, and
-     * there are two potential issues:
-     * <p>
-     * 1. The exported classes from an imported module are not guaranteed
-     *    to be accessible from this method.<p>
-     * 2. If an imported module have a module initializer, its
-     *    {@link #initialize(Module) initialize} method may not yet been invoked.
-     * <p>
-     * Implementations of this method should avoid accessing classes from the
-     * imported modules, and should make no assumption that the imported
-     * modules have been fully intitalized. Otherwise, the result is
-     * undeterministic.
-     * <p>
-     * Note that the module instance passed as the argument of this method has
-     * not been fully initialized.
+     * The imported module instances of the
+     * initializing module instance may not be <i>fully initialized</i> when this
+     * method is invoked; the exported classes from the imported
+     * module instances of the initializing module instance may not be
+     * accessible from this method.
      *
-     * @param module the {@code Module} instance to be initialized.
+     * @param moduleDef the {@code ModuleDefinition} associated with the
+     *                  initializing module instance.
      * @throws ModuleInitializationException if this {@code ModuleInitializer}
      *         fails to initialize.
      */
-    public void initialize(Module module) throws ModuleInitializationException;
+    public void initialize(ModuleDefinition moduleDef) throws ModuleInitializationException;
 
     /**
-     * This method is invoked when a module instance is released from the
-     * module system. It is invoked in the following situations:
+     * This method is invoked when a module instance is being released from the
+     * module system. There is no guarantee that this method is ever
+     * invoked when the virtual machine exits.
      * <p>
-     * 1. The {@link #initialize(Module) initialize} method has been
-     *    invoked successfully, but this module instance still gets into error
-     *    state because one or more of its imported modules get into error
-     *    state, or<p>
-     * 2. After the {@link ModuleSystem#releaseModule(ModuleDefinition) releaseModule}
-     *    method of the {@code ModuleSystem} is invoked.
+     * The module instance may not be <i>fully initialized</i> when
+     * this method is invoked.
      * <p>
-     * In the first situation, the module instance passed as the argument of
-     * this method is in error state. The only methods in {@code Module} that
-     * the implementation of this method could invoke reliably are
-     * {@code Module}'s
-     * {@link Module#getModuleDefinition() <tt>getModuleDefinition</tt>},
-     * {@link Module#hashCode() <tt>hashCode</tt>}, and
-     * {@link Module#toString() <tt>toString</tt>} methods.
-     * Otherwise, the result is undeterministric.
-     * <p>
-     * Note that after this method is invoked, the module classloader of this
-     * module instance might still be accessible from other modules. If the
-     * implementation of this method attempt to reset some states or
-     * shutdown some functionalities in this module instance, this could be
-     * problematic for the importing modules if they continue to access this
-     * module instance after this module instance has been released.
-     * <p>
-     * Also, when the virtual machine exits, there is no guarantee that this
-     * method is ever invoked even if the
-     * {@link #initialize(Module) initialize} method has been invoked
-     * successfully.
-     *
-     * @param module the {@code Module} instance to be released.
+     * The imported module instances of the module instance may
+     * not be fully initialized when this method is invoked;
+     * the exported classes from the imported module instances of
+     * the module instance may not be accessible from this method.
      */
-    public void release(Module module);
+    public void release();
 }

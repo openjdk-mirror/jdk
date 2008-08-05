@@ -21,8 +21,7 @@ m0.Main
 > super
 implements ModuleInitializer
 > body
-    public void initialize(Module module) throws ModuleInitializationException {
-        ModuleDefinition moduleDef = module.getModuleDefinition();
+    public void initialize(ModuleDefinition moduleDef) throws ModuleInitializationException {
         Repository rep = moduleDef.getRepository();
         ModuleDefinition md = rep.find("m1");
         Module m = null;
@@ -35,7 +34,7 @@ implements ModuleInitializer
             throw new ModuleInitializationException("Unexpectedly got m1: " + m);
         }
     }
-    public void release(Module module) {
+    public void release() {
     }
 >> end class
 >>> end module
@@ -66,14 +65,14 @@ implements ModuleInitializer
     public static volatile int INIT_COUNT = 0;
     public static volatile int RELEASE_COUNT = 0;
 
-    public void initialize(Module module) throws ModuleInitializationException {
+    public void initialize(ModuleDefinition moduleDef) throws ModuleInitializationException {
         if (INIT_COUNT != 0) {
             throw new ModuleInitializationException("Module initializer's initialize() is called more than once");
         }
         INIT_COUNT++;
 
         try {
-            Repository rep = module.getModuleDefinition().getRepository();
+            Repository rep = moduleDef.getRepository();
             ModuleDefinition md = rep.find("m3");
             Module m = md.getModuleInstance();
             ClassLoader cl = m.getClassLoader();
@@ -88,7 +87,7 @@ implements ModuleInitializer
             }
         }
     }
-    public void release(Module module) {
+    public void release() {
         if (RELEASE_COUNT != 0) {
             throw new IllegalStateException ("Module initializer's release() is called more than once");
         }

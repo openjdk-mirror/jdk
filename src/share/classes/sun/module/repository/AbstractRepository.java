@@ -42,6 +42,7 @@ import java.module.Repository;
 import java.module.RepositoryEvent;
 import java.module.Version;
 import java.module.annotation.PlatformBinding;
+import java.nio.ByteBuffer;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -62,8 +63,9 @@ import sun.module.repository.cache.Cache;
 import sun.module.repository.cache.ModuleDefInfo;
 
 /**
- * A common base class for LocalRepository and URLRepository.
- * <p>
+ * A common base class for LocalRepository and URLRepository in the JAM module
+ * system. See the {@link java.module.Modules} class for more details.
+ *
  * @see java.module.ModuleArchiveInfo
  * @see java.module.ModuleDefinition
  * @see java.module.Query
@@ -71,12 +73,6 @@ import sun.module.repository.cache.ModuleDefInfo;
  * @since 1.7
  */
 abstract class AbstractRepository extends Repository {
-
-    /**
-     * Internal data structures for the repository.
-     */
-    protected final Map<String, Map<ModuleArchiveInfo, ModuleDefinition> > contentMapping =
-                new HashMap<String, Map<ModuleArchiveInfo, ModuleDefinition> >();
 
     /** Repository cache. */
     protected Cache repositoryCache = null;
@@ -88,9 +84,10 @@ abstract class AbstractRepository extends Repository {
 
     private URI source;
 
+    private ModuleSystem moduleSystem;
+
     /**
-     * Creates a new <code>AbstractRepository</code> instance, and initializes it
-     * using information from the given {@code config}.
+     * Creates a new <code>AbstractRepository</code> instance.
      * <p>
      * If a security manager is present, this method calls the security
      * manager's <code>checkPermission</code> method with a
@@ -112,7 +109,9 @@ abstract class AbstractRepository extends Repository {
         super(name, parent);
         this.config = config;
         this.source = source;
-        initialize();
+        // All module definitions in this repository are associated with
+        // the same JAM module system instance.
+        this.moduleSystem = Modules.getModuleSystem();
     }
 
     /**
@@ -120,7 +119,7 @@ abstract class AbstractRepository extends Repository {
      *
      * @return the source location.
      */
-    public final URI getSourceLocation()    {
+    final URI getSourceLocation()    {
         return source;
     }
 
@@ -152,8 +151,8 @@ abstract class AbstractRepository extends Repository {
 
         try {
             // Initialize the repository under doPrivileged()
-            return (List<ModuleArchiveInfo>) AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
-                public Object run() throws Exception {
+            return AccessController.doPrivileged(new PrivilegedExceptionAction<List<ModuleArchiveInfo> >() {
+                public List<ModuleArchiveInfo> run() throws Exception {
                     return doInitialize2();
                 }
             });
@@ -234,13 +233,20 @@ abstract class AbstractRepository extends Repository {
 
         assertActive();
         assertNotReadOnly();
+        assertValidDirs();
 
         if ((mai instanceof JamModuleArchiveInfo) == false) {
             throw new UnsupportedOperationException("type of module archive is not supported: "
                         + mai.getClass().getName());
         }
-
-        assertValidDirs();
+        if (mai.getRepository() != this) {
+            throw new UnsupportedOperationException
+                ("module archive is associated with a different repository.");
+        }
+        if (!getModuleArchiveInfos().contains(mai)) {
+            // Returns false if the module archive no longer exists.
+            return false;
+        }
 
         try {
             // Uninstall the module archive under doPrivileged()
@@ -263,8 +269,8 @@ abstract class AbstractRepository extends Repository {
     }
 
     /**
-     * Put the module archive into the repository cache, cook it, and update
-     * the internal data structure to reflect the change.
+     * Put the module archive into the repository cache, cook it, and reflect
+     * the change in the repository.
      *
      * @param file module archive to be installed.
      * @return module archive information
@@ -276,98 +282,89 @@ abstract class AbstractRepository extends Repository {
         ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(getSourceLocation().toURL(), file);
 
         // Constructs a module archive info
-        ModuleArchiveInfo mai  = new JamModuleArchiveInfo(
+        JamModuleArchiveInfo jmai  = new JamModuleArchiveInfo(
             this, mdInfo.getName(), mdInfo.getVersion(),
             mdInfo.getPlatform(), mdInfo.getArch(),
-            file.getAbsolutePath(), file.lastModified());
+            file.getAbsolutePath(), file.lastModified(),
+            mdInfo.getMetadataByteBuffer(),
+            mdInfo.getModuleContent());
 
-        // Checks if a module definition already exists for a given module
-        // name and version (e.g. platform neutral vs platform specific module).
-        String key = mai.getName() + mai.getVersion();
-        Map<ModuleArchiveInfo, ModuleDefinition> value = contentMapping.get(key);
-        if (value == null) {
-            // No module definition exists, and we should create one if the
-            // module archive supports the running platform and architecture.
+        // Adds the module archive into the internal data structure
+        addModuleArchiveInfo(jmai);
+
+        // A module definition MAY already exist for a given module name and
+        // version (e.g. portable module vs platform specific module).
+        Query query = Query.module(jmai.getName(), jmai.getVersion().toVersionConstraint());
+        List<ModuleDefinition> queryResult = findModuleDefinitions(query);
+
+        if (queryResult.size() == 0) {
+            // No module definition exists. Create a new module definition if
+            // the module archive supports the running platform and
+            // architecture.
             if (mdInfo.supportsRunningPlatformArch()) {
                 // Constructs a module definition
                 ModuleDefinition md = Modules.newModuleDefinition(
-                                            mdInfo.getMetadataBytes(),
-                                            mdInfo.getModuleContent(),
-                                            this, true);
+                                            jmai.getMetadataByteBuffer(),
+                                            jmai.getModuleContent(), jmai,
+                                            this, true, moduleSystem);
                 // Add the module definition into the internal data structure
                 addModuleDefinition(md);
-
-                value = new HashMap<ModuleArchiveInfo, ModuleDefinition>();
-                value.put(mai, md);
-                contentMapping.put(key, value);
             }
         } else {
 
             // A module definition already exists for a given name and version
-            // (e.g. platform neutral vs platform specific module).
+            // (e.g. portable vs platform specific module).
 
-            // XXX: do we replace the existing module definition with a new one
-            // if the newly installed module archive provides better
-            // platform binding?
+            // XXX: Should we replace an existing module definition if the
+            // newly installed module archive provides better platform binding?
             //
-            // e.g. a platform neutral module is already installed and in use
-            // but now we just install a windows-x86 specific module (assuming
-            // we're running on Windows as well), should we swap the module
-            // definition of the platform neutral module with that of a newly
-            // installed one?
-            //
-            // For simplicity, the answer is no. Otherwise, the behavior could
-            // be very confusing and problematic.
+            // For simplicity, the answer is no. Otherwise, the runtime
+            // characteristics could be very confusing.
         }
 
-        // Adds the module archive into the internal data structure
-        addModuleArchiveInfo(mai);
-
-        return mai;
+        return jmai;
     }
 
     /**
-     * Remove the module archive and the corresponding module definition
-     * from the internal data structures so this repository won't
-     * recognize it anymore.
+     * Remove the module archive and the corresponding module definition from
+     * this repository.
      *
      * @param mai module archive information that represents the module archive
      *        to be removed.
      */
     protected final void removeModuleArchiveInternal(ModuleArchiveInfo mai) {
-        String key = mai.getName() + mai.getVersion();
-        Map<ModuleArchiveInfo, ModuleDefinition> value = contentMapping.get(key);
-        if (value != null) {
-            // Check if a module definition has been created for the module
-            // archive info
-            ModuleDefinition md = value.get(mai);
 
-            if (md == null) {
-                // Module definition could be null if a platform neutral or
-                // platform-specific module with the same name and version
-                // already exists, but it's not the module archive that is
-                // being removed. In this case, there is no module definition
-                // to be removed from the internal data structure.
-            } else {
-                // Removes the module archive and module definition mapping
-                // from internal data structure.
+        // Find existing module definition created from the module archive
+        Query query = Query.module(mai.getName(), mai.getVersion().toVersionConstraint());
+        List<ModuleDefinition> result = findModuleDefinitions(query);
+
+        if (result.size() > 0) {
+            if (result.size() > 1) {
+                throw new AssertionError("internal repository error: more than"
+                  + " one module definitions with the same name and version.");
+            }
+
+            ModuleDefinition md = result.get(0);
+            if (md.getModuleArchiveInfo() == mai) {
+                // A module definition was created from the removed module
+                // archive. Remove the module definition.
                 removeModuleDefinition(md);
-                contentMapping.remove(key);
 
-                // It is certainly possible that the repository may have another
-                // module archive for the same module name/version. e.g. a platform
-                // specific module is uninstalled but there exists a platform
-                // neutral module in the repository. In this case, do we recreate
-                // the module definition for the platform neutral module and use
-                // it in the repository?
+                // The repository may have another module archive for the same
+                // module name/version. e.g. a platform specific module is
+                // uninstalled but there exists a portable module in the
+                // repository.
+                //
+                // XXX: Should we create a module definition from the
+                // portable module?
                 //
                 // For simplicity, the answer is no. If the user uninstalls a
                 // platform specific module from the repository, he/she would
                 // expect that no module definition for the given module
-                // name/version would be returned from the repository if it is
-                // searched through find(). If the repository returns a
-                // module definition of the platform neutral module instead,
-                // the behavior could be very confusing and problematic.
+                // name/version would be returned from the repository
+                // subsequently. If the repository returns a module
+                // definition created from the portable module instead,
+                // the runtime characteristics could be very confusing.
             }
         }
 
@@ -377,69 +374,51 @@ abstract class AbstractRepository extends Repository {
 
     /**
      * Constructs the module definition from the module archives based on the
-     * current platform and architecture, and updates the internal data
-     * structure.
+     * current platform and architecture.
      */
     final Set<ModuleDefinition> constructModuleDefinitions(
-                                                    Map<ModuleArchiveInfo,
-                                                    ModuleDefInfo> mdInfoMap)
+                                                    List<ModuleArchiveInfo> mais)
                                                     throws IOException {
-        return constructModuleDefinitions(mdInfoMap,
+        return constructModuleDefinitions(mais,
                                    RepositoryUtils.getPlatform(),
                                    RepositoryUtils.getArch());
     }
 
     /**
      * Constructs the module definition from the module archives based on the
-     * specified platform and architecture, and updates the internal data
-     * structure.
+     * specified platform and architecture.
      */
     final Set<ModuleDefinition> constructModuleDefinitions(
-                                                    Map<ModuleArchiveInfo,
-                                                    ModuleDefInfo> mdInfoMap,
+                                                    List<ModuleArchiveInfo> mais,
                                                     String platform, String arch)
                                                     throws IOException {
-        //
-        // It is certainly possible that the source directory may contain more
-        // than one module with the same name and same version in some
-        // repository implementations, e.g. in the case of LocalRepository,
-        // duplicate module with different JAM filename, or platform neutral
+        // The source directory may contain more than one module with the
+        // same name and same version, e.g. in the case of LocalRepository,
+        // duplicate module with different JAM filename, or portable
         // module vs platform specific module.
         //
-        // The list() method would return all the module archives. However, for
-        // the find() method, it is important to filter out the unappropriate
-        // module archives when constructing module definitions, so for a given
+        // The list() method returns all the module archives. However, for
+        // the find() method, it must filter out the unappropriate module
+        // archives when constructing module definitions, so for a given
         // name and version, there is at most one module definition in the
         // repository.
         //
         Collection<ModuleArchiveInfo> appropriateModuleArchiveInfos =
-                    getAppropriateModuleArchiveInfos(mdInfoMap.keySet(), platform, arch);
+                    getAppropriateModuleArchiveInfos(mais, platform, arch);
 
         Set<ModuleDefinition> result = new HashSet<ModuleDefinition>();
 
-        //
         // Iterate the list of appropriate module archive, and creates
-        // module definition and updates the internal data struture.
+        // module definitions.
         //
         for (ModuleArchiveInfo mai : appropriateModuleArchiveInfos) {
-            String key = mai.getName() + mai.getVersion();
-
-            // Looks up the module definition info related to the preferred module archive.
-            ModuleDefInfo mdInfo = mdInfoMap.get(mai);
+            JamModuleArchiveInfo jmai = (JamModuleArchiveInfo) mai;
 
             // Constructs a module definition from the module archive.
             ModuleDefinition md = Modules.newModuleDefinition(
-                                    mdInfo.getMetadataBytes(),
-                                    mdInfo.getModuleContent(),
-                                    this, true);
-
-            // Updates the internal data structures so the repository would
-            // recognize this module archive info and the module definition.
-            HashMap<ModuleArchiveInfo, ModuleDefinition> value =
-                    new HashMap<ModuleArchiveInfo, ModuleDefinition>();
-            value.put(mai, md);
-            contentMapping.put(key, value);
-
+                                    jmai.getMetadataByteBuffer(),
+                                    jmai.getModuleContent(), jmai,
+                                    this, true, moduleSystem);
             result.add(md);
         }
 
@@ -448,8 +427,7 @@ abstract class AbstractRepository extends Repository {
 
     /**
      * Reconstructs the module definition from the module archives if necessary
-     * based on the current platform and architecture, and updates the internal
-     * data structure.
+     * based on the current platform and architecture.
      */
     protected final void reconstructModuleDefinitionsIfNecessary()
                                 throws IOException {
@@ -459,38 +437,32 @@ abstract class AbstractRepository extends Repository {
 
     /**
      * Reconstructs the module definition from the module archives if necessary
-     * based on the specified platform and architecture, and updates the internal
-     * data structure.
+     * based on the specified platform and architecture.
      */
     protected final void reconstructModuleDefinitionsIfNecessary(String platform, String arch)
                                 throws IOException {
         Collection<ModuleArchiveInfo> appropriateModuleArchiveInfos =
-                    getAppropriateModuleArchiveInfos(list(), platform, arch);
+                    getAppropriateModuleArchiveInfos(getModuleArchiveInfos(), platform, arch);
 
         for (ModuleArchiveInfo mai : appropriateModuleArchiveInfos) {
-            String key = mai.getName() + mai.getVersion();
 
-            // If there is no module definition for the appropriate module
-            // archive.
-            if (contentMapping.get(key) == null) {
-                // Put the jam file into the repository cache and cook it
-                ModuleDefInfo mdInfo = repositoryCache.getModuleDefInfo(
-                                                getSourceLocation().toURL(),
-                                                new File(mai.getFileName()));
+            // Find existing module definition created from the module archive.
+            Query query = Query.module(mai.getName(), mai.getVersion().toVersionConstraint());
+            List<ModuleDefinition> queryResult = findModuleDefinitions(query);
+
+            // If no module definition exists for the module archive,
+            // create a new one.
+            if (queryResult.size() == 0) {
+                JamModuleArchiveInfo jmai = (JamModuleArchiveInfo) mai;
 
                 // Constructs a module definition
                 ModuleDefinition md = Modules.newModuleDefinition(
-                                            mdInfo.getMetadataBytes(),
-                                            mdInfo.getModuleContent(),
-                                            this, true);
+                                            jmai.getMetadataByteBuffer(),
+                                            jmai.getModuleContent(), jmai,
+                                            this, true, moduleSystem);
 
                 // Add the module definition into the internal data structure
                 addModuleDefinition(md);
-
-                HashMap<ModuleArchiveInfo, ModuleDefinition> value =
-                            new HashMap<ModuleArchiveInfo, ModuleDefinition>();
-                value.put(mai, md);
-                contentMapping.put(key, value);
             }
         }
     }
@@ -501,7 +473,7 @@ abstract class AbstractRepository extends Repository {
      * duplicate modules (i.e. same name, version, and platform binding), the
      * duplicate is removed in the result.
      *
-     * @param moduleArchiveInfos a list of module archive info
+     * @param moduleArchiveInfos a collection of module archive info
      * @param p platform
      * @param a architecture
      */
@@ -513,35 +485,32 @@ abstract class AbstractRepository extends Repository {
         for (ModuleArchiveInfo ma : moduleArchiveInfos) {
             JamModuleArchiveInfo mai = (JamModuleArchiveInfo) ma;
             String key = mai.getName() + mai.getVersion();
-            if (mai.isPlatformArchNeutral()) {
-                // The module archive is platform neutral
+            if (mai.isPortable()) {
+                // The module archive is portable
 
                 // If no platform specific module exists in the preferred map,
-                // use the platform neutral module.
+                // use the portable module.
                 if (preferredMap.get(key) == null) {
                     preferredMap.put(key, mai);
                 }
             } else if (p.equals(mai.getPlatform())
                        && a.equals(mai.getArch()))  {
-                // The module archive is platform specific to the specified
-                // platform/arch.
+                // The module archive is specific to the specified platform/arch.
                 JamModuleArchiveInfo mai2 = (JamModuleArchiveInfo) preferredMap.get(key);
 
-                // If no module archive exists in the prefered map for the given
-                // module name/version, use this module archive. Or if module
-                // archive exists in the preferred map but it is platform
-                // neutral, replace it with this module archive.
-                if (mai2 == null || mai2.isPlatformArchNeutral()) {
+                if (mai2 == null || mai2.isPortable()) {
+                    // If no module archive exists in the prefered map for the given
+                    // module name/version, use this module archive. Or if module
+                    // archive exists in the preferred map but it is portable,
+                    // replace it with this module archive.
                     preferredMap.put(key, mai);
                 } else {
                     // A module archive already exists in the preferred map but
-                    // it is also platform specific to the specified
-                    // platform/arch. In this case, this is a duplicate -
-                    // do nothing.
+                    // it is also specific to the specified platform/arch. In
+                    // this case, this is a duplicate. No-op.
                 }
             } else {
-                // The module archive is platform specified to other platform/
-                // arch. No-op
+                // The module archive is specific to other platform/arch. No-op
             }
         }
 
@@ -586,7 +555,6 @@ abstract class AbstractRepository extends Repository {
             AccessController.doPrivileged(new PrivilegedExceptionAction<Boolean>() {
                 public Boolean run() throws Exception {
                     doShutdown2();
-
                     return Boolean.TRUE;
                 }
             });
@@ -599,8 +567,6 @@ abstract class AbstractRepository extends Repository {
                 throw new IOException("Unexpected exception has occurred", e);
             }
         }
-
-        contentMapping.clear();
 
         // Shutdown repository cache
         if (repositoryCache != null) {

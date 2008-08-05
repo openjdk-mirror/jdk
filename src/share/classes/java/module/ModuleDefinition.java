@@ -111,10 +111,22 @@ import java.util.Set;
 public abstract class ModuleDefinition {
 
     /**
-     * Constructor used by subclasses.
+     * Creates a {@code ModuleDefinition} instance.
+     * <p>
+     * If a security manager is present, this method calls the security
+     * manager's {@code checkPermission} method with
+     * {@code ModuleSystemPermission("createModuleDefinition")} permission to
+     * ensure it's ok to create a module definition.
+     *
+     * @throws SecurityException if a security manager exists and its
+     *         {@code checkPermission} method denies access to create a new
+     *         module definition.
      */
     protected ModuleDefinition() {
-        // empty
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            sm.checkPermission(new ModuleSystemPermission("createModuleDefinition"));
+        }
     }
 
     /**
@@ -187,6 +199,23 @@ public abstract class ModuleDefinition {
      * @return the {@code ModuleSystem} object.
      */
     public abstract ModuleSystem getModuleSystem();
+
+    /**
+     * Returns the module archive information that is associated with this
+     * {@code ModuleDefinition}.
+     * <p>
+     * If a security manager is present, this method calls the security
+     * manager's {@code checkPermission} method with a
+     * {@code ModuleSystemPermission("getModuleArchiveInfo")}
+     * permission to ensure it's ok to access the module archive
+     * info of this {@code ModuleDefinition}.
+     *
+     * @return the {@code ModuleArchiveInfo} object.
+     * @throws SecurityException if a security manager exists and
+     *         its {@code checkPermission} method denies access
+     *         to the module archive info of this {@code ModuleDefinition}.
+     */
+    public abstract ModuleArchiveInfo getModuleArchiveInfo();
 
     /**
      * Returns the name of the main class in this {@code ModuleDefinition}.
@@ -380,7 +409,7 @@ public abstract class ModuleDefinition {
      * <p>
      * If a security manager is present, this method calls the security
      * manager's {@code checkPermission} method with a
-     * {@code ModuleSystemPermission("accessModuleContent")}
+     * {@code ModuleSystemPermission("getModuleContent")}
      * permission to ensure it's ok to access the content of this
      * {@code ModuleDefinition}.
      *
@@ -432,9 +461,6 @@ public abstract class ModuleDefinition {
         builder.append(getName());
         builder.append(" v");
         builder.append(getVersion());
-        builder.append(" (");
-        builder.append(getRepository().getName());
-        builder.append(" repository)");
         return builder.toString();
     }
 }

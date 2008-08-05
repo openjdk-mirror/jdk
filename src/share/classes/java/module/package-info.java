@@ -191,16 +191,17 @@
  * implementation and the default module system within the Java Module System.
  * <p>
  * <h3> JAM modules</h3>
- * Modules in the JAM module system are called JAM modules. The distribution
+ * Modules in the JAM module system are called JAM modules. JAM modules are
+ * <i>portable</i> by default and can run under any platform. The distribution
  * format of a JAM module is also called JAM. Each JAM file
  * is self-contained by definition, and it does not reference any resource
  * externally. See the JAM Module System Specification for more details.
  * <p>
  * <A NAME="PlatformSpecificModules"></A><h4> Platform-specific modules</h4>
- * JAM modules are <i>platform-neutral</i> by default. A JAM module is
- * <i>platform-specific</i> if it has
+ * JAM modules with
  * {@link java.module.annotation.PlatformBinding platform binding}
- * for a specific platform and architecture.
+ * are <i>platform specific</i>. They can only run under the specific
+ * platform and architecture.
  * <p>
  * <h4> Resource modules</h4>
  * Resources of different locales can be placed in different

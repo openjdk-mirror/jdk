@@ -36,16 +36,20 @@ public class ${name} ${super} {
 
     private static final ${name} INSTANCE = new ${name}();
 
-    public final Module module;
-    public final ModuleDefinition moduleDefinition;
-    public final Repository repository;
-    public final String version;
+    public Module module = null;
+    public ModuleDefinition moduleDefinition = null;
+    public Repository repository = null;
+    public String version = null;
 
     public ${name}() {
-        module = getClass().getClassLoader().getModule();
-        moduleDefinition = module.getModuleDefinition();
-        repository = moduleDefinition.getRepository();
-        version = moduleDefinition.getVersion().toString();
+        try {
+            module = getClass().getClassLoader().getModule();
+            moduleDefinition = module.getModuleDefinition();
+            repository = moduleDefinition.getRepository();
+            version = moduleDefinition.getVersion().toString();
+        } catch (IllegalStateException e) {
+            // Module instance has not been fully initialized.
+        }
     }
 
     public static ${name} get() {
@@ -64,8 +68,12 @@ public class ${name} ${super} {
     }
 
     public String toString() {
-        return getClass() + " (" + moduleDefinition.getName()
-             + " v" + moduleDefinition.getVersion() + ")";
+        if (moduleDefinition != null) {
+            return getClass() + " (" + moduleDefinition.getName()
+                 + " v" + moduleDefinition.getVersion() + ")";
+        } else {
+            return getClass().toString();
+        }
     }
 
     public void run(String ... args) throws Exception {

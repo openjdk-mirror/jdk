@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.jar.JarFile;
 import sun.module.JamUtils;
 import sun.module.repository.RepositoryConfig;
-import sun.module.repository.MetadataXMLWriter;
 import sun.module.repository.URLRepository;
 
 /**
@@ -101,6 +100,11 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(!ec.installEventExists(repoTest, null));
         check(!ec.uninstallEventExists(repoTest, null));
 
+        // Sleep for 1 second to make sure the timestamp of
+        // a modified repository metadata file is at last one
+        // second apart from its previous's last modified date
+        Thread.sleep(1000);
+
         /*
          * Check three cases of reload() [spec 6.2.6]
          * (1) New module definition added in source location
@@ -131,13 +135,24 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         // Since repoTest and repoWork share the same filesytem structures, this
         // works:
         repoTest.reload();
-        check(repoTest.find("ModuleJamNew") != null);
+        ModuleDefinition md = repoTest.find("ModuleJamNew");
+        check(md != null);
 
         // Only MODULE_ARCHIVE_INSTALLED event should be fired.
         check(!ec.initializeEventExists(repoTest));
         check(!ec.shutdownEventExists(repoTest));
         check(ec.installEventExists(repoTest, null));
         check(!ec.uninstallEventExists(repoTest, null));
+
+        // Reload the repository should have no effect since
+        // there has been no new change
+        repoTest.reload();
+        check(repoTest.find("ModuleJamNew") == md);
+
+        // Sleep for 1 second to make sure the timestamp of
+        // a modified repository metadata file is at last one
+        // second apart from its previous's last modified date
+        Thread.sleep(1000);
 
         // (2) Existing module definition removed from source location
         // Uninstall from repoWork...
@@ -162,6 +177,11 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(!ec.installEventExists(repoTest, null));
         check(ec.uninstallEventExists(repoTest, null));
 
+        // Sleep for 1 second to make sure the timestamp of
+        // a modified repository metadata file is at last one
+        // second apart from its previous's last modified date
+        Thread.sleep(1000);
+
         // (3) Existing module definition replaced in source location
         // Create a module in repoTest, make sure it operates as expected
         JamBuilder jb = new JamBuilder(
@@ -182,7 +202,8 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
 
         // Now reload repoTest: as with (1), the module should be available
         repoTest.reload();
-        check(repoTest.find("ModuleJamReplace") != null);
+        md = repoTest.find("ModuleJamReplace");
+        check(md != null);
         runModule(repoTest, "ModuleJamReplace", "foo");
 
         // Only MODULE_ARCHIVE_INSTALLED event should be fired.
@@ -190,6 +211,16 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(!ec.shutdownEventExists(repoTest));
         check(ec.installEventExists(repoTest, null));
         check(!ec.uninstallEventExists(repoTest, null));
+
+        // Reload the repository should have no effect since
+        // there has been no new change
+        repoTest.reload();
+        check(repoTest.find("ModuleJamReplace") == md);
+
+        // Sleep for 1 second to make sure the timestamp of
+        // a modified repository metadata file is at last one
+        // second apart from its previous's last modified date
+        Thread.sleep(1000);
 
         // Now remove ModuleJamReplace from repoWork, create a new JAM for a
         // module of the same name, and install it in repoWork
@@ -227,6 +258,11 @@ public class URLRepositoryReloadTest extends URLRepositoryTest {
         check(!ec.shutdownEventExists(repoTest));
         check(ec.installEventExists(repoTest, null));
         check(ec.uninstallEventExists(repoTest, null));
+
+        // Sleep for 1 second to make sure the timestamp of
+        // a modified repository metadata file is at last one
+        // second apart from its previous's last modified date
+        Thread.sleep(1000);
 
         ModuleArchiveInfo mai = repoWork.list().get(0);
         check(repoWork.uninstall(mai));

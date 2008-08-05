@@ -29,10 +29,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This interface represents the import policy of a module definition
- * in the JAM module system. The import policy is used to
- * determine the version constraints that should be used to resolve
- * the import dependencies in a module during initialization.
+ * This interface represents the import policy of a module instance
+ * in the JAM module system. The import policy controls the
+ * <a href="ModuleSystem.html#Resolution">resolution</a> of
+ * an initializing module instance by narrowing the version constraints
+ * in the import dependencies of the module instance.
  * <p>
  * @see java.module.ImportDependency
  * @see java.module.ImportOverridePolicy
@@ -46,46 +47,49 @@ import java.util.Map;
 public interface ImportPolicy {
 
     /**
-     * Returns a map of import dependencies and the associated version
-     * constraints that should used when initializing this module instance.
+     * Returns a map from {@link ImportDependency} objects to
+     * {@link VersionConstraint} objects for a module instance of
+     * the specified module definition.
      * <p>
-     * The list of import dependencies that is returned from the
-     * {@code getImportDependencies()} method of the
-     * {@code ModuleDefinition} object only reflects the import dependencies
-     * with the original version constraints that were specified
-     * in the module definition at build time. However, it is possible that
-     * deployers might have used the system's import override policy to narrow
-     * these version constraints at deployment time to control the actual
-     * resolution.
+     * The given {@code constraints} consists of the same set
+     * of import dependencies as the initializing module instance's
+     * {@linkplain ModuleDefinition#getImportDependencies imports}.
+     * For each import dependency in the given {@code constraints},
+     * the corresponding version constraint <i>V</i> represents
+     * the version constraint under consideration by
+     * the module system for
+     * <a href="ModuleSystem.html#Resolution">resolving</a> the
+     * import dependency;
+     * <i>V</i> may be {@code null} if the import dependency is
+     * {@linkplain ImportDependency#isOptional() optional}
+     * and should be ignored by the module system.
      * <p>
-     * Some implementations may use the map of import dependencies and
-     * overridden version constraints to determine if the version constraint of
-     * an import has been overridden. The map is passed in one of the
-     * parameters of this method.
+     * Implementations of this method should construct a map containing the
+     * elements in the given {@code constraints}, override the appropriate
+     * version constraints of the import dependencies in the
+     * map, and return the map as the result. Implementations of this method
+     * may also use the given {@code defaultImportPolicy} object to determine
+     * the result of the default resolution in the module system.
      * <p>
-     * Some implementations may use the default import policy instance for
-     * determining the map of import dependencies and default version
-     * constraints for resolving, and it is passed in one of the parameters of
-     * this method.
-     * <p>
-     * Implementations must return a map of import dependencies and
-     * version constraints after resolving the imports. If an import cannot
-     * be resolved and the import dependency is mandatory (i.e. non-optional),
-     * {@code UnsatisfiedDependencyException} must be thrown. If an import
-     * cannot be resolved and the import dependency is optional, {@code null}
-     * must be used to represent the version constraint of the missing import
-     * in the map.
+     * The set of import dependencies in the returned map must be equal to the
+     * set of imports of the initializing module instance.
+     * For each import dependency in the returned map, the corresponding
+     * version constraint <i>R</i> may be {@code null} if the import
+     * dependency is optional and should be ignored by the module system during
+     * resolution. Otherwise, <i>R</i> must be within the boundary of the
+     * declared version constraint in the initializing module instance's
+     * imports.
      *
-     * @param moduleDef the module definition of this module instance.
-     * @param constraints an unmodifiable map of import dependencies and
-     *        overridden version constraints.
+     * @param moduleDef the module definition.
+     * @param constraints an unmodifiable map from {@link ImportDependency}
+     *        objects to overridden {@link VersionConstraint} objects.
      * @param defaultImportPolicy the default import policy for this module
      *        instance.
+     * @return a map from {@link ImportDependency} objects to
+     *         overridden {@link VersionConstraint} objects.
      * @throws UnsatisfiedDependencyException if an import dependency cannot
      *         be satisfied.
      * @throws ModuleInitializationException if there is other error.
-     * @return a map of import dependencies and overridden version constraints
-     *         for preparing this module instance in the resolving process.
      */
     public Map<ImportDependency, VersionConstraint> getImports(ModuleDefinition moduleDef,
         Map<ImportDependency,VersionConstraint> constraints, ImportPolicy defaultImportPolicy)

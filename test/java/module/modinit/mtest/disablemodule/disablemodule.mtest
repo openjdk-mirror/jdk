@@ -26,7 +26,7 @@ m1.MainA
 > export
 m2.MainB
 >> begin class m2.MainB
-    ModuleDefinition md = module.getModuleDefinition();
+    ModuleDefinition md = moduleDefinition;
 
     try {
         Module m = md.getModuleInstance();

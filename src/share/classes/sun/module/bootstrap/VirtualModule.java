@@ -89,8 +89,10 @@ final class VirtualModule extends Module {
     @Override
     public void deepValidate() {
         if (supportsDeepValidation() == false) {
-            throw new UnsupportedOperationException(moduleDef.getName()
-                                + " module cannot be deep validated.");
+            throw new UnsupportedOperationException(
+                "Module" + moduleDef.getName()
+                + " v" + moduleDef.getVersion()
+                + " cannot be deep validated.");
         }
     }
 

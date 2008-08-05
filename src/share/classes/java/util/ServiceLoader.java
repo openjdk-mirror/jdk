@@ -110,7 +110,7 @@ import sun.module.repository.RepositoryConfig;
  * <p>
  * A <i>service provider module</i> is a JAM module which contains one or more
  * provider classes for one or more services. A service provider module may
- * have more than one provider classes for the same service. A service
+ * have more than one provider class for the same service. A service
  * provider module may have the same provider class for more than one service.
  * A service provider is identified by placing a
  * {@code ModuleServiceProviderTable} attribute in the metadata
@@ -741,7 +741,7 @@ public final class ServiceLoader<S>
             boolean rc = false;
             if (providerMod != null) {
                 List<Module> reexports = new ArrayList<Module>();
-                ModuleUtils.expandReexports(providerMod, reexports, true);
+                ModuleUtils.expandReexports(providerMod, reexports);
                 rc = reexports.contains(serviceMod);
             }
             return rc;
@@ -962,28 +962,28 @@ public final class ServiceLoader<S>
     }
 
     /**
-     * <span style="color: rgb(204, 0, 0);"><B>[UPDATED]</B></span>
+     * <span style="color: rgb(204, 0, 0);"><B>[REVISED]</B></span>
      * Creates a new service loader for the given service type and class
      * loader.
      * <p>
      * <span style="color: rgb(204, 0, 0);">
      * The service loader first uses the class loader to search for providers
-     * for the given service type; the service loader then uses the following
-     * repository in the Java Module System to search for service provider
-     * modules for the given service type if the service type is from a
-     * module module:
+     * for the given service type; the service loader then uses the
+     * following repositories in the Java Module System to search for service
+     * provider modules for the given service type if the service type is from a
+     * module:
      * <p>
-     * <ul>
-     *      <li> {@linkplain java.module.Repository#getApplicationRepository Application repository}
+     * <ol>
+     *      <li> Use the {@linkplain java.module.Repository#getApplicationRepository application repository}
      *           if the class loader or an ancestor of the class loader is the system class loader.</li>
      *
-     *      <li> {@linkplain java.module.Repository#getSystemRepository System repository}
+     *      <li> Otherwise, use the {@linkplain java.module.Repository#getSystemRepository system repository}
      *           if the class loader or an ancestor of the class loader is the extension class loader.</li>
      *
-     *      <li> The repository associated with the module which the class loader
-     *           belongs if the class loader is a
+     *      <li> Otherwise, use the repository associated with the module
+     *           which the class loader belongs if the class loader is a
      *           {@linkplain java.module.Module#getClassLoader module class loader}.</li>
-     * </ul>
+     * </ol>
      * </span>
      *
      * @param  service
@@ -1101,7 +1101,7 @@ public final class ServiceLoader<S>
     }
 
     /**
-     * <span style="color: rgb(204, 0, 0);"><B>[UPDATED]</B></span>
+     * <span style="color: rgb(204, 0, 0);"><B>[REVISED]</B></span>
      * Creates a new service loader for the given service type, using the
      * <span style="color: rgb(204, 0, 0);">
      * the extension class loader, and using the

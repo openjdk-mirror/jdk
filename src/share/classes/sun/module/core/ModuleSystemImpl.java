@@ -38,9 +38,6 @@ public final class ModuleSystemImpl extends ModuleSystem {
 
     final static boolean DEBUG = sun.module.JamUtils.DEBUG;
 
-    // Singleton instance
-    public static final ModuleSystem INSTANCE = new ModuleSystemImpl();
-
     // Map containing all Modules that have been created
     // Includes modules that are fully initialized, partially initialized,
     // and those in error state
@@ -62,17 +59,22 @@ public final class ModuleSystemImpl extends ModuleSystem {
     // Modules that just moved into error state
     private final List<ModuleImpl> newErrorModules;
 
-    private ModuleSystemImpl() {
+    public ModuleSystemImpl(final ThreadGroup threadGroup) {
         modules = new IdentityHashMap<ModuleDefinition,ModuleImpl>();
         newModules = new LinkedBlockingQueue<ModuleImpl>();
             initializingModules = new LinkedBlockingDeque<ModuleImpl>();
                 newErrorModules = new ArrayList<ModuleImpl>();
-                    // XXX doPrivileged()
-                    // XXX ThreadGroup?
                     initializer = new Initializer();
-        initializerThread = new Thread(null, initializer, "Module Initialization Thread");
-        initializerThread.setDaemon(true);
-        initializerThread.start();
+
+        initializerThread = java.security.AccessController.doPrivileged(
+                new java.security.PrivilegedAction<Thread>() {
+                    public Thread run() {
+                        Thread t = new Thread(threadGroup, initializer, "Module Initialization Thread");
+                        t.setDaemon(true);
+                        t.start();
+                        return t;
+                    }
+                });
     }
 
     @Override
@@ -211,6 +213,24 @@ public final class ModuleSystemImpl extends ModuleSystem {
                 // that caused this loop, temporarily remove it from the queue.
                 ModuleImpl current = initializer.removeInitializingModule();
                 try {
+                    // Fixed #6573885: recursion check
+                    if (current.getModuleDefinition() == moduleDef) {
+                        // If the initializing module is instantiated from
+                        // the same module definition we want to create, we
+                        // have a recursion in either the import override
+                        // policy, import policy, or module initializer.
+                        if (current.isFindingDirectImports()) {
+                            throw new ModuleInitializationException("Invalid recursive module instantiation from import policy or import override policy in module "
+                                         + moduleDef.getName() + " v" + moduleDef.getVersion());
+                        } else if (current.isExecutingInitializer()) {
+                            throw new ModuleInitializationException("Invalid recursive module instantiation from module initializer in module "
+                                         + moduleDef.getName() + " v" + moduleDef.getVersion());
+                        } else {
+                            throw new ModuleInitializationException("Invalid recursive module instantiation in module "
+                                         + moduleDef.getName() + " v" + moduleDef.getVersion());
+                        }
+                    }
+
                     while (m.initializationComplete() == false) {
                         // We should never block. If we do, something is wrong.
                         initializer.serviceQueues(false);
@@ -350,9 +370,9 @@ public final class ModuleSystemImpl extends ModuleSystem {
             // If the newModules queue is empty and there are initializingModules
             // remaining that we could not be completely initialize,
             // this can only be the result of a recursion caused by an
-            // ImportPolicy/ImportOverridePolicy that has a circular dependency
-            // on the module that caused the recursion, which was removed from
-            // this list via removeInitializingModule().
+            // ImportPolicy/ImportOverridePolicy/ModuleInitializer that has a
+            // circular dependency on the module that caused the recursion, which
+            // was removed from this list via removeInitializingModule().
             // This means that this module and all modules that depend on it
             // (the modules in the initializingModules) are invalid and we need
             // to put them into error state.
@@ -360,7 +380,7 @@ public final class ModuleSystemImpl extends ModuleSystem {
                 for (ModuleImpl m : initializingModules) {
                     try {
                         // mark module as invalid
-                        m.fail(null, "Invalid recursive dependency from import policy or import override policy in module "
+                        m.fail(null, "Invalid recursive dependency from import policy, import override policy, or module initializer in module "
                                + m.getModuleDefinition().getName() + " v" + m.getModuleDefinition().getVersion());
                     } catch (ModuleInitializationException e) {
                         // ignore
@@ -373,6 +393,6 @@ public final class ModuleSystemImpl extends ModuleSystem {
 
     @Override
         public String toString() {
-            return "Java Module System";
+            return "JAM Module System";
         }
 }

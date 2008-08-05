@@ -52,15 +52,19 @@ at the permission allows, and associated risks">
  *       load their rogue modules and classes into the system.</td>
  * </tr>
  * <tr>
- *   <td>releaseModule</td>
- *   <td>Releases an existing module instance from a module system via calls to
- *       the {@code ModuleSystem}'s
- *       {@link ModuleSystem#releaseModule(ModuleDefinition)
- *       <tt>releaseModule</tt>} method.</td>
- *   <td>This is a dangerous permission to grant. Malicious applications could
- *       allow an attacker to release an existing module instance, so the
- *       runtime characteristics of the Java virtual machine is changed
- *       unexpectedly and it could cause the system to misbehave.</td>
+ *   <td>createModuleDefinition</td>
+ *   <td>Creation of a module definition.</td>
+ *   <td>This is an extremely dangerous permission to grant. Malicious
+ *       applications that can instantiate their own module definitions could
+ *       then load their rogue modules and classes into the system through an
+ *       existing module system.</td>
+ * </tr>
+ * <tr>
+ *   <td>createRepository</td>
+ *   <td>Creation of a repository.</td>
+ *   <td>This is an extremely dangerous permission to grant. Malicious
+ *       applications that can instantiate their own repositories could then
+ *       load their rogue modules and classes into the system.</td>
  * </tr>
  * <tr>
  *   <td>disableModuleDefinition</td>
@@ -70,9 +74,19 @@ at the permission allows, and associated risks">
  *       <tt>disableModuleDefinition</tt>} method.</td>
  *   <td>This is an extremely dangerous permission to grant. Malicious
  *       applications could allow an attacker to perform denial-of-service
- *       attack by disabling a module definition, and the module system will be
- *       disallowed from creating any new module instance from that disabled
- *       module definition.</td>
+ *       attacks by disabling a module definition, and the module system will
+ *       not create any new module instances from the module definition.</td>
+ * </tr>
+ * <tr>
+ *   <td>releaseModule</td>
+ *   <td>Releases an existing module instance from a module system via calls to
+ *       the {@code ModuleSystem}'s
+ *       {@link ModuleSystem#releaseModule(ModuleDefinition)
+ *       <tt>releaseModule</tt>} method.</td>
+ *   <td>This is a dangerous permission to grant. Malicious applications could
+ *       allow an attacker to release an existing module instance, so the
+ *       runtime characteristics of the Java virtual machine are changed
+ *       unexpectedly and could cause the system to misbehave.</td>
  * </tr>
  * <tr>
  *   <td>installModuleArchive</td>
@@ -98,13 +112,6 @@ at the permission allows, and associated risks">
  *       repository.</td>
  * </tr>
  * <tr>
- *   <td>createRepository</td>
- *   <td>Creation of a repository.</td>
- *   <td>This is an extremely dangerous permission to grant. Malicious
- *       applications that can instantiate their own repositories could then
- *       load their rogue modules and classes into the system.</td>
- * </tr>
- * <tr>
  *   <td>shutdownRepository</td>
  *   <td>Shutdown a repository via calls
  *       to the {@code Repository}'s {@link Repository#shutdown()
@@ -117,27 +124,59 @@ at the permission allows, and associated risks">
  *   <td>Reloads module definitions in a repository via calls
  *       to the {@code Repository}'s {@link Repository#reload()
  *       <tt>reload</tt>} method.</td>
- *   <td>This allows an attacker to invalidate the lifetime of the outstanding
- *       module instances instantiated from the module definitions in the
- *       repository.</td>
+ *   <td>This allows an attacker to reload the module definitions
+ *       in the repository, so the runtime characteristics of the
+ *       Java virtual machine are changed unexpectedly and could
+ *       cause the system to misbehave.</td>
  * </tr>
  * <tr>
- *   <td>accessModuleContent</td>
- *   <td>Accesses the content of the module definition via calls
- *       to the {@code ModuleDefinition}'s {@link ModuleDefinition#getModuleContent()
+ *   <td>getModuleArchiveInfo</td>
+ *   <td>Gets the module archive info of the module definition via calls
+ *       to the {@code ModuleDefinition}'s
+ *       {@link ModuleDefinition#getModuleArchiveInfo()
+ *       <tt>getModuleArchiveInfo</tt>} method.</td>
+ *   <td>This allows an attacker to access the module archive info of
+ *       the module definition, which may has sensitive information.</td>
+ * </tr>
+ * <tr>
+ *   <td>getModuleContent</td>
+ *   <td>Gets the content of the module definition via calls
+ *       to the {@code ModuleDefinition}'s
+ *       {@link ModuleDefinition#getModuleContent()
  *       <tt>getModuleContent</tt>} method.</td>
- *   <td>This allows an attacker to have access to the actual content of the
- *       module definition, which may contain sensitive information internally.</td>
+ *   <td>This allows an attacker to access the content of the
+ *       module definition, which may contain sensitive information.</td>
+ * </tr>
+ * <tr>
+ *   <td>getVisibilityPolicy</td>
+ *   <td>Gets the system's visibility policy
+ *       via calls to the {@code Modules}'s
+ *       {@link Modules#getVisibilityPolicy()
+ *       <tt>getVisibilityPolicy</tt>} method.</td>
+ * .</td>
+ *   <td>This allows an attacker to determine which module definitions
+ *       are visible.</td>
  * </tr>
  * <tr>
  *   <td>setImportOverridePolicy</td>
- *   <td>Changes the default import override policy in the JAM module system via calls
- *       to the {@code Modules}'s
+ *   <td>Changes the system's import override policy in the JAM module system
+ *       via calls to the {@code Modules}'s
  *       {@link Modules#setImportOverridePolicy(ImportOverridePolicy)
  *       <tt>setImportOverridePolicy</tt>} method.</td>
  * .</td>
- *   <td>This allows an attacker to choose specific versions of imported
- *       modules when a module instance is initialized.</td>
+ *   <td>This allows an attacker to install a malicious import override
+ *       policy to control the resolution of module instances in the JAM
+ *       module system.</td>
+ * </tr>
+ * <tr>
+ *   <td>getImportOverridePolicy</td>
+ *   <td>Gets the system's import override policy in the JAM module system
+ *       via calls to the {@code Modules}'s
+ *       {@link Modules#getImportOverridePolicy()
+ *       <tt>getImportOverridePolicy</tt>} method.</td>
+ * .</td>
+ *   <td>This allows an attacker to determine the resolution result of module
+ *       instances in the JAM module system.</td>
  * </tr>
  * <tr>
  *   <td>addModuleSystemListener</td>
@@ -145,8 +184,7 @@ at the permission allows, and associated risks">
  *       calls to the {@code ModuleSystem}'s
  *       {@link ModuleSystem#addModuleSystemListener(ModuleSystemListener)
  *       <tt>addModuleSystemListener</tt>} method.</td>
- *   <td>This allows an attacker to monitor the module system events in the
- *       module systems.</td>
+ *   <td>This allows an attacker to monitor the events in the module systems.</td>
  * </tr>
  * <tr>
  *   <td>removeModuleSystemListener</td>
@@ -154,8 +192,8 @@ at the permission allows, and associated risks">
  *       via calls to the {@code ModuleSystem}'s
  *       {@link ModuleSystem#removeModuleSystemListener(ModuleSystemListener)
  *       <tt>removeModuleSystemListener</tt>} method.</td>
- *   <td>This allows an attacker to remove a system-provided module system
- *       listener from the module systems.</td>
+ *   <td>This allows an attacker to remove a system-provided event listener from
+ *       the module systems.</td>
  * </tr>
  * <tr>
  *   <td>addRepositoryListener</td>
@@ -163,8 +201,7 @@ at the permission allows, and associated risks">
  *       via calls to the {@code Repository}'s
  *       {@link Repository#addRepositoryListener(RepositoryListener)
  *       <tt>addRepositoryListener</tt>} method.</td>
- *   <td>This allows an attacker to monitor the repository events in the
- *       repositories.</td>
+ *   <td>This allows an attacker to monitor the events in the repositories.</td>
  * </tr>
  * <tr>
  *   <td>removeRepositoryListener</td>
@@ -172,7 +209,7 @@ at the permission allows, and associated risks">
  *       via calls to the {@code Repository}'s
  *       {@link Repository#removeRepositoryListener(RepositoryListener)
  *       <tt>removeRepositoryListener</tt>} method.</td>
- *   <td>This allows an attacker to remove a system-provided repository
+ *   <td>This allows an attacker to remove a system-provided event
  *       listener from the repositories.</td>
  * </tr>
  * </table>

@@ -47,9 +47,19 @@ public final class ModuleUtils {
      *
      * @param m module instance
      * @param modules a list of expanded modules
+     */
+    public static void expandReexports(Module m, List<Module> modules) {
+        expandReexports(m, modules, true);
+    }
+
+    /**
+     * Expand reexports of a specified module instance.
+     *
+     * @param m module instance
+     * @param modules a list of expanded modules
      * @param includeAll true if the expansion should include all imported modules
      */
-    public static void expandReexports(Module m, List<Module> modules, boolean includeAll) {
+    private static void expandReexports(Module m, List<Module> modules, boolean includeAll) {
         for (ImportDependency dep : m.getModuleDefinition().getImportDependencies()) {
             ModuleDependency moduleDep = (ModuleDependency) dep;
             if ((includeAll == false) && (moduleDep.isReexported() == false)) {
@@ -77,7 +87,7 @@ public final class ModuleUtils {
 
     /**
      * Returns the transitive closure of the importing modules of a specified
-     * module.
+     * module. The transitive closure includes the specified module.
      *
      * @param module module instance
      * @return a set of modules in the importing transitive closure
@@ -116,7 +126,7 @@ public final class ModuleUtils {
 
     /**
      * Returns the transitive closure of the imported modules of a specified
-     * module.
+     * module. The transitive closure includes the specified module.
      *
      * @param module module instance
      * @return a set of modules in the imported transitive closure
