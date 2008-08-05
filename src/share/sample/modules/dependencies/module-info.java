@@ -21,26 +21,14 @@
  * have any questions.
  */
 
-import java.io.*;
-import java.net.*;
-import com.sun.net.httpserver.*;
-import java.util.*;
 
-
-
-public class HttpRepositoryTest {
-    private static BasicLauncherTests blt;
-
-    public static void realMain(String[] args) throws Exception {
-        URLRepositoryServer server = new URLRepositoryServer(
-            new File(LauncherTestHelper.urlRepository));
-        try {
-            server.start();
-            blt.runHttpTests(server.getURL());
-        } catch (Throwable t) {
-            Utils.unexpected(t);
-        } finally {
-            server.stop();
-        }
-    }
-}
+/**
+ * Declare the module "dep" with its exported class "dep.Entry".
+ */
+@MainClass("dep.Entry")
+@Version("1.0")
+@ImportModules({
+    @ImportModule(name="java.se"),
+    @ImportModule(name="hello")
+})
+module dep;

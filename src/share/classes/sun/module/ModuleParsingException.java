@@ -1,10 +1,12 @@
 /*
- * Copyright 2007-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation.  Sun designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Sun in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,26 +23,30 @@
  * have any questions.
  */
 
-import java.io.*;
-import java.net.*;
-import com.sun.net.httpserver.*;
-import java.util.*;
+package sun.module;
 
 
+public class ModuleParsingException extends Exception {
+    static final long serialVersionUID = -3387516993124229948L;
 
-public class HttpRepositoryTest {
-    private static BasicLauncherTests blt;
+    /**
+     * a null constructor
+     */
+    public ModuleParsingException() { }
 
-    public static void realMain(String[] args) throws Exception {
-        URLRepositoryServer server = new URLRepositoryServer(
-            new File(LauncherTestHelper.urlRepository));
-        try {
-            server.start();
-            blt.runHttpTests(server.getURL());
-        } catch (Throwable t) {
-            Utils.unexpected(t);
-        } finally {
-            server.stop();
-        }
+    /**
+     * Creates an exception with the given parameter
+     * @param message
+     */
+    public ModuleParsingException(String message) {
+        super(message);
+    }
+
+   /**
+    * Creates an exception with the given parameter
+    * @param t
+    */
+    public ModuleParsingException(Throwable t) {
+        super(t);
     }
 }

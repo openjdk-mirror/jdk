@@ -1,0 +1,35 @@
+
+This directory contains two modules
+   A. A simple hello-world module in the directory hello-world
+   B. A simple module dep which depends on the hello module in A
+
+
+The directory hello-world contains the following:
+   a. module-info.java - the 'hello' module description file
+   b. hello/Main.java  - a simple Java application
+
+To build and run the module:
+ [set your path to point to the "bin" directory of a OpenJDK Modules build]
+   % find hello-world -name "*.java"  > hello.classes
+   % javac -source 7 @hello.classes
+   % jam cvf hello.jam -C hello-world module-info.class -C hello-world hello/Main.class
+   % java -jam hello.jam
+   Hello world from module hello 1.0
+
+The directory  dependencies contains the module dep
+   a. module-info.java - the 'dep' module description file
+   b. dep/Entry.java   - a simple application which depends on 'hello'
+
+Now lets try the other module:
+  % find dependencies -name "*.java" > dep.classes
+  % javac -source 7 -sourcepath hello-world/ @dep.classes
+  % jam cvf dep.jam -C dependencies module-info.class -C dependencies dep/Entry.class
+  % java -jam dep.jam
+  Module 'dep' calling module 'hello'...
+  Hello world from module instance hello v1.0 (application repository)
+
+
+Thank you for trying out modules.
+Feel free to ask any questions at modules-dev@openjdk.java.net
+
+- The Modules team

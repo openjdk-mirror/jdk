@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,21 +21,10 @@
  * have any questions.
  */
 
+module hello;
+
 package hello;
 
-/**
- * Main class of the module.
- *
- * <p>To build and run the module:
- * <pre>
- * [set your path to point to the "bin" directory of a OpenJDK Modules build]
- * % cd sample/modules/hello-world
- * % javac hello/*.java
- * % jam cfs hello.jam hello hello/*.class
- * % java -jam hello.jam
- * Hello world from module hello 1.0
- * </pre>
- */
 public class Main {
 
     public void run(String[] args) {

@@ -32,6 +32,7 @@ import java.module.ModuleSystem;
 import java.module.PackageDefinition;
 import java.module.Repository;
 import java.module.annotation.ImportPolicyClass;
+import java.module.annotation.ExportLegacyClasses;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -44,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import sun.module.annotation.LegacyClasses;
 
 /*
  * @test QueryTest.java
@@ -422,22 +422,19 @@ public class QueryTest {
 
         try {
             Map<Class, Annotation> annotations = new HashMap<Class, Annotation>();
-            LegacyClasses legacyClassesAnnotation = new LegacyClasses() {
-                public String[] value() {
-                    return new String[0];
-                }
+            ExportLegacyClasses legacyClassesAnnotation = new ExportLegacyClasses() {
                 public Class<? extends Annotation> annotationType() {
-                    return LegacyClasses.class;
+                    return ExportLegacyClasses.class;
                 }
             };
-            annotations.put(LegacyClasses.class, legacyClassesAnnotation);
+            annotations.put(ExportLegacyClasses.class, legacyClassesAnnotation);
 
             HashMap<String, String> attributes = new HashMap<String, String>();
 
             ModuleDefinition moduleDef1 = new MockModuleDefinition("javax.swing", Version.valueOf(1, 0, 0), attributes);
             ModuleDefinition moduleDef2 = new MockModuleDefinition("org.foo.xml", Version.valueOf(2, 0, 0), attributes, annotations);
 
-            Query query = Query.annotation(LegacyClasses.class);
+            Query query = Query.annotation(ExportLegacyClasses.class);
             check(query.match(moduleDef1) == false);
             check(query.match(moduleDef2) == true);
 
@@ -445,7 +442,7 @@ public class QueryTest {
             check(query.equals(Query.module("org.foo.xml")) == false);
             check(query.equals(Query.module("org.foo.xml", VersionConstraint.valueOf("1.0.0"))) == false);
             check(query.equals(Query.attribute("my.name")) == false);
-            check(query.equals(Query.annotation(LegacyClasses.class)) == true);
+            check(query.equals(Query.annotation(ExportLegacyClasses.class)) == true);
 
             try {
                 query.getIndexHints(Query.MODULE_NAME_INDEX_HINTS);

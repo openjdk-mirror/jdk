@@ -39,7 +39,17 @@ public class JamBuilder {
     static final boolean DEBUG = System.getProperty("module.debug") != null;
 
     private static void debug(String s) {
-        if (DEBUG) System.err.println("### JamBuilder: " + s);
+        if (DEBUG) System.out.println("### JamBuilder: " + s);
+    }
+
+    private static void debug(String s, Object...args) {
+        if (DEBUG) {
+            System.out.print("### JamBuilder: " + s);
+            for (Object x : args) {
+                System.out.print(x + " ");
+            }
+            System.out.println("");
+        }
     }
 
     /* Directory in which this builder is started. */
@@ -231,15 +241,11 @@ public class JamBuilder {
     public File createJam() throws Exception {
         PrintWriter pw;
 
-        // Create source files with the super package and main class
-        File modDir = new File(tmpDir, modName);
-        JamUtils.recursiveDelete(modDir);
-        modDir.mkdirs();
-        File modFile = new File(modDir, "module_info.java");
-
+        // Create source files with the module-info.java and main
         File srcDir = new File(tmpDir, srcPkgName);
         JamUtils.recursiveDelete(srcDir);
         srcDir.mkdirs();
+        File modFile = new File(srcDir, JamUtils.MODULE_INFO_JAVA);
         File srcFile = new File(srcDir, srcName + ".java");
 
         createSrcFiles(modFile, srcFile);
@@ -315,29 +321,30 @@ public class JamBuilder {
             platform == null ? "" : "-" + platform + "-" + arch;
         File rc = new File(destDir,
                            modName + "-" + version + binding + ".jam");
+        String cmd = (DEBUG) ? "cvf" : "cf";
         String[] args = new String[] {
-            "cMf",
+            cmd,
             rc.getCanonicalPath(),
             "-C",
             contentDir.getCanonicalPath(),
-            "MODULE-INF/MODULE.METADATA",
-            "-C",
-            contentDir.getCanonicalPath(),
-            srcPkgName + File.separator + srcName + ".class"
+            srcPkgName
         };
-        sun.tools.jar.Main jartool =
-            new sun.tools.jar.Main(System.out, System.err, "JamBuilder");
-        jartool.run(args);
-        return rc;
+        sun.module.tools.Jam jamtool =
+            new sun.module.tools.Jam(System.out, System.err, "JamBuilder");
+        debug("jam args: ", (java.lang.Object[])args);
+        boolean status = jamtool.run(args);
+        if (DEBUG) {
+            debug("+module listing: " + rc.getAbsolutePath());
+            jamtool.run("pf", rc.getAbsolutePath());
+        }
+        return (status) ? rc : null;
     }
 
     /* Create a module's directory structure like this:
      * <dir-path>
-     *    MODULE.METADATA
-     *    MODULE-INF
-     *        MODULE.METADATA
      *    urlrepotest
      *        Sample.class
+     *        module-info.class
      * <path>/<name>-<version>[-<platform>-<arch>].jam
      * where dir-path depends on version, platform, and name: If path
      * is given, then dir-path is path.  If platform is given, then it
@@ -348,19 +355,13 @@ public class JamBuilder {
         File contentDir = new File(tmpDir, "JamBuilderContent");
 
         debug("content dir.mkdirs returns " + contentDir.mkdirs());
-        File spFile = new File(modFile.getParent(), "module_info.class");
-        JamUtils.copyFile(spFile,
-                 new File(contentDir, "MODULE.METADATA"));
-
-        File modInfDir = new File(contentDir, "MODULE-INF");
-        modInfDir.mkdirs();
-        JamUtils.copyFile(spFile,
-                 new File(modInfDir, "MODULE.METADATA"));
-
         File pkgDir = new File(contentDir, srcPkgName);
         pkgDir.mkdirs();
         JamUtils.copyFile(new File(srcFile.getParent(), srcName + ".class"),
                  new File(pkgDir, srcName + ".class"));
+        JamUtils.copyFile(new File(modFile.getParent(), JamUtils.MODULE_INFO_CLASS),
+                 new File(pkgDir, JamUtils.MODULE_INFO_CLASS));
+
 
         return contentDir;
     }
@@ -369,8 +370,6 @@ public class JamBuilder {
         PrintWriter pw;
 
         pw = new PrintWriter(new FileWriter(modFile));
-        pw.printf("package %s;\n\n", modName);
-        pw.printf("import java.module.annotation.*;\n\n");
         pw.printf("@Version(\"%s\")\n", version);
         pw.printf("@MainClass(\"%s.%s\")\n", srcPkgName, srcName);
         if (platform != null && arch != null) {
@@ -382,14 +381,14 @@ public class JamBuilder {
         pw.printf("@ImportModules({\n");
         pw.printf("\t@ImportModule(name=\"java.se\")\n");
         pw.printf("})\n");
-        pw.printf("class module_info {\n");
-        pw.printf("}\n");
+        pw.printf("module " + modName + ";");
         pw.close();
         if (pw.checkError()) {
             throw new Exception("Failed to write module");
         }
 
         pw = new PrintWriter(new FileWriter(srcFile));
+        pw.printf("module " + modName + ";");
         pw.printf("package %s;\n\n", srcPkgName);
         pw.printf("import java.util.*;\n\n");
         pw.printf("public class %s {\n", srcName);
@@ -415,7 +414,7 @@ public class JamBuilder {
 
     public static void compileFile(File src, File dest) throws Exception {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        String cmd = "-source 6 -target 6 -implicit:none";
+        String cmd = "-source 7 -implicit:none";
         if (DEBUG) {
             cmd += " -verbose";
         }
@@ -423,6 +422,9 @@ public class JamBuilder {
             cmd += " -d " + dest.getCanonicalPath();
         }
         cmd += " " + src.getCanonicalPath();
+        if (DEBUG) {
+              debug("javac args: " + cmd);
+        }
         int rc = compiler.run(null, null, null, cmd.split(" "));
         if (rc != 0) {
             throw new Exception("Failed to compile " + src);

@@ -50,8 +50,10 @@ public class ChangeDirTest {
         scratchDir = new File(
             System.getProperty("test.scratch", ".")).getCanonicalFile();
 
-        File modSrcFile = new File(srcDir, moduleName + File.separator + "module_info.java");
-        File classSrcFile = new File(srcDir, moduleName + File.separator + "Main.java");
+        File modSrcFile = new File(srcDir, moduleName +
+                File.separator + JamUtils.MODULE_INFO_JAVA);
+        File classSrcFile = new File(srcDir, moduleName +
+                File.separator + "Main.java");
 
         // Compile the source files
         JamBuilder.compileFile(modSrcFile, scratchDir);
@@ -75,23 +77,20 @@ public class ChangeDirTest {
         try {
             // Create a jam file from the module-info and the classes, and the
             // hello.txt file in the subdirectory. The command is equivalent to:
-            //
-            //    jam cfsS {test.scratch}/hello.jam hello {test.scratch} \
+            //    jam cf {test.scratch}/hello.jam \
             //             -C {test.scratch} hello/Main.class \
             //             -C {test.scratch} hello/module_info.class \
             //             -C {test.src}/a/b hello.txt
             //
             List<String> argList = new ArrayList<String>();
-            argList.add("cfsS");
+            argList.add("cf");
             argList.add(new File(scratchDir, jamName).getCanonicalPath());
-            argList.add(moduleName);
-            argList.add(scratchDir.getCanonicalPath());
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
             argList.add(moduleName + sep + "Main.class");
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
-            argList.add(moduleName + sep + "module_info.class");
+            argList.add(moduleName + sep + JamUtils.MODULE_INFO_CLASS);
             argList.add("-C");
             argList.add(new File(srcDir, "a" + sep + "b").getCanonicalPath());
             argList.add(fileName);
@@ -99,7 +98,7 @@ public class ChangeDirTest {
             String jamArgs[] = new String[argList.size()];
             jamArgs = argList.toArray(jamArgs);
 
-            Jam jamTool = new Jam(System.out, System.err, "jam");
+            Jam jamTool = new Jam(System.out, System.err, "Jammmer");
             if (!jamTool.run(jamArgs)) {
                 fail("Could not create jam file.");
             }

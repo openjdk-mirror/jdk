@@ -23,6 +23,7 @@
 
 /**
  * @test
+ * @compile -XDignore.symbol.file ChangeDir.java
  * @bug 4806786
  * @summary jar -C doesn't ignore multiple // in path
  */

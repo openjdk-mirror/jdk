@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @compile -XDignore.symbol.file MetaInf.java
  * @bug 4408526
  * @summary Index the non-meta files in META-INF, such as META-INF/services.
  */

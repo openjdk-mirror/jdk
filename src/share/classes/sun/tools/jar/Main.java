@@ -1,5 +1,5 @@
 /*
- * Copyright 1996-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1996-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,11 @@ import java.util.jar.*;
 import java.util.jar.Manifest;
 import java.text.MessageFormat;
 import sun.misc.JarIndex;
+import sun.module.JamUtils;
+import sun.module.tools.util.JamModuleMetadata;
+import sun.module.ModuleParsingException;
+import sun.module.tools.Messenger;
+import sun.module.tools.util.JamToolUtils;
 
 /**
  * This class implements a simple utility for creating files in the JAR
@@ -69,6 +74,11 @@ class Main {
     static final String INDEX = JarIndex.INDEX_NAME;
 
     private static ResourceBundle rsrc;
+
+    // Jam related
+    private JamModuleMetadata metadata;
+    // Indicates if jam support is required in this instance.
+    private boolean jamSupport = false;
 
     /**
      * If true, maintain compatibility with JDK releases prior to 6.0 by
@@ -120,6 +130,26 @@ class Main {
 
     private boolean ok;
 
+    private String getModuleInfoClass(String[] infiles) {
+        for (String x : infiles) {
+            if (JamToolUtils.isModuleInfoClassEntry(x)) {
+                return x;
+            }
+        }
+        return null;
+    }
+
+    /*
+     * The jar tool entry point so that the jam tool can tunnel special
+     * arguments, like the metadata it also turns on the required support.
+     */
+    public synchronized boolean jamRun(JamModuleMetadata metadata, String... args) {
+        jamSupport = true;
+        this.metadata = metadata;
+        boolean rc = run(args);
+        return rc;
+    }
+
     /*
      * Starts main program with the specified arguments.
      */
@@ -128,6 +158,9 @@ class Main {
         if (!parseArgs(args)) {
             return false;
         }
+        InputStream in = null;
+        OutputStream out = null;
+        FileInputStream fis = null;
         try {
             if (cflag || uflag) {
                 if (fname != null) {
@@ -142,7 +175,6 @@ class Main {
             }
             if (cflag) {
                 Manifest manifest = null;
-                InputStream in = null;
 
                 if (!Mflag) {
                     if (mname != null) {
@@ -163,7 +195,6 @@ class Main {
                         addMainClass(manifest, ename);
                     }
                 }
-                OutputStream out;
                 if (fname != null) {
                     out = new FileOutputStream(fname);
                 } else {
@@ -175,15 +206,28 @@ class Main {
                         vflag = false;
                     }
                 }
-                create(new BufferedOutputStream(out), expand(files), manifest);
+
+                String[] infiles = expand(files);
+
+                if (jamSupport && metadata == null) {
+                    String moduleinfoclass = getModuleInfoClass(infiles);
+                    if (moduleinfoclass == null) {
+                        fatalError(Messenger.formatMsg(
+                                "error.module.file.notfound",
+                                JamUtils.MODULE_INFO_CLASS));
+                        return false;
+                    }
+                    fis = new FileInputStream(moduleinfoclass);
+                    metadata = new JamModuleMetadata(fis);
+                }
+
+                create(new BufferedOutputStream(out), infiles, manifest);
                 if (in != null) {
                     in.close();
                 }
                 out.close();
             } else if (uflag) {
                 File inputFile = null, tmpFile = null;
-                FileInputStream in;
-                FileOutputStream out;
                 if (fname != null) {
                     inputFile = new File(fname);
                     String path = inputFile.getParent();
@@ -198,8 +242,23 @@ class Main {
                 }
                 InputStream manifest = (!Mflag && (mname != null)) ?
                     (new FileInputStream(mname)) : null;
-                expand(files);
-                boolean updateOk = update(in, new BufferedOutputStream(out), manifest);
+                String[] infiles = expand(files);
+
+                if (jamSupport) {
+                    String moduleinfo = getModuleInfoClass(infiles);
+                    // dig the module out, as it is not being updated
+                    if (moduleinfo == null) {
+                        // read the module info, but don't process the Jar
+                        metadata = new JamModuleMetadata(fname, false);
+                    } else {
+                        fis = new FileInputStream(moduleinfo);
+                        metadata = new JamModuleMetadata(fis);
+                    }
+                }
+
+                boolean updateOk =
+                        update(in, new BufferedOutputStream(out), manifest);
+
                 if (ok) {
                     ok = updateOk;
                 }
@@ -218,7 +277,6 @@ class Main {
                     tmpFile.delete();
                 }
             } else if (xflag || tflag) {
-                InputStream in;
                 if (fname != null) {
                     in = new FileInputStream(fname);
                 } else {
@@ -233,6 +291,10 @@ class Main {
             } else if (iflag) {
                 genIndex(rootjar, files);
             }
+        } catch (ModuleParsingException mpe) {
+            // simply emit an error
+            error(mpe.getMessage());
+            ok = false;
         } catch (IOException e) {
             fatalError(e);
             ok = false;
@@ -242,8 +304,12 @@ class Main {
         } catch (Throwable t) {
             t.printStackTrace();
             ok = false;
+        } finally {
+            JamUtils.close(in);
+            JamUtils.close(out);
+            JamUtils.close(fis);
         }
-        out.flush();
+        this.out.flush();
         err.flush();
         return ok;
     }
@@ -338,6 +404,17 @@ class Main {
             usageError();
             return false;
         }
+
+        /*
+         * support jam creation or updates of files only if jam tunnels through.
+         */
+        if ((!jamSupport && (cflag || uflag)) &&
+                (fname.endsWith(".jam") || fname.endsWith(".jam.pack.gz"))) {
+            error(getMsg("error.jam.not.supported"));
+            usageError();
+            return false;
+        }
+
         /* parse file arguments */
         int n = args.length - count;
         if (n > 0) {
@@ -428,11 +505,12 @@ class Main {
     }
 
     /*
-     * Creates a new JAR file.
+     * Creates a new JAR/JAM file.
      */
     void create(OutputStream out, String[] files, Manifest manifest)
-        throws IOException
+            throws IOException, ModuleParsingException
     {
+        boolean haveModuleInf = false;
         ZipOutputStream zos = new JarOutputStream(out);
         if (flag0) {
             zos.setMethod(ZipOutputStream.STORED);
@@ -456,16 +534,55 @@ class Main {
             zos.closeEntry();
         }
         for (int i = 0; i < files.length; i++) {
+            if (!haveModuleInf) {
+                haveModuleInf = JamToolUtils.isModuleInfDirEntry(files[i]);
+            }
             addFile(zos, new File(files[i]));
         }
-        zos.close();
+        try {
+            addMetadata(zos, vflag, flag0, haveModuleInf);
+        } finally {
+            if (zos != null)
+                zos.close();
+        }
+    }
+
+    /*
+     * adds/updates a metadata entry MODULE-INF/MODULE.METADATA to the archive
+     */
+     private void addMetadata(ZipOutputStream zos,
+             boolean vflag, boolean flag0, boolean haveModuleInf)
+             throws IOException, ModuleParsingException {
+        if (metadata != null) {
+            if (vflag) {
+                output(formatMsg("out.adding", JamUtils.MODULE_INF_METADATA));
+            }
+            ZipEntry e;
+            if (!haveModuleInf) {
+                // add the module-inf directory
+                e = new ZipEntry(JamToolUtils.getModuleInfDir());
+                e.setTime(System.currentTimeMillis());
+                e.setSize(0);
+                e.setCrc(0);
+                zos.putNextEntry(e);
+            }
+            // add the metadata now
+            e = new ZipEntry(JamUtils.MODULE_INF_METADATA);
+            e.setTime(System.currentTimeMillis());
+            if (flag0) {
+                crc32Stream(e, metadata.getInputStream());
+            }
+            zos.putNextEntry(e);
+            metadata.writeTo(zos);
+            zos.closeEntry();
+        }
     }
 
     /*
      * update an existing jar file.
      */
-    boolean update(InputStream in, OutputStream out,
-                InputStream newManifest) throws IOException
+    boolean update(InputStream in, OutputStream out, InputStream newManifest)
+            throws IOException, ModuleParsingException
     {
         Hashtable t = filesTable;
         Vector v = this.v;
@@ -476,6 +593,7 @@ class Main {
         byte[] buf = new byte[1024];
         int n = 0;
         boolean updateOk = true;
+        boolean haveModuleInf = false;
 
         if (t.containsKey(INDEX)) {
             addIndex((JarIndex)t.get(INDEX), zos);
@@ -484,10 +602,11 @@ class Main {
         // put the old entries first, replace if necessary
         while ((e = zis.getNextEntry()) != null) {
             String name = e.getName();
+            if (!haveModuleInf)
+                haveModuleInf = JamToolUtils.isModuleInfDirEntry(name);
 
             boolean isManifestEntry = name.toUpperCase(
-                                            java.util.Locale.ENGLISH).
-                                        equals(MANIFEST);
+                        java.util.Locale.ROOT).equals(MANIFEST);
             if ((name.toUpperCase().equals(INDEX)
                     && t.containsKey(INDEX))
                     || (Mflag && isManifestEntry)) {
@@ -513,6 +632,9 @@ class Main {
                     old.read(newManifest);
                 }
                 updateManifest(old, zos);
+            } else if (jamSupport && JamToolUtils.isModuleInfMetaData(name)) {
+                // skip metadata, add it later
+                continue;
             } else {
                 if (!t.containsKey(name)) { // copy the old stuff
 
@@ -558,11 +680,11 @@ class Main {
                 updateManifest(new Manifest(), zos);
             }
         }
+        addMetadata(zos, false, true, haveModuleInf);
         zis.close();
         zos.close();
         return updateOk;
     }
-
 
     private void addIndex(JarIndex index, ZipOutputStream zos)
         throws IOException
@@ -606,7 +728,6 @@ class Main {
             output(getMsg("out.update.manifest"));
         }
     }
-
 
     private String entryName(String name) {
         name = name.replace(File.separatorChar, '/');
@@ -666,7 +787,8 @@ class Main {
     /*
      * Adds a new file entry to the ZIP output stream.
      */
-    void addFile(ZipOutputStream zos, File file) throws IOException {
+    void addFile(ZipOutputStream zos, File file)
+            throws IOException, ModuleParsingException {
         String name = file.getPath();
         boolean isDir = file.isDirectory();
 
@@ -711,6 +833,11 @@ class Main {
                 zos.write(buf, 0, len);
             }
             is.close();
+            if (metadata != null &&
+                    (file.getName().endsWith(".class") ||
+                     file.getName().endsWith(".jar"))) {
+                metadata.analyzeClass(file);
+            }
         }
         zos.closeEntry();
         /* report how much compression occurred. */
@@ -749,21 +876,26 @@ class Main {
      */
     private void crc32File(ZipEntry e, File f) throws IOException {
         InputStream is = new BufferedInputStream(new FileInputStream(f));
+        long nread = crc32Stream(e, is);
+        long len = f.length();
+        if (nread != len) {
+            throw new JarException(formatMsg(
+                    "error.incorrect.length", f.getPath()));
+        }
+    }
+
+    private long crc32Stream(ZipEntry e, InputStream is) throws IOException {
         byte[] buf = new byte[1024];
         crc32.reset();
         int r = 0;
-        int nread = 0;
-        long len = f.length();
+        long nread = 0;
         while ((r = is.read(buf)) != -1) {
             nread += r;
             crc32.update(buf, 0, r);
         }
         is.close();
-        if (nread != (int) len) {
-            throw new JarException(formatMsg(
-                        "error.incorrect.length", f.getPath()));
-        }
         e.setCrc(crc32.getValue());
+        return nread;
     }
 
     /*
@@ -902,7 +1034,8 @@ class Main {
      * Output the class index table to the INDEX.LIST file of the
      * root jar file.
      */
-    void dumpIndex(String rootjar, JarIndex index) throws IOException {
+    void dumpIndex(String rootjar, JarIndex index) throws IOException,
+            ModuleParsingException {
         filesTable.put(INDEX, index);
         File scratchFile = File.createTempFile("scratch", null, new File("."));
         File jarFile = new File(rootjar);
@@ -963,7 +1096,8 @@ class Main {
     /**
      * Generate class index file for the specified root jar file.
      */
-    void genIndex(String rootjar, String[] files) throws IOException {
+    void genIndex(String rootjar, String[] files)
+            throws IOException, ModuleParsingException {
         Vector jars = getJarPath(rootjar);
         int njars = jars.size();
         String[] jarfiles;
@@ -1044,7 +1178,6 @@ class Main {
         System.exit(jartool.run(args) ? 0 : 1);
     }
 }
-
 /*
  * an OutputStream that doesn't send its output anywhere, (but could).
  * It's here to find the CRC32 of a manifest, necessary for STORED only

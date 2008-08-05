@@ -60,34 +60,24 @@ public final class JamUtils {
 
     public static final String MODULE_METADATA = "MODULE.METADATA";
 
+    // for Jar's sake slash is / not File.separaror
     public static final String MODULE_INF_METADATA = MODULE_INF + "/" + MODULE_METADATA;
-
+    public static final String MODULE_INFO_CLASS = "module-info.class";
+    public static final String MODULE_INFO_JAVA = "module-info.java";
     private static File tempDirectory = null;
 
     static {
         // Determines the temp directory.
+        File tempFile = null;
         try {
-            File tempFile = File.createTempFile("temp-directory-test-", ".tmp");
+            tempFile = File.createTempFile("temp-directory-test-", ".tmp");
             tempDirectory = tempFile.getParentFile();
-            tempFile.deleteOnExit();
+        } catch (IOException ioe) {
+            if (DEBUG) {
+                ioe.printStackTrace();
+            }
+        } finally {
             tempFile.delete();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private JamUtils() {
-    }
-
-    public static File getFile(URL url) throws IOException {
-        if (!url.getProtocol().equals("file")) {
-            throw new IOException("Not a file URL: " + url);
-        }
-
-        try {
-            return new File(url.toURI());
-        } catch (URISyntaxException urse) {
-            throw new IOException("URI parsing error: " + url);
         }
     }
 
@@ -121,15 +111,50 @@ public final class JamUtils {
         }
     };
 
-
-    public static File createTempDir() throws IOException {
-        File rc = File.createTempFile("jam-" + System.currentTimeMillis(), ".tmp");
-        rc.deleteOnExit();
-        rc.delete();
-        return rc.getParentFile();
+    // All static
+    private JamUtils() {
     }
 
-    public static File getTempDir() {
+    public static File getFile(URL url) throws IOException {
+        if (!url.getProtocol().equals("file")) {
+            throw new IOException("Not a file URL: " + url);
+        }
+
+        try {
+            return new File(url.toURI());
+        } catch (URISyntaxException urse) {
+            throw new IOException("URI parsing error: " + url);
+        }
+    }
+
+    /**
+     * Creates a temporary  directory for jam/modules use, this is of the form
+     * /var/tmp/jam-uniqid.tmp, this can be used as a scratch
+     * directory and deleted after use.
+     * @return a File representing  the temporary directory
+     * @throws java.io.IOException
+     */
+    public static File createTempDir() throws IOException {
+        File rc = new File(getTempDir(),
+                "jam-" + System.currentTimeMillis() + ".tmp");
+        return rc.mkdirs() ? rc : null;
+    }
+
+    /**
+     * Returns system temporary directory such as /var/tmp on Unix,
+     * and whatever the temp directory is on Windows.
+     * @return the File representing the system temporary directory.
+     * @throws java.io.IOException
+     */
+    public static File getTempDir() throws IOException {
+        // initialized in the static constructor for whatever reason that fails
+        // simply retry the operation.
+        if (tempDirectory == null) {
+            File rc = File.createTempFile("jam-" + System.currentTimeMillis(), ".tmp");
+            // cache it for future use.
+            tempDirectory = rc.getParentFile().getCanonicalFile();
+            rc.delete();
+        }
         return tempDirectory;
     }
 
@@ -211,7 +236,6 @@ public final class JamUtils {
         close(os);
     }
 
-
     /**
      * Unpacks data from {@code is} that is in .pack.gz form, and writes it
      * into a file {@code jamFile}.
@@ -263,9 +287,11 @@ public final class JamUtils {
 
     /**
      * Recursively delete the given {@code dir} and all its contents.
+     * @param dir
      * @return true if all deletions were successful; false if any were
      * unsuccessful (all recursive deletions are attempted regardless of any
      * failures).
+     * @throws java.io.IOException
      */
     public static boolean recursiveDelete(File dir) throws IOException {
         boolean rc = true;
@@ -302,7 +328,7 @@ public final class JamUtils {
      * @throws IOException if an I/O exception has occurred.
      */
     public static byte[] getMetadataBytes(JarFile jamFile) throws IOException {
-        JarEntry je = jamFile.getJarEntry("MODULE-INF/MODULE.METADATA");
+        JarEntry je = jamFile.getJarEntry(MODULE_INF_METADATA);
         if (je == null) {
             throw new IOException(
                 jamFile + " does not contain MODULE-INF/MODULE.METADATA");

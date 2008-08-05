@@ -23,6 +23,7 @@
 
 /**
  * @test
+ * @compile -XDignore.symbol.file UpdateManifest.java
  * @bug 6434207 6442687
  * @summary Ensure that jar ufm actually updates the
  * existing jar file's manifest with contents of the

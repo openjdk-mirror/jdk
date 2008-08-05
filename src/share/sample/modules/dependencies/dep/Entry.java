@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,6 +21,8 @@
  * have any questions.
  */
 
+module dep;
+
 package dep;
 
 import hello.Main;
@@ -28,24 +30,6 @@ import hello.Main;
 /**
  * Main class of the "dep" module, which has a dependency on the "hello"
  * module.
- *
- * To create the JAM file:
- * % cd sample/modules/depedencies
- * % javac -sourcepath ../hello-world dep/*.java
- * % jam cfs dep.jam dep dep/*.class
- *
- * The sample also includes pre-built files for a URLRepository in the
- * "urlrepository" directory. It can be used to launch the module either
- * locally or directly from a remote web server, for example using
- * % java -repository http://openjdk.java.net/projects/modules/samplerepo/ -module dep
- *
- * This causes the module and its dependencies to be downloaded and executed.
- * Note that the module system automatically determines from the information
- * declared in the module info file that the "hello" module is a dependency
- * and downloads and initializes it as well.
- *
- * (Note: running with a security manager is not yet supported. Execute
- *  JAM files downloaded from remote servers at your own risk)
  */
 public class Entry {
 
@@ -57,5 +41,4 @@ public class Entry {
     public static void main(String[] args) {
         new Entry().run(args);
     }
-
 }

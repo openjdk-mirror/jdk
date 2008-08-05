@@ -37,6 +37,7 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import sun.module.JamUtils;
 import sun.module.tools.Jam;
+import sun.module.tools.util.JamToolUtils;
 
 public class Pack200Test {
     private final static String jamName = "tmp.hello.jam";
@@ -55,35 +56,35 @@ public class Pack200Test {
 
         try {
             // Compile the source files
-            File modSrcFile = new File(srcDir, moduleName + File.separator + "module_info.java");
-            File classSrcFile = new File(srcDir, moduleName + File.separator + "Main.java");
+            File modSrcFile = new File(srcDir, moduleName +
+                    File.separator + JamUtils.MODULE_INFO_JAVA);
+            File classSrcFile = new File(srcDir, moduleName +
+                    File.separator + "Main.java");
             JamBuilder.compileFile(modSrcFile, scratchDir);
             JamBuilder.compileFile(classSrcFile, scratchDir);
 
             // Create a pack200-gzipped jam file from the module-info and
             // the classes. The command is equivalent to:
             //
-            //    jam cfsS {test.scratch}/hello.jam.pack.gz hello {test.scratch} \
+            //    jam cf {test.scratch}/hello.jam.pack.gz \
             //             -C {test.scratch} hello/Main.class \
-            //             -C {test.scratch} hello/module_info.class
+            //             -C {test.scratch} hello/module-info.class
             //
             List<String> argList = new ArrayList<String>();
             argList = new ArrayList<String>();
-            argList.add("cfsS");
+            argList.add("cf");
             argList.add(new File(scratchDir, packgzName).getCanonicalPath());
-            argList.add(moduleName);
-            argList.add(scratchDir.getCanonicalPath());
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
             argList.add(moduleName + File.separator + "Main.class");
             argList.add("-C");
             argList.add(scratchDir.getCanonicalPath());
-            argList.add(moduleName + File.separator + "module_info.class");
+            argList.add(moduleName + File.separator + JamUtils.MODULE_INFO_CLASS);
 
             String jamArgs[] = new String[argList.size()];
             jamArgs = argList.toArray(jamArgs);
 
-            Jam jamTool = new Jam(System.out, System.err, "jam");
+            Jam jamTool = new Jam(System.out, System.err, "Jammer");
             if (!jamTool.run(jamArgs)) {
                 fail("Could not create jam.pack.gz file.");
             }
@@ -93,9 +94,12 @@ public class Pack200Test {
             JarOutputStream os = null;
             try {
                 is = new GZIPInputStream(new BufferedInputStream(
-                                            new FileInputStream(new File(scratchDir, packgzName))), 8192);
+                                            new FileInputStream(
+                                            new File(scratchDir, packgzName))),
+                                            8192);
                 os = new JarOutputStream(new BufferedOutputStream(
-                                            new FileOutputStream(new File(scratchDir, jamName))));
+                                            new FileOutputStream(
+                                            new File(scratchDir, jamName))));
                 Pack200.Unpacker unpacker = Pack200.newUnpacker();
                 unpacker.unpack(is, os);
             } catch (IOException e) {
@@ -114,10 +118,10 @@ public class Pack200Test {
                 String name = je.getName();
                 if ((name.equals("META-INF/")
                     || name.equals("META-INF/MANIFEST.MF")
-                    || name.equals("MODULE-INF/")
-                    || name.equals("MODULE-INF/MODULE.METADATA")
-                    || name.equals("hello/Main.class")
-                    || name.equals("hello/module_info.class")) == false) {
+                    || JamToolUtils.isModuleInfDirEntry(name)
+                    || JamToolUtils.isModuleInfMetaData(name)
+                    || JamToolUtils.isModuleInfoClassEntry(name)
+                    || name.equals("hello/Main.class")) == false) {
                     fail("Unexpected entry: " + name);
                 }
                 if (je.isDirectory() == false && je.getSize() <= 0) {

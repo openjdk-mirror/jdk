@@ -30,16 +30,25 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.security.AccessController;
 import java.text.MessageFormat;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 import sun.security.action.GetPropertyAction;
 
 /**
  * Provides a means for tools to emit messages.
  */
-class Messenger {
+public class Messenger {
     public static final boolean DEBUG;
 
+    private static ResourceBundle rsrc;
     static {
-        DEBUG = (AccessController.doPrivileged(new GetPropertyAction("sun.module.tools.debug")) != null);
+         DEBUG = (AccessController.doPrivileged(new GetPropertyAction("sun.module.tools.debug")) != null);
+        try {
+            rsrc = ResourceBundle.getBundle("sun.module.tools.resources.messenger");
+        } catch (MissingResourceException e) {
+            throw new Error("Fatal: Resource for jam is missing");
+        }
+
     }
 
     protected final String program;
@@ -53,22 +62,31 @@ class Messenger {
         this.err = err;
         this.reader = reader;
     }
-
-    String getMsg(String key) {
-        return key;
-        // XXX i18n
-//      try {
-//          return (rsrc.getString(key));
-//      } catch (MissingResourceException e) {
-//          throw new Error("Error in message file");
-//      }
+    /**
+     * Fetches the approriate message from its resource bundle
+     * @param key a string specifying the key
+     * @return the message
+     */
+    public static String getMsg(String key) {
+        //return key;
+        try {
+            return (rsrc.getString(key));
+        } catch (MissingResourceException e) {
+            return "missing resource bundle: key = \"" + key + "\", " +
+           "arguments = \"{0}\", \"{1}\", \"{2}...\"";
+        }
     }
 
-    String formatMsg(String key, String arg) {
+    /**
+     * Gets a formatted message given a key and arguments
+     * @param key a String denoting the key
+     * @param margs a set of arguments
+     * @return the desired formatted message
+     */
+    public static String formatMsg(
+            String key, String... margs) {
         String msg = getMsg(key);
-        String[] args = new String[1];
-        args[0] = arg;
-        return MessageFormat.format(msg, (Object[]) args);
+        return MessageFormat.format(msg, (Object[]) margs);
     }
 
     /*

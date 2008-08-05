@@ -167,17 +167,7 @@ public class LegacyJarTest extends LibraryTest {
         println("=legacyJarDir: " + legacyJarDir.getCanonicalPath());
         check(legacyJarDir.isDirectory() || legacyJarDir.mkdirs());
         JamUtils.copyFile(jarFile, new File(legacyJarDir, "hello.jar"));
-        String[] jarArgs = new String[] {
-            "uf",
-            jamFile.getCanonicalPath(),
-            "-C",
-            jarDir.getCanonicalPath(),
-            jarPath
-        };
-        sun.tools.jar.Main jartool =
-            new sun.tools.jar.Main(System.out, System.err, "LegacyJarTest");
-        jartool.run(jarArgs);
-
+        updateJam("LegacyJarTest", jamFile, jarDir, jarPath);
         ModuleArchiveInfo mai = repo.install(jamFile.toURI());
         check(mai != null);
         try {

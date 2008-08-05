@@ -23,6 +23,7 @@
 
 /**
  * @test
+ * @compile -XDignore.symbol.file JarEntryTime.java
  * @bug 4225317
  * @summary Check extracted files have date as per those in the .jar file
  */

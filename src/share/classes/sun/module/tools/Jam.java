@@ -30,28 +30,26 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.jar.JarInputStream;
 import java.util.jar.Pack200;
 import java.util.jar.Pack200.Packer;
 import java.util.zip.GZIPOutputStream;
-import java.text.MessageFormat;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import sun.module.JamUtils;
+import sun.module.tools.util.JamModuleMetadata;
+import sun.module.ModuleParsingException;
+import sun.module.tools.util.JamToolUtils;
 import sun.tools.jar.Main;
 import sun.tools.jar.CommandLine;
 
 /**
  * Prototype of the Jam packaging tool.
- *
- * So far, the only feature of 'jam' not supported by the 'jar' tool is the
- * copying of the compiled module-info file to MODULE-INF/MODULE.METADATA.
- * This will likely change in the full implementation.
  *
  * This prototype implementation consists of some command line parsing code
  * (copied from jar), plus a bit of code to deal with the module-info file
@@ -65,9 +63,10 @@ public final class Jam {
     private final String program;
 
     private String moduleName;
-    private File moduleInfoDir;
     private String fname, tfname;
     private List<String> jarArgs;
+    private boolean printModuleInfo;
+    private boolean verbose;
 
     public Jam(PrintStream out, PrintStream err, String program) {
         this.out = out;
@@ -78,12 +77,12 @@ public final class Jam {
     /*
      * Starts main program with the specified arguments.
      */
-    public synchronized boolean run(String args[]) {
-
-        // initialize instance variables - to avoid side
-        // effects if run is executed more than once.
+    public synchronized boolean run(String...args) {
+        /*
+         * initialize instance variables - to avoid side
+         * effects if run is executed more than once.
+         */
         moduleName = null;
-        moduleInfoDir = null;
         fname = null;
         tfname = null;
         jarArgs = null;
@@ -91,89 +90,35 @@ public final class Jam {
         if (!parseArgs(args)) {
             return false;
         }
-        // generate module filename if not specified
-        File moduleInfoFile = null;
-        if (moduleInfoDir == null) {
-            moduleInfoFile = new File(moduleName.replace('.', File.separatorChar)
-                                  + File.separatorChar + "module_info.class");
-        }
-        else {
-            moduleInfoFile = new File(moduleInfoDir,
-                                    moduleName.replace('.', File.separatorChar)
-                                    + File.separatorChar + "module_info.class");
-        }
-
-        // verify the specified module exists
-        if (moduleInfoFile.isFile() == false)  {
-            error("Module not found: " + moduleInfoFile);
-            return false;
-        }
-        // copy module-info file to MODULE-INF/MODULE.METADATA
-        InputStream fin = null;
-        OutputStream fout = null;
-        File tmpDir;
-        try {
-            // create temp directory
-            tmpDir = new File(JamUtils.createTempDir(),
-                              "jamtmp-" + System.currentTimeMillis());
-            tmpDir.mkdirs();
-            final File deleteThisDir = tmpDir;
-            Runtime.getRuntime().addShutdownHook(
-                Executors.defaultThreadFactory().newThread(
-                    new Runnable() {
-                        public void run() {
-                            try {
-                                JamUtils.recursiveDelete(deleteThisDir);
-                            } catch (IOException ex) {
-                                // XXX log this exception
-                            }
-                        }
-                    }));
-
-            // copy module-info file into MODULE-INF/MODULE.METADATA
-            fin = new FileInputStream(moduleInfoFile);
-            File moduleInfoDir = new File(tmpDir, "MODULE-INF");
-            moduleInfoDir.mkdirs();
-            moduleInfoDir.deleteOnExit();
-            File metadataFile = new File(moduleInfoDir, "MODULE.METADATA");
-            fout = new FileOutputStream(metadataFile);
-            metadataFile.deleteOnExit();
-            byte[] buffer = new byte[2048];
-            while (true) {
-                int n = fin.read(buffer);
-                if (n < 0) {
-                    break;
+        if (printModuleInfo) {
+            try {
+                if (new File(fname).exists()) {
+                    output(JamModuleMetadata.printDiagnostics(fname, verbose));
+                    return true;
                 }
-                fout.write(buffer, 0, n);
+                error(Messenger.formatMsg("error.file.notfound", fname));
+                return false;
+            } catch (IOException ex) {
+                fatalError(ex);
+            } catch (ModuleParsingException ex) {
+                fatalError(ex);
             }
-
-            // if the output file should be pack200-gzipped, generate the JAR
-            // as a temp file.
-            if (fname.endsWith(".jam.pack.gz")) {
-                File tmpOutputFile = File.createTempFile("output", ".jam", tmpDir);
-                tmpOutputFile.deleteOnExit();
-                tfname = tmpOutputFile.getCanonicalPath();
-
-                // replaces output file in jar tool's arguments
-                jarArgs.remove(1);
-                jarArgs.add(1, tfname);
-            }
-        } catch (IOException e) {
-            fatalError(e);
-            return false;
-        } finally {
-            JamUtils.close(fin);
-            JamUtils.close(fout);
         }
         // construct final arguments to JAR
-        jarArgs.add("-C");
-        jarArgs.add(tmpDir.getAbsolutePath());
-        jarArgs.add("MODULE-INF");
-        String[] argsArray = jarArgs.toArray(new String[0]);
-
+        String[] argsArray = jarArgs.toArray(new String[jarArgs.size()]);
+        JamModuleMetadata metadata = null;
+        if (moduleName != null) {
+            try {
+                metadata = new JamModuleMetadata(createMetadata());
+            } catch (IOException ex) {
+                fatalError(ex);
+            } catch (ModuleParsingException ex) {
+                fatalError(ex);
+            }
+        }
         // call JAR
         Main jar = new Main(out, err, program);
-        if (jar.run(argsArray) == false) {
+        if (jar.jamRun(metadata, argsArray) == false) {
             return false;
         }
 
@@ -184,9 +129,10 @@ public final class Jam {
         // otherwise, compress output file with pack200-gzip
         JarInputStream is = null;
         OutputStream os = null;
+        FileInputStream fis = null;
         try {
-            is = new JarInputStream(new BufferedInputStream(
-                                        new FileInputStream(tfname)));
+            fis = new FileInputStream(tfname);
+            is = new JarInputStream(new BufferedInputStream(fis));
             os = new GZIPOutputStream(new FileOutputStream(fname), 8192);
             Packer packer = Pack200.newPacker();
             packer.pack(is, os);
@@ -195,9 +141,10 @@ public final class Jam {
             return false;
         } finally {
             JamUtils.close(is);
+            JamUtils.close(fis);
             JamUtils.close(os);
+            new File(tfname).delete();
         }
-
         return true;
     }
 
@@ -209,15 +156,17 @@ public final class Jam {
         try {
             args = CommandLine.parse(args);
         } catch (FileNotFoundException e) {
-            fatalError(formatMsg("error.cant.open", e.getMessage()));
+            fatalError(Messenger.formatMsg("error.cant.open", e.getMessage()));
             return false;
         } catch (IOException e) {
             fatalError(e);
             return false;
         }
-        // Parse the args to make sure that the module is specified and only
-        // 'jar' options supported by 'jam' are listed. Also, build the
-        // arguments to pass to 'jar' by filtering out the module arguments.
+        /*
+         * Parse the args to make sure that the module is specified and only
+         * 'jar' options supported by 'jam' are listed. Also, build the
+         * arguments to pass to 'jar' by filtering out the module arguments.
+         */
         jarArgs = new ArrayList<String>();
         StringBuilder jarFlags = new StringBuilder();
         int count = 1;
@@ -226,131 +175,127 @@ public final class Jam {
             if (flags.startsWith("-")) {
                 flags = flags.substring(1);
             }
-            boolean cflag = false;
             for (int i = 0; i < flags.length(); i++) {
                 char ch = flags.charAt(i);
                 switch (ch) {
-                case 'c':
-                    break;
-                case 'v':
-                    // ignore here, passed to jar
-                    break;
-                case 'f':
-                    fname = args[count++];
-                    break;
-                case 's':
-                    moduleName = args[count++];
-                    ch = '\0';
-                    break;
-                case 'S':
-                    moduleInfoDir = new File(args[count++]);
-                    ch = '\0';
-                    break;
-                case '0':
-                    // ignore here, passed to jar
-                    break;
-                default:
-                    error(formatMsg("error.illegal.option",
+                    case 'p':
+                        printModuleInfo = true;
+                        break;
+                    case 'x':
+                    case 't':
+                    case 'c':
+                        break;
+                    case 'v':
+                        verbose = true;
+                        break;
+                    case 'f':
+                        fname = args[count++];
+                        break;
+                    case '0':
+                        // ignore here, passed to jar
+                        break;
+                    default:
+                        error(Messenger.formatMsg("error.invalid.option",
                                 String.valueOf(ch)));
-                    usageError();
-                    return false;
+                        usageError();
+                        return false;
                 }
-                if (ch != '\0') {
+                if (ch != 'p') {
                     jarFlags.append(ch);
                 }
+            }
+
+            // the other args needed for jam
+            for( ; count < args.length ; count++) {
+                String opt = args[count];
+                if (opt.startsWith("-N")) {
+                   moduleName = checkValue("module", args[++count]);
+                   continue;
+                }
+                jarArgs.add(opt);
             }
         } catch (ArrayIndexOutOfBoundsException e) {
             usageError();
             return false;
         }
-        if (fname == null || moduleName == null) {
+        if (printModuleInfo == true && fname != null) {
+            return true;
+        }
+
+        if (moduleName != null) {
+            if (fname != null) {
+                error(Messenger.formatMsg("error.module.filename.conflict"));
+                usageError();
+                return false;
+            }
+            jarFlags = jarFlags.append("f");
+            fname = moduleName + ".jam";
+        } else if (fname == null) {
             usageError();
             return false;
         }
-        // module name must not contain file separator
-        if (moduleName.indexOf('/') != -1 || moduleName.indexOf('\\') != -1) {
-            error(program + ": module name must not contain \\ or / character.");
-            return false;
-        }
+
         // checks file extensions
         if ((fname.endsWith(".jar")
             || fname.endsWith(".jam")
             || fname.endsWith(".jam.pack.gz")) == false) {
-            error(program + ": jam filename must end with .jar, .jam, or .jam.pack.gz extension.");
+            error(Messenger.formatMsg("error.file.suffix"));
             return false;
         }
 
-        jarArgs.add(jarFlags.toString());
-        jarArgs.add(fname);
+        jarArgs.add(0,jarFlags.toString());
+        if (fname.endsWith(".jam.pack.gz")) {
+            File tmpFile = null;
+            try {
+                File baseDir = new File(fname).getCanonicalFile().getParentFile();
+                tmpFile = File.createTempFile(program, ".tmp", baseDir);
+                tfname = tmpFile.getCanonicalPath();
+            } catch (IOException ex) {
+                fatalError(Messenger.formatMsg("error.file.create", tmpFile.getAbsolutePath()));
+                return false;
+            }
+            jarArgs.add(1, tfname);
+        } else {
+            jarArgs.add(1, fname);
+        }
         for (int i = count; i < args.length; i++) {
             jarArgs.add(args[i]);
         }
         return true;
     }
 
-    private String getMsg(String key) {
-        return key;
-//      try {
-//          return (rsrc.getString(key));
-//      } catch (MissingResourceException e) {
-//          throw new Error("Error in message file");
-//      }
+    private String checkValue(String value, String in) {
+        if (in.startsWith("-")) {
+            error(Messenger.formatMsg("error.invalid.value", value));
+            usageError();
+        }
+        return in;
     }
-
-    private String formatMsg(String key, String arg) {
-        String msg = getMsg(key);
-        String[] args = new String[1];
-        args[0] = arg;
-        return MessageFormat.format(msg, (Object[]) args);
-    }
-
     /*
      * Print usage message.
      */
     private void usageError() {
-        error("Usage: jam cfs[v0S] jam-file module-name [module-info-dir] [-C dir] files ...");
-        error("Options:");
-
-        error("    -c  create new module archive");
-        error("    -v  generate verbose output on standard output");
-        error("    -0  store only; use no ZIP compression");
-        error("    -f  specify module archive file name");
-        error("    -s  specify module name");
-        error("    -S  specify where to find module-info file");
-        error("    -C  change to the specified directory and include the following file");
-        error("If any file is a directory then it is processed recursively.");
-        error("");
-        error("Example 1: to archive the hello module and its class files into a module");
-        error("           archive called 'hello.jam':");
-        error("       jam cvfs hello.jam hello hello/*.class");
-        error("");
-        error("Example 2: to archive the hello module, its class files, and all files in");
-        error("           the foo/ directory into a module archive called 'hello.jam':");
-        error("       jam cvfs hello.jam hello hello/*.class -C foo/ .");
-        error("");
-        error("Example 3: to find the module-info file from the foo/ directory and to");
-        error("           archive the hello module and its class files into a module archive");
-        error("           called 'hello.jam':");
-        error("       jam cvfsS hello.jam hello foo/ hello/*.class");
-        error("");
-        error("Example 4: to archive the hello module and its class files into a module");
-        error("           archive compressed with pack200-gzip called 'hello.jam.pack.gz':");
-        error("       jam cvfs hello.jam.pack.gz hello hello/*.class");
+        error(program + ":" + Messenger.formatMsg("error.usage",
+                JamUtils.MODULE_INF_METADATA, JamUtils.MODULE_INFO_CLASS));
+        System.exit(1);
     }
 
     /*
      * A fatal exception has been caught.  No recovery possible
      */
     private void fatalError(Exception e) {
-        e.printStackTrace();
+        error(program + ":" + Messenger.formatMsg("error.fatal.0"));
+//        e.printStackTrace(); // for debugging, FIXME
+        System.exit(1);
     }
 
     /*
      * A fatal condition has been detected; message is "s".
      * No recovery possible
      */
-    private void fatalError(String s) {
-        error(program + ": " + s);
+    private void fatalError(String msg) {
+        error(program + ":" + msg);
+        System.exit(1);
     }
 
     /**
@@ -367,9 +312,64 @@ public final class Jam {
         err.println(s);
     }
 
+    /**
+     * creates a basic metadata file with the given parameters
+     * @param module, a module name
+     * @return the metadata as a byte array
+     * @throws java.io.IOException
+     */
+    private byte[] createMetadata() throws IOException {
+        File tmpDir = null;
+        FileInputStream fis = null;
+        PrintStream mstream = null;
+        byte[] oarray = null;
+        try {
+            StringBuilder s = new StringBuilder();
+            /*
+             * note at least one annotation is required for the generation of a
+             * class file. So insert only the absolutely required annotation.
+             */
+            s = s.append("@ImportModules({\n");
+            s = s.append("@ImportModule(name=\"java.se\", version=\"1.7+\")\n");
+            s = s.append("})\n");
+            s = s.append("module " + moduleName + ";\n");
+
+            tmpDir = JamUtils.createTempDir();
+            File javaFile = new File(tmpDir, JamUtils.MODULE_INFO_JAVA);
+            mstream = new PrintStream(javaFile);
+            mstream.print(s.toString());
+            mstream.close();
+            String[] args = {"-source", "7", javaFile.getAbsolutePath()};
+            /*
+             * note we need to use JavaCompiler as this class is in jte jre,
+             * do not use com.sun.tools.javac.Main.compile(..) entry poing, then
+             * all the  classloading at run time will be a-ok.
+             */
+            JavaCompiler  compiler = ToolProvider.getSystemJavaCompiler();
+            int rc = compiler.run(null, null, null, args);
+            if (rc != 0) {
+                throw new IOException(Messenger.formatMsg("error.file.create",
+                        "metadata file"));
+            }
+
+            fis = new FileInputStream(new File(tmpDir, JamUtils.MODULE_INFO_CLASS));
+            oarray = JamUtils.getInputStreamAsBytes(fis);
+            return  oarray;
+        } finally {
+            if (mstream != null) {
+                mstream.close();
+            }
+            if (fis != null) {
+                fis.close();
+            }
+            if (tmpDir != null) {
+                JamUtils.recursiveDelete(tmpDir);
+            }
+        }
+    }
+
     public static void main(String[] args) {
         Jam jam = new Jam(System.out, System.err, "jam");
         System.exit(jam.run(args) ? 0 : 1);
     }
-
 }

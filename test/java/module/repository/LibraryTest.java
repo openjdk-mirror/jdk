@@ -129,6 +129,30 @@ public abstract class LibraryTest {
         check(answer.equals(expectedResult));
     }
 
+    /*
+     * FIXME, TODO, jam tool does not support update (u) option and the
+     * jar tool will not create or update a jam, the workaround for now
+     * is to rename the jam file as a jar file to  get these tests to
+     * work, until the jam tool supports update.
+     */
+    void updateJam(String testName, File jamFile, File changeDir, String dirname) throws IOException {
+        String jarName = jamFile.getAbsolutePath().replace(".jam", ".jar");
+        File jarFile = new File(jarName);
+        jamFile.renameTo(jarFile);
+
+        String[] jarArgs = new String[] {
+            "uf",
+            jarFile.getCanonicalPath(),
+            "-C",
+            changeDir.getCanonicalPath(),
+            dirname
+        };
+        sun.tools.jar.Main jartool =
+            new sun.tools.jar.Main(System.out, System.err, testName);
+        jartool.run(jarArgs);
+        jarFile.renameTo(jamFile);
+    }
+
     //--------------------- Infrastructure ---------------------------
     static volatile int passed = 0, failed = 0;
     static boolean pass() {passed++; return true;}

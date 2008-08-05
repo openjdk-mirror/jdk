@@ -60,6 +60,9 @@ SYSTEM_EXTENSION_DIR = $(LIBDIR)/module/ext
 #
 REPOSITORY_METADATA_XML = $(PKGDIR)/RepositoryMetadata.xml
 
+LOCALE_SET_DEFINITION = jdk
+NEW_RESOURCE_BUNDLES_PROPERTIES = sun/module/tools/resources/messenger.properties
+
 #
 # Rules
 #

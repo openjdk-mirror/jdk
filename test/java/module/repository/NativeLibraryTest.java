@@ -210,16 +210,7 @@ public class NativeLibraryTest extends LibraryTest {
         println("=jamLibDir: " + jamLibDir);
         check(jamLibDir.isDirectory() || jamLibDir.mkdirs());
         JamUtils.copyFile(nativeLibFile, new File(jamLibDir, nativeLibFile.getName()));
-        String[] jarArgs = new String[] {
-            "uf",
-            jamFile.getCanonicalPath(),
-            "-C",
-            nativeLibDir.getCanonicalPath(),
-            libPath
-        };
-        sun.tools.jar.Main jartool =
-            new sun.tools.jar.Main(System.out, System.err, "NativeLibraryTest");
-        jartool.run(jarArgs);
+        updateJam("NativeLibraryTest", jamFile, nativeLibDir, libPath);
     }
 
     File addTestcaseToJam(File jamFile, File nativeLibFile) throws Exception {
@@ -234,16 +225,7 @@ public class NativeLibraryTest extends LibraryTest {
         File jamClassDir = new File(jamFile.getParentFile(), getPkgName());
         println("=jamClassDir: " + jamClassDir.getCanonicalPath());
         check(jamClassDir.isDirectory() || jamClassDir.mkdirs());
-        String jarArgs[] = new String[] {
-            "uf",
-            jamFile.getCanonicalPath(),
-            "-C",
-            pkgDir.getCanonicalPath(),
-            testcase.getParentFile().getName()
-        };
-        sun.tools.jar.Main jartool =
-            new sun.tools.jar.Main(System.out, System.err, "NativeLibraryTest");
-        jartool.run(jarArgs);
+        updateJam("NativeLibraryTest", jamFile, pkgDir, testcase.getParentFile().getName());
         return testcaseDir;
     }
 
