@@ -71,23 +71,6 @@ JVM_GetInterfaceVersion(void);
 /*************************************************************************
  PART 1: Functions for Native Libraries
  ************************************************************************/
-/*
- * java.lang.Object
- */
-JNIEXPORT jint JNICALL
-JVM_IHashCode(JNIEnv *env, jobject obj);
-
-JNIEXPORT void JNICALL
-JVM_MonitorWait(JNIEnv *env, jobject obj, jlong ms);
-
-JNIEXPORT void JNICALL
-JVM_MonitorNotify(JNIEnv *env, jobject obj);
-
-JNIEXPORT void JNICALL
-JVM_MonitorNotifyAll(JNIEnv *env, jobject obj);
-
-JNIEXPORT jobject JNICALL
-JVM_Clone(JNIEnv *env, jobject obj);
 
 /*
  * java.lang.String
