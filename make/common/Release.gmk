@@ -131,6 +131,9 @@ JRE_IMAGE_THREADIR = $(JRE_IMAGE_DIR)/bin/*/native_threads
 MAINMANIFEST  = $(JDK_TOPDIR)/make/tools/manifest.mf
 BEANMANIFEST  = $(JDK_TOPDIR)/make/javax/swing/beaninfo/manifest
 
+# see CR: 6733231 & 6733236
+MODULES = true
+
 #
 # Man pages
 #
@@ -369,7 +372,6 @@ TOOLS = \
 	com/sun/jarsigner	\
 	com/sun/mirror		\
 	com/sun/source          \
-	com/sun/tools/classfile \
 	com/sun/tools/doclets   \
 	com/sun/tools/example/debug/expr \
 	com/sun/tools/example/debug/tty  \
@@ -401,7 +403,11 @@ TOOLS = \
 	sun/tools/jstack        \
 	sun/tools/jinfo         \
 	sun/tools/jmap
-	
+
+ifndef MODULES
+TOOLS += com/sun/tools/classfile
+endif
+
 # classes that go into jsse.jar
 JSSE_CLASSES_DIRS = \
 	sun/security/provider/Sun.class \
@@ -563,14 +569,32 @@ $(NOT_RT_JAR_LIST): FRC
 	$(ECHO) "META-INF/services/com.sun.jdi.connect.spi.TransportService" >> $@
 	$(ECHO) "META-INF/services/com.sun.mirror.apt.AnnotationProcessorFactory" >> $@
 	$(ECHO) "META-INF/services/com.sun.tools.xjc.Plugin" >> $@
+ifdef MODULES
+	$(ECHO) "com/sun/tools/apt/" >> $@
+	$(ECHO) "com/sun/tools/attach/" >> $@
+	$(ECHO) "com/sun/tools/corba/" >> $@
+	$(ECHO) "com/sun/tools/doclets/" >> $@
+	$(ECHO) "com/sun/tools/example/" >> $@
+	$(ECHO) "com/sun/tools/extcheck/" >> $@
+	$(ECHO) "com/sun/tools/hat/" >> $@
+	$(ECHO) "com/sun/tools/internal/" >> $@
+	$(ECHO) "com/sun/tools/javac/" >> $@
+	$(ECHO) "com/sun/tools/javadoc/" >> $@
+	$(ECHO) "com/sun/tools/javah/" >> $@
+	$(ECHO) "com/sun/tools/javap/" >> $@
+	$(ECHO) "com/sun/tools/jconsole/" >> $@
+	$(ECHO) "com/sun/tools/jdi/" >> $@
+	$(ECHO) "com/sun/tools/script/" >> $@
+else
 	$(ECHO) "com/sun/tools/" >> $@
+	$(ECHO) "com/sun/tools/classfile/" >> $@
+endif
 	$(ECHO) "sun/jvmstat/" >> $@
 	$(ECHO) "sun/rmi/rmic/" >> $@
 	$(ECHO) "sun/tools/asm/" >> $@
 	$(ECHO) "sun/tools/java/" >> $@
 	$(ECHO) "sun/tools/javac/" >> $@
 	$(ECHO) "sun/tools/javap/" >> $@
-	$(ECHO) "com/sun/tools/classfile/" >> $@
 	$(ECHO) "com/sun/tools/javap/" >> $@
 	$(ECHO) "sun/tools/jconsole/" >> $@
 	$(ECHO) "sun/tools/jps/" >> $@
