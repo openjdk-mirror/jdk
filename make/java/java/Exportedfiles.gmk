@@ -28,7 +28,7 @@
 #
 ifneq ($(PLATFORM), windows)
 FILES_export = \
-    java/lang/Object.java \
+    java/lang/VMObject.java \
     java/lang/Class.java \
     java/lang/Compiler.java \
     java/lang/String.java \
@@ -100,7 +100,7 @@ EXPORTED_inner = \
 
 else # PLATFORM
 FILES_export = \
-    java/lang/Object.java \
+    java/lang/VMObject.java \
     java/lang/Class.java \
     java/lang/Compiler.java \
     java/lang/String.java \

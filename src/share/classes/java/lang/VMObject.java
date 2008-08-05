@@ -1,5 +1,5 @@
 /*
- * Copyright 1994-2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-2006, 2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,29 +23,43 @@
  * have any questions.
  */
 
-/*-
- *      Implementation of class Object
- *
- *      former threadruntime.c, Sun Sep 22 12:09:39 1991
+package java.lang;
+
+/**
+ * VM interface for java.lang.Object.
  */
+final class VMObject {
+   
+    /**
+     * Returns the class of the given object.
+     */
+    static final native Class<?> getClass(Object obj);
 
-#include <stdio.h>
-#include <signal.h>
-#include <limits.h>
+    /**
+     * Returns the hashcode of the given object.
+     */
+    static final native int hashCode(Object obj);
 
-#include "jni.h"
-#include "jni_util.h"
-#include "jvm.h"
+    /**
+     * Returns a clone of the given object.
+     */
+    static final native Object clone(Object obj);
 
-#include "java_lang_VMObject.h"
+    /**
+     * Notifies a single thread waiting on the given object.
+     */
+    static final native void notify(Object obj);
 
-JNIEXPORT jclass JNICALL
-Java_java_lang_VMObject_getClass(JNIEnv *env, jclass cls, jobject this)
-{
-    if (this == NULL) {
-        JNU_ThrowNullPointerException(env, NULL);
-        return 0;
-    } else {
-        return (*env)->GetObjectClass(env, this);
-    }
+    /**
+     * Notifies all threads waiting on the given object.
+     */
+    static final native void notifyAll(Object obj);
+
+    /**
+     * Wait to be notified on the given object for the specified
+     * length of time (0 is indefinitely).
+     */
+    static final native void wait(Object obj, long timeout);
+
+
 }
