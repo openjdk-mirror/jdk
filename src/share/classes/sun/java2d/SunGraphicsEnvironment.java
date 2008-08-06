@@ -77,12 +77,20 @@ import sun.font.NativeFont;
 public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
     implements DisplayChangedListener {
 
+    public static boolean isLinux;
+    public static boolean isSolaris;
+    public static boolean isWindows;
+    public static boolean noType1Font;
     private static Font defaultFont;
     protected static Logger logger = null;
-    
-    // TODO: Refactor the follow 3 fields into FontManager API.
     public static String jreLibDirName;
     public static String jreFontDirName;
+
+    /* loadedAllFontFiles is set to true when all fonts on the font path are
+     * actually opened, validated and registered. This always implies
+     * discoveredAllFonts is true.
+     */
+    private boolean loadedAllFontFiles = false;
 
     public static String eudcFontFileName; /* Initialised only on windows */
 
@@ -104,13 +112,26 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
         java.security.AccessController.doPrivileged(
                                     new java.security.PrivilegedAction() {
             public Object run() {
+                String osName = System.getProperty("os.name");
+                if ("Linux".equals(osName)) {
+                    isLinux = true;
+                } else if ("SunOS".equals(osName)) {
+                    isSolaris = true;
+                } else if ("Windows".equals(osName)) {
+                    isWindows = true;
+                }
+
+                noType1Font = "true".
+                    equals(System.getProperty("sun.java2d.noType1Font"));
+
+
                 /* Register the JRE fonts so that the native platform can
                  * access them. This is used only on Windows so that when
                  * printing the printer driver can access the fonts.
                  */
                 registerJREFontsWithPlatform(jreFontDirName);
 
-                FontManagerFactory.getInstance().getPlatformFontPathFromFontConfig();
+                getPlatformFontPathFromFontConfig();
 
 
                 /* Establish the default font to be used by SG2D etc */
@@ -229,9 +250,16 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
      * one registered by this JRE version in response to
      * requests from this JRE.
      */
-    // TODO: Refactor this into the FontManager API.
     protected void registerJREFontsWithPlatform(String pathName) {
         return;
+    }
+
+    /* Called from FontManager - has Solaris specific implementation */
+    /**
+     * Determines whether the given font is a logical font.
+     */
+    public static boolean isLogicalFont(Font f) {
+        return FontConfiguration.isLogicalFontFamilyName(f.getFamily());
     }
 
     /**
@@ -249,6 +277,30 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
         usableBounds.height -= (insets.top + insets.bottom);
 
         return usableBounds;
+    }
+
+    /**
+     * This method is provided for internal and exclusive use by Swing.
+     * This method should no longer be called, instead directly call
+     * FontManager.fontSupportsDefaultEncoding(Font).
+     * This method will be removed once Swing is updated to no longer
+     * call it.
+     */
+    public static boolean fontSupportsDefaultEncoding(Font font) {
+        return FontManagerFactory.getInstance().fontSupportsDefaultEncoding(font);
+    }
+
+    public static void useAlternateFontforJALocales() {
+        FontManagerFactory.getInstance().useAlternateFontforJALocales();
+    }
+
+    /* If (as we do on X11) need to set a platform font path,
+     * then the needed path may be specified by the platform
+     * specific FontConfiguration class & data file. Such platforms
+     * (ie X11) need to override this method to retrieve this information
+     * into suitable data structures.
+     */
+    protected void getPlatformFontPathFromFontConfig() {
     }
 
     /**
