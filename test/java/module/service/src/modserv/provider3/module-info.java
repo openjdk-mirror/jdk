@@ -21,22 +21,15 @@
  * have any questions.
  */
 
-package cpserv.service;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
-@Services({"cpserv.service.FooService"})
 @ServiceProviders({
-    @ServiceProvider(service="cpserv.service.FooService",
-        providerClass="cpserv.service.FooServiceDefaultProvider")
+    @ServiceProvider(service="modserv.service.CodecSet",
+        providerClass="modserv.provider3.ImplCodecs")
 })
-@ImportModules({
-    @ImportModule(name="java.se.core")
-})
-class module_info {
-    // Export service type
-    exports cpserv$service$FooService;
 
-    // Note that the default service providers are *not* exported.
-}
+// Since the service is defined as version 2.7, attempting to load this module
+// will generate a warning (eventually to be a log message).
+@ImportModules({
+    @ImportModule(name="java.se.core"),
+    @ImportModule(name="modserv.service", version="[1.0, 2.0)")
+})
+module modserv.provider3;

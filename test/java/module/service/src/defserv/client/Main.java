@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module defserv.client;
 package defserv.client;
 
 import java.module.ModuleDefinition;

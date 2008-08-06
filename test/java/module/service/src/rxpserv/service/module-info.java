@@ -21,26 +21,9 @@
  * have any questions.
  */
 
-package cliserv.provider;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
-@ServiceProviders({
-    @ServiceProvider(service="cliserv.service.FooService",
-        providerClass="cliserv.provider.FooService2Provider"),
-    @ServiceProvider(service="cliserv.service.BarService",
-        providerClass="cliserv.provider.BarServiceProvider")
-})
-@Services("BarProvider")
+@Services({"rxpserv.service.FooService"})
 @ImportModules({
-    @ImportModule(name="java.se.core"),
-    @ImportModule(name="cliserv.service") // Import service module defining Foo
+    @ImportModule(name="java.se.core")
 })
-class module_info {
-    // Export service provider type
-    exports cliserv$provider$FooService2Provider;
-
-    // Export service provider type
-    exports cliserv$provider$BarServiceProvider;
-}
+@Version("1.0")
+module rxpserv.service;

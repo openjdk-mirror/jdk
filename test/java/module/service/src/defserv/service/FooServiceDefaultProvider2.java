@@ -21,12 +21,14 @@
  * have any questions.
  */
 
+module defserv.service;
 package defserv.service;
 
 import java.util.ServiceProvider;
 
 /**
  * The default implementation of FooService
+ * FIXME: Fails if this is a module private class.
  */
 @ServiceProvider
 public class FooServiceDefaultProvider2 extends FooService {

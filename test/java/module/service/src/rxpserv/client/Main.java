@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module rxpserv.client;
 package rxpserv.client;
 
 import java.module.ModuleDefinition;

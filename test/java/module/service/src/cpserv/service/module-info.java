@@ -21,23 +21,12 @@
  * have any questions.
  */
 
-package verserv.service;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@Version("1.0")
-@Services({"verserv.service.FooService"})
+@Services({"cpserv.service.FooService"})
 @ServiceProviders({
-    @ServiceProvider(service="verserv.service.FooService",
-        providerClass="verserv.service.FooServiceDefaultProvider")
+    @ServiceProvider(service="cpserv.service.FooService",
+        providerClass="cpserv.service.FooServiceDefaultProvider")
 })
 @ImportModules({
     @ImportModule(name="java.se.core")
 })
-class module_info {
-    // Export service type
-    exports verserv$service$FooService;
-
-    // Note that the default service provider is *not* exported.
-}
+module cpserv.service;

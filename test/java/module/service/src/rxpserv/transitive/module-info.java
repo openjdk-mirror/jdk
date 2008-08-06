@@ -21,16 +21,11 @@
  * have any questions.
  */
 
-package rxpserv.extra;
-
-import java.module.annotation.*;
-
 /**
  * A module that just imports and reexports another module, but of a certain
  * version.
  */
 @ImportModules({
-    @ImportModule(name="rxpserv.provider", version="2.0")
+    @ImportModule(name="rxpserv.service", version="1.0", reexport=true)
 })
-class module_info {
-}
+module rxpserv.transitive;

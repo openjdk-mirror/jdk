@@ -21,23 +21,15 @@
  * have any questions.
  */
 
-package modserv.provider3;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
 @ServiceProviders({
     @ServiceProvider(service="modserv.service.CodecSet",
-        providerClass="modserv.provider3.ImplCodecs")
+        providerClass="modserv.provider1.StandardCodecs"),
+    @ServiceProvider(service="modserv.service.CodecSet",
+        providerClass="modserv.provider1.AdvancedCodecs")
 })
-
-// Since the service is defined as version 2.7, attempting to load this module
-// will generate a warning (eventually to be a log message).
+@Version("1.3")
 @ImportModules({
     @ImportModule(name="java.se.core"),
-    @ImportModule(name="modserv.service", version="[1.0, 2.0)")
+    @ImportModule(name="modserv.service", version="[2.0, 3.0)")
 })
-class module_info {
-    // Export service provider classes
-    exports modserv$provider3$ImplCodecs;
-}
+module modserv.provider1;

@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module reposerv.service;
 package reposerv.service;
 
 import java.io.File;

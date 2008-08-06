@@ -21,24 +21,9 @@
  * have any questions.
  */
 
-package modserv.provider1;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@ServiceProviders({
-    @ServiceProvider(service="modserv.service.CodecSet",
-        providerClass="modserv.provider1.StandardCodecs"),
-    @ServiceProvider(service="modserv.service.CodecSet",
-        providerClass="modserv.provider1.AdvancedCodecs")
-})
-@Version("1.3")
+@Version("2.7")
+@Services({"modserv.service.CodecSet"})
 @ImportModules({
-    @ImportModule(name="java.se.core"),
-    @ImportModule(name="modserv.service", version="[2.0, 3.0)")
+    @ImportModule(name="java.se.core")
 })
-class module_info {
-    // Export multiple service provider classes
-    exports modserv$provider1$StandardCodecs;
-    exports modserv$provider1$AdvancedCodecs;
-}
+module modserv.service;

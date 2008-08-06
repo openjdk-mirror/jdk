@@ -21,12 +21,16 @@
  * have any questions.
  */
 
+module cpserv.service;
 package cpserv.service;
 
 import java.util.ServiceProvider;
 
 /**
  * The default implementation of FooService
+ * It is a module private class.
+ *
+ * FIXME: Fails if this is a module-private class.
  */
 @ServiceProvider
 public class FooServiceDefaultProvider extends FooService {

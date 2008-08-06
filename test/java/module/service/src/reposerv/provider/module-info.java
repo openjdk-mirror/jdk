@@ -7,7 +7,7 @@
  * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABbILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * version 2 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
@@ -21,15 +21,16 @@
  * have any questions.
  */
 
-package reposerv.client;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@MainClass("reposerv.client.Main")
+@Version("1.0")
+@ServiceProviders({
+    @ServiceProvider(service="reposerv.service.FooService",
+        providerClass="reposerv.provider.FooService2Provider"),
+    @ServiceProvider(service="reposerv.service.BarService",
+        providerClass="reposerv.provider.BarServiceDefaultProvider")
+})
+@Services("BarProvider")
 @ImportModules({
     @ImportModule(name="java.se.core"),
     @ImportModule(name="reposerv.service", version="[1.0, 2.0)")
 })
-class module_info {
-}
+module reposerv.provider;

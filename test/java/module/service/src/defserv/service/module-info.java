@@ -21,15 +21,14 @@
  * have any questions.
  */
 
-package modserv.client;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@MainClass("modserv.client.Main")
-@ImportModules({
-    @ImportModule(name="java.se.core"),
-    @ImportModule(name="modserv.service", version="[2.0, 3.0)")
+@Services({"defserv.service.FooService"})
+@ServiceProviders({
+    @ServiceProvider(service="defserv.service.FooService",
+        providerClass="defserv.service.FooServiceDefaultProvider"),
+    @ServiceProvider(service="defserv.service.FooService",
+        providerClass="defserv.service.FooServiceDefaultProvider2")
 })
-class module_info {
-}
+@ImportModules({
+    @ImportModule(name="java.se.core")
+})
+module defserv.service;

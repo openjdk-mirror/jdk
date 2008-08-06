@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module verserv.service;
 package verserv.service;
 
 import java.module.Repository;

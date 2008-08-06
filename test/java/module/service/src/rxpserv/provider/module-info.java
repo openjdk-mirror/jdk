@@ -21,24 +21,11 @@
  * have any questions.
  */
 
-package defserv.service;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
-@Services({"defserv.service.FooService"})
 @ServiceProviders({
-    @ServiceProvider(service="defserv.service.FooService",
-        providerClass="defserv.service.FooServiceDefaultProvider"),
-    @ServiceProvider(service="defserv.service.FooService",
-        providerClass="defserv.service.FooServiceDefaultProvider2")
+    @ServiceProvider(service="rxpserv.service.FooService",
+        providerClass="rxpserv.provider.FooServiceProvider")
 })
-@ImportModules({
-    @ImportModule(name="java.se.core")
-})
-class module_info {
-    // Export service type
-    exports defserv$service$FooService;
-
-    // Note that the default service providers are *not* exported.
-}
+// It is important that this be on a single line; see ServiceTest.redefineAnnotations
+@ImportModules({ @ImportModule(name="rxpserv.transitive"), @ImportModule(name="rxpserv.extra") })
+@Version("1.0")
+module rxpserv.provider;

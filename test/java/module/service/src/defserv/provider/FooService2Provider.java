@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module defserv.provider;
 package defserv.provider;
 
 import java.util.ServiceProvider;

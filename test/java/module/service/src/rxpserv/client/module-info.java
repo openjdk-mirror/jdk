@@ -7,7 +7,7 @@
  * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABbILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * version 2 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
@@ -21,21 +21,9 @@
  * have any questions.
  */
 
-package modserv.provider2;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@ServiceProviders({
-    @ServiceProvider(service="modserv.service.CodecSet",
-        providerClass="modserv.provider2.AdvancedCodecs")
-})
-@Version("2.0")
 @ImportModules({
     @ImportModule(name="java.se.core"),
-    @ImportModule(name="modserv.service", version="[2.5, 3.0)")
+    @ImportModule(name="rxpserv.service", version="1.0")
 })
-class module_info {
-    // Export service provider classe
-    exports modserv$provider2$AdvancedCodecs;
-}
+@MainClass("rxpserv.client.Main")
+module rxpserv.client;

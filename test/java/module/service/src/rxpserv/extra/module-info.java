@@ -21,28 +21,11 @@
  * have any questions.
  */
 
-package defserv.provider;
-
-import java.module.annotation.*;
-import java.lang.ModuleInfo.*;
-
-@ServiceProviders({
-    @ServiceProvider(service="defserv.service.FooService",
-        providerClass="defserv.provider.FooService2Provider"),
-    @ServiceProvider(service="defserv.service.BarService",
-        providerClass="defserv.provider.BarServiceDefaultProvider")
-})
-@Services("BarProvider")
+/**
+ * A module that just imports and reexports another module, but of a certain
+ * version.
+ */
 @ImportModules({
-    @ImportModule(name="java.se.core"),
-    @ImportModule(name="defserv.service") // Import service module defining Foo
+    @ImportModule(name="rxpserv.provider", version="2.0")
 })
-class module_info {
-    // Export service type
-     exports defserv$provider$BarService;
-
-    // Export service provider type
-    exports defserv$provider$FooService2Provider;
-
-    // Note that the default service provider is *not* exported.
-}
+module rxpserv.extra;

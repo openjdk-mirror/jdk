@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module verserv.provider;
 package verserv.provider;
 
 import java.util.Iterator;

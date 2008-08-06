@@ -21,19 +21,13 @@
  * have any questions.
  */
 
-package rxpserv.provider;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
-@ServiceProviders({
-    @ServiceProvider(service="rxpserv.service.FooService",
-        providerClass="rxpserv.provider.FooServiceProvider")
-})
-// It is important that this be on a single line; see ServiceTest.redefineAnnotations
-@ImportModules({ @ImportModule(name="rxpserv.transitive"), @ImportModule(name="rxpserv.extra") })
 @Version("1.0")
-class module_info {
-    // Export service provider type
-    exports rxpserv$provider$FooServiceProvider;
-}
+@Services({"verserv.service.FooService"})
+@ServiceProviders({
+    @ServiceProvider(service="verserv.service.FooService",
+        providerClass="verserv.service.FooServiceDefaultProvider")
+})
+@ImportModules({
+    @ImportModule(name="java.se.core")
+})
+module verserv.service;

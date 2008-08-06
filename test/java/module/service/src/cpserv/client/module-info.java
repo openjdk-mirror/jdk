@@ -21,16 +21,10 @@
  * have any questions.
  */
 
-package cpserv.client;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
 @ImportModules({
     @ImportModule(name="java.se.core"),
     @ImportModule(name="java.classpath"),
     @ImportModule(name="cpserv.service")
 })
 @MainClass("cpserv.client.Main")
-class module_info {
-}
+module cpserv.client;

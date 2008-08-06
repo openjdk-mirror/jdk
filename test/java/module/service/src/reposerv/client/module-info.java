@@ -21,15 +21,9 @@
  * have any questions.
  */
 
-package rxpserv.client;
-
-import java.lang.ModuleInfo.*;
-import java.module.annotation.*;
-
+@MainClass("reposerv.client.Main")
 @ImportModules({
     @ImportModule(name="java.se.core"),
-    @ImportModule(name="rxpserv.service", version="1.0")
+    @ImportModule(name="reposerv.service", version="[1.0, 2.0)")
 })
-@MainClass("rxpserv.client.Main")
-class module_info {
-}
+module reposerv.client;

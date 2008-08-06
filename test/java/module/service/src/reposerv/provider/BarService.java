@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module reposerv.provider;
 package reposerv.provider;
 
 import java.util.Iterator;

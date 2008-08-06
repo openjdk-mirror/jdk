@@ -21,15 +21,17 @@
  * have any questions.
  */
 
+module reposerv.provider;
 package reposerv.provider;
 
 import java.util.ServiceProvider;
 
 /**
  * The default implementation of BarService
+ * FIXME: May fail if this is a module private class.
  */
 @ServiceProvider
-public class BarServiceDefaultProvider extends BarService {
+module class BarServiceDefaultProvider extends BarService {
 
     public BarServiceDefaultProvider() {
     }
