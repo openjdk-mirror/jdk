@@ -4154,15 +4154,5 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         return systemLocale;
     }
 
-    /* If (as we do on X11) need to set a platform font path,
-     * then the needed path may be specified by the platform
-     * specific FontConfiguration class & data file. Such platforms
-     * (ie X11) need to override this method to retrieve this information
-     * into suitable data structures.
-     */
-    public void getPlatformFontPathFromFontConfig() {
-        
-    }
-
     // End: Refactored from SunGraphicsEnviroment.
 }

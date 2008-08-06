@@ -109,9 +109,6 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
                  */
                 registerJREFontsWithPlatform(jreFontDirName);
 
-                FontManagerFactory.getInstance().getPlatformFontPathFromFontConfig();
-
-
                 /* Establish the default font to be used by SG2D etc */
                 defaultFont = new Font(Font.DIALOG, Font.PLAIN, 12);
 
