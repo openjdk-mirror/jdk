@@ -648,6 +648,8 @@ public class X11FontManager extends DefaultFontManager {
     // xFontDirsMap (it will be null). In this case the awtfontpath entries
     // must specify all the X11 directories needed by AWT.
     protected void addFontToPlatformFontPath(String platformName) {
+        // Lazily initialize fontConfigDirs.
+        getPlatformFontPathFromFontConfig();
         if (xFontDirsMap != null) {
             String fontID = specificFontIDForName(platformName);
             String dirName = (String)xFontDirsMap.get(fontID);
@@ -658,7 +660,7 @@ public class X11FontManager extends DefaultFontManager {
         return;
     }
 
-    protected void getPlatformFontPathFromFontConfig() {
+    private void getPlatformFontPathFromFontConfig() {
         if (fontConfigDirs == null) {
             fontConfigDirs = getFontConfiguration().getAWTFontPathSet();
             if (debugFonts() && fontConfigDirs != null) {
@@ -671,6 +673,8 @@ public class X11FontManager extends DefaultFontManager {
     }
 
     protected void registerPlatformFontsUsedByFontConfiguration() {
+        // Lazily initialize fontConfigDirs.
+        getPlatformFontPathFromFontConfig();
         if (fontConfigDirs == null) {
             return;
         }
