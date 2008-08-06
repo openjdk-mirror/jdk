@@ -556,6 +556,4 @@ public interface FontManager {
    * fonts GDI handles differently.
    */
   public boolean textLayoutIsCompatible(Font font);
-
-  public void getPlatformFontPathFromFontConfig();
 }
