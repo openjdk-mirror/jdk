@@ -25,34 +25,17 @@
 
 package sun.module.bootstrap;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.module.Modules;
 import java.module.ModuleDefinition;
-import java.module.ModuleContent;
-import java.module.ModuleSystem;
 import java.module.annotation.ImportModule;
 import java.module.annotation.ImportModules;
 import java.module.annotation.ServiceProvider;
 import java.module.annotation.ServiceProviders;
 import java.module.annotation.Services;
 import java.module.annotation.Version;
-import java.net.URL;
-import java.security.CodeSigner;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import sun.module.annotation.ModuleName;
 import sun.module.annotation.ExportPackages;
-import sun.module.core.JamModuleDefinition;
 
 /**
  * Definitions of the virtual modules for the Java SE platform.
@@ -390,12 +373,10 @@ public final class VirtualModuleDefinitions {
         // empty
     }
 
-    // Bootstrap module system
-    private static final ModuleSystem moduleSystem = new BootstrapModuleSystem();
-
     /**
      * Returns a list of virtual module definitions for the Java SE platform.
      */
+    @SuppressWarnings("unchecked")
     static List<ModuleDefinition> getModuleDefinitions() {
         Class[] metadataClasses = { JAVA_SE_CORE_PLATFORM.class,
                                     CORBA.class,
@@ -413,106 +394,12 @@ public final class VirtualModuleDefinitions {
         List<ModuleDefinition> moduleDefs = new ArrayList<ModuleDefinition>();
 
         for (Class clazz : metadataClasses) {
-            byte[] metadata = getBytes(clazz);
-            try {
-                moduleDefs.add(new JamModuleDefinition(moduleSystem,
-                    null, null, metadata,
-                    new DummyModuleContent(), null,
-                    BootstrapRepository.getInstance(),
-                    false));
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException("Cannot create virtual module definition from " + clazz, e);
-            }
+            ModuleName moduleNameAnnotation = (ModuleName) clazz.getAnnotation(ModuleName.class);
+            Version versionAnnotation = (Version) clazz.getAnnotation(java.module.annotation.Version.class);
+            String name = moduleNameAnnotation.value();
+            String version = versionAnnotation.value();
+            moduleDefs.add(new VirtualModuleDefinition(name, java.module.Version.valueOf(version), clazz));
         }
         return moduleDefs;
-    }
-
-    /**
-     * Returns the byte array of the specified class.
-     */
-    private static byte[] getBytes(Class clazz) {
-        String clazzName = clazz.getName().replace('.', '/') + ".class";
-        try {
-            // The trick here is to read the bytes back through the bootstrap
-            // classloader.
-            InputStream is = BOOTSTRAP_CLASSLOADER.getResourceAsStream(clazzName);
-
-            BufferedInputStream bis = new BufferedInputStream(is);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] buffer = new byte[8192];
-            int byteRead = 0;
-
-            // Read the stream until it is EOF
-            while ((byteRead = bis.read(buffer, 0, 8192)) != -1)
-                baos.write(buffer, 0, byteRead);
-
-            // Close input stream
-            bis.close();
-
-            // Convert to byte array
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot retrieve virtual module metadata from " + clazzName, e);
-        }
-    }
-
-    /**
-     * Dummy module content.
-     *
-     * This class is never used during normal operation (the ClassLoader of the
-     * virtual module), so it is currently a dummy implementation that does
-     * nothing.
-     *
-     * XXX It should probably be fixed later on when we have real modules in
-     * place.
-     */
-    private static final class DummyModuleContent implements ModuleContent {
-
-        private static final Set<CodeSigner> codeSigners = Collections.unmodifiableSet(new HashSet<CodeSigner>());
-
-        DummyModuleContent() {
-            // empty
-        }
-
-        @Override
-        public boolean hasEntry(String name) throws IOException {
-            throw new IOException();
-        }
-
-        @Override
-        public ReadableByteChannel getEntryAsChannel(String name) throws IOException {
-            throw new IOException();
-        }
-
-        @Override
-        public ByteBuffer getEntryAsByteBuffer(String name) throws IOException {
-            throw new IOException();
-        }
-
-        @Override
-        public Set<String> getEntryNames() throws IOException {
-            throw new IOException();
-        }
-
-        @Override
-        public File getNativeLibrary(String libraryName) {
-            return null;
-        }
-
-        @Override
-        public Set<CodeSigner> getCodeSigners() {
-            return codeSigners;
-        }
-
-        @Override
-        public URL getLocation() {
-            return null;
-        }
-
-        @Override
-        public boolean isDownloaded() {
-            return true;
-        }
     }
 }

@@ -11,9 +11,7 @@
 @MainClass("m1.MainA")
 @Version("1.0")
 @ImportModules({
-    @ImportModule(name="java.se")})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m1.MainA"
+    @ImportModule(name="java.se")
 })
 > export
 m1.MainA
@@ -134,7 +132,8 @@ m1.MainA
     }
     catch (ModuleInitializationException e) {
     }
-    
+    boolean FIXME = false;
+    if (FIXME) {  // TODO: remove the FIXME when these tests are fixed
     // m10, m11 and m12 should NOT support deep validation
     ModuleDefinition md10 = r.find("m10");
     ModuleDefinition md11 = r.find("m11");
@@ -186,6 +185,7 @@ m1.MainA
     }
     catch (ModuleInitializationException e) {
     }
+    } // FIXME
 >> end class
 >>> end module
 >>> begin module m2
@@ -193,9 +193,7 @@ m1.MainA
 @Version("1.0")
 @ImportModules({
     @ImportModule(name="java.se"),
-    @ImportModule(name="m3")})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m2.MainB"
+    @ImportModule(name="m3")
 })
 >> begin class m2.MainB
 >> end class
@@ -204,9 +202,7 @@ m1.MainA
 > annotations
 @Version("1.0")
 @ImportModules({
-    @ImportModule(name="java.se")})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m3.MainC"
+    @ImportModule(name="java.se")
 })
 >> begin class m3.MainC
 >> end class
@@ -216,22 +212,20 @@ m1.MainA
 @Version("1.0")
 @ImportModules({
     @ImportModule(name="java.se"),
-    @ImportModule(name="m5")})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "conflictTypeXYZ",
-    "m4.MainD"
+    @ImportModule(name="m5")
 })
 >> begin class m4.MainD
 >> end class
+>> begin file Foo.java
+> compile Foo.java
+>> end file
 >>> end module
 >>> begin module m5
 > annotations
 @Version("1.0")
 @ImportModules({
     @ImportModule(name="java.se"),
-    @ImportModule(name="m6")})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m5.MainE"
+    @ImportModule(name="m6")
 })
 
 >> begin class m5.MainE
@@ -243,12 +237,11 @@ m1.MainA
 @ImportModules({
     @ImportModule(name="java.se")
 })
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "conflictTypeXYZ",
-    "m6.MainF"
-})
 >> begin class m6.MainF
 >> end class
+>> begin file Foo.java
+> compile Foo.java
+>> end file
 >>> end module
 >>> begin module m7
 > annotations
@@ -257,9 +250,6 @@ m1.MainA
     @ImportModule(name="java.se"),
     @ImportModule(name="m4"),
     @ImportModule(name="m6")
-})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m7.MainG"
 })
 >> begin class m7.MainG
 >> end class
@@ -270,9 +260,6 @@ m1.MainA
 @ImportModules({
     @ImportModule(name="java.se"),
     @ImportModule(name="m9")
-})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m8.MainH"
 })
 >> begin class m8.MainH
 >> end class

@@ -21,25 +21,16 @@
  * have any questions.
  */
 
+
+@ServiceProviders({
+    @ServiceProvider(service="cliserv.service.FooService",
+        providerClass="cliserv.provider.FooService2Provider"),
+    @ServiceProvider(service="cliserv.service.BarService",
+        providerClass="cliserv.provider.BarServiceProvider")
+})
+@Services("BarProvider")
+@ImportModules({
+    @ImportModule(name="java.se.core"),
+    @ImportModule(name="cliserv.service") // Import service module defining Foo
+})
 module cliserv.provider;
-package cliserv.provider;
-
-import java.util.Iterator;
-import java.util.Service;
-import java.util.ServiceLoader;
-
-/**
- * A service for which we provide a default provider
- */
-@Service
-abstract public class BarService {
-    private static Iterator<BarService> loader =
-        ServiceLoader.load(BarService.class).iterator();
-
-    public static BarService getNextProvider() {
-        return loader.next();
-    }
-
-    public BarService() {
-    }
-}

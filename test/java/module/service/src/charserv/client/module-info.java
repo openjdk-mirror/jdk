@@ -7,7 +7,7 @@
  * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABbILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * version 2 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
@@ -21,25 +21,9 @@
  * have any questions.
  */
 
-module cliserv.provider;
-package cliserv.provider;
-
-import java.util.Iterator;
-import java.util.Service;
-import java.util.ServiceLoader;
-
-/**
- * A service for which we provide a default provider
- */
-@Service
-abstract public class BarService {
-    private static Iterator<BarService> loader =
-        ServiceLoader.load(BarService.class).iterator();
-
-    public static BarService getNextProvider() {
-        return loader.next();
-    }
-
-    public BarService() {
-    }
-}
+@ImportModules({
+    @ImportModule(name="java.se.core"),
+    @ImportModule(name="java.classpath")
+})
+@MainClass("charserv.client.Main")
+module charserv.client;

@@ -21,25 +21,11 @@
  * have any questions.
  */
 
-module cliserv.provider;
-package cliserv.provider;
-
-import java.util.Iterator;
-import java.util.Service;
-import java.util.ServiceLoader;
-
-/**
- * A service for which we provide a default provider
- */
-@Service
-abstract public class BarService {
-    private static Iterator<BarService> loader =
-        ServiceLoader.load(BarService.class).iterator();
-
-    public static BarService getNextProvider() {
-        return loader.next();
-    }
-
-    public BarService() {
-    }
-}
+@ServiceProviders({
+    @ServiceProvider(service="java.nio.charset.spi.CharsetProvider",
+        providerClass="charserv.provider.CharsetServiceProvider")
+})
+@ImportModules({
+    @ImportModule(name="java.se.core")
+})
+module charserv.provider;

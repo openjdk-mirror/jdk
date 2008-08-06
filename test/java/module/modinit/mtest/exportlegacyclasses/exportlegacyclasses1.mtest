@@ -5,9 +5,6 @@
 >>> begin module m1
 > annotations
 @MainClass("m1.MainA")
-@sun.module.annotation.LegacyClasses({
-   "a.b.c",
-   "x.y.z"})
 @ImportModules({
     @ImportModule(name="java.se")
 })
@@ -15,30 +12,108 @@
 m1.MainA
 >> begin class m1.MainA
     // m1 should only export m1.MainA
+    final String[] m1MemberTypes = {
+        "p.Bar", "p.Foo", "q.Gus", "m1.module-info", "m1.MainA"
+    };
+    final String[] m1MemberPackages = {
+        "p", "q", "m1"
+    };
+    final String[] m1ExportedTypes = {
+        "m1.MainA"
+    };
+    final String[] m1ExportedPackages = {
+        "m1"
+    };
+
+    Set<PackageDefinition> memberPkgs = module.getModuleDefinition().getMemberPackageDefinitions();
+    for (PackageDefinition pd : memberPkgs) {
+         System.out.println(pd);
+    }
+    if (memberPkgs == null) {
+        throw new Exception("getMemberPackageDefinitions() should never return null.");
+    }
+    if (memberPkgs.size() != m1MemberPackages.length) {
+         throw new Exception("m1 should have " +
+             m1MemberPackages.length + " member packages.");
+    }
+    
+    boolean found;
+    for (String name : m1MemberPackages) {
+        found = false;
+        for (PackageDefinition pd : memberPkgs) {
+            if (pd.getName().equals(name)) {
+                found = true;
+            }
+        }
+        if (!found) {
+            throw new Exception("Missing member package \"" +
+                name + "\" in m1.");
+        }
+    }
+
     Set<String> memberClasses = moduleDefinition.getMemberClasses();
     if (memberClasses == null) {
         throw new Exception("getMemberClasses() should never return null.");
     }
-    // Workaround until JSR 294 support arrives
-    // if (memberClasses.size() != 3) {
-    //     throw new Exception("m1 should have three member classes.");
-    // }
-    if (memberClasses.contains("m1.MainA") == false
-        || memberClasses.contains("a.b.c") == false
-        || memberClasses.contains("x.y.z") == false) {
-        throw new Exception("Missing member classes in m1.");
+    if (memberClasses.size() != m1MemberTypes.length) {
+         throw new Exception("m1 should have " + 
+             m1MemberTypes.length + " member classes.");
     }
+    for (String name : m1MemberTypes) {
+        if (memberClasses.contains(name) == false) {
+            throw new Exception("Missing member class \"" +
+                name + "\" in m1.");
+        }
+    }
+
+    Set<PackageDefinition> exportPkgs = module.getModuleDefinition().getExportedPackageDefinitions();
+    if (exportPkgs == null) {
+        throw new Exception("getExportedPackageDefinitions() should never return null.");
+    }
+    if (exportPkgs.size() != m1ExportedPackages.length) {
+         throw new Exception("m1 should have " +
+             m1ExportedPackages.length + " exported packages.");
+    }
+    for (String name : m1ExportedPackages) {
+        found = false;
+        for (PackageDefinition pd : exportPkgs) {
+            if (pd.getName().equals(name)) {
+                found = true;
+            }
+        }
+        if (!found) {
+            throw new Exception("Missing export package \"" +
+                name + "\" in m1.");
+        }
+    }
+
     Set<String> exportedClasses = moduleDefinition.getExportedClasses();
     if (exportedClasses == null) {
         throw new Exception("getExportedClasses() should never return null.");
     }
-    // Workaround until JSR 294 support arrives
-    // if (exportedClasses.size() != 1) {
-    //     throw new Exception("m1 should have one exported class.");
-    // }
-    if (exportedClasses.contains("m1.MainA") == false) {
-        throw new Exception("Missing exported classes in m1.");
+    if (exportedClasses.size() != m1ExportedTypes.length) {
+        throw new Exception("m1 should have " +
+             m1ExportedTypes.length + " exported packages.");
     }
+    for (String name : m1ExportedTypes) {
+        if (exportedClasses.contains(name) == false) {
+            throw new Exception("Missing export class \"" +
+                name + "\" in m1.");
+        }
+    }
+
+    final String[] m2MemberTypes = {
+        "p.Bar", "p.Foo", "q.Gus", "m2.module-info", "m2.MainB"
+    };
+    final String[] m2MemberPackages = {
+        "p", "q", "m2"
+    };
+    final String[] m2ExportedTypes = {
+        "p.Bar", "q.Gus", "m2.MainB"
+    };
+    final String[] m2ExportedPackages = {
+        "p", "q", "m2"
+    };
 
     Module m2;
     try {
@@ -49,49 +124,100 @@ m1.MainA
         throw new Exception("Unable to instantiate m2.");
     }
 
-for (PackageDefinition pd : m2.getModuleDefinition().getExportedPackageDefinitions()) {
-    System.out.println("exported package: " + pd.getName());
-}
+    // m2 should export m2.MainA, p.Bar, and q.Gus
+    memberClasses = m2.getModuleDefinition().getMemberClasses();
+    memberPkgs = m2.getModuleDefinition().getMemberPackageDefinitions();
+    if (memberPkgs == null) {
+        throw new Exception("getMemberPackageDefinitions() should never return null.");
+    }
+    if (memberPkgs.size() != m2MemberPackages.length) {
+         throw new Exception("m2 should have " +
+             m2MemberPackages.length + " member packages.");
+    }
+    
+    for (String name : m2MemberPackages) {
+        found = false;
+        for (PackageDefinition pd : memberPkgs) {
+            if (pd.getName().equals(name)) {
+                found = true;
+            }
+        }
+        if (!found) {
+            throw new Exception("Missing member package \"" +
+                name + "\" in m2.");
+        }
+    }
 
-    // m2 should export m1.MainA, a.b.c, and x.y.z
     memberClasses = m2.getModuleDefinition().getMemberClasses();
     if (memberClasses == null) {
         throw new Exception("getMemberClasses() should never return null.");
     }
-    // Workaround until JSR 294 support arrives
-    // if (memberClasses.size() != 3) {
-    //     throw new Exception("m2 should have three member classes.");
-    // }
-    for (String s : memberClasses) {
-    System.out.println("Member class: " + s);
+    if (memberClasses.size() != m2MemberTypes.length) {
+         throw new Exception("m2 should have " + 
+             m2MemberTypes.length + " member classes.");
+    }
+    for (String name : m2MemberTypes) {
+        if (memberClasses.contains(name) == false) {
+            throw new Exception("Missing member class \"" +
+                name + "\" in m2.");
+        }
     }
 
-    if (memberClasses.contains("m2.MainB") == false
-        || memberClasses.contains("a.b.c") == false
-        || memberClasses.contains("x.y.z") == false) {
-        throw new Exception("Missing member classes in m2.");
+    exportPkgs = m2.getModuleDefinition().getExportedPackageDefinitions();
+    if (exportPkgs == null) {
+        throw new Exception("getExportedPackageDefinitions() should never return null.");
     }
+    if (exportPkgs.size() != m2ExportedPackages.length) {
+         throw new Exception("m2 should have " +
+             m2ExportedTypes.length + " exported packages.");
+    }
+    for (String name : m2ExportedPackages) {
+        found = false;
+        for (PackageDefinition pd : exportPkgs) {
+            if (pd.getName().equals(name)) {
+                found = true;
+            }
+        }
+        if (!found) {
+            throw new Exception("Missing export package \"" +
+                name + "\" in m2.");
+        }
+    }
+
     exportedClasses = m2.getModuleDefinition().getExportedClasses();
     if (exportedClasses == null) {
         throw new Exception("getExportedClasses() should never return null.");
     }
-    // Workaround until JSR 294 support arrives
-    // if (exportedClasses.size() != 3) {
-    //     throw new Exception("m2 should have three exported classes.");
-    // }
-    if (exportedClasses.contains("m2.MainB") == false
-        || exportedClasses.contains("a.b.c") == false
-        || exportedClasses.contains("x.y.z") == false) {
-        throw new Exception("Missing exported classes in m2.");
+    if (exportedClasses.size() != m2ExportedTypes.length) {
+        throw new Exception("m2 should have " +
+             m2ExportedTypes.length + " exported packages.");
+    }
+    for (String name : m2ExportedTypes) {
+        found = false;
+        for (String exp : exportedClasses) {
+            if (exp.equals(name)) {
+                found = true;
+            }
+        }
+        if (!found) {
+            throw new Exception("Missing export class \"" +
+                name + "\" in m2.");
+        }
     }
 >> end class
+>> begin file p/Foo.java
+> compile p/Foo.java
+>> end file
+>> begin file p/Bar.java
+> compile p/Bar.java
+>> end file
+>> begin file q/Gus.java
+> compile q/Gus.java
+>> end file
 >>> end module
 >>> begin module m2
 > annotations
 @ExportLegacyClasses
-@sun.module.annotation.LegacyClasses({
-   "a.b.c",
-   "x.y.z"})
 @ImportModules({
     @ImportModule(name="java.se")
 })
@@ -99,6 +225,15 @@ for (PackageDefinition pd : m2.getModuleDefinition().getExportedPackageDefinitio
 m2.MainB
 >> begin class m2.MainB
 >> end class
+>> begin file p/Foo.java
+> compile p/Foo.java
+>> end file
+>> begin file p/Bar.java
+> compile p/Bar.java
+>> end file
+>> begin file q/Gus.java
+> compile q/Gus.java
+>> end file
 >>> end module
 >>> begin test m1
 return

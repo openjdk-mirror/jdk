@@ -23,10 +23,12 @@
 
 ${header}
 
+module ${mod};
 package ${pkg};
 
 import java.io.*;
 import java.util.*;
+import java.module.Version; // Temporary workaround of the javac bug
 import java.module.*;
 import java.module.annotation.MainClass;
 

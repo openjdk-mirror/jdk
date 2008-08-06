@@ -21,6 +21,7 @@
  * have any questions.
  */
 
+module charserv.client;
 package charserv.client;
 
 import java.nio.charset.spi.CharsetProvider;

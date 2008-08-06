@@ -93,6 +93,29 @@ abstract public class ServiceTest  {
 
     /** Compiles all files under srcDir to destDir. */
     void compileSources(File srcDir, File destDir) throws Throwable {
+        destDir.mkdirs();
+
+        // compile all source files with annotation processor
+        compileSources(srcDir, destDir,
+                       new FileFilter() {
+                           public boolean accept(File pathname) {
+                               String name = pathname.getName();
+                               return name.endsWith(".java") &&
+                                      name.equals("module-info.java") == false;
+                       }},
+                       "-processor sun.module.core.ServiceProcessor");
+        // compile module-info.java
+        compileSources(srcDir, destDir,
+                       new FileFilter() {
+                           public boolean accept(File pathname) {
+                               String name = pathname.getName();
+                               return name.equals("module-info.java");
+                       }},
+                       "-verbose");
+    }
+
+    private void compileSources(File srcDir, File destDir,
+                                FileFilter ff, String compilerFlags) throws Throwable {
         List<File> srcs = new ArrayList<File>();
         for (File dir : srcDir.listFiles(
                  new FileFilter() {
@@ -100,18 +123,15 @@ abstract public class ServiceTest  {
                          return pathname.isDirectory();
                      }
                  })) {
-            File[] srcFiles = dir.listFiles(
-                new FileFilter() {
-                    public boolean accept(File pathname) {
-                        return pathname.getName().endsWith(".java");
-                    }});
+            File[] srcFiles = dir.listFiles(ff);
             srcs.addAll(Arrays.asList(srcFiles));
         }
 
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        String cmdPrefix = "-source 6 -target 6 -implicit:class"
-            + " -processor sun.module.core.ServiceProcessor";
-        destDir.mkdirs();
+        String cmdPrefix = "-source 7 -target 7";
+        if (compilerFlags.length() > 0) {
+            cmdPrefix += " " + compilerFlags;
+        }
         String cmd = cmdPrefix + " -d " + destDir + " -cp " + destDir;
         for (File f : srcs) {
             cmd += " " + f.getCanonicalPath();
@@ -165,46 +185,43 @@ abstract public class ServiceTest  {
 
     /**
      * Creates a JAM file
+     * @param moduleName module name
      * @param pkgName name of package that locates super_package file
-     * @param srcDir name of directory that locates classes
+     * @param srcDir the name of directory that locates classes
      * @param destDir directory where the JAM should be written
+     * @param destName name of resulting JAM file
      * @return a {@code File} representing the JAM file
      */
-    File createJam(String pkgName, String srcDir, File destDir) throws Exception {
-        File rc = new File(destDir, srcDir + ".jam");
+    private File createJam(String moduleName, String pkgName,
+                   String srcDir, File destDir, String destName) throws Exception {
+        File rc = new File(destDir, destName);
         String classesDir = destDir + "/classes";
-        String cmd = "cfsS ";
+        String cmd = "cvf ";
         cmd += rc.getCanonicalPath() + " ";
-        cmd += pkgName + "." + srcDir + " ";
-        cmd += classesDir + " ";
         if (new File(classesDir, "META-INF").exists()) {
             cmd += "-C " + classesDir + " META-INF ";
         }
         cmd += "-C ";
         cmd += classesDir + " ";
-        cmd +=pkgName + "/" + srcDir;
+        cmd += pkgName + "/" + srcDir;
 
         debug("jam: " + cmd);
         Jam jamTool = new Jam(System.out, System.err, "jam");
         if (!jamTool.run(cmd.split(" "))) {
-            throw new Exception("jam failed for " + srcDir);
+            throw new Exception("jam failed for " + moduleName);
         }
         return rc;
     }
 
-    /**
-     * @see #createJAM(String, String, File)
-     * @param destName name of resulting JAM file
-     */
-    File createJam(String pkgName, String srcDir, File destDir,
-            String destName) throws Exception {
-        File f = createJam(pkgName, srcDir, destDir);
-        File rc = new File(f.getParentFile(), destName);
-        if (!f.renameTo(rc)) {
-            throw new Exception("createJam: Couldn't rename " + f + " to " + rc);
-        } else {
-            return rc;
-        }
+    File createJam(String pkgName, String srcDir, File destDir) throws Exception {
+        String moduleName = pkgName + "." + srcDir;
+        String destName = moduleName + ".jam";
+        return createJam(moduleName, pkgName, srcDir, destDir, destName);
+    }
+
+    File createJam(String pkgName, String srcDir, File destDir, String destName) throws Exception {
+        String moduleName = pkgName + "." + srcDir;
+        return createJam(moduleName, pkgName, srcDir, destDir, destName);
     }
 
     /**
@@ -255,7 +272,7 @@ abstract public class ServiceTest  {
             Process p = pb.start();
             p.waitFor();
             debug(name + " returned " + p.exitValue());
-            check(p.exitValue() == 0);
+            boolean error = check(p.exitValue() == 0);
             BufferedReader br = new BufferedReader(
                 new InputStreamReader(
                     p.getInputStream()), 8192);
@@ -264,7 +281,11 @@ abstract public class ServiceTest  {
             while ((s = br.readLine()) != null) {
                 msg += ">>> " + s + "\n";
             }
-            debug(msg);
+            if (error) {
+                System.err.println(msg);
+            } else {
+                debug(msg);
+            }
         } catch (Exception ex) {
             unexpected(ex);
         }
