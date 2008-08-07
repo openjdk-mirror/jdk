@@ -4,7 +4,7 @@
 # - m4 imports m5 imports m6; overlapped member class in m4 and m6
 # - m7 imports m4, m6; overlapped member class in m4 and m6
 # - m8 imports m9 imports java.classpath; deep validation is not supported
-# - m10 imports m11 imports m11 imports m9 again; overlapped member class in m10 and m11
+# - m10 imports m11 imports m12 imports m10 again; overlapped member class in m11 and m12
 #
 >>> begin module m1
 > annotations
@@ -132,8 +132,7 @@ m1.MainA
     }
     catch (ModuleInitializationException e) {
     }
-    boolean FIXME = false;
-    if (FIXME) {  // TODO: remove the FIXME when these tests are fixed
+
     // m10, m11 and m12 should NOT support deep validation
     ModuleDefinition md10 = r.find("m10");
     ModuleDefinition md11 = r.find("m11");
@@ -185,7 +184,6 @@ m1.MainA
     }
     catch (ModuleInitializationException e) {
     }
-    } // FIXME
 >> end class
 >>> end module
 >>> begin module m2
@@ -271,9 +269,6 @@ m1.MainA
     @ImportModule(name="java.se"),
     @ImportModule(name="java.classpath")
 })
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m9.MainH"
-})
 >> begin class m9.MainH
 >> end class
 >>> end module
@@ -283,9 +278,6 @@ m1.MainA
 @ImportModules({
     @ImportModule(name="java.se"),
     @ImportModule(name="m11")
-})
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m10.MainH"
 })
 >> begin class m10.MainH
 >> end class
@@ -297,12 +289,11 @@ m1.MainA
     @ImportModule(name="java.se"),
     @ImportModule(name="m12")
 })
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m11.MainH",
-    "conflictTypeXYZ"
-})
 >> begin class m11.MainH
 >> end class
+>> begin file Foo.java
+> compile Foo.java
+>> end file
 >>> end module
 >>> begin module m12
 > annotations
@@ -311,12 +302,11 @@ m1.MainA
     @ImportModule(name="java.se"),
     @ImportModule(name="m10")
 })
-@sun.module.annotation.LegacyClasses({        // Use it as a workaround to populate the membership list
-    "m12.MainH",
-    "conflictTypeXYZ"
-})
 >> begin class m12.MainH
 >> end class
+>> begin file Foo.java
+> compile Foo.java
+>> end file
 >>> end module
 >>> begin test m1
 return

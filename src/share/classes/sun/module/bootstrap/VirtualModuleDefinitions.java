@@ -395,7 +395,7 @@ public final class VirtualModuleDefinitions {
 
         for (Class clazz : metadataClasses) {
             ModuleName moduleNameAnnotation = (ModuleName) clazz.getAnnotation(ModuleName.class);
-            Version versionAnnotation = (Version) clazz.getAnnotation(java.module.annotation.Version.class);
+            Version versionAnnotation = (Version) clazz.getAnnotation(Version.class);
             String name = moduleNameAnnotation.value();
             String version = versionAnnotation.value();
             moduleDefs.add(new VirtualModuleDefinition(name, java.module.Version.valueOf(version), clazz));

@@ -59,9 +59,6 @@ import java.net.URL;
         in.close();
     }
 >> end class
->> begin file ../../../../classp/cp1.txt
-> copy ../../classp/cp1.txt
->> end file
 >>> end module
 >>> begin test m1
 return

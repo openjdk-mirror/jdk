@@ -30,9 +30,11 @@ import java.net.URL;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.module.ModuleDefinition;
 import java.module.ModuleArchiveInfo;
+import java.module.ModuleDefinition;
+import java.module.ModuleSystemPermission;
 import java.module.Query;
 import java.module.Repository;
 import sun.module.repository.JamModuleArchiveInfo;
@@ -47,10 +49,6 @@ public final class BootstrapRepository extends Repository {
 
     private static final BootstrapRepository INSTANCE = new BootstrapRepository();
 
-    private List<ModuleDefinition> moduleDefs;
-    private List<ModuleArchiveInfo> moduleArchiveInfos;
-    private boolean initialized = false;
-
     public static Repository getInstance() {
         return INSTANCE;
     }
@@ -59,51 +57,24 @@ public final class BootstrapRepository extends Repository {
         super("bootstrap", null);
     }
 
-    /**
-     * Initialize the bootstrap repostory lazily.
-     */
-    private void lazyInitialize() {
-        if (initialized) {
-            return;
-        }
-
-        initialized = true;
-
+    @Override
+    protected List<ModuleArchiveInfo> doInitialize() {
         // Obtains the set of standard module definitions.
-        moduleDefs = VirtualModuleDefinitions.getModuleDefinitions();
+        List<ModuleDefinition> moduleDefs = VirtualModuleDefinitions.getModuleDefinitions();
 
-        // Setup ModuleArchiveInfo for the standard module definition.
-        moduleArchiveInfos = new ArrayList<ModuleArchiveInfo>();
+        List<ModuleArchiveInfo> moduleArchiveInfos = new ArrayList<ModuleArchiveInfo>();
         for (ModuleDefinition md : moduleDefs) {
-            moduleArchiveInfos.add(new JamModuleArchiveInfo(this,
-                                        md.getName(), md.getVersion(),
-                                        null, null, null));
+            moduleArchiveInfos.add(md.getModuleArchiveInfo());
         }
+
+        addModuleDefinitions(new HashSet<ModuleDefinition>(moduleDefs));
+
+        return moduleArchiveInfos;
     }
 
     @Override
-    public void initialize() {
-        if (initialized)
-            throw new IllegalStateException("Bootstrap repository has already been initialized.");
-
-        lazyInitialize();
-    }
-
-    @Override
-    public List<ModuleDefinition> findModuleDefinitions(Query constraint) {
-        lazyInitialize();
-
-        if (constraint == Query.ANY) {
-            return Collections.unmodifiableList(moduleDefs);
-        } else {
-            List<ModuleDefinition> result = new ArrayList<ModuleDefinition>();
-            for (ModuleDefinition md : moduleDefs) {
-                if (constraint.match(md)) {
-                    result.add(md);
-                }
-            }
-            return result;
-        }
+    protected void doShutdown() throws IOException {
+        throw new IOException("Bootstrap repository cannot be shutdown.");
     }
 
     @Override
@@ -117,29 +88,32 @@ public final class BootstrapRepository extends Repository {
     }
 
     @Override
-    public void reload() throws IOException {
-        // empty
-    }
-
-    @Override
-    public ModuleArchiveInfo install(URI u) throws IOException {
-        throw new IOException("Bootstrap repository is read-only.");
-    }
-
-    @Override
-    public boolean uninstall(ModuleArchiveInfo m) throws IOException {
-        throw new IOException("Bootstrap repository is read-only.");
-    }
-
-    @Override
-    public void shutdown() throws IOException {
-        throw new IOException("Bootstrap repository cannot be shutdown.");
-    }
-
-    @Override
     public List<ModuleArchiveInfo> list() {
-        lazyInitialize();
-        return Collections.unmodifiableList(moduleArchiveInfos);
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            sm.checkPermission(new ModuleSystemPermission("listModuleArchive"));
+        }
+
+        // lazy initialize
+        try {
+            initialize();
+        } catch(IOException e) {
+            throw new AssertionError("bootstrap repository internal error: cannot initialize.");
+        }
+
+        return getModuleArchiveInfos();
+    }
+
+    @Override
+    public List<ModuleDefinition> findModuleDefinitions(Query q) {
+        // lazy initialize
+        try {
+            initialize();
+        } catch(IOException e) {
+            throw new AssertionError("bootstrap repository internal error: cannot initialize.");
+        }
+
+        return super.findModuleDefinitions(q);
     }
 
     @Override

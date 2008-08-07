@@ -34,11 +34,13 @@ import java.util.Set;
 import java.module.ModuleArchiveInfo;
 import java.module.ModuleContent;
 import java.module.ModuleSystem;
+import java.module.ModuleSystemPermission;
 import java.module.PackageDefinition;
 import java.module.Version;
 import java.module.Repository;
 import sun.module.core.AbstractModuleDefinition;
 import sun.module.core.JamPackageDefinition;
+import sun.module.repository.JamModuleArchiveInfo;
 
 /**
  * A ModuleDefinition for the virtual modules.
@@ -59,6 +61,7 @@ class VirtualModuleDefinition extends AbstractModuleDefinition {
     private final Class metadataClass;
     private volatile Set<PackageDefinition> memberPackageDefs;
     private volatile Set<PackageDefinition> exportedPackageDefs;
+    private volatile ModuleArchiveInfo mai;
 
     @SuppressWarnings({"unchecked"})
     VirtualModuleDefinition(String name, Version version, Class<?> metadataClass) {
@@ -69,6 +72,9 @@ class VirtualModuleDefinition extends AbstractModuleDefinition {
               repository,
               false);
         this.metadataClass = metadataClass;
+        this.mai = new JamModuleArchiveInfo(repository,
+                                            name, version,
+                                            null, null, null);
     }
 
     @Override
@@ -164,10 +170,12 @@ class VirtualModuleDefinition extends AbstractModuleDefinition {
             getName() + "\" module");
     }
 
-    // XXX: TODO provide implementation
     @Override
     public ModuleArchiveInfo getModuleArchiveInfo() {
-           throw new UnsupportedOperationException("No module archive info supported for \"" +
-            getName() + "\" module");
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            sm.checkPermission(new ModuleSystemPermission("getModuleArchiveInfo"));
+        }
+        return mai;
     }
 }

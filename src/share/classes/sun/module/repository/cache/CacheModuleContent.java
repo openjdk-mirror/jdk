@@ -284,6 +284,10 @@ abstract class CacheModuleContent implements ModuleContent {
     @Override
     public ByteBuffer getEntryAsByteBuffer(String name) throws IOException {
         ReadableByteChannel src = getEntryAsChannel(name);
+        if (src == null) {
+            return null;
+        }
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         WritableByteChannel dest = Channels.newChannel(baos);
 
