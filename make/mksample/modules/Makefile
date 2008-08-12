@@ -1,5 +1,5 @@
 #
-# Copyright 2004-2007 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -24,28 +24,31 @@
 #
 
 #
-# Makefile for building all the samples
+# Makefile for the modules sample code
 #
 
-BUILDDIR = ..
+BUILDDIR = ../..
+
 PRODUCT = java
+
 include $(BUILDDIR)/common/Defs.gmk
 
-ifdef OPENJDK
-  WEBSERVICES_SUBDIR =
-else
-  WEBSERVICES_SUBDIR = webservices
-endif
+SAMPLE_SRC_DIR = $(SHARE_SRC)/sample/modules
+SAMPLE_DST_DIR = $(SAMPLEDIR)/modules
 
-SUBDIRS = nio jmx scripting $(WEBSERVICES_SUBDIR) nbproject modules
+SAMPLE_FILES = \
+	$(SAMPLE_DST_DIR)/README.txt \
+	$(SAMPLE_DST_DIR)/dependencies/dep/Entry.java \
+	$(SAMPLE_DST_DIR)/dependencies/dep/module-info.java \
+	$(SAMPLE_DST_DIR)/hello-world/hello/Main.java \
+	$(SAMPLE_DST_DIR)/hello-world/hello/module-info.java
 
-# include dtrace samples in Solaris builds
-ifeq ($(PLATFORM), solaris) 
-	SUBDIRS += dtrace
-endif
+all build: $(SAMPLE_FILES)
 
-all build clean clobber::
-	$(SUBDIRS-loop)
+$(SAMPLE_DST_DIR)/%: $(SAMPLE_SRC_DIR)/%
+	$(install-file)
 
-clobber clean ::
-	$(RM) -r $(SAMPLEDIR)
+clean clobber:
+	$(RM) -r $(SAMPLE_DST_DIR)
+
+.PHONY: all build clean clobber

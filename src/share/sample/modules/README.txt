@@ -12,7 +12,7 @@ To build and run the module:
  [set your path to point to the "bin" directory of a OpenJDK Modules build]
    % find hello-world -name "*.java"  > hello.classes
    % javac -source 7 @hello.classes
-   % jam cvf hello.jam -C hello-world module-info.class -C hello-world hello/Main.class
+   % jam cvf hello.jam -C hello-world hello 
    % java -jam hello.jam
    Hello world from module hello 1.0
 
@@ -23,7 +23,7 @@ The directory  dependencies contains the module dep
 Now lets try the other module:
   % find dependencies -name "*.java" > dep.classes
   % javac -source 7 -sourcepath hello-world/ @dep.classes
-  % jam cvf dep.jam -C dependencies module-info.class -C dependencies dep/Entry.class
+  % jam cvf dep.jam -C dependencies dep
   % java -jam dep.jam
   Module 'dep' calling module 'hello'...
   Hello world from module instance hello v1.0 (application repository)
