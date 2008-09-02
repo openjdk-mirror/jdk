@@ -71,6 +71,7 @@ import sun.awt.WindowClosingListener;
 import sun.awt.CausedFocusEvent;
 import sun.awt.EmbeddedFrame;
 import sun.awt.dnd.SunDropTargetEvent;
+import sun.awt.event.ComponentReshapeEvent;
 import sun.awt.im.CompositionArea;
 import sun.java2d.SunGraphics2D;
 import sun.java2d.pipe.Region;
@@ -4332,7 +4333,14 @@ public abstract class Component implements ImageObserver, MenuContainer,
         if (eventLog.isLoggable(Level.FINEST)) {
             eventLog.log(Level.FINEST, "{0}", e);
         }
-
+        if (e instanceof ComponentReshapeEvent) {
+            ComponentReshapeEvent cre = (ComponentReshapeEvent) e;
+            x = cre.x;
+            y = cre.y;
+            width = cre.width;
+            height = cre.height;
+            return;
+        }
         /*
          * 0. Set timestamp and modifiers of current event.
          */
