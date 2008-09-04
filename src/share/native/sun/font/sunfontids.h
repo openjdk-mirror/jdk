@@ -54,6 +54,9 @@ typedef struct FontManagerNativeIDs {
     jmethodID adjustPointMID;
     jfieldID  pScalerContextFID;
 
+    /* sun/font/PhysicalFont field. */
+    jfieldID fontBufferFID;
+
     /* java/awt/geom/Rectangle2D.Float */
     jclass rect2DFloatClass;
     jmethodID rect2DFloatCtr;
@@ -73,13 +76,6 @@ typedef struct FontManagerNativeIDs {
     /* sun/font/StrikeMetrics */
     jclass strikeMetricsClass;
     jmethodID strikeMetricsCtr;
-
-    /* sun/font/TrueTypeFont */
-    jmethodID ttReadBlockMID;
-    jmethodID ttReadBytesMID;
-
-    /* sun/font/Type1Font */
-    jmethodID readFileMID;
 
     /* sun/font/GlyphList */
     jfieldID glyphListX, glyphListY, glyphListLen,

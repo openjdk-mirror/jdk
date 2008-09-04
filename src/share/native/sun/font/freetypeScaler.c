@@ -61,12 +61,9 @@ typedef struct {
     FT_Library library;
     FT_Face face;
     jobject font2D;
-    jobject directBuffer;
 
     unsigned char* fontData;
-    unsigned fontDataOffset;
     unsigned fontDataLength;
-    unsigned fileSize;
     TTLayoutTableCache* layoutTables;
 } FTScalerInfo;
 
@@ -108,14 +105,6 @@ static void freeNativeResources(JNIEnv *env, FTScalerInfo* scalerInfo) {
     FT_Done_Face(scalerInfo->face);
     FT_Done_FreeType(scalerInfo->library);
 
-    if (scalerInfo->directBuffer != NULL) {
-        (*env)->DeleteGlobalRef(env, scalerInfo->directBuffer);
-    }
-
-    if (scalerInfo->fontData != NULL) {
-        free(scalerInfo->fontData);
-    }
-
     free(scalerInfo);
 }
 
@@ -131,101 +120,6 @@ static void invalidateJavaScaler(JNIEnv *env,
 
 #define FILEDATACACHESIZE 1024
 
-/* NB: is it ever called? */
-static void CloseTTFontFileFunc(FT_Stream stream) {
-    FTScalerInfo *scalerInfo = (FTScalerInfo *) stream->pathname.pointer;
-    JNIEnv* env = scalerInfo->env;
-    jclass tmpClass = (*env)->FindClass(env, "sun/font/TrueTypeFont");
-    jfieldID platNameField =
-         (*env)->GetFieldID(env, tmpClass, "platName", "Ljava/lang/String;");
-    jstring platName = (*env)->GetObjectField(env,
-                                              scalerInfo->font2D,
-                                              platNameField);
-    const char *name = JNU_GetStringPlatformChars(env, platName, NULL);
-    JNU_ReleaseStringPlatformChars(env, platName, name);
-}
-
-static unsigned long ReadTTFontFileFunc(FT_Stream stream,
-                                        unsigned long offset,
-                                        unsigned char* destBuffer,
-                                        unsigned long numBytes)
-{
-    FTScalerInfo *scalerInfo = (FTScalerInfo *) stream->pathname.pointer;
-    JNIEnv* env = scalerInfo->env;
-    jobject bBuffer;
-    int bread = 0;
-
-    if (numBytes == 0) return 0;
-
-    /* Large reads will bypass the cache and data copying */
-    if (numBytes > FILEDATACACHESIZE) {
-        bBuffer = (*env)->NewDirectByteBuffer(env, destBuffer, numBytes);
-        if (bBuffer != NULL) {
-            /* Loop until the read succeeds (or EOF).
-             * This should improve robustness in the event of a problem in
-             * the I/O system. If we find that we ever end up spinning here
-             * we are going to have to do some serious work to recover.
-             * Just returning without reading the data will cause a crash.
-             */
-            while (bread == 0) {
-                bread = (*env)->CallIntMethod(env,
-                                              scalerInfo->font2D,
-                                              sunFontIDs.ttReadBlockMID,
-                                              bBuffer, offset, numBytes);
-            }
-            return bread;
-        } else {
-            /* We probably hit bug bug 4845371. For reasons that
-             * are currently unclear, the call stacks after the initial
-             * createScaler call that read large amounts of data seem to
-             * be OK and can create the byte buffer above, but this code
-             * is here just in case.
-             * 4845371 is fixed now so I don't expect this code path to
-             * ever get called but its harmless to leave it here on the
-             * small chance its needed.
-             */
-            jbyteArray byteArray = (jbyteArray)
-            (*env)->CallObjectMethod(env, scalerInfo->font2D,
-                                     sunFontIDs.ttReadBytesMID,
-                                     offset, numBytes);
-            (*env)->GetByteArrayRegion(env, byteArray,
-                                       0, numBytes, (jbyte*)destBuffer);
-            return numBytes;
-        }
-    } /* Do we have a cache hit? */
-      else if (scalerInfo->fontDataOffset <= offset &&
-        scalerInfo->fontDataOffset + scalerInfo->fontDataLength >=
-                                                         offset + numBytes)
-    {
-        unsigned cacheOffset = offset - scalerInfo->fontDataOffset;
-
-        memcpy(destBuffer, scalerInfo->fontData+(size_t)cacheOffset, numBytes);
-        return numBytes;
-    } else {
-        /* Must fill the cache */
-        scalerInfo->fontDataOffset = offset;
-        scalerInfo->fontDataLength =
-                 (offset + FILEDATACACHESIZE > scalerInfo->fileSize) ?
-                 scalerInfo->fileSize - offset : FILEDATACACHESIZE;
-        bBuffer = scalerInfo->directBuffer;
-        /* Loop until all the read succeeds (or EOF).
-         * This should improve robustness in the event of a problem in
-         * the I/O system. If we find that we ever end up spinning here
-         * we are going to have to do some serious work to recover.
-         * Just returning without reading the data will cause a crash.
-         */
-        while (bread == 0) {
-            bread = (*env)->CallIntMethod(env, scalerInfo->font2D,
-                                          sunFontIDs.ttReadBlockMID,
-                                          bBuffer, offset,
-                                          scalerInfo->fontDataLength);
-        }
-
-        memcpy(destBuffer, scalerInfo->fontData, numBytes);
-        return numBytes;
-    }
-}
-
 /*
  * Class:     sun_font_FreetypeFontScaler
  * Method:    initNativeScaler
@@ -239,7 +133,7 @@ Java_sun_font_FreetypeFontScaler_initNativeScaler(
     FT_Stream ftstream;
     FT_Open_Args ft_open_args;
     int error;
-    jobject bBuffer;
+    jobject fontBuffer;
     scalerInfo = (FTScalerInfo*) calloc(1, sizeof(FTScalerInfo));
 
     if (scalerInfo == NULL)
@@ -247,9 +141,7 @@ Java_sun_font_FreetypeFontScaler_initNativeScaler(
 
     scalerInfo->env = env;
     scalerInfo->font2D = font2D;
-    scalerInfo->fontDataOffset = 0;
     scalerInfo->fontDataLength = 0;
-    scalerInfo->fileSize = filesize;
 
     /*
        We can consider sharing freetype library between different
@@ -267,68 +159,25 @@ Java_sun_font_FreetypeFontScaler_initNativeScaler(
         return 0;
     }
 
-#define TYPE1_FROM_JAVA        2
-
     error = 1; /* triggers memory freeing unless we clear it */
-    if (type == TYPE1_FROM_JAVA) { /* TYPE1 */
-        scalerInfo->fontData = (unsigned char*) malloc(filesize);
-        scalerInfo->directBuffer = NULL;
-        scalerInfo->layoutTables = NULL;
-        scalerInfo->fontDataLength = filesize;
+    fontBuffer = (*env)->GetObjectField(env, font2D, sunFontIDs.fontBufferFID);
+    scalerInfo->fontData = (unsigned char*)
+      (*env)->GetDirectBufferAddress(env, fontBuffer);
+    scalerInfo->fontDataLength =
+      (*env)->GetDirectBufferCapacity(env, fontBuffer);
 
-        if (scalerInfo->fontData != NULL) {
-            bBuffer = (*env)->NewDirectByteBuffer(env,
-                                              scalerInfo->fontData,
-                                              scalerInfo->fontDataLength);
-            if (bBuffer != NULL) {
-                (*env)->CallObjectMethod(env, font2D,
-                                   sunFontIDs.readFileMID, bBuffer);
+    scalerInfo->layoutTables = NULL;
 
-                error = FT_New_Memory_Face(scalerInfo->library,
-                                   scalerInfo->fontData,
-                                   scalerInfo->fontDataLength,
-                                   indexInCollection,
-                                   &scalerInfo->face);
-            }
-        }
-    } else { /* Truetype */
-        scalerInfo->fontData = (unsigned char*) malloc(FILEDATACACHESIZE);
-        ftstream = (FT_Stream) calloc(1, sizeof(FT_StreamRec));
-
-        if (ftstream != NULL && scalerInfo->fontData != NULL) {
-            scalerInfo->directBuffer = (*env)->NewDirectByteBuffer(env,
-                                        scalerInfo->fontData,
-                                        FILEDATACACHESIZE);
-            if (scalerInfo->directBuffer != NULL) {
-                scalerInfo->directBuffer = (*env)->NewGlobalRef(env,
-                                            scalerInfo->directBuffer);
-                ftstream->base = NULL;
-                ftstream->size = filesize;
-                ftstream->pos = 0;
-                ftstream->read = (FT_Stream_IoFunc) ReadTTFontFileFunc;
-                ftstream->close = (FT_Stream_CloseFunc) CloseTTFontFileFunc;
-                ftstream->pathname.pointer = (void *) scalerInfo;
-
-                memset(&ft_open_args, 0, sizeof(FT_Open_Args));
-                ft_open_args.flags = FT_OPEN_STREAM;
-                ft_open_args.stream = ftstream;
-
-                error = FT_Open_Face(scalerInfo->library,
-                                     &ft_open_args,
-                                     indexInCollection,
-                                     &scalerInfo->face);
-           }
-           if (error || scalerInfo->directBuffer == NULL) {
-               free(ftstream);
-           }
-        }
+    if (scalerInfo->fontData != NULL) {
+      error = FT_New_Memory_Face(scalerInfo->library,
+				 scalerInfo->fontData,
+				 scalerInfo->fontDataLength,
+				 indexInCollection,
+				 &scalerInfo->face);
     }
 
     if (error) {
         FT_Done_FreeType(scalerInfo->library);
-        if (scalerInfo->directBuffer != NULL) {
-            (*env)->DeleteGlobalRef(env, scalerInfo->directBuffer);
-        }
         if (scalerInfo->fontData != NULL)
             free(scalerInfo->fontData);
         free(scalerInfo);

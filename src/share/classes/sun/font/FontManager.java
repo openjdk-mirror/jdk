@@ -375,13 +375,6 @@ public interface FontManager {
     
     /**
      * TODO
-     * @param font
-     * @return
-     */
-    public Font2D setFont2D(Font font);
-    
-    /**
-     * TODO
      * @param fontFile
      * @param fontFormat
      * @param isCopy

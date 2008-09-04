@@ -2436,8 +2436,6 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
     
     public synchronized static native void setNativeFontPath(String fontPath);
     public native Font2D getFont2D(Font font);
-    public native Font2D setFont2D(Font font);
-    
     
     private Thread fileCloser = null;
     Vector<File> tmpFontFiles = null;

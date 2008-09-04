@@ -39,6 +39,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -110,32 +111,6 @@ public class TrueTypeFont extends FileFont {
         int length;
     }
 
-    /* There is a pool which limits the number of fd's that are in
-     * use. Normally fd's are closed as they are replaced in the pool.
-     * But if an instance of this class becomes unreferenced, then there
-     * needs to be a way to close the fd. A finalize() method could do this,
-     * but using the Disposer class will ensure its called in a more timely
-     * manner. This is not something which should be relied upon to free
-     * fd's - its a safeguard.
-     */
-    private static class TTDisposerRecord implements DisposerRecord {
-
-        FileChannel channel = null;
-
-        public synchronized void dispose() {
-            try {
-                if (channel != null) {
-                    channel.close();
-                }
-            } catch (IOException e) {
-            } finally {
-                channel = null;
-            }
-        }
-    }
-
-    TTDisposerRecord disposerRecord = new TTDisposerRecord();
-
     /* > 0 only if this font is a part of a collection */
     int fontIndex = 0;
 
@@ -171,15 +146,37 @@ public class TrueTypeFont extends FileFont {
      * @throws FontFormatException - if the font can't be opened
      * or fails verification,  or there's no usable cmap
      */
-    TrueTypeFont(String platname, Object nativeNames, int fIndex,
-                 boolean javaRasterizer)
+    TrueTypeFont(String platname, Object nativeNames, ByteBuffer buf,
+                 int fIndex, boolean javaRasterizer)
         throws FontFormatException {
         super(platname, nativeNames);
+    }
+
+    TrueTypeFont(String platname, Object nativeNames,
+                 int fIndex, boolean javaRasterizer)
+        throws FontFormatException {
+        super(platname, nativeNames);
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(platname, "r");
+            FileChannel chan = raf.getChannel();
+            ByteBuffer buf = chan.map(MapMode.READ_ONLY, 0, raf.length());
+            init(platname, nativeNames, buf, fIndex, javaRasterizer);
+        } catch (FileNotFoundException ex) {
+            throw new FontFormatException(ex.getMessage());
+        } catch (IOException ex) {
+            throw new FontFormatException(ex.getMessage());
+        }
+    }
+
+    private void init(String platname, Object nativeNames, ByteBuffer buf,
+                 int fIndex, boolean javaRasterizer)
+        throws FontFormatException {
         useJavaRasterizer = javaRasterizer;
         fontRank = Font2D.TTF_RANK;
-        verify();
+        fontBuffer = buf;
+        fileSize = fontBuffer.capacity(); // Hack. We can do without in the future.
         init(fIndex);
-        Disposer.addObjectRecord(this, disposerRecord);
     }
 
     /* Enable natives just for fonts picked up from the platform that
@@ -256,218 +253,19 @@ public class TrueTypeFont extends FileFont {
     }
 
 
-    /* This is intended to be called, and the returned value used,
-     * from within a block synchronized on this font object.
-     * ie the channel returned may be nulled out at any time by "close()"
-     * unless the caller holds a lock.
-     * Deadlock warning: FontManager.addToPool(..) acquires a global lock,
-     * which means nested locks may be in effect.
-     */
-    private synchronized FileChannel open() throws FontFormatException {
-        if (disposerRecord.channel == null) {
-            FontManager fm = FontManagerFactory.getInstance();
-            if (fm.isLogging()) {
-                fm.getLogger().info("open TTF: " + platName);
-            }
-            try {
-                RandomAccessFile raf = (RandomAccessFile)
-                java.security.AccessController.doPrivileged(
-                    new java.security.PrivilegedAction() {
-                        public Object run() {
-                            try {
-                                return new RandomAccessFile(platName, "r");
-                            } catch (FileNotFoundException ffne) {
-                            }
-                            return null;
-                    }
-                });
-                disposerRecord.channel = raf.getChannel();
-                fileSize = (int)disposerRecord.channel.size();
-                FontManagerFactory.getInstance().addToPool(this);
-            } catch (NullPointerException e) {
-                close();
-                throw new FontFormatException(e.toString());
-            } catch (ClosedChannelException e) {
-                /* NIO I/O is interruptible, recurse to retry operation.
-                 * The call to channel.size() above can throw this exception.
-                 * Clear interrupts before recursing in case NIO didn't.
-                 * Note that close() sets disposerRecord.channel to null.
-                 */
-                Thread.interrupted();
-                close();
-                open();
-            } catch (IOException e) {
-                close();
-                throw new FontFormatException(e.toString());
-            }
-        }
-        return disposerRecord.channel;
-    }
-
     protected synchronized void close() {
-        disposerRecord.dispose();
-    }
-
-
-    int readBlock(ByteBuffer buffer, int offset, int length) {
-        
-        FontManager fm = FontManagerFactory.getInstance();
-        int bread = 0;
-        try {
-            synchronized (this) {
-                if (disposerRecord.channel == null) {
-                    open();
-                }
-                if (offset + length > fileSize) {
-                    if (offset >= fileSize) {
-                        /* Since the caller ensures that offset is < fileSize
-                         * this condition suggests that fileSize is now
-                         * different than the value we originally provided
-                         * to native when the scaler was created.
-                         * Also fileSize is updated every time we
-                         * open() the file here, but in native the value
-                         * isn't updated. If the file has changed whilst we
-                         * are executing we want to bail, not spin.
-                         */
-                        if (fm.isLogging()) {
-                            String msg = "Read offset is " + offset +
-                                " file size is " + fileSize+
-                                " file is " + platName;
-                            fm.getLogger().severe(msg);
-                        }
-                        return -1;
-                    } else {
-                        length = fileSize - offset;
-                    }
-                }
-                buffer.clear();
-                disposerRecord.channel.position(offset);
-                while (bread < length) {
-                    int cnt = disposerRecord.channel.read(buffer);
-                    if (cnt == -1) {
-                        String msg = "Unexpected EOF " + this;
-                        int currSize = (int)disposerRecord.channel.size();
-                        if (currSize != fileSize) {
-                            msg += " File size was " + fileSize +
-                                " and now is " + currSize;
-                        }
-                        if (fm.isLogging()) {
-                            fm.getLogger().severe(msg);
-                        }
-                        // We could still flip() the buffer here because
-                        // it's possible that we did read some data in
-                        // an earlier loop, and we probably should
-                        // return that to the caller. Although if
-                        // the caller expected 8K of data and we return
-                        // only a few bytes then maybe it's better instead to
-                        // set bread = -1 to indicate failure.
-                        // The following is therefore using arbitrary values
-                        // but is meant to allow cases where enough
-                        // data was read to probably continue.
-                        if (bread > length/2 || bread > 16384) {
-                            buffer.flip();
-                            if (fm.isLogging()) {
-                                msg = "Returning " + bread +
-                                    " bytes instead of " + length;
-                                fm.getLogger().severe(msg);
-                            }
-                        } else {
-                            bread = -1;
-                        }
-                        throw new IOException(msg);
-                    }
-                    bread += cnt;
-                }
-                buffer.flip();
-                if (bread > length) { // possible if buffer.size() > length
-                    bread = length;
-                }
-            }
-        } catch (FontFormatException e) {
-            if (fm.isLogging()) {
-                fm.getLogger().log(Level.SEVERE, "While reading " + platName, e);
-            }
-            bread = -1; // signal EOF
-            deregisterFontAndClearStrikeCache();
-        } catch (ClosedChannelException e) {
-            /* NIO I/O is interruptible, recurse to retry operation.
-             * Clear interrupts before recursing in case NIO didn't.
-             */
-            Thread.interrupted();
-            close();
-            return readBlock(buffer, offset, length);
-        } catch (IOException e) {
-            /* If we did not read any bytes at all and the exception is
-             * not a recoverable one (ie is not ClosedChannelException) then
-             * we should indicate that there is no point in re-trying.
-             * Other than an attempt to read past the end of the file it
-             * seems unlikely this would occur as problems opening the
-             * file are handled as a FontFormatException.
-             */
-            if (fm.isLogging()) {
-                fm.getLogger().log(Level.SEVERE, "While reading " + platName, e);
-            }
-            if (bread == 0) {
-                bread = -1; // signal EOF
-                deregisterFontAndClearStrikeCache();
-            }
-        }
-        return bread;
+        // Nothing to do here. Ok, we throw away the byte buffer.
+        fontBuffer = null;
     }
 
     ByteBuffer readBlock(int offset, int length) {
-
-        ByteBuffer buffer = ByteBuffer.allocate(length);
-        try {
-            synchronized (this) {
-                if (disposerRecord.channel == null) {
-                    open();
-                }
-                if (offset + length > fileSize) {
-                    if (offset > fileSize) {
-                        return null; // assert?
-                    } else {
-                        buffer = ByteBuffer.allocate(fileSize-offset);
-                    }
-                }
-                disposerRecord.channel.position(offset);
-                disposerRecord.channel.read(buffer);
-                buffer.flip();
-            }
-        } catch (FontFormatException e) {
-            return null;
-        } catch (ClosedChannelException e) {
-            /* NIO I/O is interruptible, recurse to retry operation.
-             * Clear interrupts before recursing in case NIO didn't.
-             */
-            Thread.interrupted();
-            close();
-            readBlock(buffer, offset, length);
-        } catch (IOException e) {
-            return null;
-        }
-        return buffer;
-    }
-
-    /* This is used by native code which can't allocate a direct byte
-     * buffer because of bug 4845371. It, and references to it in native
-     * code in scalerMethods.c can be removed once that bug is fixed.
-     * 4845371 is now fixed but we'll keep this around as it doesn't cost
-     * us anything if its never used/called.
-     */
-    byte[] readBytes(int offset, int length) {
-        ByteBuffer buffer = readBlock(offset, length);
-        if (buffer.hasArray()) {
-            return buffer.array();
-        } else {
-            byte[] bufferBytes = new byte[buffer.limit()];
-            buffer.get(bufferBytes);
-            return bufferBytes;
-        }
-    }
-
-    private void verify() throws FontFormatException {
-        open();
+        // Gotta think about that again.
+        fontBuffer.position(offset);
+        fontBuffer.limit(offset + length);
+        ByteBuffer slice = fontBuffer.slice();
+        fontBuffer.position(0);
+        fontBuffer.limit(fontBuffer.capacity());
+        return slice;
     }
 
     /* sizes, in bytes, of TT/TTC header records */
@@ -802,7 +600,7 @@ public class TrueTypeFont extends FileFont {
         return supportsJA;
     }
 
-     ByteBuffer getTableBuffer(int tag) {
+    ByteBuffer getTableBuffer(int tag) {
         DirectoryEntry entry = null;
 
         for (int i=0;i<numTables;i++) {
@@ -816,35 +614,12 @@ public class TrueTypeFont extends FileFont {
             return null;
         }
 
-        int bread = 0;
-        ByteBuffer buffer = ByteBuffer.allocate(entry.length);
-        synchronized (this) {
-            try {
-                if (disposerRecord.channel == null) {
-                    open();
-                }
-                disposerRecord.channel.position(entry.offset);
-                bread = disposerRecord.channel.read(buffer);
-                buffer.flip();
-            } catch (ClosedChannelException e) {
-                /* NIO I/O is interruptible, recurse to retry operation.
-                 * Clear interrupts before recursing in case NIO didn't.
-                 */
-                Thread.interrupted();
-                close();
-                return getTableBuffer(tag);
-            } catch (IOException e) {
-                return null;
-            } catch (FontFormatException e) {
-                return null;
-            }
-
-            if (bread < entry.length) {
-                return null;
-            } else {
-                return buffer;
-            }
-        }
+        fontBuffer.position(entry.offset);
+        fontBuffer.limit(entry.offset + entry.length);
+        ByteBuffer slice = fontBuffer.slice();
+        fontBuffer.limit(fontBuffer.capacity());
+        fontBuffer.position(0);
+        return slice;
     }
 
     /* NB: is it better to move declaration to Font2D? */

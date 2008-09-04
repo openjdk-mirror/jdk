@@ -38,6 +38,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.BufferUnderflowException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+
 import sun.java2d.Disposer;
 import java.util.HashSet;
 import java.util.HashMap;
@@ -134,6 +136,27 @@ public class Type1Font extends FileFont {
     public Type1Font(String platname, Object nativeNames)
         throws FontFormatException {
         super(platname, nativeNames);
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(platname, "r");
+            FileChannel chan = raf.getChannel();
+            ByteBuffer buf = chan.map(MapMode.READ_ONLY, 0, raf.length());
+            init(platname, nativeNames, buf);
+        } catch (FileNotFoundException ex) {
+            throw new FontFormatException(ex.getMessage());
+        } catch (IOException ex) {
+            throw new FontFormatException(ex.getMessage());
+        }
+    }
+
+    public Type1Font(String platname, Object nativeNames, ByteBuffer buf)
+        throws FontFormatException {
+        super(platname, nativeNames);
+        init(platname, nativeNames, buf);
+    }
+
+    private void init(String platname, Object nativeNames, ByteBuffer buf)
+        throws FontFormatException {
         fontRank = Font2D.TYPE1_RANK;
         checkedNatives = true;
         verify();

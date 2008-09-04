@@ -103,17 +103,10 @@ Java_sun_font_FontManagerBase_initIDs
      sunFontIDs.createdFont =
        (*env)->GetFieldID(env, tmpClass, "createdFont", "Z");
 
-     tmpClass = (*env)->FindClass(env, "sun/font/TrueTypeFont");
-     sunFontIDs.ttReadBlockMID =
-         (*env)->GetMethodID(env, tmpClass, "readBlock",
-                             "(Ljava/nio/ByteBuffer;II)I");
-     sunFontIDs.ttReadBytesMID =
-         (*env)->GetMethodID(env, tmpClass, "readBytes", "(II)[B");
-
-     tmpClass = (*env)->FindClass(env, "sun/font/Type1Font");
-     sunFontIDs.readFileMID =
-         (*env)->GetMethodID(env, tmpClass,
-                             "readFile", "(Ljava/nio/ByteBuffer;)V");
+     tmpClass = (*env)->FindClass(env, "sun/font/PhysicalFont");
+     sunFontIDs.fontBufferFID =
+         (*env)->GetFieldID(env, tmpClass, "fontBuffer",
+			    "Ljava/nio/ByteBuffer;");
 
      tmpClass = (*env)->FindClass(env, "java/awt/geom/Point2D$Float");
      sunFontIDs.pt2DFloatClass = (jclass)(*env)->NewGlobalRef(env, tmpClass);
