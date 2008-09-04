@@ -7266,9 +7266,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
                 }
                 return false;
             }
-            window = window.parent;
+            window = window.getParent();
         }
-
         ComponentPeer peer = this.peer;
         Component heavyweight = (peer instanceof LightweightPeer)
             ? getNativeContainer() : this;
@@ -7804,7 +7803,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * tree that contains this component.
      */
     Container getNativeContainer() {
-        Container p = parent;
+        Container p = getParent();
         while (p != null && p.peer instanceof LightweightPeer) {
             p = p.getParent();
         }
