@@ -1,5 +1,5 @@
 /*
- * Copyright 1997-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1997-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,7 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
+import java.awt.peer.ComponentPeer;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -76,6 +77,7 @@ import sun.font.NativeFont;
 public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
     implements DisplayChangedListener {
 
+    public static boolean isOpenSolaris;
     private static Font defaultFont;
     protected static Logger logger = null;
 
@@ -103,6 +105,23 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
         java.security.AccessController.doPrivileged(
                                     new java.security.PrivilegedAction() {
             public Object run() {
+                    String version = System.getProperty("os.version", "0.0");
+                    try {
+                        float ver = Float.parseFloat(version);
+                        if (ver > 5.10f) {
+                            File f = new File("/etc/release");
+                            FileInputStream fis = new FileInputStream(f);
+                            InputStreamReader isr
+                                = new InputStreamReader(fis, "ISO-8859-1");
+                            BufferedReader br = new BufferedReader(isr);
+                            String line = br.readLine();
+                            if (line.indexOf("OpenSolaris") >= 0) {
+                                isOpenSolaris = true;
+                            }
+                            fis.close();
+                        }
+                    } catch (Exception e) {
+                    }
 
                 /* Register the JRE fonts so that the native platform can
                  * access them. This is used only on Windows so that when
@@ -319,4 +338,18 @@ public abstract class SunGraphicsEnvironment extends GraphicsEnvironment
     /*
      * ----END DISPLAY CHANGE SUPPORT----
      */
+
+    /**
+     * Returns true if FlipBufferStrategy with COPIED buffer contents
+     * is preferred for this peer's GraphicsConfiguration over
+     * BlitBufferStrategy, false otherwise.
+     *
+     * The reason FlipBS could be preferred is that in some configurations
+     * an accelerated copy to the screen is supported (like Direct3D 9)
+     *
+     * @return true if flip strategy should be used, false otherwise
+     */
+    public boolean isFlipStrategyPreferred(ComponentPeer peer) {
+        return false;
+    }
 }

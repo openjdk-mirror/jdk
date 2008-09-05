@@ -74,6 +74,11 @@ public abstract class FontConfiguration {
     protected boolean preferLocaleFonts;
     protected boolean preferPropFonts;
 
+    private File fontConfigFile;
+    private boolean foundOsSpecificFile;
+    private boolean inited;
+    private String javaLib;
+
     /* A default FontConfiguration must be created before an alternate
      * one to ensure proper static initialisation takes place.
      */
@@ -82,14 +87,25 @@ public abstract class FontConfiguration {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         fontManager = fm;
-        this.preferLocaleFonts = false;
-        this.preferPropFonts = false;
         setOsNameAndVersion();  /* static initialization */
         setEncoding();          /* static initialization */
-        fontConfig = this;      /* static initialization */
+        /* Separating out the file location from the rest of the
+         * initialisation, so the caller has the option of doing
+         * something else if a suitable file isn't found.
+         */
+        findFontConfigFile();
+    }
 
-        readFontConfigFile();
-        initFontConfig();
+    public synchronized boolean init() {
+        if (!inited) {
+            this.preferLocaleFonts = false;
+            this.preferPropFonts = false;
+            fontConfig = this;      /* static initialization */
+            readFontConfigFile(fontConfigFile);
+            initFontConfig();
+            inited = true;
+        }
+        return true;
     }
 
     public FontConfiguration(FontManager fm,
@@ -123,21 +139,51 @@ public abstract class FontConfiguration {
     /////////////////////////////////////////////////////////////////////
     // methods for loading the FontConfig file                         //
     /////////////////////////////////////////////////////////////////////
-    private void readFontConfigFile() {
-        // Find fontconfig file
-        File f = null;
+
+    public boolean foundOsSpecificFile() {
+        return foundOsSpecificFile;
+    }
+
+    /* Smoke test to see if we can trust this configuration by testing if
+     * the first slot of a composite font maps to an installed file.
+     */
+    public boolean fontFilesArePresent() {
+        init();
+        short fontNameID = compFontNameIDs[0][0][0];
+        short fileNameID = getComponentFileID(fontNameID);
+        final String fileName = mapFileName(getComponentFileName(fileNameID));
+        Boolean exists = (Boolean)java.security.AccessController.doPrivileged(
+            new java.security.PrivilegedAction() {
+                 public Object run() {
+                     try {
+                         File f = new File(fileName);
+                         return Boolean.valueOf(f.exists());
+                     }
+                     catch (Exception e) {
+                         return false;
+                     }
+                 }
+                });
+        return exists.booleanValue();
+    }
+
+    private void findFontConfigFile() {
+
+        foundOsSpecificFile = true; // default assumption.
         String javaHome = System.getProperty("java.home");
         if (javaHome == null) {
             throw new Error("java.home property not set");
         }
-        String javaLib = javaHome + File.separator + "lib";
+        javaLib = javaHome + File.separator + "lib";
         String userConfigFile = System.getProperty("sun.awt.fontconfig");
         if (userConfigFile != null) {
-            f = new File(userConfigFile);
+            fontConfigFile = new File(userConfigFile);
         } else {
-            f = findFontConfigFile(javaLib);
+            fontConfigFile = findFontConfigFile(javaLib);
         }
+    }
 
+    private void readFontConfigFile(File f) {
         /* This is invoked here as readFontConfigFile is only invoked
          * once per VM, and always in a privileged context, thus the
          * directory containing installed fall back fonts is accessed
@@ -169,7 +215,7 @@ public abstract class FontConfiguration {
         }
     }
 
-    private void getInstalledFallbackFonts(String javaLib) {
+    protected void getInstalledFallbackFonts(String javaLib) {
         String fallbackDirName = javaLib + File.separator +
             "fonts" + File.separator + "fallback";
 
@@ -231,6 +277,8 @@ public abstract class FontConfiguration {
                 return configFile;
             }
         }
+        foundOsSpecificFile = false;
+
         configFile = findImpl(baseName);
         if (configFile != null) {
             return configFile;
@@ -508,12 +556,12 @@ public abstract class FontConfiguration {
     /////////////////////////////////////////////////////////////////////
     protected static final int NUM_FONTS = 5;
     protected static final int NUM_STYLES = 4;
-    private static final String[] fontNames
+    protected static final String[] fontNames
             = {"serif", "sansserif", "monospaced", "dialog", "dialoginput"};
-    private static final String[] publicFontNames
+    protected static final String[] publicFontNames
             = {Font.SERIF, Font.SANS_SERIF, Font.MONOSPACED, Font.DIALOG,
                Font.DIALOG_INPUT};
-    private static final String[] styleNames
+    protected static final String[] styleNames
             = {"plain", "bold", "italic", "bolditalic"};
 
     /**
@@ -658,7 +706,7 @@ public abstract class FontConfiguration {
         return null;
     }
 
-    private static String[] installedFallbackFontFiles = null;
+    protected static String[] installedFallbackFontFiles = null;
 
     /**
      * Maps a file name given in the font configuration file

@@ -92,7 +92,9 @@ public class Win32FontManager extends DefaultFontManager {
     @Override
     protected FontConfiguration createFontConfiguration() {
         
-        return new WFontConfiguration(this);
+       FontConfiguration fc = new WFontConfiguration(this);
+       fc.init();
+       return fc;
     }
 
     @Override

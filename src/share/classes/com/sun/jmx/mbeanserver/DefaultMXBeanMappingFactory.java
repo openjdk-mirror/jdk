@@ -686,7 +686,7 @@ public class DefaultMXBeanMappingFactory extends MXBeanMappingFactory {
                     final String msg =
                         "Cannot convert SortedSet with non-null comparator: " +
                         comparator;
-                    throw new OpenDataException(msg);
+                    throw openDataException(msg, new IllegalArgumentException(msg));
                 }
             }
             final Object[] openArray = (Object[])
@@ -800,7 +800,7 @@ public class DefaultMXBeanMappingFactory extends MXBeanMappingFactory {
                     final String msg =
                         "Cannot convert SortedMap with non-null comparator: " +
                         comparator;
-                    throw new OpenDataException(msg);
+                    throw openDataException(msg, new IllegalArgumentException(msg));
                 }
             }
             final TabularType tabularType = (TabularType) getOpenType();
@@ -825,7 +825,7 @@ public class DefaultMXBeanMappingFactory extends MXBeanMappingFactory {
             final TabularData table = (TabularData) openValue;
             final Collection<CompositeData> rows = cast(table.values());
             final Map<Object, Object> valueMap =
-                sortedMap ? newSortedMap() : newMap();
+                sortedMap ? newSortedMap() : newInsertionOrderMap();
             for (CompositeData row : rows) {
                 final Object key =
                     keyMapping.fromOpenValue(row.get("key"));

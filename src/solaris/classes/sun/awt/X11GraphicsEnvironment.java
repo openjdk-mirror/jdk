@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.logging.*;
 
 import sun.awt.motif.MFontConfiguration;
+import sun.font.FcFontConfiguration;
 import sun.font.Font2D;
 import sun.font.FontManager;
 import sun.font.NativeFont;
@@ -238,12 +239,15 @@ public class X11GraphicsEnvironment
         return result.booleanValue();
     }
 
+
+
     /**
      * Returns face name for default font, or null if
      * no face names are used for CompositeFontDescriptors
      * for this platform.
      */
     public String getDefaultFontFaceName() {
+
         return null;
     }
 

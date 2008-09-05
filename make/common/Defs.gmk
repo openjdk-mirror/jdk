@@ -451,7 +451,7 @@ vpath %.$(OBJECT_SUFFIX) $(OBJDIR)
 # namely jni.h, jvm.h, and jni_utils.h, plus their platform-specific
 # relatives.
 #
-VPATH.h =   $(PLATFORM_SRC)/javavm/export$(CLASSPATH_SEPARATOR)$(SHARE_SRC)/javavm/export$(CLASSPATH_SEPARATOR)$(SHARE_SRC)/javavm/include$(CLASSPATH_SEPARATOR)$(PLATFORM_SRC)/javavm/include
+VPATH.h =   $(PLATFORM_SRC)/javavm/export$(CLASSPATH_SEPARATOR)$(SHARE_SRC)/javavm/export
 vpath %.h   $(VPATH.h)
 
 #
@@ -481,11 +481,6 @@ PKGDIR		= $(subst .,/,$(PACKAGE))
 # The java/javac/jdk variables (JAVAC_CMD, JAVA_CMD, etc.)
 #
 include $(JDK_MAKE_SHARED_DIR)/Defs-java.gmk
-
-#
-# Set opt level to ALT_OPT if set otherwise _OPT
-#
-POPT = $(_OPT$(ALT_OPT))$(ALT_OPT)
 
 #
 # Convenient macros
@@ -703,7 +698,7 @@ endif
 ifdef ALT_COPYRIGHT_YEAR
   COPYRIGHT_YEAR = $(ALT_COPYRIGHT_YEAR)
 else
-  COPYRIGHT_YEAR = $(shell $(DATE) '+%Y')
+  COPYRIGHT_YEAR := $(shell $(DATE) '+%Y')
 endif
 
 # Install of imported file (JDK_IMPORT_PATH, or some other external location)

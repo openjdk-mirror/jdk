@@ -192,9 +192,8 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
     static boolean useT2K;
     static boolean isWindows;
     public static boolean isLinux;
-    static boolean isSolaris;
-    public static boolean isSolaris8; // needed to check for JA wavedash fix.
-    public static boolean isSolaris9; // needed to check for songti font usage.
+    public static boolean isSolaris;
+    public static boolean isOpenSolaris;
     private boolean loaded1dot0Fonts = false;
     boolean loadedAllFonts = false;
     boolean loadedAllFontFiles = false;
@@ -366,15 +365,29 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                isSolaris = osName.startsWith("SunOS");
 
                isLinux = osName.startsWith("Linux");
-
+	       
                String t2kStr = System.getProperty("sun.java2d.font.scaler");
                if (t2kStr != null) {
                    useT2K = "t2k".equals(t2kStr);
                }
                if (isSolaris) {
-                   String version = System.getProperty("os.version", "unk");
-                   isSolaris8 = version.equals("5.8");
-                   isSolaris9 = version.equals("5.9");
+                    String version = System.getProperty("os.version", "0.0");
+                    try {
+                        float ver = Float.parseFloat(version);
+                        if (ver > 5.10f) {
+                            File f = new File("/etc/release");
+                            FileInputStream fis = new FileInputStream(f);
+                            InputStreamReader isr
+                                = new InputStreamReader(fis, "ISO-8859-1");
+                            BufferedReader br = new BufferedReader(isr);
+                            String line = br.readLine();
+                            if (line.indexOf("OpenSolaris") >= 0) {
+                                isOpenSolaris = true;
+                            }
+                            fis.close();
+                        }
+                    } catch (Exception e) {
+                    }
                } else {
                    isWindows = osName.startsWith("Windows");
                    if (isWindows) {
@@ -507,6 +520,11 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                          * that might be specified.
                          */
                         fontConfig = createFontConfiguration();
+			if (isOpenJDK()) {
+			    String[] fontInfo = getDefaultPlatformFont();
+			    defaultFontName = fontInfo[0];
+			    defaultFontFileName = fontInfo[1];
+			}
 
                         String extraFontPath = fontConfig.getExtraFontPath();
 
@@ -3191,14 +3209,14 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
             }
             info[1] = info[1] + File.separator + "arial.ttf";
         } else {
-            getFontConfigManager().initFontConfigFonts();
-            FontConfigInfo [] fontConfigFonts =
+            getFontConfigManager().initFontConfigFonts(false);
+            FontConfigManager.FcCompFont[] fontConfigFonts =
                 getFontConfigManager().getFontConfigFonts();
             for (int i=0; i<fontConfigFonts.length; i++) {
                 if ("sans".equals(fontConfigFonts[i].fcFamily) &&
                     0 == fontConfigFonts[i].style) {
-                    info[0] = fontConfigFonts[i].familyName;
-                    info[1] = fontConfigFonts[i].fontFile;
+                    info[0] = fontConfigFonts[i].firstFont.familyName;
+                    info[1] = fontConfigFonts[i].firstFont.fontFile;
                     break;
                 }
             }
@@ -3208,9 +3226,9 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
              */
             if (info[0] == null) {
                  if (fontConfigFonts.length > 0 &&
-                     fontConfigFonts[0].fontFile != null) {
-                     info[0] = fontConfigFonts[0].familyName;
-                     info[1] = fontConfigFonts[0].fontFile;
+                     fontConfigFonts[0].firstFont.fontFile != null) {
+                     info[0] = fontConfigFonts[0].firstFont.familyName;
+                     info[1] = fontConfigFonts[0].firstFont.fontFile;
                  } else {
                      info[0] = "Dialog";
                      info[1] = "/dialog.ttf";
@@ -3687,11 +3705,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
     }
 
     private void initDefaultFonts() {
-        if (isOpenJDK()) {
-            String[] fontInfo = getDefaultPlatformFont();
-            defaultFontName = fontInfo[0];
-            defaultFontFileName = fontInfo[1];
-        } else {
+        if (!isOpenJDK()) {
             defaultFontName = lucidaFontName;
             if (useAbsoluteFontFileNames()) {
                 defaultFontFileName =
@@ -3781,7 +3795,8 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
             String fontFileName =
                 getFileNameFromPlatformName(platformFontName);
             String[] nativeNames = null;
-            if (fontFileName == null) {
+            if (fontFileName == null
+		|| fontFileName.equals(platformFontName)) {
                 /* No file located, so register using the platform name,
                  * i.e. as a native font.
                  */
