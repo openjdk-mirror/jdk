@@ -167,7 +167,7 @@ static void ShowSplashScreen();
 static jboolean IsWildCardEnabled();
 
 #define ARG_CHECK(n, f, a) if (n < 1) { \
-    ReportErrorMessage(f, a); \
+    JLI_ReportErrorMessage(f, a); \
     printUsage = JNI_TRUE; \
     *pret = 1; \
     return JNI_TRUE; \
@@ -347,28 +347,28 @@ jboolean SanityCheck(const JavaMainArgs *args)
     if (initiateModule) {
 
         if (args->jarfile != NULL || args->classname != NULL) {
-            ReportErrorMessage(ARG_ERROR8);
+            JLI_ReportErrorMessage(ARG_ERROR8);
             return JNI_FALSE;
         }
 
         if (args->jamfile == NULL && args->module == NULL) {
-            ReportErrorMessage(ARG_ERROR9);
+            JLI_ReportErrorMessage(ARG_ERROR9);
             return JNI_FALSE;
         }
 
         if (args->jamfile != NULL && args->module != NULL) {
-            ReportErrorMessage(ARG_ERROR10);
+            JLI_ReportErrorMessage(ARG_ERROR10);
             return JNI_FALSE;
         }
 
 
         if (args->jamfile != NULL && args->repository != NULL) {
-            ReportErrorMessage(ARG_ERROR11);
+            JLI_ReportErrorMessage(ARG_ERROR11);
             return JNI_FALSE;
         }
 
     } else if (args->jarfile == NULL && args->classname == NULL) {
-        ReportErrorMessage(ARG_ERROR12);
+        JLI_ReportErrorMessage(ARG_ERROR12);
         return JNI_FALSE;
     }
     // Alls well that ends well
@@ -400,15 +400,15 @@ JavaMain(void * _args)
 
     start = CounterGet();
     if (!InitializeJVM(&vm, &env, &ifn)) {
-        ReportErrorMessage(JVM_ERROR1);
+        JLI_ReportErrorMessage(JVM_ERROR1);
         exit(1);
     }
 
     if (printVersion || showVersion) {
         PrintJavaVersion(env, showVersion);
         if ((*env)->ExceptionOccurred(env)) {
-            ReportExceptionDescription(env);
-            ReportErrorMessage(JNI_ERROR);
+            JLI_ReportExceptionDescription(env);
+            JLI_ReportErrorMessage(JNI_ERROR);
             goto leave;
         }
         if (printVersion) {
@@ -421,8 +421,8 @@ JavaMain(void * _args)
         if (!sanity) ret=1;
             PrintUsage(env, printXUsage);
             if ((*env)->ExceptionOccurred(env)) {
-                ReportExceptionDescription(env);
-                ReportErrorMessage(JNI_ERROR);
+            JLI_ReportExceptionDescription(env);
+            JLI_ReportErrorMessage(JNI_ERROR);
                 ret=1;
             }
             goto leave;
@@ -474,43 +474,43 @@ JavaMain(void * _args)
     if (jarfile != 0) {
         mainClassName = GetMainClassName(env, jarfile);
         if ((*env)->ExceptionOccurred(env)) {
-            ReportExceptionDescription(env);
-            ReportErrorMessage(JNI_ERROR);
+            JLI_ReportExceptionDescription(env);
+            JLI_ReportErrorMessage(JNI_ERROR);
             goto leave;
         }
         if (mainClassName == NULL) {
-          ReportErrorMessage(JAR_ERROR1,jarfile, GEN_ERROR);
+          JLI_ReportErrorMessage(JAR_ERROR1,jarfile, GEN_ERROR);
           goto leave;
         }
         classname = (char *)(*env)->GetStringUTFChars(env, mainClassName, 0);
         if (classname == NULL) {
-            ReportExceptionDescription(env);
-            ReportErrorMessage(JNI_ERROR);
+            JLI_ReportExceptionDescription(env);
+            JLI_ReportErrorMessage(JNI_ERROR);
             goto leave;
         }
         mainClass = LoadClass(env, classname);
         if(mainClass == NULL) { /* exception occured */
-            ReportExceptionDescription(env);
-            ReportErrorMessage(CLS_ERROR1, classname);
+            JLI_ReportExceptionDescription(env);
+            JLI_ReportErrorMessage(CLS_ERROR1, classname);
             goto leave;
         }
         (*env)->ReleaseStringUTFChars(env, mainClassName, classname);
     } else {
       mainClassName = NewPlatformString(env, classname);
       if (mainClassName == NULL) {
-        ReportErrorMessage(CLS_ERROR2, classname, GEN_ERROR);
+        JLI_ReportErrorMessage(CLS_ERROR2, classname, GEN_ERROR);
         goto leave;
       }
       classname = (char *)(*env)->GetStringUTFChars(env, mainClassName, 0);
       if (classname == NULL) {
-        ReportExceptionDescription(env);
-        ReportErrorMessage(JNI_ERROR);
+        JLI_ReportExceptionDescription(env);
+        JLI_ReportErrorMessage(JNI_ERROR);
         goto leave;
       }
       mainClass = LoadClass(env, classname);
       if(mainClass == NULL) { /* exception occured */
-        ReportExceptionDescription(env);
-        ReportErrorMessage(CLS_ERROR1, classname);
+        JLI_ReportExceptionDescription(env);
+        JLI_ReportErrorMessage(CLS_ERROR1, classname);
         goto leave;
       }
       (*env)->ReleaseStringUTFChars(env, mainClassName, classname);
@@ -521,24 +521,24 @@ JavaMain(void * _args)
                                        "([Ljava/lang/String;)V");
     if (mainID == NULL) {
         if ((*env)->ExceptionOccurred(env)) {
-            ReportExceptionDescription(env);
-            ReportErrorMessage(JNI_ERROR);
+            JLI_ReportExceptionDescription(env);
+            JLI_ReportErrorMessage(JNI_ERROR);
         } else {
-          ReportErrorMessage(CLS_ERROR3);
+          JLI_ReportErrorMessage(CLS_ERROR3);
         }
         goto leave;
     }
 
     if (IsMethodPublic(env, mainClass, mainID) == JNI_FALSE) {
-        ReportErrorMessage(CLS_ERROR4);
+        JLI_ReportErrorMessage(CLS_ERROR4);
         goto leave;
     }
 
     /* Build argument array */
     mainArgs = NewPlatformStringArray(env, argv, argc);
     if (mainArgs == NULL) {
-        ReportExceptionDescription(env);
-        ReportErrorMessage(JNI_ERROR);
+        JLI_ReportExceptionDescription(env);
+        JLI_ReportErrorMessage(JNI_ERROR);
         goto leave;
     }
 
@@ -559,7 +559,7 @@ JavaMain(void * _args)
      * launcher's return code except by calling System.exit.
      */
     if ((*vm)->DetachCurrentThread(vm) != 0) {
-        ReportErrorMessage(JVM_ERROR2);
+        JLI_ReportErrorMessage(JVM_ERROR2);
         ret = 1;
         goto leave;
     }
@@ -688,7 +688,7 @@ CheckJvmType(int *pargc, char ***argv, jboolean speculative) {
 
         if (loopCount > knownVMsCount) {
           if (!speculative) {
-            ReportErrorMessage(CFG_ERROR1);
+            JLI_ReportErrorMessage(CFG_ERROR1);
             exit(1);
           } else {
             return "ERROR";
@@ -698,7 +698,7 @@ CheckJvmType(int *pargc, char ***argv, jboolean speculative) {
 
         if (nextIdx < 0) {
           if (!speculative) {
-            ReportErrorMessage(CFG_ERROR2, knownVMs[jvmidx].alias);
+            JLI_ReportErrorMessage(CFG_ERROR2, knownVMs[jvmidx].alias);
             exit(1);
           } else {
             return "ERROR";
@@ -713,7 +713,7 @@ CheckJvmType(int *pargc, char ***argv, jboolean speculative) {
     switch (knownVMs[jvmidx].flag) {
     case VM_WARN:
         if (!speculative) {
-            ReportErrorMessage(CFG_WARN1, jvmtype, knownVMs[0].name + 1);
+            JLI_ReportErrorMessage(CFG_WARN1, jvmtype, knownVMs[0].name + 1);
         }
         /* fall through */
     case VM_IGNORE:
@@ -723,7 +723,7 @@ CheckJvmType(int *pargc, char ***argv, jboolean speculative) {
         break;
     case VM_ERROR:
         if (!speculative) {
-            ReportErrorMessage(CFG_ERROR3, jvmtype);
+            JLI_ReportErrorMessage(CFG_ERROR3, jvmtype);
             exit(1);
         } else {
             return "ERROR";
@@ -932,9 +932,9 @@ SelectVersion(int argc, char **argv, char **main_class)
     if (jarflag && operand) {
         if ((res = JLI_ParseManifest(operand, &info)) != 0) {
             if (res == -1)
-                ReportErrorMessage(JAR_ERROR2, operand);
+                JLI_ReportErrorMessage(JAR_ERROR2, operand);
             else
-                ReportErrorMessage(JAR_ERROR3, operand);
+                JLI_ReportErrorMessage(JAR_ERROR3, operand);
             exit(1);
         }
 
@@ -1001,7 +1001,7 @@ SelectVersion(int argc, char **argv, char **main_class)
      * Check for correct syntax of the version specification (JSR 56).
      */
     if (!JLI_ValidVersionString(info.jre_version)) {
-        ReportErrorMessage(SPC_ERROR1, info.jre_version);
+        JLI_ReportErrorMessage(SPC_ERROR1, info.jre_version);
         exit(1);
     }
 
@@ -1023,7 +1023,7 @@ SelectVersion(int argc, char **argv, char **main_class)
             JLI_MemFree(new_argv);
             return;
         } else {
-            ReportErrorMessage(CFG_ERROR4, info.jre_version);
+            JLI_ReportErrorMessage(CFG_ERROR4, info.jre_version);
             exit(1);
         }
     }
@@ -1114,7 +1114,7 @@ ParseArguments(int *pargc, char ***pargv,
  * command line options.
  */
         } else if (JLI_StrCmp(arg, "-fullversion") == 0) {
-            ReportMessage("%s full version \"%s\"", _launcher_name, GetFullVersion());
+            JLI_ReportMessage("%s full version \"%s\"", _launcher_name, GetFullVersion());
             return JNI_FALSE;
         } else if (JLI_StrCmp(arg, "-verbosegc") == 0) {
             AddOption("-verbose:gc", NULL);
@@ -1154,7 +1154,7 @@ ParseArguments(int *pargc, char ***pargv,
                    JLI_StrCmp(arg, "-cs") == 0 ||
                    JLI_StrCmp(arg, "-noasyncgc") == 0) {
             /* No longer supported */
-            ReportErrorMessage(ARG_WARN, arg);
+            JLI_ReportErrorMessage(ARG_WARN, arg);
         } else if (JLI_StrCCmp(arg, "-version:") == 0 ||
                    JLI_StrCmp(arg, "-no-jre-restrict-search") == 0 ||
                    JLI_StrCmp(arg, "-jre-restrict-search") == 0 ||
@@ -1226,22 +1226,22 @@ InitializeJVM(JavaVM **pvm, JNIEnv **penv, InvocationFunctions *ifn)
 
 #define NULL_CHECK0(e) if ((e) == 0) { \
     if (JLI_IsTraceLauncher() == JNI_TRUE && (*env)->ExceptionOccurred(env)) { \
-        ReportExceptionDescription(env); \
+        JLI_ReportExceptionDescription(env); \
     } \
-    ReportErrorMessage(JNI_ERROR); \
+    JLI_ReportErrorMessage(JNI_ERROR); \
     return 0; \
   }
 
 #define NULL_CHECK(e) if ((e) == 0) { \
     if (JLI_IsTraceLauncher() == JNI_TRUE && (*env)->ExceptionOccurred(env)) { \
-        ReportExceptionDescription(env); \
+        JLI_ReportExceptionDescription(env); \
     } \
-    ReportErrorMessage(JNI_ERROR); \
+    JLI_ReportErrorMessage(JNI_ERROR); \
     return; \
   }
 
 #define JNI_CHECK0() if ((*env)->ExceptionOccurred(env)) { \
-    ReportExceptionDescription(env); \
+    JLI_ReportExceptionDescription(env); \
     (*env)->ExceptionClear(env); \
     return 0; \
 }
@@ -1385,8 +1385,8 @@ IsMethodPublic(JNIEnv *env, jclass mainClass, jmethodID mainID)
     jobject obj = (*env)->ToReflectedMethod(env, mainClass, mainID, JNI_TRUE);
 
     if( obj == NULL) { /* exception occurred */
-        ReportExceptionDescription(env);
-        ReportErrorMessage(JNI_ERROR);
+        JLI_ReportExceptionDescription(env);
+        JLI_ReportErrorMessage(JNI_ERROR);
         return JNI_FALSE;
     }
 
@@ -1395,14 +1395,14 @@ IsMethodPublic(JNIEnv *env, jclass mainClass, jmethodID mainID)
                               "getModifiers", "()I");
 
     if ((*env)->ExceptionOccurred(env)) {
-        ReportExceptionDescription(env);
-        ReportErrorMessage(JNI_ERROR);
+        JLI_ReportExceptionDescription(env);
+        JLI_ReportErrorMessage(JNI_ERROR);
         return JNI_FALSE;
     }
 
     mods = (*env)->CallIntMethod(env, obj, mid);
     if ((mods & 1) == 0) { /* if (!Modifier.isPublic(mods)) ... */
-        ReportErrorMessage(CLS_ERROR4);
+        JLI_ReportErrorMessage(CLS_ERROR4);
         return JNI_FALSE;
     }
     return JNI_TRUE;
@@ -1478,7 +1478,7 @@ TranslateApplicationArgs(int jargc, const char **jargv, int *pargc, char ***parg
         char *arg = argv[i];
         if (arg[0] == '-' && arg[1] == 'J') {
             if (arg[2] == '\0') {
-                ReportErrorMessage(ARG_ERROR3);
+                JLI_ReportErrorMessage(ARG_ERROR3);
                 exit(1);
             }
             *nargv++ = arg + 2;
@@ -1545,7 +1545,7 @@ AddApplicationOptions(int cpathc, const char **cpathv)
     }
 
     if (!GetApplicationHome(home, sizeof(home))) {
-        ReportErrorMessage(CFG_ERROR5);
+        JLI_ReportErrorMessage(CFG_ERROR5);
         return JNI_FALSE;
     }
 
@@ -1759,7 +1759,7 @@ LaunchModule(JNIEnv* env, JavaMainArgs *args)
                                        "([Ljava/lang/String;)V");
     JNI_CHECK0();
     if (mainID == NULL) {
-        ReportErrorMessage(CLS_ERROR3);
+        JLI_ReportErrorMessage(CLS_ERROR3);
         return 0;
     }
 
@@ -1768,7 +1768,7 @@ LaunchModule(JNIEnv* env, JavaMainArgs *args)
      * Get the main class and verify its ok.
      */
     if (IsMethodPublic(env, mainClass, mainID) == JNI_FALSE) {
-        ReportErrorMessage(CLS_ERROR4);
+        JLI_ReportErrorMessage(CLS_ERROR4);
         return 0;
     }
 
@@ -1963,7 +1963,7 @@ ReadKnownVMs(const char *jrepath, const char * arch, jboolean speculative)
     jvmCfg = fopen(jvmCfgName, "r");
     if (jvmCfg == NULL) {
       if (!speculative) {
-        ReportErrorMessage(CFG_ERROR6, jvmCfgName);
+        JLI_ReportErrorMessage(CFG_ERROR6, jvmCfgName);
         exit(1);
       } else {
         return -1;
@@ -1975,7 +1975,7 @@ ReadKnownVMs(const char *jrepath, const char * arch, jboolean speculative)
         if (line[0] == '#')
             continue;
         if (line[0] != '-') {
-            ReportErrorMessage(CFG_WARN2, lineno, jvmCfgName);
+            JLI_ReportErrorMessage(CFG_WARN2, lineno, jvmCfgName);
         }
         if (cnt >= knownVMsLimit) {
             GrowKnownVMs(cnt);
@@ -1983,13 +1983,13 @@ ReadKnownVMs(const char *jrepath, const char * arch, jboolean speculative)
         line[JLI_StrLen(line)-1] = '\0'; /* remove trailing newline */
         tmpPtr = line + JLI_StrCSpn(line, whiteSpace);
         if (*tmpPtr == 0) {
-            ReportErrorMessage(CFG_WARN3, lineno, jvmCfgName);
+            JLI_ReportErrorMessage(CFG_WARN3, lineno, jvmCfgName);
         } else {
             /* Null-terminate this string for JLI_StringDup below */
             *tmpPtr++ = 0;
             tmpPtr += JLI_StrSpn(tmpPtr, whiteSpace);
             if (*tmpPtr == 0) {
-                ReportErrorMessage(CFG_WARN3, lineno, jvmCfgName);
+                JLI_ReportErrorMessage(CFG_WARN3, lineno, jvmCfgName);
             } else {
                 if (!JLI_StrCCmp(tmpPtr, "KNOWN")) {
                     vmType = VM_KNOWN;
@@ -1999,7 +1999,7 @@ ReadKnownVMs(const char *jrepath, const char * arch, jboolean speculative)
                         tmpPtr += JLI_StrSpn(tmpPtr, whiteSpace);
                     }
                     if (*tmpPtr == 0) {
-                        ReportErrorMessage(CFG_WARN3, lineno, jvmCfgName);
+                        JLI_ReportErrorMessage(CFG_WARN3, lineno, jvmCfgName);
                     } else {
                         /* Null terminate altVMName */
                         altVMName = tmpPtr;
@@ -2019,7 +2019,7 @@ ReadKnownVMs(const char *jrepath, const char * arch, jboolean speculative)
                         tmpPtr += JLI_StrSpn(tmpPtr, whiteSpace);
                     }
                     if (*tmpPtr == 0) {
-                        ReportErrorMessage(CFG_WARN4, lineno, jvmCfgName);
+                        JLI_ReportErrorMessage(CFG_WARN4, lineno, jvmCfgName);
                     } else {
                         /* Null terminate server class VM name */
                         serverClassVMName = tmpPtr;
@@ -2028,7 +2028,7 @@ ReadKnownVMs(const char *jrepath, const char * arch, jboolean speculative)
                         vmType = VM_IF_SERVER_CLASS;
                     }
                 } else {
-                    ReportErrorMessage(CFG_WARN5, lineno, &jvmCfgName[0]);
+                    JLI_ReportErrorMessage(CFG_WARN5, lineno, &jvmCfgName[0]);
                     vmType = VM_KNOWN;
                 }
             }
@@ -2299,7 +2299,7 @@ RemovableOption(char * option)
  * A utility procedure to always print to stderr
  */
 void
-ReportMessage(const char* fmt, ...)
+JLI_ReportMessage(const char* fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);

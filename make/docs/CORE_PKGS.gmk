@@ -160,6 +160,7 @@ CORE_PKGS =                                      \
   javax.management.event                         \
   javax.management.loading                       \
   javax.management.monitor                       \
+  javax.management.namespace                     \
   javax.management.relation                      \
   javax.management.openmbean                     \
   javax.management.timer                         \
