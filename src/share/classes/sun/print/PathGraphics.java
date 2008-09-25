@@ -33,6 +33,7 @@ import sun.font.Font2D;
 import sun.font.Font2DHandle;
 import sun.font.FontManager;
 import sun.font.FontManagerFactory;
+import sun.font.FontUtilities;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -699,7 +700,7 @@ public abstract class PathGraphics extends ProxyGraphics2D {
         }
 
         Font font = g.getFont();
-        Font2D font2D = FontManagerFactory.getInstance().getFont2D(font);
+        Font2D font2D = FontUtilities.getFont2D(font);
         if (font2D.handle.font2D != font2D) {
             /* suspicious, may be a bad font. lets bail */
             return false;

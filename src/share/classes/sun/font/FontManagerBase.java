@@ -136,6 +136,93 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         }
     }
 
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     @Deprecated
+     public static boolean IS_WINDOWS;
+     
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     @Deprecated
+     public static boolean IS_LINUX;
+     
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     @Deprecated
+     public static boolean IS_SOLARIS;
+     
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     @Deprecated
+     public static boolean IS_OPEN_SOLARIS;
+     
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     @Deprecated
+     public static boolean IS_SOLARIS_8;
+     
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     @Deprecated
+     public static boolean USE_T2K;
+     
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     @Deprecated
+     public static boolean IS_SOLARIS_9;
+     
+     /**
+      * For backward compatibilty only, this will to be removed soon, don't use
+      * in new code.
+      */
+     // Note that this flag always return true and is not computed
+     // like the others. This makes sense of OpenJDK, but Sun internal code
+     // may break.
+     @Deprecated
+     public static boolean IS_OPENJDK;
+     
+     /**
+      * Referenced by code in the JDK which wants to test for the
+      * minimum char code for which layout may be required.
+      * Note that even basic latin text can benefit from ligatures,
+      * eg "ffi" but we presently apply those only if explicitly
+      * requested with TextAttribute.LIGATURES_ON.
+      * The value here indicates the lowest char code for which failing
+      * to invoke layout would prevent acceptable rendering.
+      */
+     public static final int MIN_LAYOUT_CHARCODE = 0x0300;
+
+     /**
+      * Referenced by code in the JDK which wants to test for the
+      * maximum char code for which layout may be required.
+      * Note this does not account for supplementary characters
+      * where the caller interprets 'layout' to mean any case where
+      * one 'char' (ie the java type char) does not map to one glyph
+      */
+     public static final int MAX_LAYOUT_CHARCODE = 0x206F;
+     
+     public static final int FONTFORMAT_NONE = -1;
+     public static final int FONTFORMAT_TRUETYPE = 0;
+     public static final int FONTFORMAT_TYPE1 = 1;
+     public static final int FONTFORMAT_T2K = 2;
+     public static final int FONTFORMAT_TTC = 3;
+     public static final int FONTFORMAT_COMPOSITE = 4;
+     public static final int FONTFORMAT_NATIVE = 5;
+
     /* Pool of 20 font file channels chosen because some UTF-8 locale
      * composite fonts can use up to 16 platform fonts (including the
      * Lucida fall back). This should prevent channel thrashing when
@@ -188,12 +275,6 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
     private static boolean logging;
     
     static boolean longAddresses;
-    static String osName;
-    static boolean useT2K;
-    static boolean isWindows;
-    public static boolean isLinux;
-    public static boolean isSolaris;
-    public static boolean isOpenSolaris;
     private boolean loaded1dot0Fonts = false;
     boolean loadedAllFonts = false;
     boolean loadedAllFontFiles = false;
@@ -247,22 +328,32 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
     /* Used to indicate required return type from toArray(..); */
     private static String[] STR_ARRAY = new String[0];
 
-    @Override
+    /**
+     * Returns the global FontManagerBase instance. This is similar to
+     * {@link FontManagerFactory#getInstance()} but it returns a
+     * FontManagerBase instance instead. This is only used in internal classes
+     * where we can safely assume that a FontManagerBase is to be used.
+     *
+     * @return the global FontManagerBase instance
+     */
+    public static FontManagerBase getInstance() {
+        FontManager fm = FontManagerFactory.getInstance();
+        assert fm instanceof FontManagerBase;
+        return (FontManagerBase) fm;
+    }
+
     public FilenameFilter getTrueTypeFilter() {
         return ttFilter;
     }
-    
-    @Override
+
     public FilenameFilter getType1Filter() {
         return t1Filter;
     }
     
-    @Override
     public Logger getLogger() {
         return logger;
     }
     
-    @Override
     public boolean isLogging() {     
         return logging;
     }
@@ -361,17 +452,19 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                default: throw new RuntimeException("Unexpected address size");
                }
 
-               osName = System.getProperty("os.name", "unknownOS");
-               isSolaris = osName.startsWith("SunOS");
+               String osName = System.getProperty("os.name", "unknownOS");
+               IS_SOLARIS = osName.startsWith("SunOS");
 
-               isLinux = osName.startsWith("Linux");
+               IS_LINUX = osName.startsWith("Linux");
 	       
                String t2kStr = System.getProperty("sun.java2d.font.scaler");
                if (t2kStr != null) {
-                   useT2K = "t2k".equals(t2kStr);
+                   USE_T2K = "t2k".equals(t2kStr);
                }
-               if (isSolaris) {
+               if (IS_SOLARIS) {
                     String version = System.getProperty("os.version", "0.0");
+                    IS_SOLARIS_8 = version.startsWith("5.8");
+                    IS_SOLARIS_9 = version.startsWith("5.9");
                     try {
                         float ver = Float.parseFloat(version);
                         if (ver > 5.10f) {
@@ -382,15 +475,15 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                             BufferedReader br = new BufferedReader(isr);
                             String line = br.readLine();
                             if (line.indexOf("OpenSolaris") >= 0) {
-                                isOpenSolaris = true;
+                                IS_OPEN_SOLARIS = true;
                             }
                             fis.close();
                         }
                     } catch (Exception e) {
                     }
                } else {
-                   isWindows = osName.startsWith("Windows");
-                   if (isWindows) {
+                   IS_WINDOWS = osName.startsWith("Windows");
+                   if (IS_WINDOWS) {
                        String eudcFile =
                            SunGraphicsEnvironment.eudcFontFileName;
                        if (eudcFile != null) {
@@ -438,12 +531,10 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         });
     }
 
-    @Override
     public TrueTypeFont getEUDCFont() {
         return eudcFont;
     }
     
-    @Override
     public boolean debugFonts() {
         return debugFonts;
     }
@@ -509,7 +600,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                          * registerFonts method as on-screen these JRE fonts
                          * always go through the T2K rasteriser.
                          */
-                        if (isLinux) {
+                        if (IS_LINUX) {
                             /* Linux font configuration uses these fonts */
                             registerFontDir(jreFontDirName);
                         }
@@ -628,7 +719,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                          * users of a JA locale should have it
                          * set up already by their login environment.
                          */
-                        if (isSolaris && Locale.JAPAN.equals(Locale.getDefault())) {
+                        if (IS_SOLARIS && Locale.JAPAN.equals(Locale.getDefault())) {
                             registerFontDir("/usr/openwin/lib/locale/ja/X11/fonts/TT");
                         }
 
@@ -747,7 +838,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
      * fall back fonts
      */
     public boolean fontSupportsDefaultEncoding(Font font) {
-        return getFont2D(font) instanceof CompositeFont;
+        return FontUtilities.getFont2D(font) instanceof CompositeFont;
     }
 
     /**
@@ -805,7 +896,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
 
         FontUIResource fuir =
             new FontUIResource(font.getName(),font.getStyle(),font.getSize());
-        Font2D font2D = getFont2D(font);
+        Font2D font2D = FontUtilities.getFont2D(font);
 
         if (!(font2D instanceof PhysicalFont)) {
             /* Swing should only be calling this when a font is obtained
@@ -826,7 +917,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         }
         PhysicalFont physicalFont = (PhysicalFont)font2D;
         CompositeFont compFont = new CompositeFont(physicalFont, dialog2D);
-        setFont2D(fuir, compFont.handle);
+        FontUtilities.setFont2D(fuir, compFont.handle);
         /* marking this as a created font is needed as only created fonts
          * copy their creator's handles.
          */
@@ -865,8 +956,6 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         Font2DHandle newHandle = new Font2DHandle(compFont);
         return newHandle;
     }
-
-    public static native void setFont2D(Font font, Font2DHandle font2DHandle);
 
     private static native boolean isCreatedFont(Font font);
     private static native void setCreatedFont(Font font);
@@ -911,7 +1000,8 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                                              numMetricsSlots,
                                              exclusionRanges,
                                              exclusionMaxIndex, defer,
-                                             FontManagerFactory.getInstance());
+                                             FontManagerBase.getInstance());
+
         /* if the cache has an existing composite for this case, make
          * its handle point to this new font.
          * This ensures that when the altNameCache that is passed in
@@ -1175,7 +1265,6 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         }
     }
 
-    @Override
     public boolean isDeferredFont(String fileName) {
         return deferredFontFiles.containsKey(fileName);
     }
@@ -1350,12 +1439,10 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         return physicalFont;
     }
 
-    @Override
     public boolean isRegisteredFontFile(String name) {
         return registeredFonts.containsKey(name);
     }
 
-    @Override
     public PhysicalFont getRegisteredFontFile(String name) {
         return registeredFonts.get(name);
     }
@@ -1381,7 +1468,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
 
             switch (fontFormat) {
 
-            case FontManager.FONTFORMAT_TRUETYPE:
+            case FONTFORMAT_TRUETYPE:
                 int fn = 0;
                 TrueTypeFont ttf;
                 do {
@@ -1395,12 +1482,12 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                 while (fn < ttf.getFontCount());
                 break;
 
-            case FontManager.FONTFORMAT_TYPE1:
+            case FONTFORMAT_TYPE1:
                 Type1Font t1f = new Type1Font(fileName, nativeNames);
                 physicalFont = addToFontList(t1f, fontRank);
                 break;
 
-            case FontManager.FONTFORMAT_NATIVE:
+            case FONTFORMAT_NATIVE:
                 NativeFont nf = new NativeFont(fileName, false);
                 physicalFont = addToFontList(nf, fontRank);
             default:
@@ -1417,7 +1504,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
             }
         }
         if (physicalFont != null &&
-            fontFormat != FontManager.FONTFORMAT_NATIVE) {
+            fontFormat != FONTFORMAT_NATIVE) {
             registeredFonts.put(fileName, physicalFont);
         }
         return physicalFont;
@@ -1744,7 +1831,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
             return;
         }
         haveCheckedUnreferencedFontFiles = true;
-        if (!isWindows) {
+        if (!IS_WINDOWS) {
             return;
         }
         /* getFontFilesFromPath() returns all lower case names.
@@ -1849,7 +1936,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                                     fontToFamilyNameMap,
                                     familyToFontListMap,
                                     Locale.ENGLISH);
-            if (isWindows) {
+            if (IS_WINDOWS) {
                 resolveWindowsFonts();
             }
             if (logging) {
@@ -2130,7 +2217,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         // appropriate equivalents for serif and sansserif.
         // Note that the cost of this comparison is only for the first
         // call until the map is filled.
-        if (isWindows) {
+        if (IS_WINDOWS) {
             if (lowerCaseName.equals("ms sans serif")) {
                 name = "sansserif";
             } else if (lowerCaseName.equals("ms serif")) {
@@ -2228,7 +2315,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
             }
         }
 
-        if (isWindows) {
+        if (IS_WINDOWS) {
             /* Don't want Windows to return a Lucida Sans font from
              * C:\Windows\Fonts
              */
@@ -2284,7 +2371,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
          * Set a flag to indicate we've done this registration to avoid
          * repetition and more seriously, to avoid recursion.
          */
-        if (isSolaris&&!loaded1dot0Fonts) {
+        if (IS_SOLARIS &&!loaded1dot0Fonts) {
             /* "timesroman" is a special case since that's not the
              * name of any known font on Solaris or elsewhere.
              */
@@ -2399,7 +2486,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
          *
          * REMIND: this is something we plan to remove.
          */
-        if (isWindows) {
+        if (IS_WINDOWS) {
             String compatName =
                 getFontConfiguration().getFallbackFamilyName(name, null);
             if (compatName != null) {
@@ -2447,13 +2534,12 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
     }
 
     private static boolean fontSupportsEncoding(Font font, String encoding) {
-        return FontManagerFactory.getInstance().getFont2D(font).supportsEncoding(encoding);
+        return FontUtilities.getFont2D(font).supportsEncoding(encoding);
     }
 
     public abstract String getFontPath(boolean noType1Fonts);
     
     public synchronized static native void setNativeFontPath(String fontPath);
-    public native Font2D getFont2D(Font font);
     
     private Thread fileCloser = null;
     Vector<File> tmpFontFiles = null;
@@ -2886,7 +2972,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
      */
     public synchronized void useAlternateFontforJALocales() {
 
-        if (!isWindows) {
+        if (!IS_WINDOWS) {
             return;
         }
 
@@ -2975,7 +3061,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
     private static HashSet<String> getInstalledNames() {
         if (installedNames == null) {
            Locale l = getSystemStartupLocale();
-           FontManager fontManager = FontManagerFactory.getInstance();
+           FontManagerBase fontManager = FontManagerBase.getInstance();
            String[] installedFamilies =
                fontManager.getInstalledFontFamilyNames(l);
            Font[] installedFonts = fontManager.getAllInstalledFonts();
@@ -3066,7 +3152,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
             fontsAreRegisteredPerAppContext = true;
         }
         /* Create the FontFamily and add font to the tables */
-        Font2D font2D = getFont2D(font);
+        Font2D font2D = FontUtilities.getFont2D(font);
         int style = font2D.getStyle();
         FontFamily family = familyTable.get(familyName);
         if (family == null) {
@@ -3182,7 +3268,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         }
 
         String[] info = new String[2];
-        if (isWindows) {
+        if (IS_WINDOWS) {
             info[0] = "Arial";
             info[1] = "c:\\windows\\fonts";
             final String[] dirs = getPlatformFontDirs(true);
@@ -3271,7 +3357,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
          * name will default to sans and therefore sansserif so this
          * should be fine.
          */
-        if (isWindows) {
+        if (IS_WINDOWS) {
             return new FontUIResource(mappedName, style, size);
         }
 
@@ -3290,7 +3376,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
          */
         FontUIResource fuir =
             new FontUIResource(font2D.getFamilyName(null), style, size);
-        setFont2D(fuir, font2D.handle);
+        FontUtilities.setFont2D(fuir, font2D.handle);
         setCreatedFont(fuir);
         return fuir;
     }
@@ -3383,7 +3469,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
      */
     public boolean isNonSimpleChar(char ch) {
         return
-            FontManagerFactory.getInstance().isComplexCharCode(ch) ||
+            isComplexCharCode(ch) ||
             (ch >= CharToGlyphMapper.HI_SURROGATE_START &&
              ch <= CharToGlyphMapper.LO_SURROGATE_END);
     }
@@ -3425,10 +3511,9 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
      * but do have a GSUB table, then they are probably older
      * fonts GDI handles differently.
      */
-    @Override
     public boolean textLayoutIsCompatible(Font font) {
 
-        Font2D font2D = FontManagerFactory.getInstance().getFont2D(font);
+        Font2D font2D = FontUtilities.getFont2D(font);
         if (font2D instanceof TrueTypeFont) {
             TrueTypeFont ttf = (TrueTypeFont)font2D;
             return
@@ -3679,12 +3764,12 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                                     boolean defer, boolean resolveSymLinks) {
         File pathFile = new File(dirName);
         addDirFonts(dirName, pathFile, ttFilter,
-                    FontManager.FONTFORMAT_TRUETYPE, useJavaRasterizer,
+                    FONTFORMAT_TRUETYPE, useJavaRasterizer,
                     fontRank==Font2D.UNKNOWN_RANK ?
                     Font2D.TTF_RANK : fontRank,
                     defer, resolveSymLinks);
         addDirFonts(dirName, pathFile, t1Filter,
-                    FontManager.FONTFORMAT_TYPE1, useJavaRasterizer,
+                    FONTFORMAT_TYPE1, useJavaRasterizer,
                     fontRank==Font2D.UNKNOWN_RANK ?
                     Font2D.TYPE1_RANK : fontRank,
                     defer, resolveSymLinks);
@@ -3906,11 +3991,11 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         }
         int fontFormat;
         if (ttFilter.accept(null, fontFileName)) {
-            fontFormat = FontManager.FONTFORMAT_TRUETYPE;
+            fontFormat = FONTFORMAT_TRUETYPE;
         } else if (t1Filter.accept(null, fontFileName)) {
-            fontFormat = FontManager.FONTFORMAT_TYPE1;
+            fontFormat = FONTFORMAT_TYPE1;
         } else {
-            fontFormat = FontManager.FONTFORMAT_NATIVE;
+            fontFormat = FONTFORMAT_NATIVE;
         }
         registeredFontFiles.add(fontFileName);
         if (defer) {
@@ -3965,8 +4050,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
      * - we know the fontconfig fonts are all in the windows registry
      */
     private boolean isNameForRegisteredFile(String fontName) {
-        FontManager fm = FontManagerFactory.getInstance();
-        String fileName = fm.getFileNameForFontName(fontName);
+        String fileName = getFileNameForFontName(fontName);
         if (fileName == null) {
             return false;
         }
@@ -3999,8 +4083,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
              * if applications are allowed to create them. "allfonts" could
              * then be stale.
              */
-            FontManager fm = FontManagerFactory.getInstance();
-            Font2D[] allfonts = fm.getRegisteredFonts();
+            Font2D[] allfonts = getRegisteredFonts();
             for (int i=0; i < allfonts.length; i++) {
                 if (!(allfonts[i] instanceof NativeFont)) {
                     fontMapNames.put(allfonts[i].getFontName(null),
@@ -4030,7 +4113,7 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
                 fonts[i] = new Font(fontNames[i], Font.PLAIN, 1);
                 Font2D f2d = (Font2D)fontMapNames.get(fontNames[i]);
                 if (f2d  != null) {
-                    FontManagerBase.setFont2D(fonts[i], f2d.handle);
+                    FontUtilities.setFont2D(fonts[i], f2d.handle);
                 }
             }
             allFonts = fonts;
@@ -4041,6 +4124,14 @@ public abstract class FontManagerBase implements FontSupport, FontManager {
         return copyFonts;
     }
 
+    /**
+     * Get a list of installed fonts in the requested {@link Locale}.
+     * The list contains the fonts Family Names.
+     * If Locale is null, the default locale is used.
+     * 
+     * @param requestedLocale, if null the default locale is used.
+     * @return list of installed fonts in the system.
+     */
     public String[] getInstalledFontFamilyNames(Locale requestedLocale) {
         if (requestedLocale == null) {
             requestedLocale = Locale.getDefault();

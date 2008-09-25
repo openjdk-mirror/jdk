@@ -194,8 +194,8 @@ public class TrueTypeFont extends FileFont {
         if (checkedNatives) {
             return useNatives;
         }
-        if (!FontManager.IS_SOLARIS || useJavaRasterizer ||
-            FontManager.USE_T2K || nativeNames == null ||
+        if (!FontManagerBase.IS_SOLARIS || useJavaRasterizer ||
+            FontManagerBase.USE_T2K || nativeNames == null ||
             getDirectoryEntry(EBLCTag) != null ||
             GraphicsEnvironment.isHeadless()) {
             checkedNatives = true;
@@ -324,7 +324,7 @@ public class TrueTypeFont extends FileFont {
             }
             initNames();
         } catch (Exception e) {
-            FontManager fm = FontManagerFactory.getInstance();
+            FontManagerBase fm = FontManagerBase.getInstance();
             if (fm.isLogging()) {
                 fm.getLogger().severe(e.toString());
             }
@@ -483,7 +483,7 @@ public class TrueTypeFont extends FileFont {
             return defaultCodePage;
         }
 
-        if (FontManager.IS_WINDOWS) {
+        if (FontManagerBase.IS_WINDOWS) {
             defaultCodePage =
                 (String)java.security.AccessController.doPrivileged(
                    new sun.security.action.GetPropertyAction("file.encoding"));
@@ -750,7 +750,7 @@ public class TrueTypeFont extends FileFont {
             style = Font.ITALIC;
             break;
         case fsSelectionBoldBit:
-            if (FontManager.IS_SOLARIS && platName.endsWith("HG-GothicB.ttf")) {
+            if (FontManagerBase.IS_SOLARIS && platName.endsWith("HG-GothicB.ttf")) {
                 /* Workaround for Solaris's use of a JA font that's marked as
                  * being designed bold, but is used as a PLAIN font.
                  */
@@ -830,7 +830,7 @@ public class TrueTypeFont extends FileFont {
         try {
             return new String(bytes, 0, len, charset);
         } catch (UnsupportedEncodingException e) {
-            FontManager fm = FontManagerFactory.getInstance();
+            FontManagerBase fm = FontManagerBase.getInstance();
             if (fm.isLogging()) {
                 fm.getLogger().warning(e + " EncodingID=" + encoding);
             }
@@ -961,7 +961,7 @@ public class TrueTypeFont extends FileFont {
 
     protected synchronized FontScaler getScaler() {
         if (scaler == null) {
-            scaler = FontManagerFactory.getInstance().getScaler(this, fontIndex,
+            scaler = FontManagerBase.getInstance().getScaler(this, fontIndex,
                 supportsCJK, fileSize);
         }
         return scaler;

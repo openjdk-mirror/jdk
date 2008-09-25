@@ -95,13 +95,6 @@ Java_sun_font_FontManagerBase_initIDs
 
      jclass tmpClass = (*env)->FindClass(env, "java/awt/Font");
 
-     sunFontIDs.getFont2DMID =
-         (*env)->GetMethodID(env, tmpClass, "getFont2D",
-                             "()Lsun/font/Font2D;");
-     sunFontIDs.font2DHandle =
-       (*env)->GetFieldID(env, tmpClass,
-                          "font2DHandle", "Lsun/font/Font2DHandle;");
-
      sunFontIDs.createdFont =
        (*env)->GetFieldID(env, tmpClass, "createdFont", "Z");
 
@@ -198,24 +191,6 @@ Java_sun_font_FontManagerBase_initIDs
 
 JNIEXPORT FontManagerNativeIDs getSunFontIDs() {
     return sunFontIDs;
-}
-
-JNIEXPORT jobject JNICALL
-Java_sun_font_FontManagerBase_getFont2D(
-  JNIEnv *env,
-  jclass clsFM,
-  jobject javaFont) {
-
-    return (*env)->CallObjectMethod(env, javaFont, sunFontIDs.getFont2DMID);
-}
-
-JNIEXPORT void JNICALL
-Java_sun_font_FontManagerBase_setFont2D(
-  JNIEnv *env,
-  jclass clsFM,
-  jobject javaFont,
-  jobject fontHandle) {
-    (*env)->SetObjectField(env, javaFont, sunFontIDs.font2DHandle, fontHandle);
 }
 
 JNIEXPORT void JNICALL

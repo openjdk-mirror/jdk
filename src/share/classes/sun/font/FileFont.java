@@ -158,7 +158,7 @@ public abstract class FileFont extends PhysicalFont {
      * rare maybe it is not worth doing this last part.
      */
     synchronized void deregisterFontAndClearStrikeCache() {
-        FontManager fm = FontManagerFactory.getInstance();
+        FontManagerBase fm = FontManagerBase.getInstance();
         fm.deRegisterBadFont(this);
 
         for (Reference strikeRef : strikeCache.values()) {
@@ -180,7 +180,7 @@ public abstract class FileFont extends PhysicalFont {
         try {
             return getScaler().getFontMetrics(pScalerContext);
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return getFontMetrics(pScalerContext);
         }
     }
@@ -189,7 +189,7 @@ public abstract class FileFont extends PhysicalFont {
         try {
             return getScaler().getGlyphAdvance(pScalerContext, glyphCode);
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return getGlyphAdvance(pScalerContext, glyphCode);
         }
     }
@@ -198,7 +198,7 @@ public abstract class FileFont extends PhysicalFont {
         try {
             getScaler().getGlyphMetrics(pScalerContext, glyphCode, metrics);
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             getGlyphMetrics(pScalerContext, glyphCode, metrics);
         }
     }
@@ -207,7 +207,7 @@ public abstract class FileFont extends PhysicalFont {
         try {
             return getScaler().getGlyphImage(pScalerContext, glyphCode);
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return getGlyphImage(pScalerContext, glyphCode);
         }
     }
@@ -216,7 +216,7 @@ public abstract class FileFont extends PhysicalFont {
         try {
             return getScaler().getGlyphOutlineBounds(pScalerContext, glyphCode);
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return getGlyphOutlineBounds(pScalerContext, glyphCode);
         }
     }
@@ -225,7 +225,7 @@ public abstract class FileFont extends PhysicalFont {
         try {
             return getScaler().getGlyphOutline(pScalerContext, glyphCode, x, y);
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return getGlyphOutline(pScalerContext, glyphCode, x, y);
         }
     }
@@ -234,7 +234,7 @@ public abstract class FileFont extends PhysicalFont {
         try {
             return getScaler().getGlyphVectorOutline(pScalerContext, glyphs, numGlyphs, x, y);
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return getGlyphVectorOutline(pScalerContext, glyphs, numGlyphs, x, y);
         }
     }
@@ -270,7 +270,7 @@ public abstract class FileFont extends PhysicalFont {
                                   fontFile.delete();
                                   /* remove from delete on exit hook list : */
                                   // FIXME: still need to be refactored
-                                  ((FontManagerBase) FontManagerFactory.getInstance()).tmpFontFiles.remove(fontFile);
+                                  FontManagerBase.getInstance().tmpFontFiles.remove(fontFile);
                               } catch (Exception e) {
                               }
                           }

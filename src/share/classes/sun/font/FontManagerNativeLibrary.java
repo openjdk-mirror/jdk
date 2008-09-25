@@ -34,7 +34,7 @@ public class FontManagerNativeLibrary {
             public Object run() {
                /* REMIND do we really have to load awt here? */
                System.loadLibrary("awt");
-               if (FontManager.IS_OPENJDK &&
+               if (FontManagerBase.IS_OPENJDK &&
                    System.getProperty("os.name").startsWith("Windows")) {
                    /* Ideally fontmanager library should not depend on
                       particular implementation of the font scaler.

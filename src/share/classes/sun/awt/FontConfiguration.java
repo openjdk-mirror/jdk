@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.Vector;
 import sun.font.CompositeFontDescriptor;
 import sun.font.FontManager;
+import sun.font.FontManagerBase;
 import sun.font.FontManagerFactory;
 import sun.java2d.SunGraphicsEnvironment;
 
@@ -70,7 +71,7 @@ public abstract class FontConfiguration {
     private static Logger logger;
     protected static boolean isProperties = true;
 
-    protected FontManager fontManager;
+    protected FontManagerBase fontManager;
     protected boolean preferLocaleFonts;
     protected boolean preferPropFonts;
 
@@ -82,7 +83,7 @@ public abstract class FontConfiguration {
     /* A default FontConfiguration must be created before an alternate
      * one to ensure proper static initialisation takes place.
      */
-    public FontConfiguration(FontManager fm) {
+    public FontConfiguration(FontManagerBase fm) {
         if (fm.debugFonts() && logger == null) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
@@ -108,7 +109,7 @@ public abstract class FontConfiguration {
         return true;
     }
 
-    public FontConfiguration(FontManager fm,
+    public FontConfiguration(FontManagerBase fm,
                              boolean preferLocaleFonts,
                              boolean preferPropFonts) {
         fontManager = fm;
@@ -1123,7 +1124,7 @@ public abstract class FontConfiguration {
      */
     HashMap<String, Boolean> existsMap;
     public boolean needToSearchForFile(String fileName) {
-        if (!FontManager.IS_LINUX) {
+        if (!FontManagerBase.IS_LINUX) {
             return false;
         } else if (existsMap == null) {
            existsMap = new HashMap<String, Boolean>();
@@ -2065,7 +2066,7 @@ public abstract class FontConfiguration {
                         throw new Exception();
                     }
                 } catch (Exception e) {
-                    if (FontManagerFactory.getInstance().debugFonts() && 
+                    if (FontManagerBase.getInstance().debugFonts() && 
                         logger != null) {
                         logger.config("Failed parsing " + key +
                                   " property of font configuration.");

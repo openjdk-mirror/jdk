@@ -261,9 +261,9 @@ public final class FontDesignMetrics extends FontMetrics {
          * Note that currently Swing native L&F composites are not handled
          * by this code as they use the metrics of the physical anyway.
          */
-        FontManager fm = FontManagerFactory.getInstance();
+        FontManagerBase fm = FontManagerBase.getInstance();
         if (fm.maybeUsingAlternateCompositeFonts() &&
-            fm.getFont2D(font) instanceof CompositeFont) {
+            FontUtilities.getFont2D(font) instanceof CompositeFont) {
             return new FontDesignMetrics(font, frc);
         }
 
@@ -354,7 +354,7 @@ public final class FontDesignMetrics extends FontMetrics {
 
     private void initMatrixAndMetrics() {
 
-        Font2D font2D = FontManagerFactory.getInstance().getFont2D(font);
+        Font2D font2D = FontUtilities.getFont2D(font);
         fontStrike = font2D.getStrike(font, frc);
         StrikeMetrics metrics = fontStrike.getFontMetrics();
         this.ascent = metrics.getAscent();
@@ -474,7 +474,7 @@ public final class FontDesignMetrics extends FontMetrics {
                 char ch = str.charAt(i);
                 if (ch < 0x100) {
                     width += getLatinCharWidth(ch);
-                } else if (FontManagerFactory.getInstance().isNonSimpleChar(ch)) {
+                } else if (FontManagerBase.getInstance().isNonSimpleChar(ch)) {
                     width = new TextLayout(str, font, frc).getAdvance();
                     break;
                 } else {
@@ -505,7 +505,7 @@ public final class FontDesignMetrics extends FontMetrics {
                 char ch = data[i];
                 if (ch < 0x100) {
                     width += getLatinCharWidth(ch);
-                } else if (FontManagerFactory.getInstance().isNonSimpleChar(ch)) {
+                } else if (FontManagerBase.getInstance().isNonSimpleChar(ch)) {
                     String str = new String(data, off, len);
                     width = new TextLayout(str, font, frc).getAdvance();
                     break;

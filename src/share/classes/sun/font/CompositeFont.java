@@ -54,7 +54,7 @@ public final class CompositeFont extends Font2D {
     int numGlyphs = 0;
     int localeSlot = -1; // primary slot for this locale.
 
-    private FontManager fm = null;
+    private FontManagerBase fm = null;
     
     /* See isStdComposite() for when/how this is used */
     boolean isStdComposite = true;
@@ -62,7 +62,7 @@ public final class CompositeFont extends Font2D {
     public CompositeFont(String name, String[] compFileNames,
                          String[] compNames, int metricsSlotCnt,
                          int[] exclRanges, int[] maxIndexes,
-                         boolean defer, FontManager fm) {
+                         boolean defer, FontManagerBase fm) {
 
         this.fm = fm;
         handle = new Font2DHandle(this);

@@ -79,7 +79,7 @@ class FreetypeFontScaler extends FontScaler {
                                             pScalerContext,
                                             nativeScaler);
         }
-        return FontManagerFactory.getInstance().getNullScaler().getFontMetrics(0L);
+        return FontManagerBase.getInstance().getNullScaler().getFontMetrics(0L);
     }
 
     synchronized float getGlyphAdvance(long pScalerContext, int glyphCode)
@@ -90,7 +90,7 @@ class FreetypeFontScaler extends FontScaler {
                                          nativeScaler,
                                          glyphCode);
         }
-        return FontManagerFactory.getInstance().getNullScaler().
+        return FontManagerBase.getInstance().getNullScaler().
             getGlyphAdvance(0L, glyphCode);
     }
 
@@ -105,7 +105,7 @@ class FreetypeFontScaler extends FontScaler {
                                   metrics);
             return;
         }
-        FontManagerFactory.getInstance().getNullScaler().
+        FontManagerBase.getInstance().getNullScaler().
             getGlyphMetrics(0L, glyphCode, metrics);
     }
 
@@ -117,7 +117,7 @@ class FreetypeFontScaler extends FontScaler {
                                        nativeScaler,
                                        glyphCode);
         }
-        return FontManagerFactory.getInstance().getNullScaler().
+        return FontManagerBase.getInstance().getNullScaler().
             getGlyphImage(0L, glyphCode);
     }
 
@@ -130,7 +130,7 @@ class FreetypeFontScaler extends FontScaler {
                                                nativeScaler,
                                                glyphCode);
         }
-        return FontManagerFactory.getInstance().getNullScaler().
+        return FontManagerBase.getInstance().getNullScaler().
             getGlyphOutlineBounds(0L,glyphCode);
     }
 
@@ -144,7 +144,7 @@ class FreetypeFontScaler extends FontScaler {
                                          glyphCode,
                                          x, y);
         }
-        return FontManagerFactory.getInstance().getNullScaler().
+        return FontManagerBase.getInstance().getNullScaler().
             getGlyphOutline(0L, glyphCode, x,y);
     }
 
@@ -159,7 +159,7 @@ class FreetypeFontScaler extends FontScaler {
                                                numGlyphs,
                                                x, y);
         }
-        return FontManagerFactory.getInstance()
+        return FontManagerBase.getInstance()
             .getNullScaler().getGlyphVectorOutline(0L, glyphs, numGlyphs, x, y);
     }
 
@@ -178,21 +178,21 @@ class FreetypeFontScaler extends FontScaler {
         if (nativeScaler != 0L) {
             return getNumGlyphsNative(nativeScaler);
         }
-        return FontManagerFactory.getInstance().getNullScaler().getNumGlyphs();
+        return FontManagerBase.getInstance().getNullScaler().getNumGlyphs();
     }
 
     synchronized int getMissingGlyphCode()  throws FontScalerException {
         if (nativeScaler != 0L) {
             return getMissingGlyphCodeNative(nativeScaler);
         }
-        return FontManagerFactory.getInstance().getNullScaler().getMissingGlyphCode();
+        return FontManagerBase.getInstance().getNullScaler().getMissingGlyphCode();
     }
 
     synchronized int getGlyphCode(char charCode) throws FontScalerException {
         if (nativeScaler != 0L) {
             return getGlyphCodeNative(nativeScaler, charCode);
         }
-        return FontManagerFactory.getInstance().getNullScaler().getGlyphCode(charCode);
+        return FontManagerBase.getInstance().getNullScaler().getGlyphCode(charCode);
     }
 
     synchronized Point2D.Float getGlyphPoint(long pScalerContext,
@@ -202,7 +202,7 @@ class FreetypeFontScaler extends FontScaler {
             return getGlyphPointNative(font.get(), pScalerContext,
                                       nativeScaler, glyphCode, ptNumber);
         }
-        return FontManagerFactory.getInstance().getNullScaler().getGlyphPoint(
+        return FontManagerBase.getInstance().getNullScaler().getGlyphPoint(
                    pScalerContext, glyphCode,  ptNumber);
     }
 

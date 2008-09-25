@@ -17,6 +17,7 @@ import java.util.Vector;
 import sun.awt.motif.MFontConfiguration;
 import sun.font.DefaultFontManager;
 import sun.font.FontManager;
+import sun.font.FontManagerBase;
 import sun.font.FontManagerFactory;
 import sun.font.FcFontConfiguration;
 import sun.font.NativeFont;
@@ -198,7 +199,7 @@ public class X11FontManager extends DefaultFontManager {
         if (fontID != null) {
             fileName = (String)fontNameMap.get(fontID);
             /* On Linux check for the Lucida Oblique fonts */
-            if (fileName == null && isLinux && !isOpenJDK()) {
+            if (fileName == null && IS_LINUX && !isOpenJDK()) {
                 if (oblmap == null) {
                     initObliqueLucidaFontMap();
                 }
@@ -687,7 +688,7 @@ public class X11FontManager extends DefaultFontManager {
         if (fontConfigDirs == null) {
             return;
         }
-        if (isLinux) {
+        if (IS_LINUX) {
             fontConfigDirs.add(jreLibDirName+File.separator+"oblique-fonts");
         }
         fontdirs = (String[])fontConfigDirs.toArray(new String[0]);
@@ -699,7 +700,7 @@ public class X11FontManager extends DefaultFontManager {
             return;
         }
 
-        FontManager fm = FontManagerFactory.getInstance();
+        FontManagerBase fm = FontManagerBase.getInstance();
         
         // need to register these individually rather than by one call
         // to ensure that one bad directory doesn't cause all to be rejected
@@ -732,11 +733,11 @@ public class X11FontManager extends DefaultFontManager {
          * this as the synthesis should always work on its platforms.
          */
         FontConfiguration mFontConfig = new MFontConfiguration(this);
-        if (isOpenSolaris ||
-            (isLinux &&
+        if (IS_OPEN_SOLARIS ||
+            (IS_LINUX &&
              (!mFontConfig.foundOsSpecificFile() ||
               !mFontConfig.fontFilesArePresent()) ||
-             (isSolaris && !mFontConfig.fontFilesArePresent()))) {
+             (IS_SOLARIS && !mFontConfig.fontFilesArePresent()))) {
             FcFontConfiguration fcFontConfig =
                 new FcFontConfiguration(this);
             if (fcFontConfig.init()) {

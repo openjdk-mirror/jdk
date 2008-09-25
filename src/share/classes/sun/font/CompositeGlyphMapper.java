@@ -211,10 +211,10 @@ public final class CompositeGlyphMapper extends CharToGlyphMapper {
                 glyphs[i] = convertToGlyph(code);
             }
 
-            if (code < FontManager.MIN_LAYOUT_CHARCODE) {
+            if (code < FontManagerBase.MIN_LAYOUT_CHARCODE) {
                 continue;
             }
-            else if (FontManagerFactory.getInstance().isComplexCharCode(code)) {
+            else if (FontManagerBase.getInstance().isComplexCharCode(code)) {
                 return true;
             }
             else if (code >= 0x10000) {

@@ -46,7 +46,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
           missingGlyph = scaler.getMissingGlyphCode();
         } catch (FontScalerException fe) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             try {
                 missingGlyph = scaler.getMissingGlyphCode();
             } catch (FontScalerException e) { //should not happen
@@ -59,7 +59,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
             return scaler.getNumGlyphs();
         } catch (FontScalerException e) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return getNumGlyphs();
         }
     }
@@ -72,7 +72,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
             return scaler.getGlyphCode(ch) != missingGlyph;
         } catch(FontScalerException e) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return canDisplay(ch);
         }
     }
@@ -81,7 +81,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
             return scaler.getGlyphCode(ch);
         } catch (FontScalerException e) {
-            scaler = FontManagerFactory.getInstance().getNullScaler();
+            scaler = FontManagerBase.getInstance().getNullScaler();
             return charToGlyph(ch);
         }
     }
@@ -93,7 +93,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
             try {
                 return scaler.getGlyphCode((char)ch);
             } catch (FontScalerException e) {
-                scaler = FontManagerFactory.getInstance().getNullScaler();
+                scaler = FontManagerBase.getInstance().getNullScaler();
                 return charToGlyph(ch);
             }
         }
@@ -160,10 +160,10 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
 
             glyphs[i] = charToGlyph(code);
 
-            if (code < FontManager.MIN_LAYOUT_CHARCODE) {
+            if (code < FontManagerBase.MIN_LAYOUT_CHARCODE) {
                 continue;
             }
-            else if (FontManagerFactory.getInstance().isComplexCharCode(code)) {
+            else if (FontManagerBase.getInstance().isComplexCharCode(code)) {
                 return true;
             }
             else if (code >= 0x10000) {

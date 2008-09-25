@@ -27,16 +27,10 @@ package sun.font;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.util.Locale;
-import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 import javax.swing.plaf.FontUIResource;
-
-import sun.java2d.SunGraphicsEnvironment;
 
 /**
  * Interface between Java Fonts (java.awt.Font) and the underlying
@@ -44,130 +38,10 @@ import sun.java2d.SunGraphicsEnvironment;
  */
 public interface FontManager {
    
-    @Deprecated
-    final String osName = System.getProperty("os.name", "unknownOS");
-    
-    /**
-     * Referenced by code in the JDK which wants to test for the
-     * minimum char code for which layout may be required.
-     * Note that even basic latin text can benefit from ligatures,
-     * eg "ffi" but we presently apply those only if explicitly
-     * requested with TextAttribute.LIGATURES_ON.
-     * The value here indicates the lowest char code for which failing
-     * to invoke layout would prevent acceptable rendering.
-     */
-    public static final int MIN_LAYOUT_CHARCODE = 0x0300;
-
-    /**
-     * Referenced by code in the JDK which wants to test for the
-     * maximum char code for which layout may be required.
-     * Note this does not account for supplementary characters
-     * where the caller interprets 'layout' to mean any case where
-     * one 'char' (ie the java type char) does not map to one glyph
-     */
-    public static final int MAX_LAYOUT_CHARCODE = 0x206F;
-    
-    public static final int FONTFORMAT_NONE = -1;
-    public static final int FONTFORMAT_TRUETYPE = 0;
-    public static final int FONTFORMAT_TYPE1 = 1;
-    public static final int FONTFORMAT_T2K = 2;
-    public static final int FONTFORMAT_TTC = 3;
-    public static final int FONTFORMAT_COMPOSITE = 4;
-    public static final int FONTFORMAT_NATIVE = 5;
-
+    // These constants are used in findFont().
     public static final int NO_FALLBACK = 0;
     public static final int PHYSICAL_FALLBACK = 1;
     public static final int LOGICAL_FALLBACK = 2;
-
-    public static final int QUADPATHTYPE = 1;
-    public static final int CUBICPATHTYPE = 2;
-
-    //public static final short US_LCID = 0x0409;  // US English - default
-    
-    /**
-     * For backward compatibilty only, this will to be removed soon, don't use
-     * in new code.
-     */
-    @Deprecated
-    public static final boolean IS_WINDOWS = osName.startsWith("Windows");
-    
-    /**
-     * For backward compatibilty only, this will to be removed soon, don't use
-     * in new code.
-     */
-    @Deprecated
-    public static final boolean IS_LINUX = osName.startsWith("Linux");
-    
-    /**
-     * For backward compatibilty only, this will to be removed soon, don't use
-     * in new code.
-     */
-    @Deprecated
-    public static final boolean IS_SOLARIS = osName.startsWith("SunOS");
-    
-    /**
-     * For backward compatibilty only, this will to be removed soon, don't use
-     * in new code.
-     */
-    @Deprecated
-    public static final boolean IS_SOLARIS_8 =
-        (IS_SOLARIS ? System.getProperty("os.version", "unk").startsWith("5.8")
-                    : false);
-    
-    /**
-     * For backward compatibilty only, this will to be removed soon, don't use
-     * in new code.
-     */
-    @Deprecated
-    public static final boolean USE_T2K =
-        System.getProperty("sun.java2d.font.scaler", "no").equals("t2k");
-    
-    /**
-     * For backward compatibilty only, this will to be removed soon, don't use
-     * in new code.
-     */
-    @Deprecated
-    public static final boolean IS_SOLARIS_9 =
-        (IS_SOLARIS ? System.getProperty("os.version", "hanky").startsWith("5.8")
-                    : false);
-    
-    /**
-     * For backward compatibilty only, this will to be removed soon, don't use
-     * in new code.
-     */
-    // Note that this flag always return true and is not computed
-    // like the others. This makes sense of OpenJDK, but Sun internal code
-    // may break.
-    @Deprecated
-    public static final boolean IS_OPENJDK = true;
-    
-    /**
-     * Return true if Font Debugging is enable. 
-     */
-    public boolean debugFonts();
-    
-    /**
-     * Get a list of installed fonts in the requested {@link Locale}.
-     * The list contains the fonts Family Names.
-     * If Locale is null, the default locale is used.
-     * 
-     * @param requestedLocale, if null the default locale is used.
-     * @return list of installed fonts in the system.
-     */
-    public String[] getInstalledFontFamilyNames(Locale requestedLocale);
-
-    /**
-     * Returns all fonts installed in this environment.
-     */
-    public Font[] getAllInstalledFonts();
-
-    /*
-     * This is the Physical font used when some other font on the system
-     * can't be located. There has to be at least one font or the font
-     * system is not useful and the graphics environment cannot sustain
-     * the Java platform.
-     */
-    public PhysicalFont getDefaultPhysicalFont();
 
     /**
      * Register a new font. Please, note that {@code null} is not a valid
@@ -186,22 +60,6 @@ public interface FontManager {
     public boolean registerFont(Font font);
 
     /**
-     * Register fall back fonts.
-     */
-    public void registerFontsInDir(String dirName);
-
-    /**
-     * Return the file name of the Font associated to this fontName.
-     */
-    public String getFileNameForFontName(String fontName);
-
-    /**
-     * Return a list of registered fonts.
-     * @return a list of registered fonts.
-     */
-    public Font2D[] getRegisteredFonts();
-
-    /**
      * The client supplies a name and a style.
      * The name could be a family name, or a full name.
      * A font may exist with the specified style, or it may
@@ -217,7 +75,7 @@ public interface FontManager {
      * Fontconfig will if asked return a list of fonts to give the largest
      * possible code point coverage.
      */
-    // TODO: move out of the interface
+    // TODO: Only used internally by Swing. Maybe move out of the interface.
     public FontUIResource getFontConfigFUIR(String fcFamily, int style, int size);
 
     /**
@@ -271,7 +129,7 @@ public interface FontManager {
      * }
      * return fuir;
      */
-    // TODO: move out of the interface
+    // TODO: Only used internally by Swing. Maybe move out of the interface.
     public FontUIResource getCompositeFontUIResource(Font font);
     
     /**
@@ -285,17 +143,8 @@ public interface FontManager {
      * @return true if the underlying font is a composite font.
      * that claims to
      */
-    // TODO: move out of the interface
+    // TODO: Only used internally by Swing. Maybe move out of the interface.
     public boolean fontSupportsDefaultEncoding(Font font);
-    
-    /**
-     * This method doesn't check if alternates are selected in this app
-     * context. Its used by the FontMetrics caching code which in such
-     * a case cannot retrieve a cached metrics solely on the basis of
-     * the Font.equals() method since it needs to also check if the Font2D
-     * is the same.
-     */
-    public boolean maybeUsingAlternateCompositeFonts();
     
     /**
      * If usingPerAppContextComposites is true, we are in "applet"
@@ -368,13 +217,6 @@ public interface FontManager {
     
     /**
      * TODO
-     * @param font
-     * @return
-     */
-    public Font2D getFont2D(Font font);
-    
-    /**
-     * TODO
      * @param fontFile
      * @param fontFormat
      * @param isCopy
@@ -383,133 +225,6 @@ public interface FontManager {
     public Font2D createFont2D(File fontFile, int fontFormat,
                                boolean isCopy) throws FontFormatException;
     
-    /**
-     * TODO
-     */
-    public PhysicalFont registerFontFile(String fileName,
-                                         String[] nativeNames,
-                                         int fontFormat,
-                                         boolean useJavaRasterizer,
-                                         int fontRank);
-    
-    /**
-     * Return true if this font was already registered.
-     */
-    public boolean isRegisteredFontFile(String fileName);
-    
-    /**
-     * Return the PhysicalFont associated with the given fileName.
-     */
-    public PhysicalFont getRegisteredFontFile(String fileName);
-    
-    /**
-     * TODO
-     * @param fileNameKey
-     * @return
-     */
-    public PhysicalFont initialiseDeferredFont(String fileName);
-    
-    /**
-     * TODO
-     */
-    public boolean isDeferredFont(String fileName);
-    
-    /**
-     * TODO
-     * FIXME: this should not be here. It's used by FontConfigManager
-     * @param name
-     * @param style
-     * @return
-     */
-    public PhysicalFont findJREDeferredFont(String name, int style);
-    
-    /**
-     * TODO
-     * FIXME: should that be moved elsewhere?
-     * Original javadoc: Workaround for apps which are dependent on a font
-     * metrics bug in JDK 1.1. This is an unsupported win32 private setting.
-     */
-    public boolean usePlatformFontMetrics();
-
-    /**
-     * Return true if logging is enabled.
-     * You can then use {@link #getLogger()} to get a valid logger object. 
-     */
-    public boolean isLogging();
-    
-    /**
-     * Return a valid logger for FontManager or null if logger is not enabled.
-     */
-    public Logger getLogger();
-
-    /**
-     * TODO
-     * @return
-     */
-    public FilenameFilter getTrueTypeFilter();
-
-    /**
-     * TODO
-     * @return
-     */
-    public FilenameFilter getType1Filter();
-    
-    /**
-     * Return true if the application should use alternative fonts from Japanese
-     * locales. 
-     * @return
-     */
-    public boolean usingAlternateFontforJALocales();
-    
-    /**
-     * Modifies the behaviour of a subsequent call to preferLocaleFonts()
-     * to use Mincho instead of Gothic for dialoginput in JA locales
-     * on windows. Not needed on other platforms. Used by SunGraphicEnvironment.
-     * @see SunGraphicsEnvironment
-     */
-    public void useAlternateFontforJALocales();
-    
-    /**
-     * Return the End-User-Define-Character used or null is no one is defined.
-     * This is usually useful for non Western Language implementation.
-     */
-    public TrueTypeFont getEUDCFont();
-    
-    /**
-     * TODO.
-     */
-    public boolean isComplexCharCode(int code);
-    
-    /**
-     * TODO.
-     * @param ch
-     * @return
-     */
-    public boolean isNonSimpleChar(char ch);
-    
-    /**
-     * TODO
-     * @return
-     */
-    public FontScaler getNullScaler();
-   
-    public FontScaler getScaler(Font2D font, int indexInCollection,
-                                boolean supportsCJK, int filesize);
-    
-    /**
-     * This is called when font is determined to be invalid/bad.
-     * It designed to be called (for example) by the font scaler
-     * when in processing a font file it is discovered to be incorrect.
-     * This is different than the case where fonts are discovered to
-     * be incorrect during initial verification, as such fonts are
-     * never registered.
-     * Handles to this font held are re-directed to a default font.
-     * This default may not be an ideal substitute buts it better than
-     * crashing This code assumes a PhysicalFont parameter as it doesn't
-     * make sense for a Composite to be "bad".
-     */;
-   public void deRegisterBadFont(Font2D font2D);
-   
    /**
     * Return an array of created Fonts, or null, if no fonts were created yet.
     */
@@ -519,34 +234,5 @@ public interface FontManager {
     * Similar to getCreatedFonts, but returns a TreeMap of fonts by family name.
     */
    public TreeMap<String, String> getCreatedFontFamilyNames();
-   
-   /**
-    * Returns face name for default font, or null if
-    * no face names are used for CompositeFontDescriptors
-    * for this platform.
-    */
-   public String getDefaultFontFaceName();
-   
-   /**
-    * Returns file name for default font, either absolute
-    * or relative as needed by registerFontFile.
-    */
-   public String getDefaultFontFile();
-   
-   public FontConfigManager getFontConfigManager();
-   
-   /**
-    * 
-    * @param font
-    */
-   public void addToPool(FileFont font);
 
-   /**
-   * Used by windows printing to assess if a font is likely to
-   * be layout compatible with JDK
-   * TrueType fonts should be, but if they have no GPOS table,
-   * but do have a GSUB table, then they are probably older
-   * fonts GDI handles differently.
-   */
-  public boolean textLayoutIsCompatible(Font font);
 }

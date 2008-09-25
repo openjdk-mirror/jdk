@@ -68,13 +68,13 @@ public class FcFontConfiguration extends FontConfiguration {
 
     private FcCompFont[] fcCompFonts = null;
 
-    public FcFontConfiguration(FontManager fm) {
+    public FcFontConfiguration(FontManagerBase fm) {
         super(fm);
         init();
     }
 
     /* This isn't called but is needed to satisfy super-class contract. */
-    public FcFontConfiguration(FontManager fm,
+    public FcFontConfiguration(FontManagerBase fm,
                                boolean preferLocaleFonts,
                                boolean preferPropFonts) {
         super(fm, preferLocaleFonts, preferPropFonts);
@@ -88,7 +88,7 @@ public class FcFontConfiguration extends FontConfiguration {
         }
 
         readFcInfo();
-	FontManager fm = FontManagerFactory.getInstance();
+	FontManagerBase fm = FontManagerBase.getInstance();
 	FontConfigManager fcm = fm.getFontConfigManager();
         if (fcCompFonts == null) {
             fcCompFonts = fcm.loadFontConfig();
@@ -185,7 +185,7 @@ public class FcFontConfiguration extends FontConfiguration {
     @Override
     public String[] getPlatformFontNames() {
         HashSet<String> nameSet = new HashSet<String>();
-	FontManager fm = FontManagerFactory.getInstance();
+	FontManagerBase fm = FontManagerBase.getInstance();
 	FontConfigManager fcm = fm.getFontConfigManager();
         FcCompFont[] fcCompFonts = fcm.loadFontConfig();
         for (int i=0; i<fcCompFonts.length; i++) {
@@ -226,7 +226,7 @@ public class FcFontConfiguration extends FontConfiguration {
     @Override
     public CompositeFontDescriptor[] get2DCompositeFontInfo() {
 
-	FontManager fm = FontManagerFactory.getInstance();
+	FontManagerBase fm = FontManagerBase.getInstance();
 	FontConfigManager fcm = fm.getFontConfigManager();
         FcCompFont[] fcCompFonts = fcm.loadFontConfig();
 
@@ -326,7 +326,7 @@ public class FcFontConfiguration extends FontConfiguration {
                 osVersion = getVersionString(f);
             }
         } catch (Exception e) {
-	    FontManager fm = FontManagerFactory.getInstance();
+	    FontManagerBase fm = FontManagerBase.getInstance();
             if (fm.debugFonts()) {
                 Logger logger = Logger.getLogger("sun.awt.FontConfiguration");
                 logger.warning("Exception identifying Linux distro.");
@@ -362,7 +362,7 @@ public class FcFontConfiguration extends FontConfiguration {
     private void writeFcInfo() {
         Properties props = new Properties();
         props.setProperty("version", fileVersion);
-	FontManager fm = FontManagerFactory.getInstance();
+	FontManagerBase fm = FontManagerBase.getInstance();
 	FontConfigManager fcm = fm.getFontConfigManager();
         FontConfigInfo fcInfo = fcm.getFontConfigInfo();
         props.setProperty("fcversion", Integer.toString(fcInfo.fcVersion));
@@ -423,7 +423,7 @@ public class FcFontConfiguration extends FontConfiguration {
             return;
         }
         Properties props = new Properties();
-	FontManager fm = FontManagerFactory.getInstance();
+	FontManagerBase fm = FontManagerBase.getInstance();
 	FontConfigManager fcm = fm.getFontConfigManager();
         try {
             FileInputStream fis = new FileInputStream(fcFile);

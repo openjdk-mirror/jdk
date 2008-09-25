@@ -113,7 +113,7 @@ public class FileFontStrike extends PhysicalStrike {
     private static native boolean initNative();
     private static boolean isXPorLater = false;
     static {
-        if (FontManager.IS_WINDOWS && !FontManager.USE_T2K &&
+        if (FontManagerBase.IS_WINDOWS && !FontManagerBase.USE_T2K &&
             !GraphicsEnvironment.isHeadless()) {
             isXPorLater = initNative();
         }
@@ -200,7 +200,7 @@ public class FileFontStrike extends PhysicalStrike {
             this.disposer = new FontStrikeDisposer(fileFont, desc);
             initGlyphCache();
             pScalerContext = NullFontScaler.getNullScalerContext();
-            FontManagerFactory.getInstance().deRegisterBadFont(fileFont);
+            FontManagerBase.getInstance().deRegisterBadFont(fileFont);
             return;
         }
         /* First, see if native code should be used to create the glyph.
@@ -210,8 +210,8 @@ public class FileFontStrike extends PhysicalStrike {
          * except that the advance returned by GDI is always overwritten by
          * the JDK rasteriser supplied one (see getGlyphImageFromWindows()).
          */
-        if (FontManager.IS_WINDOWS && isXPorLater &&
-            !FontManager.USE_T2K &&
+        if (FontManagerBase.IS_WINDOWS && isXPorLater &&
+            !FontManagerBase.USE_T2K &&
             !GraphicsEnvironment.isHeadless() &&
             !fileFont.useJavaRasterizer &&
             (desc.aaHint == INTVAL_TEXT_ANTIALIAS_LCD_HRGB ||
@@ -240,8 +240,8 @@ public class FileFontStrike extends PhysicalStrike {
                 }
             }
         }
-        FontManager fm = FontManagerFactory.getInstance();
-        if (fm.isLogging() && FontManager.IS_WINDOWS) {
+        FontManagerBase fm = FontManagerBase.getInstance();
+        if (fm.isLogging() && FontManagerBase.IS_WINDOWS) {
             fm.getLogger().info
                 ("Strike for " + fileFont + " at size = " + intPtSize +
                  " use natives = " + useNatives +
@@ -298,7 +298,7 @@ public class FileFontStrike extends PhysicalStrike {
     }
 
     long getGlyphImageFromNative(int glyphCode) {
-        if (FontManager.IS_WINDOWS) {
+        if (FontManagerBase.IS_WINDOWS) {
             return getGlyphImageFromWindows(glyphCode);
         } else {
             return getGlyphImageFromX11(glyphCode);
@@ -366,7 +366,7 @@ public class FileFontStrike extends PhysicalStrike {
         } else {
             if (useNatives) {
                 glyphPtr = getGlyphImageFromNative(glyphCode);
-                FontManager fm = FontManagerFactory.getInstance();
+                FontManagerBase fm = FontManagerBase.getInstance();
                 if (glyphPtr == 0L && fm.isLogging()) {
                     fm.getLogger().info
                         ("Strike for " + fileFont +

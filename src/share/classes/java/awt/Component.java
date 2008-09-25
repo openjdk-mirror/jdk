@@ -73,6 +73,7 @@ import sun.awt.EmbeddedFrame;
 import sun.awt.dnd.SunDropTargetEvent;
 import sun.awt.event.ComponentReshapeEvent;
 import sun.awt.im.CompositionArea;
+import sun.font.FontManagerBase;
 import sun.java2d.SunGraphics2D;
 import sun.java2d.pipe.Region;
 import sun.awt.image.VSyncedBSManager;
@@ -2770,7 +2771,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
     public FontMetrics getFontMetrics(Font font) {
         // REMIND: PlatformFont flag should be obsolete soon...
         sun.font.FontManager fm = sun.font.FontManagerFactory.getInstance();
-        if (fm.usePlatformFontMetrics()) {
+        if (fm instanceof FontManagerBase
+            && ((FontManagerBase) fm).usePlatformFontMetrics()) {
             if (peer != null &&
                 !(peer instanceof LightweightPeer)) {
                 return peer.getFontMetrics(font);

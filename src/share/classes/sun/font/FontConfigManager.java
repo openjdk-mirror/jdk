@@ -112,14 +112,14 @@ public class FontConfigManager {
      */
     private FcCompFont[] fontConfigFonts;
 
-    private FontManager fm = null;
+    private FontManagerBase fm = null;
     
     /**
      * Instantiates a new FontConfigManager getting the default instance
      * of FontManager from the FontManagerFactory.
      */
     public FontConfigManager() {
-        this.fm = FontManagerFactory.getInstance();
+        this.fm = FontManagerBase.getInstance();
     }
     
     /**
@@ -127,7 +127,7 @@ public class FontConfigManager {
      * FontManager instance.
      * @param fm
      */
-    public FontConfigManager(FontManager fm) {
+    public FontConfigManager(FontManagerBase fm) {
         this.fm = fm;
     }
     
@@ -161,7 +161,7 @@ public class FontConfigManager {
      * Normally we should call the no-args version.
      */
     public static Object getFontConfigAAHint(String fcFamily) {
-        if (FontManagerFactory.getInstance().IS_WINDOWS) {
+        if (FontManagerBase.IS_WINDOWS) {
             return null;
         } else {
             int hint = getFontConfigAASettings(getFCLocaleStr(), fcFamily);
@@ -205,7 +205,7 @@ public class FontConfigManager {
 	    }
         }
 
-        if (FontManager.IS_WINDOWS || fontConfigFailed) {
+        if (FontManagerBase.IS_WINDOWS || fontConfigFailed) {
             return;
         }
 
@@ -268,7 +268,7 @@ public class FontConfigManager {
     
     public PhysicalFont registerFromFcInfo(FcCompFont fcInfo) {
 
-        FontManager fm = FontManagerFactory.getInstance();
+        FontManagerBase fm = FontManagerBase.getInstance();
         
         /* If it's a TTC file we need to know that as we will need to
          * make sure we return the right font */
@@ -335,14 +335,14 @@ public class FontConfigManager {
          * the type and rank to register the font.
          */
         if (physFont == null) {
-            int fontFormat = FontManager.FONTFORMAT_NONE;
+            int fontFormat = FontManagerBase.FONTFORMAT_NONE;
             int fontRank = Font2D.UNKNOWN_RANK;
 
             if (ext.equals(".ttf") || isTTC) {
-                fontFormat = FontManager.FONTFORMAT_TRUETYPE;
+                fontFormat = FontManagerBase.FONTFORMAT_TRUETYPE;
                 fontRank = Font2D.TTF_RANK;
             } else if (ext.equals(".pfa") || ext.equals(".pfb")) {
-                fontFormat = FontManager.FONTFORMAT_TYPE1;
+                fontFormat = FontManagerBase.FONTFORMAT_TYPE1;
                 fontRank = Font2D.TYPE1_RANK;
             }
             physFont = fm.registerFontFile(fcInfo.firstFont.fontFile, null,

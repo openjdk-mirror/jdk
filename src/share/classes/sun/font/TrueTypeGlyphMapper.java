@@ -60,9 +60,9 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
         missingGlyph = 0; /* standard for TrueType fonts */
         ByteBuffer buffer = font.getTableBuffer(TrueTypeFont.maxpTag);
         numGlyphs = buffer.getChar(4); // offset 4 bytes in MAXP table.
-        if (FontManager.IS_SOLARIS && isJAlocale && font.supportsJA()) {
+        if (FontManagerBase.IS_SOLARIS && isJAlocale && font.supportsJA()) {
             needsJAremapping = true;
-            if (FontManager.IS_SOLARIS_8 &&
+            if (FontManagerBase.IS_SOLARIS_8 &&
                 getGlyphFromCMAP(JA_WAVE_DASH_CHAR) == missingGlyph) {
                 remapJAWaveDash = true;
             }
@@ -82,7 +82,7 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
                 glyphCode >= FileFontStrike.INVISIBLE_GLYPHS) {
                 return glyphCode;
             } else {
-                FontManager fm = FontManagerFactory.getInstance();
+                FontManagerBase fm = FontManagerBase.getInstance();
                 if (fm.isLogging()) {
                     fm.getLogger().warning
                         (font + " out of range glyph id=" +
@@ -98,12 +98,12 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
     }
 
     private void handleBadCMAP() {
-        FontManager fm = FontManagerFactory.getInstance();
+        FontManagerBase fm = FontManagerBase.getInstance();
         if (fm.isLogging()) {
             fm.getLogger().severe("Null Cmap for " + font +
                                       "substituting for this font");
         }
-        FontManagerFactory.getInstance().deRegisterBadFont(font);
+        FontManagerBase.getInstance().deRegisterBadFont(font);
         /* The next line is not really a solution, but might
          * reduce the exceptions until references to this font2D
          * are gone.
@@ -244,10 +244,10 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
                 font.glyphToCharMap[glyphs[i]] = (char)code;
             }
 
-            if (code < FontManager.MIN_LAYOUT_CHARCODE) {
+            if (code < FontManagerBase.MIN_LAYOUT_CHARCODE) {
                 continue;
             }
-            else if (FontManagerFactory.getInstance().isComplexCharCode(code)) {
+            else if (FontManagerBase.getInstance().isComplexCharCode(code)) {
                 return true;
             }
             else if (code >= 0x10000) {
