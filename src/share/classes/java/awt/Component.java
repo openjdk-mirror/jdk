@@ -74,7 +74,11 @@ import sun.awt.dnd.SunDropTargetEvent;
 import sun.awt.im.CompositionArea;
 import sun.java2d.SunGraphics2D;
 import sun.java2d.pipe.Region;
+import sun.awt.image.VSyncedBSManager;
+import sun.java2d.pipe.hw.ExtendedBufferCapabilities;
+import static sun.java2d.pipe.hw.ExtendedBufferCapabilities.VSyncType.*;
 import sun.awt.RequestFocusController;
+import sun.java2d.SunGraphicsEnvironment;
 
 /**
  * A <em>component</em> is an object having a graphical representation
@@ -346,7 +350,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #validate
      * @see #invalidate
      */
-    volatile boolean valid = false;
+    private volatile boolean valid = false;
 
     /**
      * The <code>DropTarget</code> associated with this component.
@@ -635,11 +639,21 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     private PropertyChangeSupport changeSupport;
 
-    // Note: this field is considered final, though readObject() prohibits
-    // initializing final fields.
-    private transient Object changeSupportLock = new Object();
-    private Object getChangeSupportLock() {
-        return changeSupportLock;
+    /*
+     * In some cases using "this" as an object to synchronize by
+     * can lead to a deadlock if client code also uses synchronization
+     * by a component object. For every such situation revealed we should
+     * consider possibility of replacing "this" with the package private
+     * objectLock object introduced below. So far there're 2 issues known:
+     * - CR 6708322 (the getName/setName methods);
+     * - CR 6608764 (the PropertyChangeListener machinery).
+     *
+     * Note: this field is considered final, though readObject() prohibits
+     * initializing final fields.
+     */
+    private transient Object objectLock = new Object();
+    Object getObjectLock() {
+        return objectLock;
     }
 
     boolean isPacked = false;
@@ -812,7 +826,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public String getName() {
         if (name == null && !nameExplicitlySet) {
-            synchronized(this) {
+            synchronized(getObjectLock()) {
                 if (name == null && !nameExplicitlySet)
                     name = constructComponentName();
             }
@@ -829,7 +843,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public void setName(String name) {
         String oldName;
-        synchronized(this) {
+        synchronized(getObjectLock()) {
             oldName = this.name;
             this.name = name;
             nameExplicitlySet = true;
@@ -1704,9 +1718,9 @@ public abstract class Component implements ImageObserver, MenuContainer,
         // This could change the preferred size of the Component.
         // Fix for 6213660. Should compare old and new fonts and do not
         // call invalidate() if they are equal.
-        if (valid && f != oldFont && (oldFont == null ||
+        if (f != oldFont && (oldFont == null ||
                                       !oldFont.equals(f))) {
-            invalidate();
+            invalidateIfValid();
         }
     }
 
@@ -1763,9 +1777,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         firePropertyChange("locale", oldValue, l);
 
         // This could change the preferred size of the Component.
-        if (valid) {
-            invalidate();
-        }
+        invalidateIfValid();
     }
 
     /**
@@ -2074,8 +2086,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
                     if (resized) {
                         invalidate();
                     }
-                    if (parent != null && parent.valid) {
-                        parent.invalidate();
+                    if (parent != null) {
+                        parent.invalidateIfValid();
                     }
                 }
                 if (needNotify) {
@@ -2131,7 +2143,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
                     Toolkit.getEventQueue().postEvent(e);
                 }
             } else {
-                if (this instanceof Container && ((Container)this).ncomponents > 0) {
+                if (this instanceof Container && ((Container)this).countComponents() > 0) {
                     boolean enabledOnToolkit =
                         Toolkit.enabledOnToolkit(AWTEvent.HIERARCHY_BOUNDS_EVENT_MASK);
                     if (resized) {
@@ -2644,7 +2656,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
     public void validate() {
         synchronized (getTreeLock()) {
             ComponentPeer peer = this.peer;
-            if (!valid && peer != null) {
+            boolean wasValid = isValid();
+            if (!wasValid && peer != null) {
                 Font newfont = getFont();
                 Font oldfont = peerFont;
                 if (newfont != oldfont && (oldfont == null
@@ -2655,6 +2668,9 @@ public abstract class Component implements ImageObserver, MenuContainer,
                 peer.layout();
             }
             valid = true;
+            if (!wasValid) {
+                mixOnValidating();
+            }
         }
     }
 
@@ -2683,9 +2699,17 @@ public abstract class Component implements ImageObserver, MenuContainer,
             if (!isMaximumSizeSet()) {
                 maxSize = null;
             }
-            if (parent != null && parent.valid) {
-                parent.invalidate();
+            if (parent != null) {
+                parent.invalidateIfValid();
             }
+        }
+    }
+
+    /** Invalidates the component unless it is already invalid.
+     */
+    final void invalidateIfValid() {
+        if (isValid()) {
+            invalidate();
         }
     }
 
@@ -3522,12 +3546,36 @@ public abstract class Component implements ImageObserver, MenuContainer,
         if (numBuffers == 1) {
             bufferStrategy = new SingleBufferStrategy(caps);
         } else {
+            SunGraphicsEnvironment sge = (SunGraphicsEnvironment)
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
+            if (!caps.isPageFlipping() && sge.isFlipStrategyPreferred(peer)) {
+                caps = new ProxyCapabilities(caps);
+            }
             // assert numBuffers > 1;
             if (caps.isPageFlipping()) {
                 bufferStrategy = new FlipSubRegionBufferStrategy(numBuffers, caps);
             } else {
                 bufferStrategy = new BltSubRegionBufferStrategy(numBuffers, caps);
             }
+        }
+    }
+
+    /**
+     * This is a proxy capabilities class used when a FlipBufferStrategy
+     * is created instead of the requested Blit strategy.
+     *
+     * @see sun.awt.SunGraphicsEnvironment#isFlipStrategyPreferred(ComponentPeer)
+     */
+    private class ProxyCapabilities extends ExtendedBufferCapabilities {
+        private BufferCapabilities orig;
+        private ProxyCapabilities(BufferCapabilities orig) {
+            super(orig.getFrontBufferCapabilities(),
+                  orig.getBackBufferCapabilities(),
+                  orig.getFlipContents() ==
+                      BufferCapabilities.FlipContents.BACKGROUND ?
+                      BufferCapabilities.FlipContents.BACKGROUND :
+                      BufferCapabilities.FlipContents.COPIED);
+            this.orig = orig;
         }
     }
 
@@ -3660,16 +3708,30 @@ public abstract class Component implements ImageObserver, MenuContainer,
             width = getWidth();
             height = getHeight();
 
-            if (drawBuffer == null) {
-                peer.createBuffers(numBuffers, caps);
-            } else {
+            if (drawBuffer != null) {
                 // dispose the existing backbuffers
                 drawBuffer = null;
                 drawVBuffer = null;
                 destroyBuffers();
                 // ... then recreate the backbuffers
-                peer.createBuffers(numBuffers, caps);
             }
+
+            if (caps instanceof ExtendedBufferCapabilities) {
+                ExtendedBufferCapabilities ebc =
+                    (ExtendedBufferCapabilities)caps;
+                if (ebc.getVSync() == VSYNC_ON) {
+                    // if this buffer strategy is not allowed to be v-synced,
+                    // change the caps that we pass to the peer but keep on
+                    // trying to create v-synced buffers;
+                    // do not throw IAE here in case it is disallowed, see
+                    // ExtendedBufferCapabilities for more info
+                    if (!VSyncedBSManager.vsyncAllowed(this)) {
+                        caps = ebc.derive(VSYNC_DEFAULT);
+                    }
+                }
+            }
+
+            peer.createBuffers(numBuffers, caps);
             updateInternalBuffers();
         }
 
@@ -3714,7 +3776,23 @@ public abstract class Component implements ImageObserver, MenuContainer,
          */
         protected void flip(BufferCapabilities.FlipContents flipAction) {
             if (peer != null) {
-                peer.flip(flipAction);
+                Image backBuffer = getBackBuffer();
+                if (backBuffer != null) {
+                    peer.flip(0, 0,
+                              backBuffer.getWidth(null),
+                              backBuffer.getHeight(null), flipAction);
+                }
+            } else {
+                throw new IllegalStateException(
+                    "Component must have a valid peer");
+            }
+        }
+
+        void flipSubRegion(int x1, int y1, int x2, int y2,
+                      BufferCapabilities.FlipContents flipAction)
+        {
+            if (peer != null) {
+                peer.flip(x1, y1, x2, y2, flipAction);
             } else {
                 throw new IllegalStateException(
                     "Component must have a valid peer");
@@ -3725,6 +3803,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
          * Destroys the buffers created through this object
          */
         protected void destroyBuffers() {
+            VSyncedBSManager.releaseVsync(this);
             if (peer != null) {
                 peer.destroyBuffers();
             } else {
@@ -3737,7 +3816,11 @@ public abstract class Component implements ImageObserver, MenuContainer,
          * @return the buffering capabilities of this strategy
          */
         public BufferCapabilities getCapabilities() {
-            return caps;
+            if (caps instanceof ProxyCapabilities) {
+                return ((ProxyCapabilities)caps).orig;
+            } else {
+                return caps;
+            }
         }
 
         /**
@@ -3822,6 +3905,14 @@ public abstract class Component implements ImageObserver, MenuContainer,
          */
         public void show() {
             flip(caps.getFlipContents());
+        }
+
+        /**
+         * Makes specified region of the the next available buffer visible
+         * by either blitting or flipping.
+         */
+        void showSubRegion(int x1, int y1, int x2, int y2) {
+            flipSubRegion(x1, y1, x2, y2, caps.getFlipContents());
         }
 
         /**
@@ -4094,8 +4185,6 @@ public abstract class Component implements ImageObserver, MenuContainer,
 
     /**
      * Private class to perform sub-region flipping.
-     * REMIND: this subclass currently punts on subregions and
-     * flips the entire buffer.
      */
     private class FlipSubRegionBufferStrategy extends FlipBufferStrategy
         implements SubRegionShowable
@@ -4109,14 +4198,13 @@ public abstract class Component implements ImageObserver, MenuContainer,
         }
 
         public void show(int x1, int y1, int x2, int y2) {
-            show();
+            showSubRegion(x1, y1, x2, y2);
         }
 
         // This is invoked by Swing on the toolkit thread.
-        public boolean validateAndShow(int x1, int y1, int x2, int y2) {
-            revalidate(false);
-            if (!contentsRestored() && !contentsLost()) {
-                show();
+        public boolean showIfNotLost(int x1, int y1, int x2, int y2) {
+            if (!contentsLost()) {
+                showSubRegion(x1, y1, x2, y2);
                 return !contentsLost();
             }
             return false;
@@ -4144,9 +4232,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
         }
 
         // This method is called by Swing on the toolkit thread.
-        public boolean validateAndShow(int x1, int y1, int x2, int y2) {
-            revalidate(false);
-            if (!contentsRestored() && !contentsLost()) {
+        public boolean showIfNotLost(int x1, int y1, int x2, int y2) {
+            if (!contentsLost()) {
                 showSubRegion(x1, y1, x2, y2);
                 return !contentsLost();
             }
@@ -5727,7 +5814,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         }
     }
 
-    transient EventQueueItem[] eventCache;
+    transient sun.awt.EventQueueItem[] eventCache;
 
     /**
      * @see #isCoalescingEnabled
@@ -7478,9 +7565,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         Container rootAncestor = getTraversalRoot();
         Component comp = this;
         while (rootAncestor != null &&
-               !(rootAncestor.isShowing() &&
-                 rootAncestor.isFocusable() &&
-                 rootAncestor.isEnabled()))
+               !(rootAncestor.isShowing() && rootAncestor.canBeFocusOwner()))
         {
             comp = rootAncestor;
             rootAncestor = comp.getFocusCycleRootAncestor();
@@ -7529,9 +7614,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         Container rootAncestor = getTraversalRoot();
         Component comp = this;
         while (rootAncestor != null &&
-               !(rootAncestor.isShowing() &&
-                 rootAncestor.isFocusable() &&
-                 rootAncestor.isEnabled()))
+               !(rootAncestor.isShowing() && rootAncestor.canBeFocusOwner()))
         {
             comp = rootAncestor;
             rootAncestor = comp.getFocusCycleRootAncestor();
@@ -7710,7 +7793,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     protected String paramString() {
         String thisName = getName();
         String str = (thisName != null? thisName : "") + "," + x + "," + y + "," + width + "x" + height;
-        if (!valid) {
+        if (!isValid()) {
             str += ",invalid";
         }
         if (!visible) {
@@ -7838,7 +7921,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public void addPropertyChangeListener(
                                                        PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null) {
                 return;
             }
@@ -7864,7 +7947,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public void removePropertyChangeListener(
                                                           PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null || changeSupport == null) {
                 return;
             }
@@ -7887,7 +7970,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @since    1.4
      */
     public PropertyChangeListener[] getPropertyChangeListeners() {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (changeSupport == null) {
                 return new PropertyChangeListener[0];
             }
@@ -7929,7 +8012,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     public void addPropertyChangeListener(
                                                        String propertyName,
                                                        PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null) {
                 return;
             }
@@ -7959,7 +8042,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     public void removePropertyChangeListener(
                                                           String propertyName,
                                                           PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null || changeSupport == null) {
                 return;
             }
@@ -7983,7 +8066,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public PropertyChangeListener[] getPropertyChangeListeners(
                                                                             String propertyName) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (changeSupport == null) {
                 return new PropertyChangeListener[0];
             }
@@ -8004,7 +8087,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     protected void firePropertyChange(String propertyName,
                                       Object oldValue, Object newValue) {
         PropertyChangeSupport changeSupport;
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             changeSupport = this.changeSupport;
         }
         if (changeSupport == null ||
@@ -8306,7 +8389,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     private void readObject(ObjectInputStream s)
       throws ClassNotFoundException, IOException
     {
-        changeSupportLock = new Object();
+        objectLock = new Object();
 
         s.defaultReadObject();
 
@@ -8470,9 +8553,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         firePropertyChange("componentOrientation", oldValue, o);
 
         // This could change the preferred size of the Component.
-        if (valid) {
-            invalidate();
-        }
+        invalidateIfValid();
     }
 
     /**
@@ -8508,6 +8589,14 @@ public abstract class Component implements ImageObserver, MenuContainer,
         setComponentOrientation(orientation);
     }
 
+    final boolean canBeFocusOwner() {
+        // It is enabled, visible, focusable.
+        if (isEnabled() && isDisplayable() && isVisible() && isFocusable()) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Checks that this component meets the prerequesites to be focus owner:
      * - it is enabled, visible, focusable
@@ -8517,9 +8606,9 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * this component as focus owner
      * @since 1.5
      */
-    final boolean canBeFocusOwner() {
+    final boolean canBeFocusOwnerRecursively() {
         // - it is enabled, visible, focusable
-        if (!(isEnabled() && isDisplayable() && isVisible() && isFocusable())) {
+        if (!canBeFocusOwner()) {
             return false;
         }
 
@@ -9314,7 +9403,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     private boolean areBoundsValid() {
         Container cont = getContainer();
-        return cont == null || cont.isValid() || cont.getLayout() == null;
+        return cont == null || cont.isValid()
+            || cont.getLayout() == null;
     }
 
     /**
@@ -9583,6 +9673,11 @@ public abstract class Component implements ImageObserver, MenuContainer,
         } else {
             mixOnHiding(isLightweight());
         }
+    }
+
+    void mixOnValidating() {
+        // This method gets overriden in the Container. Obviously, a plain
+        // non-container components don't need to handle validation.
     }
 
     // ****************** END OF MIXING CODE ********************************

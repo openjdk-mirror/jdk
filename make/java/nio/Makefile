@@ -56,18 +56,18 @@ FILES_java += \
         sun/nio/ch/DevPollSelectorProvider.java \
 	sun/nio/ch/InheritedChannel.java \
         sun/nio/ch/PollSelectorProvider.java \
-        sun/nio/ch/PollSelectorImpl.java 
+        sun/nio/ch/PollSelectorImpl.java
 
 FILES_c += \
         DevPollArrayWrapper.c \
 	InheritedChannel.c \
-        PollArrayWrapper.c \
-	NativeThread.c
+	NativeThread.c \
+        PollArrayWrapper.c
 
 FILES_export += \
 	sun/nio/ch/DevPollArrayWrapper.java \
 	sun/nio/ch/InheritedChannel.java \
-	sun/nio/ch/NativeThread.java 
+	sun/nio/ch/NativeThread.java
 endif # PLATFORM = solaris
 
 ifeq ($(PLATFORM), windows)
@@ -94,14 +94,14 @@ FILES_java += \
 
 FILES_c += \
 	EPollArrayWrapper.c \
-        PollArrayWrapper.c \
 	InheritedChannel.c \
-	NativeThread.c
+	NativeThread.c \
+        PollArrayWrapper.c
 
 FILES_export += \
         sun/nio/ch/EPollArrayWrapper.java \
 	sun/nio/ch/InheritedChannel.java \
-	sun/nio/ch/NativeThread.java 
+	sun/nio/ch/NativeThread.java
 endif # PLATFORM = linux
 
 # Find platform-specific C source files
@@ -134,7 +134,6 @@ ifeq ($(PLATFORM),windows)
      $(OBJDIR)/../../../java.lang/java/$(OBJDIRNAME)/FileDescriptor_md.obj
 endif
 ifeq ($(PLATFORM), linux)
-COMPILER_WARNINGS_FATAL=true
 OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -ljava -lnet -lpthread -ldl
 endif
 ifeq ($(PLATFORM), solaris)
@@ -166,8 +165,8 @@ include $(BUILDDIR)/common/Library.gmk
 # Generate source files
 #
 
-SPP = spp.sh
-SPP_CMD = $(SH) $(SPP)
+SPP_JARFILE = $(BUILDTOOLJARDIR)/spp.jar
+SPP_CMD = $(BOOT_JAVA_CMD) -jar $(SPP_JARFILE)
 
 FILES_genout = $(FILES_gen:%.java=$(GENSRCDIR)/%.java)
 
@@ -183,7 +182,7 @@ CS_GEN=$(NIO_GEN)/charset
 SCH_GEN=$(SNIO_GEN)/ch
 SCS_GEN=$(SNIO_GEN)/cs
 
-sources: $(SPP) $(FILES_genout)
+sources: $(SPP_JARFILE) $(FILES_genout)
 
 #
 # Generated buffer classes
@@ -619,12 +618,6 @@ $(BUF_GEN)/%Exception.java: genExceptions.sh $(BUF_SRC)/exceptions
 	@$(RM) $@.temp
 	$(GEN_EX_CMD) $(BUF_SRC)/exceptions $(BUF_GEN)
 
-$(SCH_GEN)/%Exception.java: genExceptions.sh $(SCH_SRC)/exceptions
-	$(prep-target)
-	@$(RM) $@.temp
-	$(GEN_EX_CMD) $(SCH_SRC)/exceptions $(SCH_GEN)
-
-
 #
 # Generated charset-provider classes
 #
@@ -638,5 +631,30 @@ $(SCS_GEN)/StandardCharsets.java: genCharsetProvider.sh \
 	NAWK="$(NAWK)" TEMPDIR="$(TEMPDIR)" SH="$(SH)" \
 	  HASHER="$(BOOT_JAVA_CMD) -jar $(HASHER_JARFILE)" \
 	  $(SH) -e genCharsetProvider.sh $(SCS_SRC)/standard-charsets $(SCS_GEN)
+
+#
+# Generated channel implementation classes.
+# C source is compiled in TEMPDIR to avoid turds left by Windows compilers.
+#
+
+GENSOR_SRC = $(SHARE_SRC)/native/sun/nio/ch/genSocketOptionRegistry.c
+
+GENSOR_EXE = $(TEMPDIR)/genSocketOptionRegistry$(EXE_SUFFIX)
+
+SOR_COPYRIGHT_YEARS = $(shell $(CAT) $(GENSOR_SRC) | \
+	$(NAWK) '/^.*Copyright.*Sun/ { print $$3 }') 
+
+$(TEMPDIR)/$(GENSOR_SRC) : $(GENSOR_SRC)
+	$(install-file)
+
+$(GENSOR_EXE) : $(TEMPDIR)/$(GENSOR_SRC)
+	$(prep-target)
+	($(CD) $(TEMPDIR); $(CC) $(CPPFLAGS) $(LDDFLAGS) \
+	   -o genSocketOptionRegistry$(EXE_SUFFIX) $(GENSOR_SRC))
+
+$(SCH_GEN)/SocketOptionRegistry.java: $(GENSOR_EXE)
+	$(prep-target)
+	NAWK="$(NAWK)" SH="$(SH)" $(SH) -e addNotices.sh $(SOR_COPYRIGHT_YEARS) > $@
+	$(GENSOR_EXE) >> $@
 
 .PHONY: sources 

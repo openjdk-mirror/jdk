@@ -294,6 +294,15 @@ JNIEXPORT int JNICALL NET_SocketClose(int fd);
 
 JNIEXPORT int JNICALL NET_Timeout(int fd, long timeout);
 
+int NET_Socket(int domain, int type, int protocol);
+
+void NET_ThrowByNameWithLastError(JNIEnv *env, const char *name,
+         const char *defaultDetail);
+
+void NET_ThrowSocketException(JNIEnv *env, char* msg);
+
+jboolean NET_addrtransAvailable();
+
 /*
  * differs from NET_Timeout() as follows:
  *
@@ -320,7 +329,7 @@ extern jint NET_Wait(JNIEnv *env, jint fd, jint flags, jint timeout);
 JNIEXPORT jobject JNICALL Java_java_net_NetworkInterface_getByName0_XP
     (JNIEnv *env, jclass cls, jstring name);
 
-JNIEXPORT jobject JNICALL Java_java_net_NetworkInterface_getByIndex_XP
+JNIEXPORT jobject JNICALL Java_java_net_NetworkInterface_getByIndex0_XP
   (JNIEnv *env, jclass cls, jint index);
 
 JNIEXPORT jobject JNICALL Java_java_net_NetworkInterface_getByInetAddress0_XP
