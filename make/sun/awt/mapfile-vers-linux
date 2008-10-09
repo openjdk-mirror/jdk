@@ -536,7 +536,7 @@ SUNWprivate_1.1 {
                 Java_sun_font_FontConfigManager_getFontConfig;
                 Java_sun_font_FontConfigManager_getFontConfigAASettings;
 		Java_sun_font_DefaultFontManager_getFontPath;
-		Java_sun_font_FontManagerBase_setNativeFontPath;
+		Java_sun_font_X11FontManager_setNativeFontPath;
 		Java_sun_font_FontManagerBase_populateFontFileNameMap;
 
 		# CDE private entry point
