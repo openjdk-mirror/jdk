@@ -575,7 +575,7 @@ static int shouldSetXFontPath(JNIEnv *env) {
 }
 #endif /* !HEADLESS */
 
-JNIEXPORT void JNICALL Java_sun_font_FontManagerBase_setNativeFontPath
+JNIEXPORT void JNICALL Java_sun_font_X11FontManager_setNativeFontPath
 (JNIEnv *env, jclass obj, jstring theString) {
 #ifdef HEADLESS
     return;
@@ -601,21 +601,6 @@ JNIEXPORT void JNICALL Java_sun_font_FontManagerBase_setNativeFontPath
     AWT_UNLOCK();
 
 #endif
-}
-
-/* This isn't yet used on unix, the implementation is added since shared
- * code calls this method in preparation for future use.
- */
-/* Obtain all the fontname -> filename mappings.
- * This is called once and the results returned to Java code which can
- * use it for lookups to reduce or avoid the need to search font files.
- */
-JNIEXPORT void JNICALL
-Java_sun_font_FontManagerBase_populateFontFileNameMap
-(JNIEnv *env, jclass obj, jobject fontToFileMap,
- jobject fontToFamilyMap, jobject familyToFontListMap, jobject locale)
-{
-    return;
 }
 
 #include <dlfcn.h>

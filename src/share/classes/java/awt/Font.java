@@ -55,6 +55,7 @@ import sun.font.Font2D;
 import sun.font.Font2DHandle;
 import sun.font.FontManager;
 import sun.font.FontManagerFactory;
+import sun.font.FontUtilities;
 import sun.font.GlyphLayout;
 import sun.font.FontLineMetrics;
 import sun.font.CoreMetrics;
@@ -2253,9 +2254,7 @@ public class Font implements java.io.Serializable
             (values.getKerning() == 0 && values.getLigatures() == 0 &&
               values.getBaselineTransform() == null);
         if (simple) {
-            simple = !FontManagerFactory.getInstance().isComplexText(chars,
-                                                                     beginIndex,
-                                                                     limit);
+            simple = ! FontUtilities.isComplexText(chars, beginIndex, limit);
         }
 
         if (simple) {

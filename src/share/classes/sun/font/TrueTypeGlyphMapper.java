@@ -244,10 +244,10 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
                 font.glyphToCharMap[glyphs[i]] = (char)code;
             }
 
-            if (code < FontManagerBase.MIN_LAYOUT_CHARCODE) {
+            if (code < FontUtilities.MIN_LAYOUT_CHARCODE) {
                 continue;
             }
-            else if (FontManagerBase.getInstance().isComplexCharCode(code)) {
+            else if (FontUtilities.isComplexCharCode(code)) {
                 return true;
             }
             else if (code >= 0x10000) {

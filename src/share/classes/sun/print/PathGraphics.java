@@ -935,7 +935,7 @@ public abstract class PathGraphics extends ProxyGraphics2D {
          * The logic here is erring on the side of caution, in particular
          * in including supplementary characters.
          */
-        if (FontManagerFactory.getInstance().isComplexText(chars, 0, chars.length)) {
+        if (FontUtilities.isComplexText(chars, 0, chars.length)) {
             return printGlyphVector(g, x, y);
         }
 

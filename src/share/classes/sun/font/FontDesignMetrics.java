@@ -474,7 +474,7 @@ public final class FontDesignMetrics extends FontMetrics {
                 char ch = str.charAt(i);
                 if (ch < 0x100) {
                     width += getLatinCharWidth(ch);
-                } else if (FontManagerBase.getInstance().isNonSimpleChar(ch)) {
+                } else if (FontUtilities.isNonSimpleChar(ch)) {
                     width = new TextLayout(str, font, frc).getAdvance();
                     break;
                 } else {
@@ -505,7 +505,7 @@ public final class FontDesignMetrics extends FontMetrics {
                 char ch = data[i];
                 if (ch < 0x100) {
                     width += getLatinCharWidth(ch);
-                } else if (FontManagerBase.getInstance().isNonSimpleChar(ch)) {
+                } else if (FontUtilities.isNonSimpleChar(ch)) {
                     String str = new String(data, off, len);
                     width = new TextLayout(str, font, frc).getAdvance();
                     break;

@@ -712,6 +712,9 @@ public class X11FontManager extends DefaultFontManager {
         }
     }
 
+    private synchronized static native void setNativeFontPath(String fontPath);
+    
+
     // Implements SunGraphicsEnvironment.createFontConfiguration.
     protected FontConfiguration createFontConfiguration() {
         /* The logic here decides whether to use a preconfigured

@@ -131,4 +131,24 @@ public class Win32FontManager extends DefaultFontManager {
         
         return sgEnv;
     }
+
+    protected void
+        populateFontFileNameMap(HashMap<String,String> fontToFileMap,
+                                HashMap<String,String> fontToFamilyNameMap,
+                                HashMap<String,ArrayList<String>>
+                                familyToFontListMap,
+                                Locale locale) {
+
+	populateFontFileNameMap0(fontToFileMap, fontToFamilyNameMap,
+				 familyToFontListMap, locale);
+
+    }
+
+    private static native void
+        populateFontFileNameMap0(HashMap<String,String> fontToFileMap,
+                                 HashMap<String,String> fontToFamilyNameMap,
+                                 HashMap<String,ArrayList<String>>
+                                     familyToFontListMap,
+                                 Locale locale);
+
 }

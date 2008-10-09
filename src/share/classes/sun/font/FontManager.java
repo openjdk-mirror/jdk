@@ -69,6 +69,67 @@ public interface FontManager {
     public Font2D findFont2D(String name, int style, int fallback);
 
     /**
+     * TODO
+     * @param fontFile
+     * @param fontFormat
+     * @param isCopy
+     * @return
+     */
+    public Font2D createFont2D(File fontFile, int fontFormat,
+                               boolean isCopy) throws FontFormatException;
+    
+    /**
+     * If usingPerAppContextComposites is true, we are in "applet"
+     * (eg browser) enviroment and at least one context has selected
+     * an alternate composite font behaviour.
+     */
+    public boolean usingPerAppContextComposites();
+    
+    /**
+     * TODO
+     * @param family
+     * @param style
+     * @param handle
+     * @return
+     */
+    public Font2DHandle getNewComposite(String family, int style,
+                                        Font2DHandle handle);
+
+    /**
+     * Indicates a preference for locale-specific fonts in the mapping of
+     * logical fonts to physical fonts. Calling this method indicates that font
+     * rendering should primarily use fonts specific to the primary writing
+     * system (the one indicated by the default encoding and the initial
+     * default locale). For example, if the primary writing system is
+     * Japanese, then characters should be rendered using a Japanese font
+     * if possible, and other fonts should only be used for characters for
+     * which the Japanese font doesn't have glyphs.
+     * <p>
+     * The actual change in font rendering behavior resulting from a call
+     * to this method is implementation dependent; it may have no effect at
+     * all, or the requested behavior may already match the default behavior.
+     * The behavior may differ between font rendering in lightweight
+     * and peered components.  Since calling this method requests a
+     * different font, clients should expect different metrics, and may need
+     * to recalculate window sizes and layout. Therefore this method should
+     * be called before user interface initialisation.
+     * 
+     * @see #preferProportionalFonts()
+     * @since 1.5
+     */
+    public void preferLocaleFonts();
+    
+    /**
+     * preferLocaleFonts() and preferProportionalFonts() are called to inform
+     * that the application could be using an alternate set of composite
+     * fonts, and so the implementation should try to create a CompositeFonts
+     * with this directive in mind.
+     * 
+     * @see #preferLocaleFonts()
+     */
+    public void preferProportionalFonts();
+    
+    /**
      * This is called by Swing passing in a fontconfig family name
      * such as "sans". In return Swing gets a FontUIResource instance
      * that has queried fontconfig to resolve the font(s) used for this.
@@ -146,93 +207,4 @@ public interface FontManager {
     // TODO: Only used internally by Swing. Maybe move out of the interface.
     public boolean fontSupportsDefaultEncoding(Font font);
     
-    /**
-     * If usingPerAppContextComposites is true, we are in "applet"
-     * (eg browser) enviroment and at least one context has selected
-     * an alternate composite font behaviour.
-     */
-    public boolean usingPerAppContextComposites();
-    
-    /**
-     * TODO
-     * @param family
-     * @param style
-     * @param handle
-     * @return
-     */
-    public Font2DHandle getNewComposite(String family, int style,
-                                        Font2DHandle handle);
-    /**
-     * If there is anything in the text which triggers a case
-     * where char->glyph does not map 1:1 in straightforward
-     * left->right ordering, then this method returns true.
-     * Scripts which might require it but are not treated as such
-     * due to JDK implementations will not return true.
-     * ie a 'true' return is an indication of the treatment by
-     * the implementation.
-     * Whether supplementary characters should be considered is dependent
-     * on the needs of the caller. Since this method accepts the 'char' type
-     * then such chars are always represented by a pair. From a rendering
-     * perspective these will all (in the cases I know of) still be one
-     * unicode character -> one glyph. But if a caller is using this to
-     * discover any case where it cannot make naive assumptions about
-     * the number of chars, and how to index through them, then it may
-     * need the option to have a 'true' return in such a case.
-     */
-    public boolean isComplexText(char [] chs, int start, int limit);
-    
-    /**
-     * Indicates a preference for locale-specific fonts in the mapping of
-     * logical fonts to physical fonts. Calling this method indicates that font
-     * rendering should primarily use fonts specific to the primary writing
-     * system (the one indicated by the default encoding and the initial
-     * default locale). For example, if the primary writing system is
-     * Japanese, then characters should be rendered using a Japanese font
-     * if possible, and other fonts should only be used for characters for
-     * which the Japanese font doesn't have glyphs.
-     * <p>
-     * The actual change in font rendering behavior resulting from a call
-     * to this method is implementation dependent; it may have no effect at
-     * all, or the requested behavior may already match the default behavior.
-     * The behavior may differ between font rendering in lightweight
-     * and peered components.  Since calling this method requests a
-     * different font, clients should expect different metrics, and may need
-     * to recalculate window sizes and layout. Therefore this method should
-     * be called before user interface initialisation.
-     * 
-     * @see #preferProportionalFonts()
-     * @since 1.5
-     */
-    public void preferLocaleFonts();
-    
-    /**
-     * preferLocaleFonts() and preferProportionalFonts() are called to inform
-     * that the application could be using an alternate set of composite
-     * fonts, and so the implementation should try to create a CompositeFonts
-     * with this directive in mind.
-     * 
-     * @see #preferLocaleFonts()
-     */
-    public void preferProportionalFonts();
-    
-    /**
-     * TODO
-     * @param fontFile
-     * @param fontFormat
-     * @param isCopy
-     * @return
-     */
-    public Font2D createFont2D(File fontFile, int fontFormat,
-                               boolean isCopy) throws FontFormatException;
-    
-   /**
-    * Return an array of created Fonts, or null, if no fonts were created yet.
-    */
-   public Font[] getCreatedFonts();
-   
-   /**
-    * Similar to getCreatedFonts, but returns a TreeMap of fonts by family name.
-    */
-   public TreeMap<String, String> getCreatedFontFamilyNames();
-
 }
