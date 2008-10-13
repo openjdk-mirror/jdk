@@ -3,6 +3,8 @@ package sun.font;
 import java.awt.Font;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class FontUtilities {
 
@@ -26,8 +28,34 @@ public final class FontUtilities {
      */
     public static final int MAX_LAYOUT_CHARCODE = 0x206F;
     
+    private static boolean debugFonts = false;
+    private static Logger logger = null;
+    private static boolean logging;
+    
     private static Method getFont2DMethod;
     private static Field font2DHandleField;
+
+    static {
+        
+        String debugLevel =
+            System.getProperty("sun.java2d.debugfonts");
+
+        if (debugLevel != null && !debugLevel.equals("false")) {
+            debugFonts = true;
+            logger = Logger.getLogger("sun.java2d");
+            if (debugLevel.equals("warning")) {
+                logger.setLevel(Level.WARNING);
+            } else if (debugLevel.equals("severe")) {
+                logger.setLevel(Level.SEVERE);
+            }
+        }
+
+        if (debugFonts) {
+            logger = Logger.getLogger("sun.java2d", null);
+            logging = logger.getLevel() != Level.OFF;
+        }
+
+    }
 
     /**
      * Calls the private getFont2D() method in java.awt.Font objects.
@@ -191,5 +219,17 @@ public final class FontUtilities {
         return false;
     }
 
+    public static Logger getLogger() {
+        return logger;
+    }
+    
+    public static boolean isLogging() {     
+        return logging;
+    }
+    
+    public static boolean debugFonts() {
+        return debugFonts;
+    }
+    
 
 }

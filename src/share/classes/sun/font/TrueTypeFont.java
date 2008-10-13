@@ -324,9 +324,8 @@ public class TrueTypeFont extends FileFont {
             }
             initNames();
         } catch (Exception e) {
-            FontManagerBase fm = FontManagerBase.getInstance();
-            if (fm.isLogging()) {
-                fm.getLogger().severe(e.toString());
+            if (FontUtilities.isLogging()) {
+                FontUtilities.getLogger().severe(e.toString());
             }
             if (e instanceof FontFormatException) {
                 throw (FontFormatException)e;
@@ -830,9 +829,8 @@ public class TrueTypeFont extends FileFont {
         try {
             return new String(bytes, 0, len, charset);
         } catch (UnsupportedEncodingException e) {
-            FontManagerBase fm = FontManagerBase.getInstance();
-            if (fm.isLogging()) {
-                fm.getLogger().warning(e + " EncodingID=" + encoding);
+            if (FontUtilities.isLogging()) {
+                FontUtilities.getLogger().warning(e + " EncodingID=" + encoding);
             }
             return new String(bytes, 0, len);
         } catch (Throwable t) {

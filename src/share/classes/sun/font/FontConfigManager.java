@@ -210,7 +210,7 @@ public class FontConfigManager {
         }
 
         long t0 = 0;
-        if (fm.isLogging()) {
+        if (FontUtilities.isLogging()) {
             t0 = System.nanoTime();
         }
 
@@ -230,8 +230,8 @@ public class FontConfigManager {
         for (int i = 0; i< fontArr.length; i++) {
             FcCompFont fci = fontArr[i];
             if (fci.firstFont == null) {
-                if (fm.isLogging()) {
-		    Logger logger = fm.getLogger();
+                if (FontUtilities.isLogging()) {
+		    Logger logger = FontUtilities.getLogger();
                     logger.info("Fontconfig returned no fonts.");
                 }
                 fontConfigFailed = true;
@@ -240,9 +240,9 @@ public class FontConfigManager {
         }
         fontConfigFonts = fontArr;
 
-        if (fm.isLogging()) {
+        if (FontUtilities.isLogging()) {
             
-            Logger logger = fm.getLogger();
+            Logger logger = FontUtilities.getLogger();
             
             long t1 = System.nanoTime();
             logger.info("Time spent accessing fontconfig="
@@ -373,8 +373,9 @@ public class FontConfigManager {
             fcInfo = fontConfigFonts[0];
         }
 
-        if (fm.isLogging()) {
-            fm.getLogger().info("FC name=" + name + " style=" + style +
+        if (FontUtilities.isLogging()) {
+            FontUtilities.getLogger()
+                          .info("FC name=" + name + " style=" + style +
                                 " uses " + fcInfo.firstFont.familyName +
 				" in file: " + fcInfo.firstFont.fontFile);
         }

@@ -82,9 +82,8 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
                 glyphCode >= FileFontStrike.INVISIBLE_GLYPHS) {
                 return glyphCode;
             } else {
-                FontManagerBase fm = FontManagerBase.getInstance();
-                if (fm.isLogging()) {
-                    fm.getLogger().warning
+                if (FontUtilities.isLogging()) {
+                    FontUtilities.getLogger().warning
                         (font + " out of range glyph id=" +
                          Integer.toHexString((int)glyphCode) +
                          " for char " + Integer.toHexString(charCode));
@@ -98,9 +97,8 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
     }
 
     private void handleBadCMAP() {
-        FontManagerBase fm = FontManagerBase.getInstance();
-        if (fm.isLogging()) {
-            fm.getLogger().severe("Null Cmap for " + font +
+        if (FontUtilities.isLogging()) {
+            FontUtilities.getLogger().severe("Null Cmap for " + font +
                                       "substituting for this font");
         }
         FontManagerBase.getInstance().deRegisterBadFont(font);

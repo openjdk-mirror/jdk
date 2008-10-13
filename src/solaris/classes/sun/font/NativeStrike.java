@@ -115,9 +115,9 @@ import java.awt.geom.NoninvertibleTransformException;
              FontManagerBase.getInstance().deRegisterBadFont(nativeFont);
              pScalerContext = createNullScalerContext();
              numGlyphs = 0;
-             FontManagerBase fm = FontManagerBase.getInstance();
-             if (fm.isLogging()) {
-                 fm.getLogger().severe("Could not create native strike " +
+             if (FontUtilities.isLogging()) {
+                 FontUtilities.getLogger()
+                                   .severe("Could not create native strike " +
                                            new String(nameBytes));
              }
              return;

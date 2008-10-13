@@ -407,9 +407,8 @@ abstract class CMap {
             subtableLength = buffer.getInt(offset+4) & INTMASK;
         }
         if (offset+subtableLength > buffer.capacity()) {
-            FontManagerBase fm = FontManagerBase.getInstance();
-            if (fm.isLogging()) {
-                fm.getLogger().warning("Cmap subtable overflows buffer.");
+            if (FontUtilities.isLogging()) {
+                FontUtilities.getLogger().warning("Cmap subtable overflows buffer.");
             }
         }
         switch (subtableFormat) {

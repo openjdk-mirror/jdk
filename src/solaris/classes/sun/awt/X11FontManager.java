@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import java.util.logging.Logger;
 
 import sun.awt.motif.MFontConfiguration;
 import sun.font.DefaultFontManager;
@@ -20,6 +21,7 @@ import sun.font.FontManager;
 import sun.font.FontManagerBase;
 import sun.font.FontManagerFactory;
 import sun.font.FcFontConfiguration;
+import sun.font.FontUtilities;
 import sun.font.NativeFont;
 
 
@@ -210,14 +212,16 @@ public class X11FontManager extends DefaultFontManager {
             }
             if (fontPath == null &&
                 (fileName == null || !fileName.startsWith("/"))) {
-                if (debugFonts()) {
-                    getLogger().warning("** Registering all font paths because " +
+                if (FontUtilities.debugFonts()) {
+                    FontUtilities.getLogger()
+                          .warning("** Registering all font paths because " +
                                    "can't find file for " + platName);
                 }
                 fontPath = getPlatformFontPath(noType1Font);
                 registerFontDirs(fontPath);
-                if (debugFonts()) {
-                    getLogger().warning("** Finished registering all font paths");
+                if (FontUtilities.debugFonts()) {
+                    FontUtilities.getLogger()
+                            .warning("** Finished registering all font paths");
                 }
                 fileName = (String)fontNameMap.get(fontID);
             }
@@ -273,8 +277,8 @@ public class X11FontManager extends DefaultFontManager {
          * Arial-Bold.ttf -monotype-arial-bold-r-normal--0-0-0-0-p-0-iso8859-1
          * ...
          */
-        if (debugFonts()) {
-            getLogger().info("ParseFontDir " + path);
+        if (FontUtilities.debugFonts()) {
+            FontUtilities.getLogger().info("ParseFontDir " + path);
         }
         File fontsDotDir = new File(path + File.separator + "fonts.dir");
         FileReader fr = null;
@@ -352,10 +356,11 @@ public class X11FontManager extends DefaultFontManager {
                             String fontID = specificFontIDForName(fontPart);
                             String sVal = (String) fontNameMap.get(fontID);
 
-                            if (debugFonts()) {
-                                getLogger().info("file=" + fileName +
+                            if (FontUtilities.debugFonts()) {
+                                Logger logger = FontUtilities.getLogger();
+                                logger.info("file=" + fileName +
                                             " xlfd=" + fontPart);
-                                getLogger().info("fontID=" + fontID +
+                                logger.info("fontID=" + fontID +
                                             " sVal=" + sVal);
                             }
                             String fullPath = null;
@@ -377,14 +382,16 @@ public class X11FontManager extends DefaultFontManager {
                                 fullPath = path + File.separator + fileName;
                             }
                             Vector xVal = (Vector) xlfdMap.get(fullPath);
-                            if (debugFonts()) {
-                                getLogger().info("fullPath=" + fullPath +
+                            if (FontUtilities.debugFonts()) {
+                                FontUtilities.getLogger()
+                                      .info("fullPath=" + fullPath +
                                             " xVal=" + xVal);
                             }
                             if ((xVal == null || !xVal.contains(fontPart)) &&
                                 (sVal == null) || !sVal.startsWith("/")) {
-                                if (debugFonts()) {
-                                    getLogger().info("Map fontID:"+fontID +
+                                if (FontUtilities.debugFonts()) {
+                                    FontUtilities.getLogger()
+                                          .info("Map fontID:"+fontID +
                                                 "to file:" + fullPath);
                                 }
                                 fontNameMap.put(fontID, fullPath);
@@ -485,8 +492,9 @@ public class X11FontManager extends DefaultFontManager {
         }
 
         if (hyphenCnt != 14) {
-            if (debugFonts()) {
-                getLogger().severe("Font Configuration Font ID is malformed:" + name);
+            if (FontUtilities.debugFonts()) {
+                FontUtilities.getLogger()
+                    .severe("Font Configuration Font ID is malformed:" + name);
             }
             return name; // what else can we do?
         }
@@ -514,8 +522,9 @@ public class X11FontManager extends DefaultFontManager {
         }
 
         if (hyphenCnt != 14) {
-            if (debugFonts()) {
-                getLogger().severe("Font Configuration Font ID is malformed:" + name);
+            if (FontUtilities.debugFonts()) {
+                FontUtilities.getLogger()
+                    .severe("Font Configuration Font ID is malformed:" + name);
             }
             return name; // what else can we do?
         }
@@ -673,10 +682,10 @@ public class X11FontManager extends DefaultFontManager {
     private void getPlatformFontPathFromFontConfig() {
         if (fontConfigDirs == null) {
             fontConfigDirs = getFontConfiguration().getAWTFontPathSet();
-            if (debugFonts() && fontConfigDirs != null) {
+            if (FontUtilities.debugFonts() && fontConfigDirs != null) {
                 String[] names = fontConfigDirs.toArray(new String[0]);
                 for (int i=0;i<names.length;i++) {
-                    getLogger().info("awtfontpath : " + names[i]);
+                    FontUtilities.getLogger().info("awtfontpath : " + names[i]);
                 }
             }
         }
@@ -705,8 +714,8 @@ public class X11FontManager extends DefaultFontManager {
         // need to register these individually rather than by one call
         // to ensure that one bad directory doesn't cause all to be rejected
         for (int i=0; i<fontdirs.length; i++) {
-            if (fm.debugFonts()) {
-                fm.getLogger().info("Add " + fontdirs[i] + " to X11 fontpath");
+            if (FontUtilities.debugFonts()) {
+                FontUtilities.getLogger().info("Add " + fontdirs[i] + " to X11 fontpath");
             }
             setNativeFontPath(fontdirs[i]);
         }

@@ -240,9 +240,8 @@ public class FileFontStrike extends PhysicalStrike {
                 }
             }
         }
-        FontManagerBase fm = FontManagerBase.getInstance();
-        if (fm.isLogging() && FontManagerBase.IS_WINDOWS) {
-            fm.getLogger().info
+        if (FontUtilities.isLogging() && FontManagerBase.IS_WINDOWS) {
+            FontUtilities.getLogger().info
                 ("Strike for " + fileFont + " at size = " + intPtSize +
                  " use natives = " + useNatives +
                  " useJavaRasteriser = " + fileFont.useJavaRasterizer +
@@ -366,9 +365,8 @@ public class FileFontStrike extends PhysicalStrike {
         } else {
             if (useNatives) {
                 glyphPtr = getGlyphImageFromNative(glyphCode);
-                FontManagerBase fm = FontManagerBase.getInstance();
-                if (glyphPtr == 0L && fm.isLogging()) {
-                    fm.getLogger().info
+                if (glyphPtr == 0L && FontUtilities.isLogging()) {
+                    FontUtilities.getLogger().info
                         ("Strike for " + fileFont +
                          " at size = " + intPtSize +
                          " couldn't get native glyph for code = " + glyphCode);

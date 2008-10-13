@@ -52,6 +52,7 @@ import sun.font.CompositeFontDescriptor;
 import sun.font.FontManager;
 import sun.font.FontManagerBase;
 import sun.font.FontManagerFactory;
+import sun.font.FontUtilities;
 import sun.java2d.SunGraphicsEnvironment;
 
 /**
@@ -84,7 +85,7 @@ public abstract class FontConfiguration {
      * one to ensure proper static initialisation takes place.
      */
     public FontConfiguration(FontManagerBase fm) {
-        if (fm.debugFonts() && logger == null) {
+        if (FontUtilities.debugFonts() && logger == null) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
         }
         fontManager = fm;
@@ -201,17 +202,17 @@ public abstract class FontConfiguration {
                     loadBinary(in);
                 }
                 in.close();
-                if (fontManager.debugFonts()) {
+                if (FontUtilities.debugFonts()) {
                     logger.config("Read logical font configuration from " + f);
                 }
             } catch (IOException e) {
-                if (fontManager.debugFonts()) {
+                if (FontUtilities.debugFonts()) {
                     logger.config("Failed to read logical font configuration from " + f);
                 }
             }
         }
         String version = getVersion();
-        if (!"1".equals(version) && fontManager.debugFonts()) {
+        if (!"1".equals(version) && FontUtilities.debugFonts()) {
             logger.config("Unsupported fontconfig version: " + version);
         }
     }
@@ -1142,7 +1143,7 @@ public abstract class FontConfiguration {
             } else {
                 exists = Boolean.valueOf((new File(fileName)).exists());
                 existsMap.put(fileName, exists);
-                if (fontManager.debugFonts() &&
+                if (FontUtilities.debugFonts() &&
                     exists == Boolean.FALSE) {
                     logger.warning("Couldn't locate font file " + fileName);
                 }
@@ -2066,7 +2067,7 @@ public abstract class FontConfiguration {
                         throw new Exception();
                     }
                 } catch (Exception e) {
-                    if (FontManagerBase.getInstance().debugFonts() && 
+                    if (FontUtilities.debugFonts() && 
                         logger != null) {
                         logger.config("Failed parsing " + key +
                                   " property of font configuration.");
