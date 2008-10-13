@@ -65,6 +65,7 @@ import sun.awt.OSInfo;
 import sun.awt.shell.ShellFolder;
 import sun.font.FontManager;
 import sun.font.FontManagerFactory;
+import sun.font.FontUtilities;
 import sun.security.action.GetPropertyAction;
 
 import sun.swing.DefaultLayoutStyle;
@@ -2344,14 +2345,13 @@ public class WindowsLookAndFeel extends BasicLookAndFeel
                     }
                 }
                 
-                FontManager fm = FontManagerFactory.getInstance();
-                if (fm.fontSupportsDefaultEncoding(font)) {
+                if (FontUtilities.fontSupportsDefaultEncoding(font)) {
                     if (!(font instanceof UIResource)) {
                         font = new FontUIResource(font);
                     }
                 }
                 else {
-                    font = fm.getCompositeFontUIResource(font);
+                    font = FontUtilities.getCompositeFontUIResource(font);
                 }
                 return font;
 

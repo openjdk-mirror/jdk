@@ -34,9 +34,6 @@ extern "C" {
 
 typedef struct FontManagerNativeIDs {
 
-    /* java/awt/Font methods & fields */
-    jfieldID createdFont;
-
     /* sun/font/Font2D methods */
     jmethodID getMapperMID;
     jmethodID getTableBytesMID;

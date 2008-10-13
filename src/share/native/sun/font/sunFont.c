@@ -93,12 +93,7 @@ JNIEXPORT void JNICALL
 Java_sun_font_FontManagerBase_initIDs
     (JNIEnv *env, jclass cls) {
 
-     jclass tmpClass = (*env)->FindClass(env, "java/awt/Font");
-
-     sunFontIDs.createdFont =
-       (*env)->GetFieldID(env, tmpClass, "createdFont", "Z");
-
-     tmpClass = (*env)->FindClass(env, "sun/font/PhysicalFont");
+     jclass tmpClass = (*env)->FindClass(env, "sun/font/PhysicalFont");
      sunFontIDs.fontBufferFID =
          (*env)->GetFieldID(env, tmpClass, "fontBuffer",
 			    "Ljava/nio/ByteBuffer;");
@@ -191,22 +186,6 @@ Java_sun_font_FontManagerBase_initIDs
 
 JNIEXPORT FontManagerNativeIDs getSunFontIDs() {
     return sunFontIDs;
-}
-
-JNIEXPORT void JNICALL
-Java_sun_font_FontManagerBase_setCreatedFont(
-  JNIEnv *env,
-  jclass clsFM,
-  jobject javaFont) {
-    (*env)->SetBooleanField(env, javaFont, sunFontIDs.createdFont, JNI_TRUE);
-}
-
-JNIEXPORT jboolean JNICALL
-Java_sun_font_FontManagerBase_isCreatedFont(
-  JNIEnv *env,
-  jclass clsFM,
-  jobject javaFont) {
-    return (*env)->GetBooleanField(env, javaFont, sunFontIDs.createdFont);
 }
 
 /*

@@ -37,6 +37,7 @@ import java.util.WeakHashMap;
 
 import sun.font.FontManager;
 import sun.font.FontManagerFactory;
+import sun.font.FontUtilities;
 
 /**
  * A pool of styles and their associated resources.  This class determines
@@ -264,9 +265,8 @@ public class StyleContext implements Serializable, AbstractDocument.AttributeCon
             if (f == null) {
                 f = new Font(family, style, size);
             }
-            FontManager fm = FontManagerFactory.getInstance();
-            if (! fm.fontSupportsDefaultEncoding(f)) {
-                f = fm.getCompositeFontUIResource(f);
+            if (! FontUtilities.fontSupportsDefaultEncoding(f)) {
+                f = FontUtilities.getCompositeFontUIResource(f);
             }
             FontKey key = new FontKey(family, style, size);
             fontTable.put(key, f);

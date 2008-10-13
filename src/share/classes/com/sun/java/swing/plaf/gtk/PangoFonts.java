@@ -33,6 +33,7 @@ import java.util.StringTokenizer;
 import sun.font.FontConfigManager;
 import sun.font.FontManager;
 import sun.font.FontManagerFactory;
+import sun.font.FontUtilities;
 
 /**
  * @author Shannon Hickey
@@ -195,14 +196,13 @@ class PangoFonts {
         }
 
         String fcFamilyLC = family.toLowerCase();
-        FontManager fm = FontManagerFactory.getInstance();
         if (FontConfigManager.mapFcName(fcFamilyLC) != null) {
             /* family is a Fc/Pango logical font which we need to expand. */
-           return fm.getFontConfigFUIR(fcFamilyLC, style, size);
+           return FontUtilities.getFontConfigFUIR(fcFamilyLC, style, size);
         } else {
             /* It's a physical font which we will create with a fallback */
             Font font = new FontUIResource(family, style, size);
-            return fm.getCompositeFontUIResource(font);
+            return FontUtilities.getCompositeFontUIResource(font);
         }
     }
 

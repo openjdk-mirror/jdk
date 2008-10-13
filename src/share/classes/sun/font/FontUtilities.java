@@ -10,6 +10,8 @@ import java.lang.reflect.Method;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.swing.plaf.FontUIResource;
+
 public final class FontUtilities {
 
     /**
@@ -100,6 +102,8 @@ public final class FontUtilities {
     
     private static Method getFont2DMethod;
     private static Field font2DHandleField;
+
+    private static Field createdFontField;
 
     static {
         
@@ -216,6 +220,40 @@ public final class FontUtilities {
         }
     }
 
+    public static void setCreatedFont(Font font) {
+        Field cff = getCreatedFontField();
+        try {
+            cff.setBoolean(font, true);
+        } catch (IllegalAccessException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+        }
+    }
+
+    public static boolean isCreatedFont(Font font) {
+        try {
+            return getCreatedFontField().getBoolean(font);
+        } catch (IllegalAccessException ex) {
+            InternalError err = new InternalError();
+            err.initCause(ex);
+            throw err;
+        }
+    }
+
+    private static Field getCreatedFontField() {
+        if (createdFontField == null) {
+            try {
+            createdFontField = Font.class.getDeclaredField("createdFont");
+            createdFontField.setAccessible(true);
+            } catch (NoSuchFieldException ex) {
+                InternalError err = new InternalError();
+                err.initCause(ex);
+                throw err;
+            }
+        }
+        return createdFontField;
+    }
     /**
      * If there is anything in the text which triggers a case
      * where char->glyph does not map 1:1 in straightforward
@@ -350,6 +388,165 @@ public final class FontUtilities {
     public static boolean debugFonts() {
         return debugFonts;
     }
+
     
+    // The following methods are used by Swing.
+
+    /* Revise the implementation to in fact mean "font is a composite font.
+     * This ensures that Swing components will always benefit from the
+     * fall back fonts
+     */
+    public static boolean fontSupportsDefaultEncoding(Font font) {
+        return getFont2D(font) instanceof CompositeFont;
+    }
+
+    /**
+     * This method is provided for internal and exclusive use by Swing.
+     *
+     * It may be used in conjunction with fontSupportsDefaultEncoding(Font)
+     * In the event that a desktop properties font doesn't directly
+     * support the default encoding, (ie because the host OS supports
+     * adding support for the current locale automatically for native apps),
+     * then Swing calls this method to get a font which  uses the specified
+     * font for the code points it covers, but also supports this locale
+     * just as the standard composite fonts do.
+     * Note: this will over-ride any setting where an application
+     * specifies it prefers locale specific composite fonts.
+     * The logic for this, is that this method is used only where the user or
+     * application has specified that the native L&F be used, and that
+     * we should honour that request to use the same font as native apps use.
+     *
+     * The behaviour of this method is to construct a new composite
+     * Font object that uses the specified physical font as its first
+     * component, and adds all the components of "dialog" as fall back
+     * components.
+     * The method currently assumes that only the size and style attributes
+     * are set on the specified font. It doesn't copy the font transform or
+     * other attributes because they aren't set on a font created from
+     * the desktop. This will need to be fixed if use is broadened.
+     *
+     * Operations such as Font.deriveFont will work properly on the
+     * font returned by this method for deriving a different point size.
+     * Additionally it tries to support a different style by calling
+     * getNewComposite() below. That also supports replacing slot zero
+     * with a different physical font but that is expected to be "rare".
+     * Deriving with a different style is needed because its been shown
+     * that some applications try to do this for Swing FontUIResources.
+     * Also operations such as new Font(font.getFontName(..), Font.PLAIN, 14);
+     * will NOT yield the same result, as the new underlying CompositeFont
+     * cannot be "looked up" in the font registry.
+     * This returns a FontUIResource as that is the Font sub-class needed
+     * by Swing.
+     * Suggested usage is something like :
+     * FontUIResource fuir;
+     * Font desktopFont = getDesktopFont(..);
+     * // NOTE even if fontSupportsDefaultEncoding returns true because
+     * // you get Tahoma and are running in an English locale, you may
+     * // still want to just call getCompositeFontUIResource() anyway
+     * // as only then will you get fallback fonts - eg for CJK.
+     * if (FontManager.fontSupportsDefaultEncoding(desktopFont)) {
+     *   fuir = new FontUIResource(..);
+     * } else {
+     *   fuir = FontManager.getCompositeFontUIResource(desktopFont);
+     * }
+     * return fuir;
+     */
+    public static FontUIResource getCompositeFontUIResource(Font font) {
+
+        FontUIResource fuir =
+            new FontUIResource(font.getName(),font.getStyle(),font.getSize());
+        Font2D font2D = FontUtilities.getFont2D(font);
+
+        if (!(font2D instanceof PhysicalFont)) {
+            /* Swing should only be calling this when a font is obtained
+             * from desktop properties, so should generally be a physical font,
+             * an exception might be for names like "MS Serif" which are
+             * automatically mapped to "Serif", so there's no need to do
+             * anything special in that case. But note that suggested usage
+             * is first to call fontSupportsDefaultEncoding(Font) and this
+             * method should not be called if that were to return true.
+             */
+             return fuir;
+        }
+
+        FontManager fm = FontManagerFactory.getInstance();
+        CompositeFont dialog2D =
+          (CompositeFont) fm.findFont2D("dialog", font.getStyle(), FontManager.NO_FALLBACK);
+        if (dialog2D == null) { /* shouldn't happen */
+            return fuir;
+        }
+        PhysicalFont physicalFont = (PhysicalFont)font2D;
+        CompositeFont compFont = new CompositeFont(physicalFont, dialog2D);
+        FontUtilities.setFont2D(fuir, compFont.handle);
+        /* marking this as a created font is needed as only created fonts
+         * copy their creator's handles.
+         */
+        setCreatedFont(fuir);
+        return fuir;
+    }
+
+    /* This is called by Swing passing in a fontconfig family name
+     * such as "sans". In return Swing gets a FontUIResource instance
+     * that has queried fontconfig to resolve the font(s) used for this.
+     * Fontconfig will if asked return a list of fonts to give the largest
+     * possible code point coverage.
+     * For now we use only the first font returned by fontconfig, and
+     * back it up with the most closely matching JDK logical font.
+     * Essentially this means pre-pending what we return now with fontconfig's
+     * preferred physical font. This could lead to some duplication in cases,
+     * if we already included that font later. We probably should remove such
+     * duplicates, but it is not a significant problem. It can be addressed
+     * later as part of creating a Composite which uses more of the
+     * same fonts as fontconfig. At that time we also should pay more
+     * attention to the special rendering instructions fontconfig returns,
+     * such as whether we should prefer embedded bitmaps over antialiasing.
+     * There's no way to express that via a Font at present.
+     */
+    public static FontUIResource getFontConfigFUIR(String fcFamily,
+                                                   int style, int size) {
+
+        String mappedName = FontConfigManager.mapFcName(fcFamily);
+        if (mappedName == null) {
+            mappedName = "sansserif";
+        }
+
+        /* If GTK L&F were to be used on windows, we need to return
+         * something. Since on windows Swing won't have the code to
+         * call fontconfig, even if it is present, fcFamily and mapped
+         * name will default to sans and therefore sansserif so this
+         * should be fine.
+         */
+        if (FontUtilities.IS_WINDOWS) {
+            return new FontUIResource(mappedName, style, size);
+        }
+
+        FontManager fm = FontManagerFactory.getInstance();
+        CompositeFont font2D;
+        if (fm instanceof FontManagerBase) {
+            FontManagerBase fmb = (FontManagerBase) fm;
+            font2D =
+                fmb.getFontConfigManager().getFontConfigFont(fcFamily, style);
+        } else {
+            font2D = null;
+        }
+
+        if (font2D == null) { // Not expected, just a precaution.
+           return new FontUIResource(mappedName, style, size);
+        }
+
+        /* The name of the font will be that of the physical font in slot,
+         * but by setting the handle to that of the CompositeFont it
+         * renders as that CompositeFont.
+         * It also needs to be marked as a created font which is the
+         * current mechanism to signal that deriveFont etc must copy
+         * the handle from the original font.
+         */
+        FontUIResource fuir =
+            new FontUIResource(font2D.getFamilyName(null), style, size);
+        setFont2D(fuir, font2D.handle);
+        setCreatedFont(fuir);
+        return fuir;
+    }
+
 
 }
