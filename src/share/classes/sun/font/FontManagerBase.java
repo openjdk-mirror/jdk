@@ -136,65 +136,6 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
         }
     }
 
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     @Deprecated
-     public static boolean IS_WINDOWS;
-     
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     @Deprecated
-     public static boolean IS_LINUX;
-     
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     @Deprecated
-     public static boolean IS_SOLARIS;
-     
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     @Deprecated
-     public static boolean IS_OPEN_SOLARIS;
-     
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     @Deprecated
-     public static boolean IS_SOLARIS_8;
-     
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     @Deprecated
-     public static boolean USE_T2K;
-     
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     @Deprecated
-     public static boolean IS_SOLARIS_9;
-     
-     /**
-      * For backward compatibilty only, this will to be removed soon, don't use
-      * in new code.
-      */
-     // Note that this flag always return true and is not computed
-     // like the others. This makes sense of OpenJDK, but Sun internal code
-     // may break.
-     @Deprecated
-     public static boolean IS_OPENJDK;
-     
      public static final int FONTFORMAT_NONE = -1;
      public static final int FONTFORMAT_TRUETYPE = 0;
      public static final int FONTFORMAT_TYPE1 = 1;
@@ -267,7 +208,6 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
     public static String jreLibDirName;
     public static String jreFontDirName;
     private static HashSet<String> missingFontFiles = null;
-    private static boolean isOpenJDK;
     private String defaultFontName;
     private String defaultFontFileName;
     protected HashSet registeredFontFiles = new HashSet();
@@ -415,58 +355,27 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
                default: throw new RuntimeException("Unexpected address size");
                }
 
-               String osName = System.getProperty("os.name", "unknownOS");
-               IS_SOLARIS = osName.startsWith("SunOS");
-
-               IS_LINUX = osName.startsWith("Linux");
-	       
-               String t2kStr = System.getProperty("sun.java2d.font.scaler");
-               if (t2kStr != null) {
-                   USE_T2K = "t2k".equals(t2kStr);
-               }
-               if (IS_SOLARIS) {
-                    String version = System.getProperty("os.version", "0.0");
-                    IS_SOLARIS_8 = version.startsWith("5.8");
-                    IS_SOLARIS_9 = version.startsWith("5.9");
-                    try {
-                        float ver = Float.parseFloat(version);
-                        if (ver > 5.10f) {
-                            File f = new File("/etc/release");
-                            FileInputStream fis = new FileInputStream(f);
-                            InputStreamReader isr
-                                = new InputStreamReader(fis, "ISO-8859-1");
-                            BufferedReader br = new BufferedReader(isr);
-                            String line = br.readLine();
-                            if (line.indexOf("OpenSolaris") >= 0) {
-                                IS_OPEN_SOLARIS = true;
-                            }
-                            fis.close();
-                        }
-                    } catch (Exception e) {
-                    }
-               } else {
-                   IS_WINDOWS = osName.startsWith("Windows");
-                   if (IS_WINDOWS) {
-                       String eudcFile =
-                           SunGraphicsEnvironment.eudcFontFileName;
-                       if (eudcFile != null) {
-                           try {
-                               eudcFont = new TrueTypeFont(eudcFile, null, 0,
-                                                           true);
-                           } catch (FontFormatException e) {
-                           }
-                       }
-                       String prop =
-                           System.getProperty("java2d.font.usePlatformFont");
-                       if (("true".equals(prop) || getPlatformFontVar())) {
-                           usePlatformFontMetrics = true;
-                           System.out.println("Enabling platform font metrics for win32. This is an unsupported option.");
-                           System.out.println("This yields incorrect composite font metrics as reported by 1.1.x releases.");
-                           System.out.println("It is appropriate only for use by applications which do not use any Java 2");
-                           System.out.println("functionality. This property will be removed in a later release.");
+               if (FontUtilities.IS_WINDOWS) {
+                   String eudcFile =
+                       SunGraphicsEnvironment.eudcFontFileName;
+                   if (eudcFile != null) {
+                       try {
+                           eudcFont = new TrueTypeFont(eudcFile, null, 0,
+                                   true);
+                       } catch (FontFormatException e) {
                        }
                    }
+                   String prop =
+                       System.getProperty("java2d.font.usePlatformFont");
+                   if (("true".equals(prop) || getPlatformFontVar())) {
+                       usePlatformFontMetrics = true;
+                       System.out.println("Enabling platform font metrics for win32. This is an unsupported option.");
+                       System.out.println("This yields incorrect composite font metrics as reported by 1.1.x releases.");
+                       System.out.println("It is appropriate only for use by applications which do not use any Java 2");
+                       System.out.println("functionality. This property will be removed in a later release.");
+                   }
                }
+
                noType1Font =
                    "true".equals(System.getProperty("sun.java2d.noType1Font"));
                jreLibDirName =
@@ -474,7 +383,6 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
                jreFontDirName = jreLibDirName + File.separator + "fonts";
                File lucidaFile =
                    new File(jreFontDirName + File.separator + lucidaFileName);
-               isOpenJDK = !lucidaFile.exists();
 
                return null;
            }
@@ -546,7 +454,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
                          * registerFonts method as on-screen these JRE fonts
                          * always go through the T2K rasteriser.
                          */
-                        if (IS_LINUX) {
+                        if (FontUtilities.IS_LINUX) {
                             /* Linux font configuration uses these fonts */
                             registerFontDir(jreFontDirName);
                         }
@@ -666,7 +574,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
                          * users of a JA locale should have it
                          * set up already by their login environment.
                          */
-                        if (IS_SOLARIS && Locale.JAPAN.equals(Locale.getDefault())) {
+                        if (FontUtilities.IS_SOLARIS && Locale.JAPAN.equals(Locale.getDefault())) {
                             registerFontDir("/usr/openwin/lib/locale/ja/X11/fonts/TT");
                         }
 
@@ -1784,7 +1692,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
             return;
         }
         haveCheckedUnreferencedFontFiles = true;
-        if (!IS_WINDOWS) {
+        if (!FontUtilities.IS_WINDOWS) {
             return;
         }
         /* getFontFilesFromPath() returns all lower case names.
@@ -1892,7 +1800,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
                                     fontToFamilyNameMap,
                                     familyToFontListMap,
                                     Locale.ENGLISH);
-            if (IS_WINDOWS) {
+            if (FontUtilities.IS_WINDOWS) {
                 resolveWindowsFonts();
             }
             if (FontUtilities.isLogging()) {
@@ -2175,7 +2083,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
         // appropriate equivalents for serif and sansserif.
         // Note that the cost of this comparison is only for the first
         // call until the map is filled.
-        if (IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             if (lowerCaseName.equals("ms sans serif")) {
                 name = "sansserif";
             } else if (lowerCaseName.equals("ms serif")) {
@@ -2273,7 +2181,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
             }
         }
 
-        if (IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             /* Don't want Windows to return a Lucida Sans font from
              * C:\Windows\Fonts
              */
@@ -2330,7 +2238,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
          * Set a flag to indicate we've done this registration to avoid
          * repetition and more seriously, to avoid recursion.
          */
-        if (IS_SOLARIS &&!loaded1dot0Fonts) {
+        if (FontUtilities.IS_SOLARIS &&!loaded1dot0Fonts) {
             /* "timesroman" is a special case since that's not the
              * name of any known font on Solaris or elsewhere.
              */
@@ -2447,7 +2355,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
          *
          * REMIND: this is something we plan to remove.
          */
-        if (IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             String compatName =
                 getFontConfiguration().getFallbackFamilyName(name, null);
             if (compatName != null) {
@@ -2935,7 +2843,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
      */
     public synchronized void useAlternateFontforJALocales() {
 
-        if (!IS_WINDOWS) {
+        if (!FontUtilities.IS_WINDOWS) {
             return;
         }
 
@@ -3231,7 +3139,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
         }
 
         String[] info = new String[2];
-        if (IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             info[0] = "Arial";
             info[1] = "c:\\windows\\fonts";
             final String[] dirs = getPlatformFontDirs(true);
@@ -3320,7 +3228,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
          * name will default to sans and therefore sansserif so this
          * should be fine.
          */
-        if (IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             return new FontUIResource(mappedName, style, size);
         }
 
@@ -3535,7 +3443,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
     }
 
     public static boolean isOpenJDK() {
-        return isOpenJDK;
+        return FontUtilities.IS_OPENJDK;
     }
 
     protected void loadFonts() {

@@ -201,7 +201,7 @@ public class X11FontManager extends DefaultFontManager {
         if (fontID != null) {
             fileName = (String)fontNameMap.get(fontID);
             /* On Linux check for the Lucida Oblique fonts */
-            if (fileName == null && IS_LINUX && !isOpenJDK()) {
+            if (fileName == null && FontUtilities.IS_LINUX && !isOpenJDK()) {
                 if (oblmap == null) {
                     initObliqueLucidaFontMap();
                 }
@@ -697,7 +697,7 @@ public class X11FontManager extends DefaultFontManager {
         if (fontConfigDirs == null) {
             return;
         }
-        if (IS_LINUX) {
+        if (FontUtilities.IS_LINUX) {
             fontConfigDirs.add(jreLibDirName+File.separator+"oblique-fonts");
         }
         fontdirs = (String[])fontConfigDirs.toArray(new String[0]);
@@ -745,11 +745,11 @@ public class X11FontManager extends DefaultFontManager {
          * this as the synthesis should always work on its platforms.
          */
         FontConfiguration mFontConfig = new MFontConfiguration(this);
-        if (IS_OPEN_SOLARIS ||
-            (IS_LINUX &&
+        if (FontUtilities.IS_OPEN_SOLARIS ||
+            (FontUtilities.IS_LINUX &&
              (!mFontConfig.foundOsSpecificFile() ||
               !mFontConfig.fontFilesArePresent()) ||
-             (IS_SOLARIS && !mFontConfig.fontFilesArePresent()))) {
+             (FontUtilities.IS_SOLARIS && !mFontConfig.fontFilesArePresent()))) {
             FcFontConfiguration fcFontConfig =
                 new FcFontConfiguration(this);
             if (fcFontConfig.init()) {

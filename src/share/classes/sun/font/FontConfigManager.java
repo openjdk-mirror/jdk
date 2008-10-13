@@ -161,7 +161,7 @@ public class FontConfigManager {
      * Normally we should call the no-args version.
      */
     public static Object getFontConfigAAHint(String fcFamily) {
-        if (FontManagerBase.IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             return null;
         } else {
             int hint = getFontConfigAASettings(getFCLocaleStr(), fcFamily);
@@ -205,7 +205,7 @@ public class FontConfigManager {
 	    }
         }
 
-        if (FontManagerBase.IS_WINDOWS || fontConfigFailed) {
+        if (FontUtilities.IS_WINDOWS || fontConfigFailed) {
             return;
         }
 

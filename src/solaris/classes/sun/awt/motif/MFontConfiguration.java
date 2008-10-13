@@ -95,7 +95,7 @@ public class MFontConfiguration extends FontConfiguration {
         reorderMap.put("UTF-8.th", "thai");
         reorderMap.put("UTF-8.zh.TW", "chinese-big5");
         reorderMap.put("UTF-8.zh.HK", split("chinese-big5,chinese-hkscs"));
-        if (sun.font.FontManagerBase.IS_SOLARIS_8) {
+        if (FontUtilities.IS_SOLARIS_8) {
             reorderMap.put("UTF-8.zh.CN", split("chinese-gb2312,chinese-big5"));
         } else {
             reorderMap.put("UTF-8.zh.CN",
@@ -105,7 +105,7 @@ public class MFontConfiguration extends FontConfiguration {
                        split("chinese-big5,chinese-hkscs,chinese-gb18030-0,chinese-gb18030-1"));
         reorderMap.put("Big5", "chinese-big5");
         reorderMap.put("Big5-HKSCS", split("chinese-big5,chinese-hkscs"));
-        if (! sun.font.FontManagerBase.IS_SOLARIS_8 && ! sun.font.FontManagerBase.IS_SOLARIS_9) {
+        if (! FontUtilities.IS_SOLARIS_8 && ! FontUtilities.IS_SOLARIS_9) {
             reorderMap.put("GB2312", split("chinese-gbk,chinese-gb2312"));
         } else {
             reorderMap.put("GB2312","chinese-gb2312");

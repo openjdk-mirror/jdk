@@ -194,8 +194,8 @@ public class TrueTypeFont extends FileFont {
         if (checkedNatives) {
             return useNatives;
         }
-        if (!FontManagerBase.IS_SOLARIS || useJavaRasterizer ||
-            FontManagerBase.USE_T2K || nativeNames == null ||
+        if (!FontUtilities.IS_SOLARIS || useJavaRasterizer ||
+                FontUtilities.USE_T2K || nativeNames == null ||
             getDirectoryEntry(EBLCTag) != null ||
             GraphicsEnvironment.isHeadless()) {
             checkedNatives = true;
@@ -482,7 +482,7 @@ public class TrueTypeFont extends FileFont {
             return defaultCodePage;
         }
 
-        if (FontManagerBase.IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             defaultCodePage =
                 (String)java.security.AccessController.doPrivileged(
                    new sun.security.action.GetPropertyAction("file.encoding"));
@@ -749,7 +749,7 @@ public class TrueTypeFont extends FileFont {
             style = Font.ITALIC;
             break;
         case fsSelectionBoldBit:
-            if (FontManagerBase.IS_SOLARIS && platName.endsWith("HG-GothicB.ttf")) {
+            if (FontUtilities.IS_SOLARIS && platName.endsWith("HG-GothicB.ttf")) {
                 /* Workaround for Solaris's use of a JA font that's marked as
                  * being designed bold, but is used as a PLAIN font.
                  */

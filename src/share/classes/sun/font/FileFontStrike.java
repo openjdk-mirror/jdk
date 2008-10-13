@@ -113,7 +113,7 @@ public class FileFontStrike extends PhysicalStrike {
     private static native boolean initNative();
     private static boolean isXPorLater = false;
     static {
-        if (FontManagerBase.IS_WINDOWS && !FontManagerBase.USE_T2K &&
+        if (FontUtilities.IS_WINDOWS && !FontUtilities.USE_T2K &&
             !GraphicsEnvironment.isHeadless()) {
             isXPorLater = initNative();
         }
@@ -210,8 +210,8 @@ public class FileFontStrike extends PhysicalStrike {
          * except that the advance returned by GDI is always overwritten by
          * the JDK rasteriser supplied one (see getGlyphImageFromWindows()).
          */
-        if (FontManagerBase.IS_WINDOWS && isXPorLater &&
-            !FontManagerBase.USE_T2K &&
+        if (FontUtilities.IS_WINDOWS && isXPorLater &&
+            !FontUtilities.USE_T2K &&
             !GraphicsEnvironment.isHeadless() &&
             !fileFont.useJavaRasterizer &&
             (desc.aaHint == INTVAL_TEXT_ANTIALIAS_LCD_HRGB ||
@@ -240,7 +240,7 @@ public class FileFontStrike extends PhysicalStrike {
                 }
             }
         }
-        if (FontUtilities.isLogging() && FontManagerBase.IS_WINDOWS) {
+        if (FontUtilities.isLogging() && FontUtilities.IS_WINDOWS) {
             FontUtilities.getLogger().info
                 ("Strike for " + fileFont + " at size = " + intPtSize +
                  " use natives = " + useNatives +
@@ -297,7 +297,7 @@ public class FileFontStrike extends PhysicalStrike {
     }
 
     long getGlyphImageFromNative(int glyphCode) {
-        if (FontManagerBase.IS_WINDOWS) {
+        if (FontUtilities.IS_WINDOWS) {
             return getGlyphImageFromWindows(glyphCode);
         } else {
             return getGlyphImageFromX11(glyphCode);

@@ -60,9 +60,9 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
         missingGlyph = 0; /* standard for TrueType fonts */
         ByteBuffer buffer = font.getTableBuffer(TrueTypeFont.maxpTag);
         numGlyphs = buffer.getChar(4); // offset 4 bytes in MAXP table.
-        if (FontManagerBase.IS_SOLARIS && isJAlocale && font.supportsJA()) {
+        if (FontUtilities.IS_SOLARIS && isJAlocale && font.supportsJA()) {
             needsJAremapping = true;
-            if (FontManagerBase.IS_SOLARIS_8 &&
+            if (FontUtilities.IS_SOLARIS_8 &&
                 getGlyphFromCMAP(JA_WAVE_DASH_CHAR) == missingGlyph) {
                 remapJAWaveDash = true;
             }

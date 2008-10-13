@@ -1,12 +1,78 @@
 package sun.font;
 
 import java.awt.Font;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class FontUtilities {
+
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean IS_WINDOWS;
+    
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean IS_LINUX;
+    
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean IS_SOLARIS;
+    
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean IS_OPEN_SOLARIS;
+    
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean IS_SOLARIS_8;
+    
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean USE_T2K;
+    
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean IS_SOLARIS_9;
+    
+    /**
+     * For backward compatibilty only, this will to be removed soon, don't use
+     * in new code.
+     */
+    @Deprecated
+    public static boolean IS_OPENJDK;
+    
+    // Note: This mirrors FontManagerBase.lucidaFileName for now, we don't
+    // want to reference this directly though, to avoid initialization of
+    // FontManagerBase related classes when we don't use FontManager base at
+    // all.
+    private static final String LUCIDA_FILE_NAME = "LucidaSansRegular.ttf";
 
     /**
      * Referenced by code in the JDK which wants to test for the
@@ -55,6 +121,60 @@ public final class FontUtilities {
             logging = logger.getLevel() != Level.OFF;
         }
 
+    }
+
+    // This static initializer block figures out the OS constants.
+    static {
+
+        java.security.AccessController
+                .doPrivileged(new java.security.PrivilegedAction() {
+
+                    public Object run() {
+                        String osName = System.getProperty("os.name",
+                                "unknownOS");
+                        IS_SOLARIS = osName.startsWith("SunOS");
+
+                        IS_LINUX = osName.startsWith("Linux");
+
+                        String t2kStr = System
+                                .getProperty("sun.java2d.font.scaler");
+                        if (t2kStr != null) {
+                            USE_T2K = "t2k".equals(t2kStr);
+                        }
+                        if (IS_SOLARIS) {
+                            String version = System.getProperty("os.version",
+                                    "0.0");
+                            IS_SOLARIS_8 = version.startsWith("5.8");
+                            IS_SOLARIS_9 = version.startsWith("5.9");
+                            try {
+                                float ver = Float.parseFloat(version);
+                                if (ver > 5.10f) {
+                                    File f = new File("/etc/release");
+                                    FileInputStream fis = new FileInputStream(f);
+                                    InputStreamReader isr = new InputStreamReader(
+                                            fis, "ISO-8859-1");
+                                    BufferedReader br = new BufferedReader(isr);
+                                    String line = br.readLine();
+                                    if (line.indexOf("OpenSolaris") >= 0) {
+                                        IS_OPEN_SOLARIS = true;
+                                    }
+                                    fis.close();
+                                }
+                            } catch (Exception e) {
+                            }
+                        } else {
+                            IS_WINDOWS = osName.startsWith("Windows");
+                        }
+                        String jreLibDirName =
+                            System.getProperty("java.home","") + File.separator + "lib";
+                        String jreFontDirName = jreLibDirName + File.separator + "fonts";
+                        File lucidaFile =
+                            new File(jreFontDirName + File.separator + LUCIDA_FILE_NAME);
+                        IS_OPENJDK = !lucidaFile.exists();
+
+                    return null;
+                    };
+                });
     }
 
     /**
