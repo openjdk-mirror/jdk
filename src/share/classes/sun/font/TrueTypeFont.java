@@ -959,8 +959,8 @@ public class TrueTypeFont extends FileFont {
 
     protected synchronized FontScaler getScaler() {
         if (scaler == null) {
-            scaler = FontManagerBase.getInstance().getScaler(this, fontIndex,
-                supportsCJK, fileSize);
+            scaler = FontScaler.getScaler(this, fontIndex, supportsCJK,
+                                          fileSize);
         }
         return scaler;
     }

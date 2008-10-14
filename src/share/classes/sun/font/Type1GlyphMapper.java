@@ -46,7 +46,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
           missingGlyph = scaler.getMissingGlyphCode();
         } catch (FontScalerException fe) {
-            scaler = FontManagerBase.getInstance().getNullScaler();
+            scaler = FontScaler.getNullScaler();
             try {
                 missingGlyph = scaler.getMissingGlyphCode();
             } catch (FontScalerException e) { //should not happen
@@ -59,7 +59,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
             return scaler.getNumGlyphs();
         } catch (FontScalerException e) {
-            scaler = FontManagerBase.getInstance().getNullScaler();
+            scaler = FontScaler.getNullScaler();
             return getNumGlyphs();
         }
     }
@@ -72,7 +72,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
             return scaler.getGlyphCode(ch) != missingGlyph;
         } catch(FontScalerException e) {
-            scaler = FontManagerBase.getInstance().getNullScaler();
+            scaler = FontScaler.getNullScaler();
             return canDisplay(ch);
         }
     }
@@ -81,7 +81,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
         try {
             return scaler.getGlyphCode(ch);
         } catch (FontScalerException e) {
-            scaler = FontManagerBase.getInstance().getNullScaler();
+            scaler = FontScaler.getNullScaler();
             return charToGlyph(ch);
         }
     }
@@ -93,7 +93,7 @@ public final class Type1GlyphMapper extends CharToGlyphMapper {
             try {
                 return scaler.getGlyphCode((char)ch);
             } catch (FontScalerException e) {
-                scaler = FontManagerBase.getInstance().getNullScaler();
+                scaler = FontScaler.getNullScaler();
                 return charToGlyph(ch);
             }
         }

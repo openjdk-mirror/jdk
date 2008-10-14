@@ -59,6 +59,8 @@ public interface FontManager {
      */
     public boolean registerFont(Font font);
 
+    public void deRegisterBadFont(Font2D font2D);
+
     /**
      * The client supplies a name and a style.
      * The name could be a family name, or a full name.
