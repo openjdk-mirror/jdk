@@ -40,7 +40,7 @@ import sun.awt.FontConfiguration;
 import sun.awt.X11FontManager;
 import sun.awt.X11GraphicsEnvironment;
 import sun.font.FontManager;
-import sun.font.FontManagerBase;
+import sun.font.SunFontManager;
 import sun.font.FontManagerFactory;
 import sun.font.FontUtilities;
 import sun.java2d.SunGraphicsEnvironment;
@@ -51,7 +51,7 @@ public class MFontConfiguration extends FontConfiguration {
     private static FontConfiguration fontConfig = null;
     private static Logger logger;
 
-    public MFontConfiguration(FontManagerBase fm) {
+    public MFontConfiguration(SunFontManager fm) {
         super(fm);
         if (FontUtilities.debugFonts()) {
             logger = Logger.getLogger("sun.awt.FontConfiguration");
@@ -60,7 +60,7 @@ public class MFontConfiguration extends FontConfiguration {
     }
 
 
-    public MFontConfiguration(FontManagerBase fm,
+    public MFontConfiguration(SunFontManager fm,
                               boolean preferLocaleFonts,
                               boolean preferPropFonts) {
         super(fm, preferLocaleFonts, preferPropFonts);

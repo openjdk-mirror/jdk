@@ -261,7 +261,7 @@ public final class FontDesignMetrics extends FontMetrics {
          * Note that currently Swing native L&F composites are not handled
          * by this code as they use the metrics of the physical anyway.
          */
-        FontManagerBase fm = FontManagerBase.getInstance();
+        SunFontManager fm = SunFontManager.getInstance();
         if (fm.maybeUsingAlternateCompositeFonts() &&
             FontUtilities.getFont2D(font) instanceof CompositeFont) {
             return new FontDesignMetrics(font, frc);

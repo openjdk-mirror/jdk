@@ -101,7 +101,7 @@ public class TrueTypeGlyphMapper extends CharToGlyphMapper {
             FontUtilities.getLogger().severe("Null Cmap for " + font +
                                       "substituting for this font");
         }
-        FontManagerBase.getInstance().deRegisterBadFont(font);
+        SunFontManager.getInstance().deRegisterBadFont(font);
         /* The next line is not really a solution, but might
          * reduce the exceptions until references to this font2D
          * are gone.

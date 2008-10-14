@@ -522,8 +522,8 @@ public final class FontUtilities {
 
         FontManager fm = FontManagerFactory.getInstance();
         CompositeFont font2D;
-        if (fm instanceof FontManagerBase) {
-            FontManagerBase fmb = (FontManagerBase) fm;
+        if (fm instanceof SunFontManager) {
+            SunFontManager fmb = (SunFontManager) fm;
             font2D =
                 fmb.getFontConfigManager().getFontConfigFont(fcFamily, style);
         } else {

@@ -37,8 +37,8 @@ SUNWprivate_1.1 {
 		Java_java_text_Bidi_nativeGetDirectionCode;
                 Java_sun_font_NullFontScaler_getNullScalerContext;
                 Java_sun_font_NullFontScaler_getGlyphImage;
-                Java_sun_font_FontManagerBase_getPlatformFontVar;
-                Java_sun_font_FontManagerBase_initIDs;
+                Java_sun_font_SunFontManager_getPlatformFontVar;
+                Java_sun_font_SunFontManager_initIDs;
                 Java_sun_font_StrikeCache_getGlyphCacheDescription;
                 Java_sun_font_StrikeCache_freeIntPointer;
                 Java_sun_font_StrikeCache_freeLongPointer;

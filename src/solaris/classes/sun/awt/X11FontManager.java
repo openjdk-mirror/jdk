@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 import sun.awt.motif.MFontConfiguration;
 import sun.font.DefaultFontManager;
 import sun.font.FontManager;
-import sun.font.FontManagerBase;
+import sun.font.SunFontManager;
 import sun.font.FontManagerFactory;
 import sun.font.FcFontConfiguration;
 import sun.font.FontUtilities;
@@ -709,7 +709,7 @@ public class X11FontManager extends DefaultFontManager {
             return;
         }
 
-        FontManagerBase fm = FontManagerBase.getInstance();
+        SunFontManager fm = SunFontManager.getInstance();
         
         // need to register these individually rather than by one call
         // to ensure that one bad directory doesn't cause all to be rejected

@@ -158,7 +158,7 @@ public abstract class FileFont extends PhysicalFont {
      * rare maybe it is not worth doing this last part.
      */
     synchronized void deregisterFontAndClearStrikeCache() {
-        FontManagerBase fm = FontManagerBase.getInstance();
+        SunFontManager fm = SunFontManager.getInstance();
         fm.deRegisterBadFont(this);
 
         for (Reference strikeRef : strikeCache.values()) {
@@ -270,7 +270,7 @@ public abstract class FileFont extends PhysicalFont {
                                   fontFile.delete();
                                   /* remove from delete on exit hook list : */
                                   // FIXME: still need to be refactored
-                                  FontManagerBase.getInstance().tmpFontFiles.remove(fontFile);
+                                  SunFontManager.getInstance().tmpFontFiles.remove(fontFile);
                               } catch (Exception e) {
                               }
                           }

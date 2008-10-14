@@ -77,7 +77,7 @@ void initLCDGammaTables();
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL
-Java_sun_font_FontManagerBase_getPlatformFontVar(JNIEnv *env, jclass cl) {
+Java_sun_font_SunFontManager_getPlatformFontVar(JNIEnv *env, jclass cl) {
     char *c = getenv("JAVA2D_USEPLATFORMFONT");
     if (c) {
         return JNI_TRUE;
@@ -90,7 +90,7 @@ Java_sun_font_FontManagerBase_getPlatformFontVar(JNIEnv *env, jclass cl) {
 FontManagerNativeIDs sunFontIDs;
 
 JNIEXPORT void JNICALL
-Java_sun_font_FontManagerBase_initIDs
+Java_sun_font_SunFontManager_initIDs
     (JNIEnv *env, jclass cls) {
 
      jclass tmpClass = (*env)->FindClass(env, "sun/font/PhysicalFont");

@@ -112,14 +112,14 @@ public class FontConfigManager {
      */
     private FcCompFont[] fontConfigFonts;
 
-    private FontManagerBase fm = null;
+    private SunFontManager fm = null;
     
     /**
      * Instantiates a new FontConfigManager getting the default instance
      * of FontManager from the FontManagerFactory.
      */
     public FontConfigManager() {
-        this.fm = FontManagerBase.getInstance();
+        this.fm = SunFontManager.getInstance();
     }
     
     /**
@@ -127,7 +127,7 @@ public class FontConfigManager {
      * FontManager instance.
      * @param fm
      */
-    public FontConfigManager(FontManagerBase fm) {
+    public FontConfigManager(SunFontManager fm) {
         this.fm = fm;
     }
     
@@ -268,7 +268,7 @@ public class FontConfigManager {
     
     public PhysicalFont registerFromFcInfo(FcCompFont fcInfo) {
 
-        FontManagerBase fm = FontManagerBase.getInstance();
+        SunFontManager fm = SunFontManager.getInstance();
         
         /* If it's a TTC file we need to know that as we will need to
          * make sure we return the right font */
@@ -335,14 +335,14 @@ public class FontConfigManager {
          * the type and rank to register the font.
          */
         if (physFont == null) {
-            int fontFormat = FontManagerBase.FONTFORMAT_NONE;
+            int fontFormat = SunFontManager.FONTFORMAT_NONE;
             int fontRank = Font2D.UNKNOWN_RANK;
 
             if (ext.equals(".ttf") || isTTC) {
-                fontFormat = FontManagerBase.FONTFORMAT_TRUETYPE;
+                fontFormat = SunFontManager.FONTFORMAT_TRUETYPE;
                 fontRank = Font2D.TTF_RANK;
             } else if (ext.equals(".pfa") || ext.equals(".pfb")) {
-                fontFormat = FontManagerBase.FONTFORMAT_TYPE1;
+                fontFormat = SunFontManager.FONTFORMAT_TYPE1;
                 fontRank = Font2D.TYPE1_RANK;
             }
             physFont = fm.registerFontFile(fcInfo.firstFont.fontFile, null,
