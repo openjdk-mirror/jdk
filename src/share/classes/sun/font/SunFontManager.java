@@ -74,7 +74,7 @@ import sun.security.action.GetPropertyAction;
  * Interface between Java Fonts (java.awt.Font) and the underlying
  * font files/native font resources and the Java and native font scalers.
  */
-public abstract class FontManagerBase implements FontSupport, FontManagerForSGE {
+public abstract class SunFontManager implements FontSupport, FontManagerForSGE {
 
     private static class TTFilter implements FilenameFilter {
         public boolean accept(File dir,String name) {
@@ -252,10 +252,10 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
      *
      * @return the global FontManagerBase instance
      */
-    public static FontManagerBase getInstance() {
+    public static SunFontManager getInstance() {
         FontManager fm = FontManagerFactory.getInstance();
-        assert fm instanceof FontManagerBase;
-        return (FontManagerBase) fm;
+        assert fm instanceof SunFontManager;
+        return (SunFontManager) fm;
     }
 
     public FilenameFilter getTrueTypeFilter() {
@@ -406,7 +406,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
    }
 
     @SuppressWarnings("unchecked")
-    protected FontManagerBase() {
+    protected SunFontManager() {
                 
         initJREFontMap();
         java.security.AccessController.doPrivileged(
@@ -760,7 +760,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
                                              numMetricsSlots,
                                              exclusionRanges,
                                              exclusionMaxIndex, defer,
-                                             FontManagerBase.getInstance());
+                                             SunFontManager.getInstance());
 
         /* if the cache has an existing composite for this case, make
          * its handle point to this new font.
@@ -2837,7 +2837,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
     private static HashSet<String> getInstalledNames() {
         if (installedNames == null) {
            Locale l = getSystemStartupLocale();
-           FontManagerBase fontManager = FontManagerBase.getInstance();
+           SunFontManager fontManager = SunFontManager.getInstance();
            String[] installedFamilies =
                fontManager.getInstalledFontFamilyNames(l);
            Font[] installedFonts = fontManager.getAllInstalledFonts();
@@ -3484,7 +3484,7 @@ public abstract class FontManagerBase implements FontSupport, FontManagerForSGE 
              * fall back component fonts to the composite.
              */
             if (altNameCache != null) {
-                FontManagerBase.registerCompositeFont(
+                SunFontManager.registerCompositeFont(
                     descriptor.getFaceName(),
                     componentFileNames, componentFaceNames,
                     descriptor.getCoreComponentCount(),
