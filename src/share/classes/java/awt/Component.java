@@ -352,7 +352,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @see #validate
      * @see #invalidate
      */
-    volatile boolean valid = false;
+    private volatile boolean valid = false;
 
     /**
      * The <code>DropTarget</code> associated with this component.
@@ -641,11 +641,21 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     private PropertyChangeSupport changeSupport;
 
-    // Note: this field is considered final, though readObject() prohibits
-    // initializing final fields.
-    private transient Object changeSupportLock = new Object();
-    private Object getChangeSupportLock() {
-        return changeSupportLock;
+    /*
+     * In some cases using "this" as an object to synchronize by
+     * can lead to a deadlock if client code also uses synchronization
+     * by a component object. For every such situation revealed we should
+     * consider possibility of replacing "this" with the package private
+     * objectLock object introduced below. So far there're 2 issues known:
+     * - CR 6708322 (the getName/setName methods);
+     * - CR 6608764 (the PropertyChangeListener machinery).
+     *
+     * Note: this field is considered final, though readObject() prohibits
+     * initializing final fields.
+     */
+    private transient Object objectLock = new Object();
+    Object getObjectLock() {
+        return objectLock;
     }
 
     boolean isPacked = false;
@@ -818,7 +828,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public String getName() {
         if (name == null && !nameExplicitlySet) {
-            synchronized(this) {
+            synchronized(getObjectLock()) {
                 if (name == null && !nameExplicitlySet)
                     name = constructComponentName();
             }
@@ -835,7 +845,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public void setName(String name) {
         String oldName;
-        synchronized(this) {
+        synchronized(getObjectLock()) {
             oldName = this.name;
             this.name = name;
             nameExplicitlySet = true;
@@ -1710,9 +1720,9 @@ public abstract class Component implements ImageObserver, MenuContainer,
         // This could change the preferred size of the Component.
         // Fix for 6213660. Should compare old and new fonts and do not
         // call invalidate() if they are equal.
-        if (valid && f != oldFont && (oldFont == null ||
+        if (f != oldFont && (oldFont == null ||
                                       !oldFont.equals(f))) {
-            invalidate();
+            invalidateIfValid();
         }
     }
 
@@ -1769,9 +1779,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         firePropertyChange("locale", oldValue, l);
 
         // This could change the preferred size of the Component.
-        if (valid) {
-            invalidate();
-        }
+        invalidateIfValid();
     }
 
     /**
@@ -2080,8 +2088,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
                     if (resized) {
                         invalidate();
                     }
-                    if (parent != null && parent.valid) {
-                        parent.invalidate();
+                    if (parent != null) {
+                        parent.invalidateIfValid();
                     }
                 }
                 if (needNotify) {
@@ -2137,7 +2145,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
                     Toolkit.getEventQueue().postEvent(e);
                 }
             } else {
-                if (this instanceof Container && ((Container)this).ncomponents > 0) {
+                if (this instanceof Container && ((Container)this).countComponents() > 0) {
                     boolean enabledOnToolkit =
                         Toolkit.enabledOnToolkit(AWTEvent.HIERARCHY_BOUNDS_EVENT_MASK);
                     if (resized) {
@@ -2650,7 +2658,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
     public void validate() {
         synchronized (getTreeLock()) {
             ComponentPeer peer = this.peer;
-            if (!valid && peer != null) {
+            boolean wasValid = isValid();
+            if (!wasValid && peer != null) {
                 Font newfont = getFont();
                 Font oldfont = peerFont;
                 if (newfont != oldfont && (oldfont == null
@@ -2661,6 +2670,9 @@ public abstract class Component implements ImageObserver, MenuContainer,
                 peer.layout();
             }
             valid = true;
+            if (!wasValid) {
+                mixOnValidating();
+            }
         }
     }
 
@@ -2689,9 +2701,17 @@ public abstract class Component implements ImageObserver, MenuContainer,
             if (!isMaximumSizeSet()) {
                 maxSize = null;
             }
-            if (parent != null && parent.valid) {
-                parent.invalidate();
+            if (parent != null) {
+                parent.invalidateIfValid();
             }
+        }
+    }
+
+    /** Invalidates the component unless it is already invalid.
+     */
+    final void invalidateIfValid() {
+        if (isValid()) {
+            invalidate();
         }
     }
 
@@ -5805,7 +5825,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         }
     }
 
-    transient EventQueueItem[] eventCache;
+    transient sun.awt.EventQueueItem[] eventCache;
 
     /**
      * @see #isCoalescingEnabled
@@ -7555,9 +7575,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         Container rootAncestor = getTraversalRoot();
         Component comp = this;
         while (rootAncestor != null &&
-               !(rootAncestor.isShowing() &&
-                 rootAncestor.isFocusable() &&
-                 rootAncestor.isEnabled()))
+               !(rootAncestor.isShowing() && rootAncestor.canBeFocusOwner()))
         {
             comp = rootAncestor;
             rootAncestor = comp.getFocusCycleRootAncestor();
@@ -7606,9 +7624,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         Container rootAncestor = getTraversalRoot();
         Component comp = this;
         while (rootAncestor != null &&
-               !(rootAncestor.isShowing() &&
-                 rootAncestor.isFocusable() &&
-                 rootAncestor.isEnabled()))
+               !(rootAncestor.isShowing() && rootAncestor.canBeFocusOwner()))
         {
             comp = rootAncestor;
             rootAncestor = comp.getFocusCycleRootAncestor();
@@ -7787,7 +7803,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     protected String paramString() {
         String thisName = getName();
         String str = (thisName != null? thisName : "") + "," + x + "," + y + "," + width + "x" + height;
-        if (!valid) {
+        if (!isValid()) {
             str += ",invalid";
         }
         if (!visible) {
@@ -7915,7 +7931,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public void addPropertyChangeListener(
                                                        PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null) {
                 return;
             }
@@ -7941,7 +7957,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public void removePropertyChangeListener(
                                                           PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null || changeSupport == null) {
                 return;
             }
@@ -7964,7 +7980,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * @since    1.4
      */
     public PropertyChangeListener[] getPropertyChangeListeners() {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (changeSupport == null) {
                 return new PropertyChangeListener[0];
             }
@@ -8006,7 +8022,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     public void addPropertyChangeListener(
                                                        String propertyName,
                                                        PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null) {
                 return;
             }
@@ -8036,7 +8052,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     public void removePropertyChangeListener(
                                                           String propertyName,
                                                           PropertyChangeListener listener) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (listener == null || changeSupport == null) {
                 return;
             }
@@ -8060,7 +8076,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     public PropertyChangeListener[] getPropertyChangeListeners(
                                                                             String propertyName) {
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             if (changeSupport == null) {
                 return new PropertyChangeListener[0];
             }
@@ -8081,7 +8097,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     protected void firePropertyChange(String propertyName,
                                       Object oldValue, Object newValue) {
         PropertyChangeSupport changeSupport;
-        synchronized (getChangeSupportLock()) {
+        synchronized (getObjectLock()) {
             changeSupport = this.changeSupport;
         }
         if (changeSupport == null ||
@@ -8383,7 +8399,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
     private void readObject(ObjectInputStream s)
       throws ClassNotFoundException, IOException
     {
-        changeSupportLock = new Object();
+        objectLock = new Object();
 
         s.defaultReadObject();
 
@@ -8547,9 +8563,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         firePropertyChange("componentOrientation", oldValue, o);
 
         // This could change the preferred size of the Component.
-        if (valid) {
-            invalidate();
-        }
+        invalidateIfValid();
     }
 
     /**
@@ -8585,6 +8599,14 @@ public abstract class Component implements ImageObserver, MenuContainer,
         setComponentOrientation(orientation);
     }
 
+    final boolean canBeFocusOwner() {
+        // It is enabled, visible, focusable.
+        if (isEnabled() && isDisplayable() && isVisible() && isFocusable()) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Checks that this component meets the prerequesites to be focus owner:
      * - it is enabled, visible, focusable
@@ -8594,9 +8616,9 @@ public abstract class Component implements ImageObserver, MenuContainer,
      * this component as focus owner
      * @since 1.5
      */
-    final boolean canBeFocusOwner() {
+    final boolean canBeFocusOwnerRecursively() {
         // - it is enabled, visible, focusable
-        if (!(isEnabled() && isDisplayable() && isVisible() && isFocusable())) {
+        if (!canBeFocusOwner()) {
             return false;
         }
 
@@ -9391,7 +9413,8 @@ public abstract class Component implements ImageObserver, MenuContainer,
      */
     private boolean areBoundsValid() {
         Container cont = getContainer();
-        return cont == null || cont.isValid() || cont.getLayout() == null;
+        return cont == null || cont.isValid()
+            || cont.getLayout() == null;
     }
 
     /**
@@ -9660,6 +9683,11 @@ public abstract class Component implements ImageObserver, MenuContainer,
         } else {
             mixOnHiding(isLightweight());
         }
+    }
+
+    void mixOnValidating() {
+        // This method gets overriden in the Container. Obviously, a plain
+        // non-container components don't need to handle validation.
     }
 
     // ****************** END OF MIXING CODE ********************************
