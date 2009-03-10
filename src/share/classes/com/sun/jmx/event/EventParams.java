@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,7 +41,7 @@ public class EventParams {
 
     @SuppressWarnings("cast") // cast for jdk 1.5
     public static long getLeaseTimeout() {
-        long timeout = EventClient.DEFAULT_LEASE_TIMEOUT;
+        long timeout = EventClient.DEFAULT_REQUESTED_LEASE_TIME;
         try {
             final GetPropertyAction act =
                   new GetPropertyAction(DEFAULT_LEASE_TIMEOUT);

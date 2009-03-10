@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1995-2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -135,11 +135,6 @@ ZFILE_Close(ZFILE zfd) {
 #endif
 }
 
-static jlong
-ZFILE_Lseek(ZFILE zfd, off_t offset, int whence) {
-    return IO_Lseek(zfd, offset, whence);
-}
-
 static int
 ZFILE_read(ZFILE zfd, char *buf, jint nbytes) {
 #ifdef WIN32
@@ -216,7 +211,7 @@ readFully(ZFILE zfd, void *buf, jlong len) {
 static int
 readFullyAt(ZFILE zfd, void *buf, jlong len, jlong offset)
 {
-    if (ZFILE_Lseek(zfd, (off_t) offset, SEEK_SET) == -1) {
+    if (IO_Lseek(zfd, offset, SEEK_SET) == -1) {
         return -1; /* lseek failure. */
     }
 
@@ -273,8 +268,8 @@ static const jlong END_MAXLEN = 0xFFFF + ENDHDR;
 /*
  * Searches for end of central directory (END) header. The contents of
  * the END header will be read and placed in endbuf. Returns the file
- * position of the END header, otherwise returns 0 if the END header
- * was not found or -1 if an error occurred.
+ * position of the END header, otherwise returns -1 if the END header
+ * was not found or an error occurred.
  */
 static jlong
 findEND(jzfile *zip, void *endbuf)
@@ -314,7 +309,7 @@ findEND(jzfile *zip, void *endbuf)
             }
         }
     }
-    return 0; /* END header not found */
+    return -1; /* END header not found */
 }
 
 /*
@@ -460,9 +455,8 @@ if (1) { zip->msg = message; goto Catch; } else ((void)0)
 
 /*
  * Reads zip file central directory. Returns the file position of first
- * CEN header, otherwise returns 0 if central directory not found or -1
- * if an error occurred. If zip->msg != NULL then the error was a zip
- * format error and zip->msg has the error text.
+ * CEN header, otherwise returns -1 if an error occured. If zip->msg != NULL
+ * then the error was a zip format error and zip->msg has the error text.
  * Always pass in -1 for knownTotal; it's used for a recursive call.
  */
 static jlong
@@ -477,7 +471,7 @@ readCEN(jzfile *zip, jint knownTotal)
     unsigned char *cp;
 #ifdef USE_MMAP
     static jlong pagesize;
-    off_t offset;
+    jlong offset;
 #endif
     unsigned char endbuf[ENDHDR];
     jzcell *entries;
@@ -488,9 +482,9 @@ readCEN(jzfile *zip, jint knownTotal)
 
     /* Get position of END header */
     if ((endpos = findEND(zip, endbuf)) == -1)
-        return -1; /* system error */
+        return -1; /* no END header or system error */
 
-    if (endpos == 0) return 0;  /* END header not found */
+    if (endpos == 0) return 0;  /* only END header present */
 
     freeCEN(zip);
 
@@ -535,7 +529,7 @@ readCEN(jzfile *zip, jint knownTotal)
         */
         zip->mlen = cenpos - offset + cenlen + ENDHDR;
         zip->offset = offset;
-        mappedAddr = mmap(0, zip->mlen, PROT_READ, MAP_SHARED, zip->zfd, offset);
+        mappedAddr = mmap64(0, zip->mlen, PROT_READ, MAP_SHARED, zip->zfd, (off64_t) offset);
         zip->maddr = (mappedAddr == (void*) MAP_FAILED) ? NULL :
             (unsigned char*)mappedAddr;
 
@@ -721,17 +715,23 @@ ZIP_Put_In_Cache(const char *name, ZFILE zfd, char **pmsg, jlong lastModified)
         return NULL;
     }
 
-    len = zip->len = ZFILE_Lseek(zfd, 0, SEEK_END);
-    if (len == -1) {
-        if (pmsg && JVM_GetLastErrorString(errbuf, sizeof(errbuf)) > 0)
-            *pmsg = errbuf;
+    len = zip->len = IO_Lseek(zfd, 0, SEEK_END);
+    if (len <= 0) {
+        if (len == 0) { /* zip file is empty */
+            if (pmsg) {
+                *pmsg = "zip file is empty";
+            }
+        } else { /* error */
+            if (pmsg && JVM_GetLastErrorString(errbuf, sizeof(errbuf)) > 0)
+                *pmsg = errbuf;
+        }
         ZFILE_Close(zfd);
         freeZip(zip);
         return NULL;
     }
 
     zip->zfd = zfd;
-    if (readCEN(zip, -1) <= 0) {
+    if (readCEN(zip, -1) < 0) {
         /* An error occurred while trying to read the zip file */
         if (pmsg != 0) {
             /* Set the zip error message */
@@ -947,10 +947,15 @@ jzentry *
 ZIP_GetEntry(jzfile *zip, char *name, jint ulen)
 {
     unsigned int hsh = hash(name);
-    jint idx = zip->table[hsh % zip->tablelen];
-    jzentry *ze;
+    jint idx;
+    jzentry *ze = 0;
 
     ZIP_Lock(zip);
+    if (zip->total == 0) {
+        goto Finally;
+    }
+
+    idx = zip->table[hsh % zip->tablelen];
 
     /*
      * This while loop is an optimization where a double lookup
@@ -1025,6 +1030,7 @@ ZIP_GetEntry(jzfile *zip, char *name, jint ulen)
         ulen = 0;
     }
 
+Finally:
     ZIP_Unlock(zip);
     return ze;
 }

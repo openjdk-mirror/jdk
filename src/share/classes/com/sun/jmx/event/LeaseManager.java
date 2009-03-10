@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,9 +27,9 @@ package com.sun.jmx.event;
 
 import com.sun.jmx.remote.util.ClassLogger;
 import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -115,6 +115,7 @@ public class LeaseManager {
                 scheduled = null;
             }
             callback.run();
+            executor.shutdown();
         }
     }
 
@@ -131,14 +132,22 @@ public class LeaseManager {
         logger.trace("stop", "canceling lease");
         scheduled.cancel(false);
         scheduled = null;
+        try {
+            executor.shutdown();
+        } catch (SecurityException e) {
+            // OK: caller doesn't have RuntimePermission("modifyThread")
+            // which is unlikely in reality but triggers a test failure otherwise
+            logger.trace("stop", "exception from executor.shutdown", e);
+        }
     }
 
     private final Runnable callback;
-    private ScheduledFuture scheduled;  // If null, the lease has expired.
+    private ScheduledFuture<?> scheduled;  // If null, the lease has expired.
 
+    private static final ThreadFactory threadFactory =
+            new DaemonThreadFactory("JMX LeaseManager %d");
     private final ScheduledExecutorService executor
-            = Executors.newScheduledThreadPool(1,
-            new DaemonThreadFactory("LeaseManager"));
+            = Executors.newScheduledThreadPool(1, threadFactory);
 
     private static final ClassLogger logger =
             new ClassLogger("javax.management.event", "LeaseManager");

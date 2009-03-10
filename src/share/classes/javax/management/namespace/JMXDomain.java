@@ -35,7 +35,6 @@ import static javax.management.namespace.JMXNamespaces.NAMESPACE_SEPARATOR;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerDelegate;
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 /**
@@ -291,12 +290,9 @@ public class JMXDomain extends JMXNamespace {
     public static ObjectName getDomainObjectName(String domain) {
         if (domain == null) return null;
         if (domain.contains(NAMESPACE_SEPARATOR))
-            throw new IllegalArgumentException(domain);
-        try {
-            return ObjectName.getInstance(domain, "type", TYPE);
-        } catch (MalformedObjectNameException x) {
-            throw new IllegalArgumentException(domain,x);
-        }
+            throw new IllegalArgumentException("domain contains " +
+                    NAMESPACE_SEPARATOR+": "+domain);
+        return ObjectName.valueOf(domain, "type", TYPE);
     }
 
 
@@ -308,17 +304,17 @@ public class JMXDomain extends JMXNamespace {
      * It is however only available for subclasses in this package.
      **/
     @Override
-    ObjectName validateHandlerName(ObjectName supliedName) {
-        if (supliedName == null)
+    ObjectName validateHandlerName(ObjectName suppliedName) {
+        if (suppliedName == null)
             throw new IllegalArgumentException("Must supply a valid name");
         final String dirName = JMXNamespaces.
-                normalizeNamespaceName(supliedName.getDomain());
+                normalizeNamespaceName(suppliedName.getDomain());
         final ObjectName handlerName = getDomainObjectName(dirName);
-        if (!supliedName.equals(handlerName))
+        if (!suppliedName.equals(handlerName))
             throw new IllegalArgumentException("invalid name space name: "+
-                        supliedName);
+                        suppliedName);
 
-        return supliedName;
+        return suppliedName;
     }
 
     /**

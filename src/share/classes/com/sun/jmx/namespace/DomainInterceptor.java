@@ -42,7 +42,6 @@ import javax.management.ListenerNotFoundException;
 import javax.management.MBeanPermission;
 import javax.management.MBeanServerDelegate;
 import javax.management.MBeanServerNotification;
-import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.NotificationFilter;
 import javax.management.NotificationListener;
@@ -85,7 +84,7 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
 
         final ObjectName pattern;
         public PatternNotificationFilter(ObjectName pattern) {
-            this.pattern = pattern;
+            this.pattern = pattern==null?ObjectName.WILDCARD:pattern;
         }
 
         public boolean isNotificationEnabled(Notification notification) {
@@ -93,7 +92,7 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
                 return false;
             final MBeanServerNotification mbsn =
                     (MBeanServerNotification) notification;
-            if (pattern == null || pattern.apply(mbsn.getMBeanName()))
+            if (pattern.apply(mbsn.getMBeanName()))
                 return true;
             return false;
         }
@@ -110,6 +109,7 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
         super(handler);
         this.domainName = domainName;
         this.serverName = serverName;
+        ALL = ObjectName.valueOf(domainName+":*");
     }
 
     @Override
@@ -118,27 +118,27 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
                 ", domain="+this.domainName+")";
     }
 
-    public void connectDelegate(final MBeanServerDelegate delegate)
+    final void connectDelegate(final MBeanServerDelegate delegate)
             throws InstanceNotFoundException {
         final NotificationFilter filter =
                 new PatternNotificationFilter(getPatternFor(null));
         synchronized (this) {
-            if (mbsListener == null)
+            if (mbsListener == null) {
                 mbsListener = new NotificationListener() {
-
-               public void handleNotification(Notification notification,
-                    Object handback) {
-                    if (filter.isNotificationEnabled(notification))
-                        delegate.sendNotification(notification);
-                }
-            };
+                    public void handleNotification(Notification notification,
+                        Object handback) {
+                        if (filter.isNotificationEnabled(notification))
+                            delegate.sendNotification(notification);
+                    }
+                };
+            }
         }
 
-        getNamespace().
+        getHandlerInterceptorMBean().
                 addMBeanServerNotificationListener(mbsListener, filter);
     }
 
-    public void disconnectDelegate()
+    final void disconnectDelegate()
             throws InstanceNotFoundException, ListenerNotFoundException {
         final NotificationListener l;
         synchronized (this) {
@@ -146,10 +146,10 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
             if (l == null) return;
             mbsListener = null;
         }
-        getNamespace().removeMBeanServerNotificationListener(l);
+        getHandlerInterceptorMBean().removeMBeanServerNotificationListener(l);
     }
 
-    public void addPostRegisterTask(Queue<Runnable> queue,
+    public final void addPostRegisterTask(Queue<Runnable> queue,
             final MBeanServerDelegate delegate) {
         if (queue == null)
             throw new IllegalArgumentException("task queue must not be null");
@@ -158,14 +158,15 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
                 try {
                     connectDelegate(delegate);
                 } catch (Exception x) {
-                    throw new UnsupportedOperationException("notification forwarding",x);
+                    throw new UnsupportedOperationException(
+                            "notification forwarding",x);
                 }
             }
         };
         queue.add(task1);
     }
 
-    public void addPostDeregisterTask(Queue<Runnable> queue,
+    public final void addPostDeregisterTask(Queue<Runnable> queue,
             final MBeanServerDelegate delegate) {
         if (queue == null)
             throw new IllegalArgumentException("task queue must not be null");
@@ -174,17 +175,18 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
                 try {
                     disconnectDelegate();
                 } catch (Exception x) {
-                    throw new UnsupportedOperationException("notification forwarding",x);
+                    throw new UnsupportedOperationException(
+                            "notification forwarding",x);
                 }
             }
         };
         queue.add(task1);
     }
 
-    /**
-     * Throws IllegalArgumentException if targetName.getDomain() is not
-     * in the domain handled.
-     **/
+    // No name conversion for JMXDomains...
+    // Throws IllegalArgumentException if targetName.getDomain() is not
+    // in the domain handled.
+    //
     @Override
     protected ObjectName toSource(ObjectName targetName) {
         if (targetName == null) return null;
@@ -198,6 +200,7 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
         return targetName;
     }
 
+    // No name conversion for JMXDomains...
     @Override
     protected ObjectName toTarget(ObjectName sourceName) {
         return sourceName;
@@ -255,22 +258,18 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Unexpected exception raised in queryNames: "+x);
             LOG.log(Level.FINEST,"Unexpected exception raised in queryNames",x);
+            return Collections.emptySet();
         }
-        // We reach here only when an exception was raised.
-        //
-        final Set<ObjectName> empty = Collections.emptySet();
-        return empty;
     }
 
+    // Compute a new pattern which is a sub pattern of 'name' but only selects
+    // the MBeans in domain 'domainName'
+    // When we reach here, it has been verified that 'name' matches our domain
+    // name (done by DomainDispatchInterceptor)
     private ObjectName getPatternFor(final ObjectName name) {
-        try {
-            if (ALL == null) ALL = ObjectName.getInstance(domainName + ":*");
-            if (name == null) return ALL;
-            if (name.getDomain().equals(domainName)) return name;
-            return name.withDomain(domainName);
-        } catch (MalformedObjectNameException x) {
-            throw new IllegalArgumentException(String.valueOf(name),x);
-        }
+        if (name == null) return ALL;
+        if (name.getDomain().equals(domainName)) return name;
+        return name.withDomain(domainName);
    }
 
     @Override
@@ -284,11 +283,8 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Unexpected exception raised in queryNames: "+x);
             LOG.log(Level.FINEST,"Unexpected exception raised in queryNames",x);
+            return Collections.emptySet();
         }
-        // We reach here only when an exception was raised.
-        //
-        final Set<ObjectInstance> empty = Collections.emptySet();
-        return empty;
     }
 
     @Override
@@ -306,7 +302,7 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
     // in the domain.
     @Override
     public Integer getMBeanCount() {
-        return getNamespace().getMBeanCount();
+        return getHandlerInterceptorMBean().getMBeanCount();
     }
 
     private boolean checkOn() {
@@ -320,8 +316,8 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
     @Override
     void check(ObjectName routingName, String member, String action) {
         if (!checkOn()) return;
-        final String act = (action==null)?"-":action.intern();
-        if(act == "queryMBeans" || act == "queryNames") { // ES: OK
+        final String act = (action==null)?"-":action;
+        if("queryMBeans".equals(act) || "queryNames".equals(act)) {
             // This is tricky. check with 3 parameters is called
             // by queryNames/queryMBeans before performing the query.
             // At this point we must check with no class name.
@@ -355,16 +351,8 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
         if (!checkOn()) return;
         final MBeanPermission perm;
 
-        // action is most probably already an intern string.
-        // string literals are intern strings.
-        // we create a new intern string for 'action' - just to be on
-        // the safe side...
-        // We intern it in order to be able to use == rather than equals
-        // below, because if we don't, and if action is not one of the
-        // 4 literals below, we would have to do a full string comparison.
-        //
-        final String act = (action==null)?"-":action.intern();
-        if (act == "getDomains") { // ES: OK
+        final String act = (action==null)?"-":action;
+        if ("getDomains".equals(act)) { // ES: OK
             perm = new  MBeanPermission(serverName,"-",member,
                     routingName,act);
         } else {
@@ -381,7 +369,7 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
     String getClassName(ObjectName routingName) {
         if (routingName == null || routingName.isPattern()) return "-";
         try {
-            return getNamespace().getSourceServer().
+            return getHandlerInterceptorMBean().getSourceServer().
                     getObjectInstance(routingName).getClassName();
         } catch (InstanceNotFoundException ex) {
             LOG.finest("Can't get class name for "+routingName+
@@ -444,7 +432,7 @@ public class DomainInterceptor extends HandlerInterceptor<JMXDomain> {
          int count=0;
          for (int i=0;i<domains.length;i++) {
              try {
-                 check(Util.newObjectName(domains[i]+":x=x"),"-",
+                 check(ObjectName.valueOf(domains[i]+":x=x"),"-",
                          "-","getDomains");
              } catch (SecurityException x) { // DLS: OK
                  count++;

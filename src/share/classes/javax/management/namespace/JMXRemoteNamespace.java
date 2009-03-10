@@ -27,25 +27,23 @@ package javax.management.namespace;
 
 import com.sun.jmx.defaults.JmxProperties;
 import com.sun.jmx.mbeanserver.Util;
-import com.sun.jmx.namespace.JMXNamespaceUtils;
-import com.sun.jmx.namespace.NamespaceInterceptor.DynamicProbe;
 import com.sun.jmx.remote.util.EnvHelp;
 
 import java.io.IOException;
-import java.security.AccessControlException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.management.AttributeChangeNotification;
 
+import javax.management.ClientContext;
 import javax.management.InstanceNotFoundException;
 import javax.management.ListenerNotFoundException;
 import javax.management.MBeanNotificationInfo;
-import javax.management.MBeanPermission;
 import javax.management.MBeanServerConnection;
-import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.NotificationBroadcasterSupport;
 import javax.management.NotificationEmitter;
@@ -117,18 +115,13 @@ public class JMXRemoteNamespace
      */
     private static final Logger LOG = JmxProperties.NAMESPACE_LOGGER;
 
-    private static final Logger PROBE_LOG = Logger.getLogger(
-            JmxProperties.NAMESPACE_LOGGER_NAME+".probe");
-
 
     // This connection listener is used to listen for connection events from
     // the underlying JMXConnector. It is used in particular to maintain the
     // "connected" state in this MBean.
     //
-    private static class ConnectionListener implements NotificationListener {
-        private final JMXRemoteNamespace handler;
-        private ConnectionListener(JMXRemoteNamespace handler) {
-            this.handler = handler;
+    private class ConnectionListener implements NotificationListener {
+        private ConnectionListener() {
         }
         public void handleNotification(Notification notification,
                 Object handback) {
@@ -136,7 +129,11 @@ public class JMXRemoteNamespace
                 return;
             final JMXConnectionNotification cn =
                     (JMXConnectionNotification)notification;
-            handler.checkState(this,cn,(JMXConnector)handback);
+            final String type = cn.getType();
+            if (JMXConnectionNotification.CLOSED.equals(type)
+                    || JMXConnectionNotification.FAILED.equals(type)) {
+                checkState(this,cn,(JMXConnector)handback);
+            }
         }
     }
 
@@ -150,8 +147,7 @@ public class JMXRemoteNamespace
     // because the one that is actually used is the one supplied by the
     // override of getMBeanServerConnection().
     private static class JMXRemoteNamespaceDelegate
-            extends MBeanServerConnectionWrapper
-            implements DynamicProbe {
+            extends MBeanServerConnectionWrapper {
         private volatile JMXRemoteNamespace parent=null;
 
         JMXRemoteNamespaceDelegate() {
@@ -177,9 +173,6 @@ public class JMXRemoteNamespace
 
         }
 
-        public boolean isProbeRequested() {
-            return this.parent.isProbeRequested();
-        }
     }
 
     private static final MBeanNotificationInfo connectNotification =
@@ -188,7 +181,7 @@ public class JMXRemoteNamespace
             "Connected",
             "Emitted when the Connected state of this object changes");
 
-    private static long seqNumber=0;
+    private static AtomicLong seqNumber = new AtomicLong(0);
 
     private final NotificationBroadcasterSupport broadcaster;
     private final ConnectionListener listener;
@@ -198,7 +191,6 @@ public class JMXRemoteNamespace
     private volatile MBeanServerConnection server = null;
     private volatile JMXConnector conn = null;
     private volatile ClassLoader defaultClassLoader = null;
-    private volatile boolean probed;
 
     /**
      * Creates a new instance of {@code JMXRemoteNamespace}.
@@ -229,18 +221,24 @@ public class JMXRemoteNamespace
                 initParentOnce(this);
 
         // URL must not be null.
-        this.jmxURL     = JMXNamespaceUtils.checkNonNull(sourceURL,"url");
+        if (sourceURL == null)
+            throw new IllegalArgumentException("Null URL");
+        this.jmxURL     = sourceURL;
         this.broadcaster =
             new NotificationBroadcasterSupport(connectNotification);
 
         // handles options
-        this.optionsMap = JMXNamespaceUtils.unmodifiableMap(optionsMap);
+        this.optionsMap = unmodifiableMap(optionsMap);
 
         // handles (dis)connection events
-        this.listener = new ConnectionListener(this);
+        this.listener = new ConnectionListener();
+    }
 
-        // XXX TODO: remove the probe, or simplify it.
-        this.probed = false;
+    // returns un unmodifiable view of a map.
+    private static <K,V> Map<K,V> unmodifiableMap(Map<K,V> aMap) {
+        if (aMap == null || aMap.isEmpty())
+            return Collections.emptyMap();
+        return Collections.unmodifiableMap(aMap);
     }
 
    /**
@@ -269,10 +267,6 @@ public class JMXRemoteNamespace
 
     private Map<String,?> getEnvMap() {
         return optionsMap;
-    }
-
-    boolean isProbeRequested() {
-        return probed==false;
     }
 
     public void addNotificationListener(NotificationListener listener,
@@ -313,8 +307,8 @@ public class JMXRemoteNamespace
         broadcaster.removeNotificationListener(listener, filter, handback);
     }
 
-    private static synchronized long getNextSeqNumber() {
-        return seqNumber++;
+    private static long getNextSeqNumber() {
+        return seqNumber.getAndIncrement();
     }
 
 
@@ -362,14 +356,18 @@ public class JMXRemoteNamespace
         // lock while evaluating the true value of the connected state,
         // while anyone might also call close() or connect() from a
         // different thread.
-        //
         // The method switchConnection() (called from here too) also has the
-        // same kind of complex logic.
+        // same kind of complex logic:
         //
         // We use the JMXConnector has a handback to the notification listener
         // (emittingConnector) in order to be able to determine whether the
         // notification concerns the current connector in use, or an older
-        // one.
+        // one. The 'emittingConnector' is the connector from which the
+        // notification originated. This could be an 'old' connector - as
+        // closed() and connect() could already have been called before the
+        // notification arrived. So what we do is to compare the
+        // 'emittingConnector' with the current connector, to see if the
+        // notification actually comes from the curent connector.
         //
         boolean remove = false;
 
@@ -486,144 +484,188 @@ public class JMXRemoteNamespace
         }
     }
 
-    private void closeall(JMXConnector... a) {
-        for (JMXConnector c : a) {
-            try {
-                if (c != null) c.close();
-            } catch (Exception x) {
-                // OK: we're gonna throw the original exception later.
-                LOG.finest("Ignoring exception when closing connector: "+x);
-            }
+    private void close(JMXConnector c) {
+        try {
+            if (c != null) c.close();
+        } catch (Exception x) {
+            // OK: we're gonna throw the original exception later.
+            LOG.finest("Ignoring exception when closing connector: "+x);
         }
     }
 
-    JMXConnector connect(JMXServiceURL url, Map<String,?> env)
+    private JMXConnector connect(JMXServiceURL url, Map<String,?> env)
             throws IOException {
-        final JMXConnector c = newJMXConnector(jmxURL, env);
+        final JMXConnector c = newJMXConnector(url, env);
         c.connect(env);
         return c;
     }
 
     /**
-     * Creates a new JMXConnector with the specified {@code url} and
-     * {@code env} options map.
-     * <p>
-     * This method first calls {@link JMXConnectorFactory#newJMXConnector
-     * JMXConnectorFactory.newJMXConnector(jmxURL, env)} to obtain a new
-     * JMX connector, and returns that.
-     * </p>
-     * <p>
-     * A subclass of {@link JMXRemoteNamespace} can provide an implementation
-     * that connects to a  sub namespace of the remote server by subclassing
-     * this class in the following way:
-     * <pre>
-     * class JMXRemoteSubNamespace extends JMXRemoteNamespace {
-     *    private final String subnamespace;
-     *    JMXRemoteSubNamespace(JMXServiceURL url,
-     *              Map{@code <String,?>} env, String subnamespace) {
-     *        super(url,options);
-     *        this.subnamespace = subnamespace;
-     *    }
-     *    protected JMXConnector newJMXConnector(JMXServiceURL url,
-     *              Map<String,?> env) throws IOException {
-     *        final JMXConnector inner = super.newJMXConnector(url,env);
-     *        return {@link JMXNamespaces#narrowToNamespace(JMXConnector,String)
-     *               JMXNamespaces.narrowToNamespace(inner,subnamespace)};
-     *    }
-     * }
-     * </pre>
-     * </p>
-     * <p>
-     * Some connectors, like the JMXMP connector server defined by the
-     * version 1.2 of the JMX API may not have been upgraded to use the
-     * new {@linkplain javax.management.event Event Service} defined in this
-     * version of the JMX API.
-     * <p>
-     * In that case, and if the remote server to which this JMXRemoteNamespace
-     * connects also contains namespaces, it may be necessary to configure
-     * explicitly an {@linkplain
-     * javax.management.event.EventClientDelegate#newForwarder()
-     * Event Client Forwarder} on the remote server side, and to force the use
-     * of an {@link EventClient} on this client side.
-     * <br>
-     * A subclass of {@link JMXRemoteNamespace} can provide an implementation
-     * of {@code newJMXConnector} that will force notification subscriptions
-     * to flow through an {@link EventClient} over a legacy protocol by
-     * overriding this method in the following way:
-     * </p>
-     * <pre>
-     * class JMXRemoteEventClientNamespace extends JMXRemoteNamespace {
-     *    JMXRemoteSubNamespaceConnector(JMXServiceURL url,
-     *              Map<String,?> env) {
-     *        super(url,options);
-     *    }
-     *    protected JMXConnector newJMXConnector(JMXServiceURL url,
-     *              Map<String,?> env) throws IOException {
-     *        final JMXConnector inner = super.newJMXConnector(url,env);
-     *        return {@link EventClient#withEventClient(
-     *                JMXConnector) EventClient.withEventClient(inner)};
-     *    }
-     * }
-     * </pre>
-     * <p>
-     * Note that the remote server also needs to provide an {@link
-     * javax.management.event.EventClientDelegateMBean}: only configuring
-     * the client side (this object) is not enough.<br>
-     * In summary, this technique should be used if the remote server
-     * supports JMX namespaces, but uses a JMX Connector Server whose
-     * implementation does not transparently use the new Event Service
-     * (as would be the case with the JMXMPConnectorServer implementation
-     * from the reference implementation of the JMX Remote API 1.0
-     * specification).
-     * </p>
+     * <p>Creates a new JMXConnector with the specified {@code url} and
+     * {@code env} options map.  The default implementation of this method
+     * returns {@link JMXConnectorFactory#newJMXConnector
+     * JMXConnectorFactory.newJMXConnector(jmxURL, env)}.  Subclasses can
+     * override this method to customize behavior.</p>
+     *
      * @param url  The JMXServiceURL of the remote server.
-     * @param optionsMap An unmodifiable options map that will be passed to the
+     * @param optionsMap An options map that will be passed to the
      *        {@link JMXConnectorFactory} when {@linkplain
      *        JMXConnectorFactory#newJMXConnector creating} the
      *        {@link JMXConnector} that can connect to the remote source
      *        MBean Server.
-     * @return An unconnected JMXConnector to use to connect to the remote
-     *         server
-     * @throws java.io.IOException if the connector could not be created.
+     * @return A JMXConnector to use to connect to the remote server
+     * @throws IOException if the connector could not be created.
      * @see JMXConnectorFactory#newJMXConnector(javax.management.remote.JMXServiceURL, java.util.Map)
      * @see #JMXRemoteNamespace
      */
     protected JMXConnector newJMXConnector(JMXServiceURL url,
             Map<String,?> optionsMap) throws IOException {
-        final JMXConnector c =
-                JMXConnectorFactory.newJMXConnector(jmxURL, optionsMap);
-// TODO: uncomment this when contexts are added
-//        return ClientContext.withDynamicContext(c);
-        return c;
+        return JMXConnectorFactory.newJMXConnector(jmxURL, optionsMap);
     }
 
-    public void connect() throws IOException {
-        if (conn != null) {
-            try {
-               // This is much too fragile. It must go away!
-               PROBE_LOG.finest("Probing again...");
-               triggerProbe(getMBeanServerConnection());
-            } catch(Exception x) {
-                close();
-                Throwable cause = x;
-                // if the cause is a security exception - rethrows it...
-                while (cause != null) {
-                    if (cause instanceof SecurityException)
-                        throw (SecurityException) cause;
-                    cause = cause.getCause();
-                }
-                throw new IOException("connection failed: cycle?",x);
-            }
+    /**
+     * <p>Called when a new connection is established using {@link #connect}
+     * so that subclasses can customize the connection.  The default
+     * implementation of this method effectively does the following:</p>
+     *
+     * <pre>
+     * MBeanServerConnection mbsc = {@link JMXConnector#getMBeanServerConnection()
+     *                               jmxc.getMBeanServerConnection()};
+     * try {
+     *     return {@link ClientContext#withDynamicContext
+     *             ClientContext.withDynamicContext(mbsc)};
+     * } catch (IllegalArgumentException e) {
+     *     return mbsc;
+     * }
+     * </pre>
+     *
+     * <p>In other words, it arranges for the client context to be forwarded
+     * to the remote MBean Server if the remote MBean Server supports contexts;
+     * otherwise it ignores the client context.</p>
+     *
+     * <h4>Example: connecting to a remote namespace</h4>
+     *
+     * <p>A subclass that wanted to narrow into a namespace of
+     * the remote MBeanServer might look like this:</p>
+     *
+     * <pre>
+     * class JMXRemoteSubNamespace extends JMXRemoteNamespace {
+     *     private final String subnamespace;
+     *
+     *     JMXRemoteSubNamespace(
+     *             JMXServiceURL url, Map{@code <String, ?>} env, String subnamespace) {
+     *        super(url, env);
+     *        this.subnamespace = subnamespace;
+     *     }
+     *
+     *     {@code @Override}
+     *     protected MBeanServerConnection getMBeanServerConnection(
+     *             JMXConnector jmxc) throws IOException {
+     *         MBeanServerConnection mbsc = super.getMBeanServerConnection(jmxc);
+     *         return {@link JMXNamespaces#narrowToNamespace(MBeanServerConnection,String)
+     *                 JMXNamespaces.narrowToNamespace(mbsc, subnamespace)};
+     *     }
+     * }
+     * </pre>
+     *
+     * <h4>Example: using the Event Service for notifications</h4>
+     *
+     * <p>Some connectors may have been designed to work with an earlier
+     * version of the JMX API, and may not have been upgraded to use
+     * the {@linkplain javax.management.event Event Service} defined in
+     * this version of the JMX API.  In that case, and if the remote
+     * server to which this JMXRemoteNamespace connects also contains
+     * namespaces, it may be necessary to configure explicitly an {@linkplain
+     * javax.management.event.EventClientDelegate#newForwarder Event Client
+     * Forwarder} on the remote server side, and to force the use of an {@link
+     * EventClient} on this client side.</p>
+     *
+     * <p>A subclass of {@link JMXRemoteNamespace} can provide an
+     * implementation of {@code getMBeanServerConnection} that will force
+     * notification subscriptions to flow through an {@link EventClient} over
+     * a legacy protocol.  It can do so by overriding this method in the
+     * following way:</p>
+     *
+     * <pre>
+     * class JMXRemoteEventClientNamespace extends JMXRemoteNamespace {
+     *     JMXRemoteEventClientNamespace(JMXServiceURL url, {@code Map<String,?>} env) {
+     *         super(url, env);
+     *     }
+     *
+     *     {@code @Override}
+     *     protected MBeanServerConnection getMBeanServerConnection(JMXConnector jmxc)
+     *             throws IOException {
+     *         MBeanServerConnection mbsc = super.getMBeanServerConnection(jmxc);
+     *         return EventClient.getEventClientConnection(mbsc);
+     *     }
+     * }
+     * </pre>
+     *
+     * <p>
+     * Note that the remote server also needs to provide an {@link
+     * javax.management.event.EventClientDelegateMBean}: configuring only
+     * the client side (this object) is not enough.</p>
+     *
+     * <p>In summary, this technique should be used if the remote server
+     * supports JMX namespaces, but uses a JMX Connector Server whose
+     * implementation does not transparently use the new Event Service
+     * (as would be the case with the JMXMPConnectorServer implementation
+     * from the reference implementation of the JMX Remote API 1.0
+     * specification).</p>
+     *
+     * @param jmxc the newly-created {@code JMXConnector}.
+     *
+     * @return an {@code MBeanServerConnection} connected to the remote
+     * MBeanServer.
+     *
+     * @throws IOException if the connection cannot be made.  If this method
+     * throws {@code IOException} then the calling {@link #connect()} method
+     * will also fail with an {@code IOException}.
+     *
+     * @see #connect
+     */
+    protected MBeanServerConnection getMBeanServerConnection(JMXConnector jmxc)
+            throws IOException {
+        final MBeanServerConnection mbsc = jmxc.getMBeanServerConnection();
+        try {
+            return ClientContext.withDynamicContext(mbsc);
+        } catch (IllegalArgumentException e) {
+            LOG.log(Level.FINER, "ClientContext.withDynamicContext", e);
+            return mbsc;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The sequence of events when this method is called includes,
+     * effectively, the following code:</p>
+     *
+     * <pre>
+     * JMXServiceURL url = {@link #getJMXServiceURL getJMXServiceURL}();
+     * JMXConnector jmxc = {@link #newJMXConnector newJMXConnector}(url, env);
+     * jmxc.connect();
+     * MBeanServerConnection mbsc = {@link #getMBeanServerConnection(JMXConnector)
+     *                               getMBeanServerConnection}(jmxc);
+     * </pre>
+     *
+     * <p>Here, {@code env} is a {@code Map} containing the entries from the
+     * {@code optionsMap} that was passed to the {@linkplain #JMXRemoteNamespace
+     * constructor} or to the {@link #newJMXRemoteNamespace newJMXRemoteNamespace}
+     * factory method.</p>
+     *
+     * <p>Subclasses can customize connection behavior by overriding the
+     * {@code getJMXServiceURL}, {@code newJMXConnector}, or
+     * {@code getMBeanServerConnection} methods.</p>
+     */
+    public void connect() throws IOException {
         LOG.fine("connecting...");
-        // TODO remove these traces
-        // System.err.println(getInitParameter()+" connecting");
         final Map<String,Object> env =
                 new HashMap<String,Object>(getEnvMap());
         try {
             // XXX: We should probably document this...
             // This allows to specify a loader name - which will be
-            // retrieved from the paret MBeanServer.
+            // retrieved from the parent MBeanServer.
             defaultClassLoader =
                 EnvHelp.resolveServerClassLoader(env,getMBeanServer());
         } catch (InstanceNotFoundException x) {
@@ -637,89 +679,19 @@ public class JMXRemoteNamespace
         final JMXConnector aconn = connect(url,env);
         final MBeanServerConnection msc;
         try {
-            msc = aconn.getMBeanServerConnection();
+            msc = getMBeanServerConnection(aconn);
             aconn.addConnectionNotificationListener(listener,null,aconn);
         } catch (IOException io) {
-            closeall(aconn);
+            close(aconn);
             throw io;
         } catch (RuntimeException x) {
-            closeall(aconn);
+            close(aconn);
             throw x;
         }
 
-
-        // XXX Revisit here
-        // Note from the author: This business of switching connection is
-        // incredibly complex. Isn't there any means to simplify it?
-        //
         switchConnection(conn,aconn,msc);
-        try {
-           triggerProbe(msc);
-        } catch(Exception x) {
-            close();
-            Throwable cause = x;
-            // if the cause is a security exception - rethrows it...
-            while (cause != null) {
-                if (cause instanceof SecurityException)
-                    throw (SecurityException) cause;
-                cause = cause.getCause();
-            }
-            throw new IOException("connection failed: cycle?",x);
-        }
-        LOG.fine("connected.");
-    }
 
-    // If this is a self-linking namespace, this method should trigger
-    // the emission of a probe in the wrapping NamespaceInterceptor.
-    // The first call to source() in the wrapping NamespaceInterceptor
-    // causes the emission of the probe.
-    //
-    // Note: the MBeanServer returned by getSourceServer
-    //       (our private JMXRemoteNamespaceDelegate inner class)
-    //       implements a sun private interface (DynamicProbe) which is
-    //       used by the NamespaceInterceptor to determine whether it should
-    //       send a probe or not.
-    //       We needed this interface here because the NamespaceInterceptor
-    //       has otherwise no means to knows that this object has just
-    //       connected, and that a new probe should be sent.
-    //
-    // Probes work this way: the NamespaceInterceptor sets a flag and sends
-    // a queryNames() request. If a queryNames() request comes in when the flag
-    // is on, then it deduces that there is a self-linking loop - and instead
-    // of calling queryNames() on the JMXNamespace (which would cause the
-    // loop to go on) it breaks the recursion by returning the probe ObjectName.
-    // If the NamespaceInterceptor receives the probe ObjectName as result of
-    // its original queryNames() it knows that it has been looping back on
-    // itslef and throws an Exception - which will be raised through this
-    // method, thus preventing the connection to be established...
-    //
-    // More info in the com.sun.jmx.namespace.NamespaceInterceptor class
-    //
-    // XXX: TODO this probe thing is way too complex and fragile.
-    //      This *must* go away or be replaced by something simpler.
-    //      ideas are welcomed.
-    //
-    private void triggerProbe(final MBeanServerConnection msc)
-            throws MalformedObjectNameException, IOException {
-        // Query Pattern that we will send through the source server in order
-        // to detect self-linking namespaces.
-        //
-        //
-        final ObjectName pattern;
-        pattern = ObjectName.getInstance("*" +
-                JMXNamespaces.NAMESPACE_SEPARATOR + ":" +
-                JMXNamespace.TYPE_ASSIGNMENT);
-        probed = false;
-        try {
-            msc.queryNames(pattern, null);
-            probed = true;
-        } catch (AccessControlException x) {
-            // if we have an MBeanPermission missing then do nothing...
-            if (!(x.getPermission() instanceof MBeanPermission))
-                throw x;
-            PROBE_LOG.finer("Can't check for cycles: " + x);
-            probed = false; // no need to do it again...
-        }
+        LOG.fine("connected.");
     }
 
     public void close() throws IOException {

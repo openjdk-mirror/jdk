@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1999-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -78,6 +78,9 @@ package javax.management;
  *     }
  * }
  * </pre>
+ *
+ * <p>(Listeners may be invoked in the same thread as the caller of
+ * {@code sender.sendNotification}.)</p>
  *
  * <p>A field to be injected must not be static.  It is recommended that
  * such fields be declared {@code volatile}.</p>

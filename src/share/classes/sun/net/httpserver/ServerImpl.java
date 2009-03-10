@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2005-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -470,13 +470,13 @@ class ServerImpl implements TimeSource {
                 String version = requestLine.substring (start);
                 Headers headers = req.headers();
                 String s = headers.getFirst ("Transfer-encoding");
-                int clen = 0;
+                long clen = 0L;
                 if (s !=null && s.equalsIgnoreCase ("chunked")) {
-                    clen = -1;
+                    clen = -1L;
                 } else {
                     s = headers.getFirst ("Content-Length");
                     if (s != null) {
-                        clen = Integer.parseInt (s);
+                        clen = Long.parseLong(s);
                     }
                 }
                 ctx = contexts.findContext (protocol, uri.getPath());

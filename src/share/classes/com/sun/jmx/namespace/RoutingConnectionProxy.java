@@ -31,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.management.MBeanServerConnection;
-import javax.management.namespace.JMXNamespaces;
 
 
 /**
@@ -45,6 +44,9 @@ import javax.management.namespace.JMXNamespaces;
  * </b></p>
  * @since 1.7
  */
+// See class hierarchy and detailled explanations in RoutingProxy in this
+// package.
+//
 public class RoutingConnectionProxy
         extends RoutingProxy<MBeanServerConnection> {
 
@@ -58,18 +60,10 @@ public class RoutingConnectionProxy
      * Creates a new instance of RoutingConnectionProxy
      */
     public RoutingConnectionProxy(MBeanServerConnection source,
-                               String sourceDir) {
-        this(source,sourceDir,"",false);
-    }
-
-    /**
-     * Creates a new instance of RoutingConnectionProxy
-     */
-    public RoutingConnectionProxy(MBeanServerConnection source,
                                String sourceDir,
                                String targetDir,
-                               boolean forwardsContext) {
-        super(source,sourceDir,targetDir,forwardsContext);
+                               boolean probe) {
+        super(source, sourceDir, targetDir, probe);
 
         if (LOG.isLoggable(Level.FINER))
             LOG.finer("RoutingConnectionProxy for " + getSourceNamespace() +
@@ -82,51 +76,31 @@ public class RoutingConnectionProxy
         final String sourceNs = getSourceNamespace();
         String wrapped = String.valueOf(source());
         if ("".equals(targetNs)) {
-            if (forwardsContext)
-                wrapped = "ClientContext.withDynamicContext("+wrapped+")";
             return "JMXNamespaces.narrowToNamespace("+
                     wrapped+", \""+
                     sourceNs+"\")";
         }
         return this.getClass().getSimpleName()+"("+wrapped+", \""+
                sourceNs+"\", \""+
-               targetNs+"\", "+forwardsContext+")";
+               targetNs+"\")";
     }
 
-    public static MBeanServerConnection cd(MBeanServerConnection source,
-            String sourcePath) {
-        if (source == null) throw new IllegalArgumentException("null");
-        if (source.getClass().equals(RoutingConnectionProxy.class)) {
-            // cast is OK here, but findbugs complains unless we use class.cast
-            final RoutingConnectionProxy other =
-                    RoutingConnectionProxy.class.cast(source);
-            final String target = other.getTargetNamespace();
+    static final RoutingProxyFactory
+            <MBeanServerConnection,RoutingConnectionProxy>
+        FACTORY = new RoutingProxyFactory
+        <MBeanServerConnection,RoutingConnectionProxy>() {
 
-            // Avoid multiple layers of serialization.
-            //
-            // We construct a new proxy from the original source instead of
-            // stacking a new proxy on top of the old one.
-            // - that is we replace
-            //      cd ( cd ( x, dir1), dir2);
-            // by
-            //      cd (x, dir1//dir2);
-            //
-            // We can do this only when the source class is exactly
-            //    NamespaceConnectionProxy.
-            //
-            if (target == null || target.equals("")) {
-                final String path =
-                    JMXNamespaces.concat(other.getSourceNamespace(),
-                    sourcePath);
-                return new RoutingConnectionProxy(other.source(),path,"",
-                        other.forwardsContext);
-            }
-            // Note: we could do possibly something here - but it would involve
-            //       removing part of targetDir, and possibly adding
-            //       something to sourcePath.
-            //       Too complex to bother! => simply default to stacking...
+        public RoutingConnectionProxy newInstance(MBeanServerConnection source,
+                String sourcePath, String targetPath, boolean probe) {
+            return new RoutingConnectionProxy(source,sourcePath,
+                    targetPath, probe);
         }
-        return new RoutingConnectionProxy(source,sourcePath);
+    };
+
+    public static MBeanServerConnection cd(
+            MBeanServerConnection source, String sourcePath, boolean probe) {
+        return RoutingProxy.cd(RoutingConnectionProxy.class, FACTORY,
+                source, sourcePath, probe);
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2002-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -132,7 +132,7 @@ public interface JMXConnectorServerMBean {
      *
      * <p>A connector server may support two chains of forwarders,
      * a system chain and a user chain.  See {@link
-     * JMXConnectorServer#setSystemMBeanServerForwarder} for details.</p>
+     * JMXConnectorServer#getSystemMBeanServerForwarder} for details.</p>
      *
      * @param mbsf the new <code>MBeanServerForwarder</code>.
      *
@@ -141,7 +141,7 @@ public interface JMXConnectorServerMBean {
      * with <code>IllegalArgumentException</code>.  This includes the
      * case where <code>mbsf</code> is null.
      *
-     * @see JMXConnectorServer#setSystemMBeanServerForwarder
+     * @see JMXConnectorServer#getSystemMBeanServerForwarder
      */
     public void setMBeanServerForwarder(MBeanServerForwarder mbsf);
 

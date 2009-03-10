@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2000-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -365,6 +365,7 @@ class Direct$Type$Buffer$RW$$BO$
         unsafe.copyMemory(ix(pos), ix(0), rem << $LG_BYTES_PER_VALUE$);
         position(rem);
         limit(capacity());
+        discardMark();
         return this;
 #else[rw]
         throw new ReadOnlyBufferException();
@@ -402,7 +403,7 @@ class Direct$Type$Buffer$RW$$BO$
 
     // --- Methods to support CharSequence ---
 
-    public CharSequence subSequence(int start, int end) {
+    public CharBuffer subSequence(int start, int end) {
         int pos = position();
         int lim = limit();
         assert (pos <= lim);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2007-2008 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,7 +51,8 @@ import javax.management.remote.NotificationResult;
  * and the MBean Server, that will intercept accesses to the Event Client
  * Delegate MBean and treat them as the real MBean would. This forwarder is
  * inserted by default with the standard RMI Connector Server, and can also
- * be created explicitly using {@link EventClientDelegate#newForwarder()}.
+ * be created explicitly using {@link EventClientDelegate#newForwarder
+ * EventClientDelegate.newForwarder}.
  *
  * <li><p>A variant on the above is to replace the MBean Server that is
  * used locally with a forwarder as described above.  Since
@@ -61,9 +62,7 @@ import javax.management.remote.NotificationResult;
  *
  * <pre>
  * MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();  // or whatever
- * MBeanServerForwarder mbsf = EventClientDelegate.newForwarder();
- * mbsf.setMBeanServer(mbs);
- * mbs = mbsf;
+ * mbs = EventClientDelegate.newForwarder(mbs, null);
  * // now use mbs just as you did before, but it will have an EventClientDelegate
  * </pre>
  *
@@ -96,7 +95,7 @@ public interface EventClientDelegateMBean {
      * <code>{@value #OBJECT_NAME_STRING}</code>.
      */
     public final static ObjectName OBJECT_NAME =
-            Util.newObjectName(OBJECT_NAME_STRING);
+            ObjectName.valueOf(OBJECT_NAME_STRING);
 
     /**
      * A unique listener identifier specified for an EventClient.

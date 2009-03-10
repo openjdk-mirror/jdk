@@ -27,6 +27,7 @@
  * @summary Check -Djmx.remote.use.event.service=true and
  *                -Djmx.remote.delegate.event.service
  * @author Daniel Fuchs
+ * @bug 5072476 5108776
  * @run clean EventWithNamespaceTest EventWithNamespaceControlTest
  *            Wombat WombatMBean JMXRemoteTargetNamespace
  *            NamespaceController NamespaceControllerMBean
@@ -84,6 +85,7 @@ public class EventWithNamespaceControlTest extends EventWithNamespaceTest {
         }
     }
 
+    @Override
     public Map<String, ?> getServerMap() {
         Map<String, ?> retValue = Collections.emptyMap();
         return retValue;

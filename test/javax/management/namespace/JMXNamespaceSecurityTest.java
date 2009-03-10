@@ -26,6 +26,7 @@
  * @test JMXNamespaceSecurityTest.java
  * @summary General JMXNamespaceSecurityTest test.
  * @author Daniel Fuchs
+ * @bug 5072476 6299231
  * @run clean JMXNamespaceViewTest JMXNamespaceSecurityTest Wombat WombatMBean
  *            LazyDomainTest
  * @run build JMXNamespaceSecurityTest JMXNamespaceViewTest Wombat WombatMBean
@@ -50,6 +51,7 @@ import javax.management.namespace.JMXDomain;
 import javax.management.namespace.JMXNamespace;
 import javax.management.namespace.JMXNamespaces;
 import javax.management.remote.JMXConnectorServer;
+import javax.management.ClientContext;
 
 /**
  *

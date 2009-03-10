@@ -56,14 +56,38 @@ import java.util.Map;
  * properties.</p>
  *
  * <p>The <em>domain</em> is a string of characters not including
- * the character colon (<code>:</code>).  It is recommended that the domain
- * should not contain the string "{@code //}", which is reserved for future use.
+ * the character colon (<code>:</code>).</p>
+ * <p>Starting with the version 2.0 of the JMX specification, the
+ * <em>domain</em> can also start with a {@linkplain
+ * javax.management.namespace#NamespacePrefix namespace prefix} identifying
+ * the {@linkplain javax.management.namespace namespace} in which the
+ * MBean is registered. A namespace prefix is a path string where
+ * elements are separated by a double slash (<code>//</code>).
+ * It identifies the {@linkplain  javax.management.namespace namespace} in
+ * which the MBean so named is registered.</p>
+ *
+ * <p>For instance the ObjectName <em>bar//baz:k=v</em> identifiies an MBean
+ * named <em>baz:k=v</em> in the namespace <em>bar</em>. Similarly the
+ * ObjectName <em>foo//bar//baz:k=v</em> identifiies an MBean named
+ * <em>baz:k=v</em> in the namespace <em>foo//bar</em>. See the {@linkplain
+ * javax.management.namespace namespace} documentation for more details.</p>
  *
  * <p>If the domain includes at least one occurrence of the wildcard
  * characters asterisk (<code>*</code>) or question mark
  * (<code>?</code>), then the object name is a pattern.  The asterisk
  * matches any sequence of zero or more characters, while the question
- * mark matches any single character.</p>
+ * mark matches any single character. <br>
+ * A namespace separator <code>//</code> does not match wildcard
+ * characters unless it is at the very end of the domain string.
+ * So <em>foo*bar*:*</em> does not match <em>foo//bar:k=v</em> but it
+ * does match <em>fooxbar//:k=v</em>.
+ * </p>
+ *
+ * <p>When included in a namespace path the special path element
+ * <code>**</code> matches any number of sub namespaces
+ * recursively, but only if used as a complete namespace path element,
+ * as in <code>*&#42;//b//c//D:k=v</code> or <code>a//*&#42;//c//D:k=v</code>
+ * - see <a href="#metawildcard">below</a>.
  *
  * <p>If the domain is empty, it will be replaced in certain contexts
  * by the <em>default domain</em> of the MBean server in which the
@@ -170,6 +194,51 @@ import java.util.Map;
  *     inside quotes, and like other special characters can be escaped
  *     with {@code \}.</li>
  * </ul>
+ *
+ * <p id="metawildcard"><b>Pattern and namespaces:</b></p>
+ * <p>In an object name pattern, a path element
+ *    of exactly <code>**</code> corresponds to a meta
+ *    wildcard that will match any number of sub namespaces.<br>Hence:</p>
+ * <table border="0" cellpadding="5">
+ * <thead><th>pattern</th><th>matches</th><th>doesn't match</th></thead>
+ * <tbody>
+ * <tr><td><ul><li><code>*&#42;//D:k=v</code></li></ul></td>
+ *     <td><code>a//D:k=v</code><br>
+ *         <code>a//b//D:k=v</code><br>
+ *         <code>a//b//c//D:k=v</code></td>
+ *     <td><code>D:k=v</code></td></tr>
+ * <tr><td><ul><li><code>a//*&#42;//D:k=v</code></li></ul></td>
+ *     <td><code>a//b//D:k=v</code><br>
+ *         <code>a//b//c//D:k=v</code></td>
+ *     <td><code>b//b//c//D:k=v</code><br>
+ *         <code>a//D:k=v</code><br>
+ *         <code>D:k=v</code></td></tr>
+ * <tr><td><ul><li><code>a//*&#42;//e//D:k=v</code></li></ul></td>
+ *     <td><code>a//b//e//D:k=v</code><br>
+ *         <code>a//b//c//e//D:k=v</code></td>
+ *     <td><code>a//b//c//c//D:k=v</code><br>
+ *         <code>b//b//c//e//D:k=v</code><br>
+ *         <code>a//e//D:k=v</code><br>
+ *         <code>e//D:k=v</code></td></tr>
+ * <tr><td><ul><li><code>a//b*&#42;//e//D:k=v</code></li></ul></td>
+ *      <td><code>a//b//e//D:k=v</code></td>
+ *      <td><code>a//b//c//e//D:k=v</code><br>
+ *          because in that case <code>b*&#42;</code><br>
+ *         is not a meta-wildcard - and <code>b**</code><br>
+ *         is thus equivalent to <code>b*</code>.</td></tr>
+ * </tbody>
+ * </table>
+ *</ul>
+ * </p>
+ * <p>
+ * <b>Note:</b> Although ObjectName patterns where the characters
+ * <code>*</code> and <code>?</code> appear in the namespace path are legal,
+ * they are not valid in the {@code name} parameter of the MBean Server's
+ * {@link MBeanServer#queryNames queryNames} and {@link MBeanServer#queryMBeans
+ * queryMBeans} methods. See the
+ * <a href="namespace/package-summary.html#RejectedNamespacePatterns"><!--
+ * -->namespaces documentation</a> for more details.
+ * </p>
  *
  * <p>An ObjectName can be written as a String with the following
  * elements in order:</p>
@@ -413,7 +482,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
     }
 
     private void copyToOtherDomain(String domain, ObjectName aname)
-        throws MalformedObjectNameException, NullPointerException {
+        throws MalformedObjectNameException {
 
         // The domain cannot be null
         if (domain == null)
@@ -439,11 +508,6 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
         _propertyList = aname._propertyList;
         _property_list_pattern = aname._property_list_pattern;
         _property_value_pattern = aname._property_value_pattern;
-        // TODO remove this hack
-        // if (toString().endsWith("//javax.management.service:type1=event_client_delegeate_mbean,type2=default")) {
-        //    Thread.currentThread().dumpStack();
-        //    throw new Error("************************ Gotcha!");
-        //}
     }
 
     // Instance private fields <=======================================
@@ -467,7 +531,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * is null.
      */
     private void construct(String name)
-        throws MalformedObjectNameException, NullPointerException {
+        throws MalformedObjectNameException {
 
         // The name cannot be null
         if (name == null)
@@ -729,7 +793,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * @exception NullPointerException One of the parameters is null.
      */
     private void construct(String domain, Map<String,String> props)
-        throws MalformedObjectNameException, NullPointerException {
+        throws MalformedObjectNameException {
 
         // The domain cannot be null
         if (domain == null)
@@ -1071,7 +1135,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * Check if the supplied key is a valid key.
      */
     private static void checkKey(String key)
-        throws MalformedObjectNameException, NullPointerException {
+        throws MalformedObjectNameException {
 
         if (key == null) throw new
             NullPointerException("Invalid key (null)");
@@ -1096,11 +1160,10 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      */
     private boolean isDomain(String domain) {
         if (domain == null) return true;
-        final char[] d=domain.toCharArray();
-        final int len = d.length;
+        final int len = domain.length();
         int next = 0;
         while (next < len) {
-            final char c = d[next++];
+            final char c = domain.charAt(next++);
             switch (c) {
                 case ':' :
                 case '\n' :
@@ -1234,12 +1297,6 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
         if (!nw.equals("")) {
             nameString = nw + NAMESPACE_SEPARATOR + nameString;
         }
-        // TODO remove this hack
-        // if (nameString.endsWith("//javax.management.service:type1=event_client_delegeate_mbean,type2=default")) {
-        //    System.err.println("old="+old+", nw="+nw);
-        //    Thread.currentThread().dumpStack();
-        //    throw new Error("************************ Gotcha!");
-        // }
         return nameString;
     }
 
@@ -1359,9 +1416,10 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * @exception NullPointerException The <code>name</code> parameter
      * is null.
      *
+     * @see #valueOf(String)
      */
     public static ObjectName getInstance(String name)
-            throws MalformedObjectNameException, NullPointerException {
+            throws MalformedObjectNameException {
         return new ObjectName(name);
     }
 
@@ -1386,10 +1444,11 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * follow the rules for quoting.
      * @exception NullPointerException One of the parameters is null.
      *
+     * @see #valueOf(String, String, String)
      */
     public static ObjectName getInstance(String domain, String key,
                                          String value)
-            throws MalformedObjectNameException, NullPointerException {
+            throws MalformedObjectNameException {
         return new ObjectName(domain, key, value);
     }
 
@@ -1417,10 +1476,11 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * quoting.
      * @exception NullPointerException One of the parameters is null.
      *
+     * @see #valueOf(String, Hashtable)
      */
     public static ObjectName getInstance(String domain,
                                          Hashtable<String,String> table)
-        throws MalformedObjectNameException, NullPointerException {
+        throws MalformedObjectNameException {
         return new ObjectName(domain, table);
     }
 
@@ -1453,11 +1513,120 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * @exception NullPointerException The <code>name</code> is null.
      *
      */
-    public static ObjectName getInstance(ObjectName name)
-            throws NullPointerException {
+    public static ObjectName getInstance(ObjectName name) {
         if (name.getClass().equals(ObjectName.class))
             return name;
-        return Util.newObjectName(name.getSerializedNameString());
+        return valueOf(name.getSerializedNameString());
+    }
+
+    /**
+     * <p>Return an instance of ObjectName that can be used anywhere
+     * an object obtained with {@link #ObjectName(String) new
+     * ObjectName(name)} can be used.  The returned object may be of
+     * a subclass of ObjectName.  Calling this method twice with the
+     * same parameters may return the same object or two equal but
+     * not identical objects.</p>
+     *
+     * <p>This method is equivalent to {@link #getInstance(String)} except that
+     * it does not throw any checked exceptions.</p>
+     *
+     * @param name  A string representation of the object name.
+     *
+     * @return an ObjectName corresponding to the given String.
+     *
+     * @exception IllegalArgumentException The string passed as a
+     * parameter does not have the right format.  The {@linkplain
+     * Throwable#getCause() cause} of this exception will be a
+     * {@link MalformedObjectNameException}.
+     * @exception NullPointerException The <code>name</code> parameter
+     * is null.
+     *
+     * @since 1.7
+     */
+    public static ObjectName valueOf(String name) {
+        try {
+            return getInstance(name);
+        } catch (MalformedObjectNameException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+            // Just plain IllegalArgumentException(e) produces an exception
+            // message "javax.management.MalformedObjectNameException: ..."
+            // which is distracting.
+        }
+    }
+
+    /**
+     * <p>Return an instance of ObjectName that can be used anywhere
+     * an object obtained with {@link #ObjectName(String, String,
+     * String) new ObjectName(domain, key, value)} can be used.  The
+     * returned object may be of a subclass of ObjectName.  Calling
+     * this method twice with the same parameters may return the same
+     * object or two equal but not identical objects.</p>
+     *
+     * <p>This method is equivalent to {@link #getInstance(String, String,
+     * String)} except that it does not throw any checked exceptions.</p>
+     *
+     * @param domain  The domain part of the object name.
+     * @param key  The attribute in the key property of the object name.
+     * @param value The value in the key property of the object name.
+     *
+     * @return an ObjectName corresponding to the given domain,
+     * key, and value.
+     *
+     * @exception IllegalArgumentException The
+     * <code>domain</code>, <code>key</code>, or <code>value</code>
+     * contains an illegal character, or <code>value</code> does not
+     * follow the rules for quoting.  The {@linkplain
+     * Throwable#getCause() cause} of this exception will be a
+     * {@link MalformedObjectNameException}.
+     * @exception NullPointerException One of the parameters is null.
+     *
+     * @since 1.7
+     */
+    public static ObjectName valueOf(String domain, String key, String value) {
+        try {
+            return getInstance(domain, key, value);
+        } catch (MalformedObjectNameException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * <p>Return an instance of ObjectName that can be used anywhere
+     * an object obtained with {@link #ObjectName(String, Hashtable)
+     * new ObjectName(domain, table)} can be used.  The returned
+     * object may be of a subclass of ObjectName.  Calling this method
+     * twice with the same parameters may return the same object or
+     * two equal but not identical objects.</p>
+     *
+     * <p>This method is equivalent to {@link #getInstance(String, Hashtable)}
+     * except that it does not throw any checked exceptions.</p>
+     *
+     * @param domain  The domain part of the object name.
+     * @param table A hash table containing one or more key
+     * properties.  The key of each entry in the table is the key of a
+     * key property in the object name.  The associated value in the
+     * table is the associated value in the object name.
+     *
+     * @return an ObjectName corresponding to the given domain and
+     * key mappings.
+     *
+     * @exception IllegalArgumentException The <code>domain</code>
+     * contains an illegal character, or one of the keys or values in
+     * <code>table</code> contains an illegal character, or one of the
+     * values in <code>table</code> does not follow the rules for
+     * quoting.  The {@linkplain Throwable#getCause() cause} of this exception
+     * will be a {@link MalformedObjectNameException}.
+     * @exception NullPointerException One of the parameters is null.
+     *
+     * @since 1.7
+     */
+    public static ObjectName valueOf(String domain,
+                                     Hashtable<String,String> table) {
+        try {
+            return new ObjectName(domain, table);
+        } catch (MalformedObjectNameException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
     }
 
     /**
@@ -1472,13 +1641,18 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * @return A new {@code ObjectName} that is the same as {@code this}
      *         except the domain is {@code newDomain}.
      * @throws NullPointerException if {@code newDomain} is null.
-     * @throws MalformedObjectNameException if the new domain is syntactically
-     *         illegal.
+     * @exception IllegalArgumentException The {@code newDomain} passed as a
+     * parameter does not have the right format.  The {@linkplain
+     * Throwable#getCause() cause} of this exception will be a
+     * {@link MalformedObjectNameException}.
      * @since 1.7
      **/
-    public final ObjectName withDomain(String newDomain)
-            throws NullPointerException, MalformedObjectNameException {
-        return new ObjectName(newDomain, this);
+    public final ObjectName withDomain(String newDomain) {
+        try {
+            return new ObjectName(newDomain, this);
+        } catch (MalformedObjectNameException x) {
+            throw new IllegalArgumentException(x.getMessage(),x);
+        }
     }
 
     /**
@@ -1490,9 +1664,11 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * parameter does not have the right format.
      * @exception NullPointerException The <code>name</code> parameter
      * is null.
+     *
+     * @see #valueOf(String)
      */
     public ObjectName(String name)
-        throws MalformedObjectNameException, NullPointerException {
+        throws MalformedObjectNameException {
         construct(name);
     }
 
@@ -1508,9 +1684,11 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * contains an illegal character, or <code>value</code> does not
      * follow the rules for quoting.
      * @exception NullPointerException One of the parameters is null.
+     *
+     * @see #valueOf(String, String, String)
      */
     public ObjectName(String domain, String key, String value)
-        throws MalformedObjectNameException, NullPointerException {
+        throws MalformedObjectNameException {
         // If key or value are null a NullPointerException
         // will be thrown by the put method in Hashtable.
         //
@@ -1533,9 +1711,11 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * values in <code>table</code> does not follow the rules for
      * quoting.
      * @exception NullPointerException One of the parameters is null.
+     *
+     * @see #valueOf(String, Hashtable)
      */
     public ObjectName(String domain, Hashtable<String,String> table)
-            throws MalformedObjectNameException, NullPointerException {
+            throws MalformedObjectNameException {
         construct(domain, table);
         /* The exception for when a key or value in the table is not a
            String is now ClassCastException rather than
@@ -1629,8 +1809,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      *
      * @since 1.6
      */
-    public boolean isPropertyValuePattern(String property)
-        throws NullPointerException, IllegalArgumentException {
+    public boolean isPropertyValuePattern(String property) {
         if (property == null)
             throw new NullPointerException("key property can't be null");
         for (int i = 0; i < _ca_array.length; i++) {
@@ -1691,7 +1870,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      *
      * @exception NullPointerException If <code>property</code> is null.
      */
-    public String getKeyProperty(String property) throws NullPointerException {
+    public String getKeyProperty(String property) {
         return _getKeyPropertyList().get(property);
     }
 
@@ -1950,8 +2129,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * @exception NullPointerException if <code>s</code> is null.
      *
      */
-    public static String quote(String s)
-            throws NullPointerException {
+    public static String quote(String s) {
         final StringBuilder buf = new StringBuilder("\"");
         final int len = s.length();
         for (int i = 0; i < len; i++) {
@@ -1995,8 +2173,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * @exception NullPointerException if <code>q</code> is null.
      *
      */
-    public static String unquote(String q)
-            throws IllegalArgumentException, NullPointerException {
+    public static String unquote(String q) {
         final StringBuilder buf = new StringBuilder();
         final int len = q.length();
         if (len < 2 || q.charAt(0) != '"' || q.charAt(len - 1) != '"')
@@ -2041,7 +2218,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      *
      * @since 1.6
      */
-    public static final ObjectName WILDCARD = Util.newObjectName("*:*");
+    public static final ObjectName WILDCARD = valueOf("*:*");
 
     // Category : Utilities <===================================
 
@@ -2064,7 +2241,7 @@ public class ObjectName implements Comparable<ObjectName>, QueryExp {
      * @exception NullPointerException if <code>name</code> is null.
      *
      */
-    public boolean apply(ObjectName name) throws NullPointerException {
+    public boolean apply(ObjectName name) {
 
         if (name == null) throw new NullPointerException();
 
