@@ -35,6 +35,7 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ProtocolFamily;
 import java.net.ServerSocket;
 import java.net.ProtocolFamily;
 import java.nio.channels.*;
@@ -127,11 +128,9 @@ public class RmidViaInheritedChannel implements Callback {
             return provider.openDatagramChannel();
         }
 
-        public DatagramChannel openDatagramChannel(ProtocolFamily family)
-            throws IOException
-        {
-            return provider.openDatagramChannel(family);
-        }
+        public DatagramChannel openDatagramChannel(ProtocolFamily family) throws IOException {
+	    return provider.openDatagramChannel(family);
+	}
 
         public Pipe openPipe()
             throws IOException
