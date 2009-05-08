@@ -2357,8 +2357,8 @@ public final class FontManager {
     static Vector<File> tmpFontFiles = null;
 
     public static Font2D createFont2D(File fontFile, int fontFormat,
-				      boolean isCopy,
-				      CreatedFontTracker tracker)
+                                      boolean isCopy,
+                                      CreatedFontTracker tracker)
         throws FontFormatException {
 
         String fontFilePath = fontFile.getPath();

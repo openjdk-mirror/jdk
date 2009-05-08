@@ -225,7 +225,7 @@ int band::getIntTotal() {
   }
   for (int k = length-1; k > 0; k--) {
     int prev_total = total;
-    total += vs[0].getInt(); 
+    total += vs[0].getInt();
     if (total < prev_total) {
       abort("overflow detected");
       return 0;

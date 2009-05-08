@@ -56,8 +56,8 @@ import com.sun.jmx.remote.util.EnvHelp;
 public abstract class ClientNotifForwarder {
 
     private final AccessControlContext acc;
- 
-    public ClientNotifForwarder(Map<String, ?> env) {
+
+    public ClientNotifForwarder(Map env) {
         this(null, env);
     }
 

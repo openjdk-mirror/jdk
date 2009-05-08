@@ -876,7 +876,7 @@ public class Font implements java.io.Serializable
                     tracker = CreatedFontTracker.getTracker();
                 }
                 try {
-                    byte[] buf = new byte[8192]; 
+                    byte[] buf = new byte[8192];
                     for (;;) {
                         int bytesRead = fontStream.read(buf);
                         if (bytesRead < 0) {

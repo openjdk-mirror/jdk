@@ -86,15 +86,15 @@ public class Type1Font extends FileFont {
 
         public synchronized void dispose() {
             java.security.AccessController.doPrivileged(
-	        new java.security.PrivilegedAction() {
-	            public Object run() {
+                new java.security.PrivilegedAction() {
+                    public Object run() {
 
                         if (fileName != null) {
                             (new java.io.File(fileName)).delete();
                         }
                         return null;
-		    }
-	     });
+                    }
+             });
         }
     }
 

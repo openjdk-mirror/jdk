@@ -76,14 +76,14 @@ public class bug6638195 {
         Callable<Void> afterDispatchCallable =
             new Callable<Void>() {
                 public Void call() {
-		  try {
-                    delegate.afterDispatch(afterDispatchEventArgument[0],
-                                           afterDispatchHandleArgument[0]);
-		  }
-		  catch (InterruptedException e) { 
-		    throw new RuntimeException("afterDispatch interrupted", e);
-		  }
-		  return null;
+                    try {
+                        delegate.afterDispatch(afterDispatchEventArgument[0],
+                                afterDispatchHandleArgument[0]);
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException("afterDispatch interrupted", e);
+                    }
+                    return null;
                 }
             };
         methodMap = new HashMap<String, Object>();
@@ -96,13 +96,13 @@ public class bug6638195 {
         Callable<Object> beforeDispatchCallable =
             new Callable<Object>() {
                 public Object call() {
-		  try {
-                    return delegate.beforeDispatch(
-                        beforeDispatchEventArgument[0]);
-		  }
-		  catch (InterruptedException e) {
-		    throw new RuntimeException("beforeDispatch interrupted", e);
-		  }
+                    try {
+                        return delegate.beforeDispatch(
+                                beforeDispatchEventArgument[0]);
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException("beforeDispatch interrupted", e);
+                    }
                 }
             };
         methodMap = new HashMap<String, Object>();

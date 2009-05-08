@@ -536,7 +536,6 @@ void unpacker::read_file_header() {
     FIRST_READ  = MAGIC_BYTES + AH_LENGTH_MIN
   };
 
-
   assert(AH_LENGTH_MIN    == 15); // # of UNSIGNED5 fields required after archive_magic
   assert(ARCHIVE_SIZE_MIN == 10); // # of UNSIGNED5 fields required after archive_size
   // An absolute minimum null archive is magic[4], {minver,majver,options}[3],
@@ -654,7 +653,11 @@ void unpacker::read_file_header() {
 #undef ORBIT
   if ((archive_options & ~OPTION_LIMIT) != 0) {
     fprintf(errstrm, "Warning: Illegal archive options 0x%x\n",
+<<<<<<< local
             archive_options);
+=======
+        archive_options);
+>>>>>>> other
     abort("illegal archive options");
     return;
   }
@@ -662,16 +665,15 @@ void unpacker::read_file_header() {
   if ((archive_options & AO_HAVE_FILE_HEADERS) != 0) {
     uint hi = hdr.getInt();
     uint lo = hdr.getInt();
-    archive_size = band::makeLong(hi, lo);
+    julong x = band::makeLong(hi, lo);
+    archive_size = (size_t) x;
+    if (archive_size != x) {
+      // Silly size specified; force overflow.
+      archive_size = PSIZE_MAX+1;
+    }
     hdrVals += 2;
   } else {
     hdrValsSkipped += 2;
-  }
-
-  if (archive_size != (size_t)archive_size) {
-    // Silly size specified.
-    abort("archive too large");
-    return;
   }
 
   // Now we can size the whole archive.
@@ -687,7 +689,11 @@ void unpacker::read_file_header() {
       abort("EOF reading fixed input buffer");
       return;
     }
+<<<<<<< local
   } else if (archive_size > 0) {
+=======
+  } else if (archive_size != 0) {
+>>>>>>> other
     if (archive_size < ARCHIVE_SIZE_MIN) {
       abort("impossible archive size");  // bad input data
       return;
@@ -695,9 +701,15 @@ void unpacker::read_file_header() {
     if (archive_size < header_size_1) {
       abort("too much read-ahead");  // somehow we pre-fetched too much?
       return;
+<<<<<<< local
     }   
     input.set(U_NEW(byte, (size_t)(header_size_0 + archive_size + C_SLOP)),
               (size_t) header_size_0 + (size_t)archive_size);
+=======
+    }
+    input.set(U_NEW(byte, add_size(header_size_0, archive_size, C_SLOP)),
+              (size_t) header_size_0 + archive_size);
+>>>>>>> other
     CHECK;
     assert(input.limit()[0] == 0);
     // Move all the bytes we read initially into the real buffer.
@@ -707,7 +719,6 @@ void unpacker::read_file_header() {
   } else {
     // It's more complicated and painful.
     // A zero archive_size means that we must read until EOF.
-    assert(archive_size == 0);
     input.init(CHUNK*2);
     CHECK;
     input.b.len = input.allocated;
@@ -718,7 +729,7 @@ void unpacker::read_file_header() {
     rplimit += header_size;
     while (ensure_input(input.limit() - rp)) {
       size_t dataSoFar = input_remaining();
-      size_t nextSize = dataSoFar + CHUNK;
+      size_t nextSize = add_size(dataSoFar, CHUNK);
       input.ensureSize(nextSize);
       CHECK;
       input.b.len = input.allocated;
@@ -1014,12 +1025,12 @@ void unpacker::read_Utf8_values(entry* cpMap, int len) {
   // First band:  Read lengths of shared prefixes.
   if (len > PREFIX_SKIP_2)
     cp_Utf8_prefix.readData(len - PREFIX_SKIP_2);
-  NOT_PRODUCT(else cp_Utf8_prefix.readData(0));  // for asserts
+    NOT_PRODUCT(else cp_Utf8_prefix.readData(0));  // for asserts
 
   // Second band:  Read lengths of unshared suffixes:
   if (len > SUFFIX_SKIP_1)
     cp_Utf8_suffix.readData(len - SUFFIX_SKIP_1);
-  NOT_PRODUCT(else cp_Utf8_suffix.readData(0));  // for asserts
+    NOT_PRODUCT(else cp_Utf8_suffix.readData(0));  // for asserts
 
   bytes* allsuffixes = T_NEW(bytes, len);
   CHECK;
@@ -2723,7 +2734,10 @@ void unpacker::read_code_headers() {
   code_handler_count.readData();
   totalHandlerCount += code_handler_count.getIntTotal();
   CHECK;
+<<<<<<< local
 
+=======
+>>>>>>> other
 
   // Read handler specifications.
   // Cf. PackageReader.readCodeHandlers.

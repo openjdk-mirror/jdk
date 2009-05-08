@@ -68,14 +68,14 @@ import javax.security.auth.Subject;
  * qualified by one or more <i>clauses</i>, where each clause looks
  * like <code>create <i>classNamePattern</i></code> or {@code
  * unregister}.  For example:</p>
- * 
+ *
  * <pre>
  * monitorRole  readonly
  * controlRole  readwrite \
  *              create javax.management.timer.*,javax.management.monitor.* \
  *              unregister
  * </pre>
- * 
+ *
  * <p>(The continuation lines with {@code \} come from the parser for
  * Properties files.)</p>
  */
@@ -312,9 +312,10 @@ public class MBeanServerFileAccessController
                     }
                 });
         if (s == null) return; /* security has not been enabled */
-        final Set<Principal> principals = s.getPrincipals();
+        final Set principals = s.getPrincipals();
         String newPropertyValue = null;
-        for (Principal p : principals) {
+        for (Iterator i = principals.iterator(); i.hasNext(); ) {
+            final Principal p = (Principal) i.next();
             Access access = accessMap.get(p.getName());
             if (access != null) {
                 boolean ok;
@@ -329,7 +330,7 @@ public class MBeanServerFileAccessController
                         ok = access.unregister;
                         if (!ok && access.write)
                             newPropertyValue = "unregister";
-                         break;
+                        break;
                     case CREATE:
                         ok = checkCreateAccess(access, arg);
                         if (!ok && access.write)
