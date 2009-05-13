@@ -653,11 +653,7 @@ void unpacker::read_file_header() {
 #undef ORBIT
   if ((archive_options & ~OPTION_LIMIT) != 0) {
     fprintf(errstrm, "Warning: Illegal archive options 0x%x\n",
-<<<<<<< local
-            archive_options);
-=======
         archive_options);
->>>>>>> other
     abort("illegal archive options");
     return;
   }
@@ -689,11 +685,7 @@ void unpacker::read_file_header() {
       abort("EOF reading fixed input buffer");
       return;
     }
-<<<<<<< local
-  } else if (archive_size > 0) {
-=======
   } else if (archive_size != 0) {
->>>>>>> other
     if (archive_size < ARCHIVE_SIZE_MIN) {
       abort("impossible archive size");  // bad input data
       return;
@@ -701,15 +693,9 @@ void unpacker::read_file_header() {
     if (archive_size < header_size_1) {
       abort("too much read-ahead");  // somehow we pre-fetched too much?
       return;
-<<<<<<< local
-    }   
-    input.set(U_NEW(byte, (size_t)(header_size_0 + archive_size + C_SLOP)),
-              (size_t) header_size_0 + (size_t)archive_size);
-=======
     }
     input.set(U_NEW(byte, add_size(header_size_0, archive_size, C_SLOP)),
               (size_t) header_size_0 + archive_size);
->>>>>>> other
     CHECK;
     assert(input.limit()[0] == 0);
     // Move all the bytes we read initially into the real buffer.
@@ -2734,10 +2720,6 @@ void unpacker::read_code_headers() {
   code_handler_count.readData();
   totalHandlerCount += code_handler_count.getIntTotal();
   CHECK;
-<<<<<<< local
-
-=======
->>>>>>> other
 
   // Read handler specifications.
   // Cf. PackageReader.readCodeHandlers.
