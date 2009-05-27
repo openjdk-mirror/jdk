@@ -53,7 +53,7 @@ class LinuxFileStore
      */
     @Override
     UnixMountEntry findMountEntry() throws IOException {
-        UnixFileSystem fs = file().getFileSystem();
+        LinuxFileSystem fs = (LinuxFileSystem)file().getFileSystem();
 
         // step 1: get realpath
         UnixPath path = null;
@@ -79,14 +79,15 @@ class LinuxFileStore
             parent = parent.getParent();
         }
 
-        // step 3: lookup mounted file systems
+        // step 3: lookup mounted file systems (use /proc/mounts to ensure we
+        // find the file system even when not in /etc/mtab)
         byte[] dir = path.asByteArray();
-        for (UnixMountEntry entry: fs.getMountEntries()) {
+        for (UnixMountEntry entry: fs.getMountEntries("/proc/mounts")) {
             if (Arrays.equals(dir, entry.dir()))
                 return entry;
         }
 
-        throw new IOException("Mount point not found in mtab");
+        throw new IOException("Mount point not found");
     }
 
     // returns true if extended attributes enabled on file system where given

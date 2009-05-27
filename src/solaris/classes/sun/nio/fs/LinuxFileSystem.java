@@ -138,13 +138,12 @@ class LinuxFileSystem extends UnixFileSystem {
     }
 
     /**
-     * Returns object to iterate over entries in /etc/mtab
+     * Returns object to iterate over the mount entries in the given fstab file.
      */
-    @Override
-    Iterable<UnixMountEntry> getMountEntries() {
+    Iterable<UnixMountEntry> getMountEntries(String fstab) {
         ArrayList<UnixMountEntry> entries = new ArrayList<UnixMountEntry>();
         try {
-            long fp = setmntent("/etc/mtab".getBytes(), "r".getBytes());
+            long fp = setmntent(fstab.getBytes(), "r".getBytes());
             try {
                 for (;;) {
                     UnixMountEntry entry = new UnixMountEntry();
@@ -161,6 +160,14 @@ class LinuxFileSystem extends UnixFileSystem {
             // nothing we can do
         }
         return entries;
+    }
+
+    /**
+     * Returns object to iterate over the mount entries in /etc/mtab
+     */
+    @Override
+    Iterable<UnixMountEntry> getMountEntries() {
+        return getMountEntries("/etc/mtab");
     }
 
     @Override
