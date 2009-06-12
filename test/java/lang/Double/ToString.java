@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,35 +21,19 @@
  * have any questions.
  */
 
-/**
+/*
  * @test
- * @bug 4112758
- * @summary Checks that a second invocation of PrintJob.end() does not cause
- * an exception or segmentation violation.
- * @author dpm
+ * @bug 4428022
+ * @summary Tests for Double.toString
+ * @author Andrew Haley <aph@redhat.com>
  */
 
-import java.awt.*;
+public class ToString {
 
-public class MultipleEnd {
-    public static void main(String[] args) {
-        new MultipleEnd().start();
-    }
-    public void start() {
-        new MultipleEndFrame();
-    }
-}
-
-class MultipleEndFrame extends Frame {
-    public MultipleEndFrame() {
-        super("MultipleEnd");
-        setVisible(true);
-        JobAttributes job = new JobAttributes();
-        job.setDialog(JobAttributes.DialogType.NONE);
-        PrintJob pj  = getToolkit().getPrintJob(this, "MultipleEnd", job, null);
-        if (pj != null) {
-            pj.end();
-            pj.end();
-        }
+    public static void main(String args[]) {
+      if (!Double.toString(0.001).equals("0.001"))
+	  throw new RuntimeException("Double.toString(0.001) is not \"0.001\"");
+      if (!Double.toString(0.002).equals("0.002"))
+	  throw new RuntimeException("Double.toString(0.001) is not \"0.002\"");
     }
 }

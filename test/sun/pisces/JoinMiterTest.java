@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998-2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,35 +21,28 @@
  * have any questions.
  */
 
-/**
- * @test
- * @bug 4112758
- * @summary Checks that a second invocation of PrintJob.end() does not cause
- * an exception or segmentation violation.
- * @author dpm
+/* @test
+ * @summary Pass if no RuntimeException.
+ * @bug 6812600
  */
-
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
-public class MultipleEnd {
-    public static void main(String[] args) {
-        new MultipleEnd().start();
-    }
-    public void start() {
-        new MultipleEndFrame();
-    }
-}
+public class JoinMiterTest {
 
-class MultipleEndFrame extends Frame {
-    public MultipleEndFrame() {
-        super("MultipleEnd");
-        setVisible(true);
-        JobAttributes job = new JobAttributes();
-        job.setDialog(JobAttributes.DialogType.NONE);
-        PrintJob pj  = getToolkit().getPrintJob(this, "MultipleEnd", job, null);
-        if (pj != null) {
-            pj.end();
-            pj.end();
-        }
+  public static void main(String[] args) throws Exception {
+    BufferedImage image = new BufferedImage(200, 200,
+BufferedImage.TYPE_INT_RGB);
+    Graphics2D g = image.createGraphics();
+    g.setPaint(Color.WHITE);
+    g.fill(new Rectangle(image.getWidth(), image.getHeight()));
+    g.translate(25, 100);
+    g.setPaint(Color.BLACK);
+    g.setStroke(new BasicStroke(20, BasicStroke.CAP_BUTT,
+                                BasicStroke.JOIN_MITER));
+    g.draw(new Polygon(new int[] {0, 150, 0}, new int[] {75, 0, -75}, 3));
+    if (image.getRGB(16, 10) == Color.WHITE.getRGB()) {
+      throw new RuntimeException("Miter is not rendered.");
     }
+  }
 }
