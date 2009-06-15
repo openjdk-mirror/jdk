@@ -614,15 +614,15 @@ LCMSBOOL _cmsModifyTagData(cmsHPROFILE hProfile, icTagSignature sig,
      * grow: if Icc is about to shrink we must wait until we've read
      * the previous data.  */
     if (delta > 0) {
-	if (!Icc->Grow(Icc, delta)) {
-	    free(ptr);
-	    if(isNew) {
-		Icc->TagCount--;
-	    }
-	    J2dRlsTraceLn(J2D_TRACE_ERROR,
-			  "_cmsModifyTagData: Icc->Grow() == FALSE");
-	    return FALSE;
-	}
+        if (!Icc->Grow(Icc, delta)) {
+            free(ptr);
+            if(isNew) {
+                Icc->TagCount--;
+            }
+            J2dRlsTraceLn(J2D_TRACE_ERROR,
+                          "_cmsModifyTagData: Icc->Grow() == FALSE");
+            return FALSE;
+        }
     }
 
     /* Compute size of tag data before/after the modified tag */
@@ -687,6 +687,7 @@ LCMSBOOL _cmsModifyTagData(cmsHPROFILE hProfile, icTagSignature sig,
 
     /* Shrink Icc, if needed.  */
     if (delta < 0) {
+<<<<<<< local
 	if (!Icc->Grow(Icc, delta)) {
 	    free(ptr);
 	    if(isNew) {
@@ -696,6 +697,17 @@ LCMSBOOL _cmsModifyTagData(cmsHPROFILE hProfile, icTagSignature sig,
 			  "_cmsModifyTagData: Icc->Grow() == FALSE");
 	    return FALSE;
 	}
+=======
+        if (!Icc->Grow(Icc, delta)) {
+            free(ptr);
+            if(isNew) {
+                Icc->TagCount--;
+            }
+            J2dRlsTraceLn(J2D_TRACE_ERROR,
+                          "_cmsModifyTagData: Icc->Grow() == FALSE");
+            return FALSE;
+        }
+>>>>>>> other
     }
 
     /* Adjust tag offsets: if the tag is new, we must account
