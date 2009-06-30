@@ -455,7 +455,7 @@ getAllConfigs (JNIEnv *env, int screen, AwtScreenDataPtr screenDataPtr) {
         memcpy (&graphicsConfigs [ind]->awt_visInfo, &pVITrue [i],
                 sizeof (XVisualInfo));
        if (xrenderFindVisualFormat != NULL) {
-            XRenderPictFormat *format = XRenderFindVisualFormat (awt_display,
+            XRenderPictFormat *format = xrenderFindVisualFormat (awt_display,
                     pVITrue [i].visual);
             if (format &&
                 format->type == PictTypeDirect &&
