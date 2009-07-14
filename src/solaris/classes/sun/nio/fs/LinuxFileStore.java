@@ -114,9 +114,9 @@ class LinuxFileStore
 
     @Override
     public boolean supportsFileAttributeView(String name) {
-        // support DosFileAttributeView and NamedAttributeView if extended
+        // support DosFileAttributeView and UserDefinedAttributeView if extended
         // attributes enabled
-        if (name.equals("dos") || name.equals("xattr")) {
+        if (name.equals("dos") || name.equals("user")) {
             // lookup fstypes.properties
             FeatureStatus status = checkIfFeaturePresent("user_xattr");
             if (status == FeatureStatus.PRESENT)

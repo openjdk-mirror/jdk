@@ -39,7 +39,6 @@ import static sun.nio.fs.LinuxNativeDispatcher.*;
 
 class LinuxFileSystem extends UnixFileSystem {
     private final boolean hasInotify;
-    private final boolean hasAtSysCalls;
 
     LinuxFileSystem(UnixFileSystemProvider provider, String dir) {
         super(provider, dir);
@@ -47,14 +46,14 @@ class LinuxFileSystem extends UnixFileSystem {
         // assume X.Y[-Z] format
         String osversion = AccessController
             .doPrivileged(new GetPropertyAction("os.version"));
-        String[] vers = osversion.split("\\.", 0);
+        String[] vers = Util.split(osversion, '.');
         assert vers.length >= 2;
 
         int majorVersion = Integer.parseInt(vers[0]);
         int minorVersion = Integer.parseInt(vers[1]);
         int microVersion = 0;
         if (vers.length > 2) {
-            String[] microVers = vers[2].split("-", 0);
+            String[] microVers = Util.split(vers[2], '-');
             microVersion = (microVers.length > 0) ?
                 Integer.parseInt(microVers[0]) : 0;
         }
@@ -63,11 +62,6 @@ class LinuxFileSystem extends UnixFileSystem {
         this.hasInotify = ((majorVersion > 2) ||
             (majorVersion == 2 && minorVersion > 6) ||
             ((majorVersion == 2) && (minorVersion == 6) && (microVersion >= 13)));
-
-        // openat etc. available since 2.6.16
-        this.hasAtSysCalls = ((majorVersion > 2) ||
-            (majorVersion == 2 && minorVersion > 6) ||
-            ((majorVersion == 2) && (minorVersion == 6) && (microVersion >= 16)));
     }
 
     @Override
@@ -97,13 +91,13 @@ class LinuxFileSystem extends UnixFileSystem {
 
     @Override
     @SuppressWarnings("unchecked")
-    public FileAttributeView newFileAttributeView(String name,
-                                                  UnixPath file,
-                                                  LinkOption... options)
+    public DynamicFileAttributeView newFileAttributeView(String name,
+                                                         UnixPath file,
+                                                         LinkOption... options)
     {
         if (name.equals("dos"))
             return new LinuxDosFileAttributeView(file, followLinks(options));
-        if (name.equals("xattr"))
+        if (name.equals("user"))
             return new LinuxUserDefinedFileAttributeView(file, followLinks(options));
         return super.newFileAttributeView(name, file, options);
     }
@@ -117,7 +111,7 @@ class LinuxFileSystem extends UnixFileSystem {
             result.addAll(UnixFileSystem.standardFileAttributeViews());
             // additional Linux-specific views
             result.add("dos");
-            result.add("xattr");
+            result.add("user");
             return Collections.unmodifiableSet(result);
         }
     }
@@ -130,11 +124,6 @@ class LinuxFileSystem extends UnixFileSystem {
     @Override
     void copyNonPosixAttributes(int ofd, int nfd) {
         LinuxUserDefinedFileAttributeView.copyExtendedAttributes(ofd, nfd);
-    }
-
-    @Override
-    boolean supportsSecureDirectoryStreams() {
-        return hasAtSysCalls;
     }
 
     /**
