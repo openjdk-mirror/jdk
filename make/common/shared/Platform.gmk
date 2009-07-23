@@ -173,6 +173,11 @@ ifeq ($(SYSTEM_UNAME), Linux)
   ARCH_FAMILY := $(ARCH)
 
   # Linux builds may be 32-bit or 64-bit data model.
+  ifeq ($(ZERO_BUILD), true)
+    ifndef ARCH_DATA_MODEL
+      ARCH_DATA_MODEL = $(ZERO_BITSPERWORD)
+    endif
+  endif
   ifeq ($(ARCH), sparc)
     # Linux sparc build can be either 32-bit or 64-bit.
     #   Default to 32, but allow explicit setting to 32 or 64.
