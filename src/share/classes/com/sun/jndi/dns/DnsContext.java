@@ -922,7 +922,7 @@ public class DnsContext extends ComponentDirContext {
 
     //---------- Debugging
 
-    public static boolean debug = false;
+    private static final boolean debug = false;
 
     private static final void dprint(String msg) {
         if (debug) {
