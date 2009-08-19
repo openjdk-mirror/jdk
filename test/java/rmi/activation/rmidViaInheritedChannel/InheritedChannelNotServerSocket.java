@@ -36,6 +36,7 @@
  */
 
 import java.io.IOException;
+import java.net.ProtocolFamily;
 import java.net.Socket;
 import java.net.ProtocolFamily;
 import java.nio.channels.Channel;
@@ -138,11 +139,9 @@ public class InheritedChannelNotServerSocket {
             return provider.openDatagramChannel();
         }
 
-        public DatagramChannel openDatagramChannel(ProtocolFamily family)
-            throws IOException
-        {
-            return provider.openDatagramChannel(family);
-        }
+        public DatagramChannel openDatagramChannel(ProtocolFamily family) throws IOException {
+	    return provider.openDatagramChannel(family);
+	}
 
         public Pipe openPipe() throws IOException {
             return provider.openPipe();

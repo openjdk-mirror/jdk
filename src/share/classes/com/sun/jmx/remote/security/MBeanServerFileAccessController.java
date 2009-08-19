@@ -295,6 +295,8 @@ public class MBeanServerFileAccessController
         try {
             Properties p = new Properties();
             p.load(fin);
+	    // Properties.load does a buffered read so we don't need to wrap
+	    // the FileInputStream in a BufferedInputStream.
             return p;
         } finally {
             fin.close();
