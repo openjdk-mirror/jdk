@@ -19,7 +19,7 @@
  *
  */
 /*
- * Copyright 2005-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 2005-2009 Sun Microsystems, Inc. All rights reserved.
  */
 /*
  * $Id: DOMHMACSignatureMethod.java,v 1.2 2008/07/24 15:20:32 mullan Exp $
@@ -59,7 +59,6 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
     private Mac hmac;
     private int outputLength;
     private boolean outputLengthSet;
-    private static final int DIGEST_LENGTH = 160;
 
     /**
      * Creates a <code>DOMHMACSignatureMethod</code> with the specified params
@@ -137,9 +136,9 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
                 throw new XMLSignatureException(nsae);
             }
         }
-        if (outputLengthSet && outputLength < DIGEST_LENGTH) {
+        if (outputLengthSet && outputLength < getDigestLength()) {
             throw new XMLSignatureException
-                ("HMACOutputLength must not be less than " + DIGEST_LENGTH);
+                ("HMACOutputLength must not be less than " + getDigestLength());
         }
         hmac.init((SecretKey) key);
         si.canonicalize(context, new MacOutputStream(hmac));
@@ -163,9 +162,9 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
                 throw new XMLSignatureException(nsae);
             }
         }
-        if (outputLengthSet && outputLength < DIGEST_LENGTH) {
+        if (outputLengthSet && outputLength < getDigestLength()) {
             throw new XMLSignatureException
-                ("HMACOutputLength must not be less than " + DIGEST_LENGTH);
+                ("HMACOutputLength must not be less than " + getDigestLength());
         }
         hmac.init((SecretKey) key);
         si.canonicalize(context, new MacOutputStream(hmac));
@@ -184,6 +183,11 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
         return (outputLength == ospec.getOutputLength());
     }
 
+    /**
+     * Returns the output length of the hash/digest.
+     */
+    abstract int getDigestLength();
+
     static final class SHA1 extends DOMHMACSignatureMethod {
         SHA1(AlgorithmParameterSpec params)
             throws InvalidAlgorithmParameterException {
@@ -197,6 +201,9 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
         }
         String getSignatureAlgorithm() {
             return "HmacSHA1";
+        }
+        int getDigestLength() {
+            return 160;
         }
     }
 
@@ -214,6 +221,9 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
         String getSignatureAlgorithm() {
             return "HmacSHA256";
         }
+        int getDigestLength() {
+            return 256;
+        }
     }
 
     static final class SHA384 extends DOMHMACSignatureMethod {
@@ -230,6 +240,9 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
         String getSignatureAlgorithm() {
             return "HmacSHA384";
         }
+        int getDigestLength() {
+            return 384;
+        }
     }
 
     static final class SHA512 extends DOMHMACSignatureMethod {
@@ -245,6 +258,9 @@ public abstract class DOMHMACSignatureMethod extends DOMSignatureMethod {
         }
         String getSignatureAlgorithm() {
             return "HmacSHA512";
+        }
+        int getDigestLength() {
+            return 512;
         }
     }
 }

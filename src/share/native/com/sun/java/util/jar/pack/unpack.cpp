@@ -913,7 +913,7 @@ void cpool::init(unpacker* u_, int counts[NUM_COUNTS]) {
   generous = add_size(generous, u->ic_count); // outer.utf8
   generous = add_size(generous, 40); // WKUs, misc
   generous = add_size(generous, u->class_count); // implicit SourceFile strings
-  maxentries = add_size(nentries, generous); 
+  maxentries = add_size(nentries, generous);
 
   // Note that this CP does not include "empty" entries
   // for longs and doubles.  Those are introduced when

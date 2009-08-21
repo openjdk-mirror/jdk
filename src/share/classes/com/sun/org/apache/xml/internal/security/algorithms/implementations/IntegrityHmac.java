@@ -106,7 +106,9 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
    }
 
    public void reset() {
-           _HMACOutputLength=0;
+       _HMACOutputLength=0;
+       _HMACOutputLengthSet = false;
+       _macAlgorithm.reset();
    }
 
    /**
@@ -123,7 +125,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
       try {
          if (this._HMACOutputLengthSet && this._HMACOutputLength < getDigestLength()) {
             if (log.isLoggable(java.util.logging.Level.FINE)) {
-                log.log(java.util.logging.Level.FINE, 
+                log.log(java.util.logging.Level.FINE,
                     "HMACOutputLength must not be less than " + getDigestLength());
             }
             throw new XMLSignatureException("errorMessages.XMLSignatureException");
@@ -184,11 +186,10 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
    protected byte[] engineSign() throws XMLSignatureException {
 
       try {
-
          if (this._HMACOutputLengthSet && this._HMACOutputLength < getDigestLength()) {
             if (log.isLoggable(java.util.logging.Level.FINE)) {
-                log.log(java.util.logging.Level.FINE, 
-                   "HMACOutputLength must not be less than " + getDigestLength());
+                log.log(java.util.logging.Level.FINE,
+                    "HMACOutputLength must not be less than " + getDigestLength());
             }
             throw new XMLSignatureException("errorMessages.XMLSignatureException");
          } else {
@@ -394,6 +395,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
          this._HMACOutputLength = Integer.parseInt(hmaclength.getData());
          this._HMACOutputLengthSet = true;
       }
+
    }
 
    /**
@@ -448,7 +450,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
       }
 
       int getDigestLength() {
-         return 160;
+          return 160;
       }
    }
 
@@ -479,7 +481,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
       }
 
       int getDigestLength() {
-         return 256;
+          return 256;
       }
    }
 
@@ -510,7 +512,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
       }
 
       int getDigestLength() {
-         return 384;
+          return 384;
       }
    }
 
@@ -541,7 +543,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
       }
 
       int getDigestLength() {
-         return 512;
+          return 512;
       }
    }
 
@@ -572,7 +574,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
       }
 
       int getDigestLength() {
-         return 160;
+          return 160;
       }
    }
 
@@ -603,7 +605,7 @@ public abstract class IntegrityHmac extends SignatureAlgorithmSpi {
       }
 
       int getDigestLength() {
-         return 128;
+          return 128;
       }
    }
 }

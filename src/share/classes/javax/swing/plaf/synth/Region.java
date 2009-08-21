@@ -72,8 +72,6 @@ import javax.swing.UIDefaults;
  * @author Scott Violet
  */
 public class Region {
-    private static final Map<String, Region> uiToRegionMap = new HashMap<String, Region>();
-    private static final Map<Region, String> lowerCaseNameMap = new HashMap<Region, String>();
     private static final Object UI_TO_REGION_MAP_KEY = new Object();
     private static final Object LOWER_CASE_NAME_MAP_KEY = new Object();
 

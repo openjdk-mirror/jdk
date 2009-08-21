@@ -77,7 +77,10 @@ public abstract class ImageReaderSpi extends ImageReaderWriterSpi {
      * A single-element array, initially containing
      * <code>ImageInputStream.class</code>, to be returned from
      * <code>getInputTypes</code>.
+     * @deprecated Instead of using this field, directly create
+     * the equivalent array <code>{ ImageInputStream.class }<code>.
      */
+    @Deprecated
     public static final Class[] STANDARD_INPUT_TYPE =
         { ImageInputStream.class };
 

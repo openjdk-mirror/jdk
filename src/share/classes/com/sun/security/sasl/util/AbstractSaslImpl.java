@@ -324,8 +324,8 @@ public abstract class AbstractSaslImpl {
     private static final String SASL_LOGGER_NAME = "javax.security.sasl";
     protected static final String MAX_SEND_BUF = "javax.security.sasl.sendmaxbuffer";
 
-    /** 
-     * Logger for debug messages 
+    /**
+     * Logger for debug messages
      */
     protected static final Logger logger = Logger.getLogger(SASL_LOGGER_NAME);
 

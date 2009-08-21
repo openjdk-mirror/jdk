@@ -118,6 +118,11 @@ public class Cursor implements java.io.Serializable {
      */
     public static final int     MOVE_CURSOR                     = 13;
 
+    /**
+      * @deprecated As of JDK version 1.7, the {@link #getPredefinedCursor()}
+      * method should be used instead.
+      */
+    @Deprecated
     protected static Cursor predefined[] = new Cursor[14];
 
     /**

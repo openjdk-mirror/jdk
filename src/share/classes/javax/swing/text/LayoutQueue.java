@@ -36,10 +36,10 @@ import sun.awt.AppContext;
  */
 public class LayoutQueue {
 
+    private static final Object DEFAULT_QUEUE = new Object();
+
     private Vector<Runnable> tasks;
     private Thread worker;
-
-    private static final Object DEFAULT_QUEUE = new Object();
 
     /**
      * Construct a layout queue.

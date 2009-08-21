@@ -46,6 +46,9 @@ class SocksSocketImpl extends PlainSocketImpl implements SocksConsts {
     private Socket cmdsock = null;
     private InputStream cmdIn = null;
     private OutputStream cmdOut = null;
+    /* true if the Proxy has been set programatically */
+    private boolean applicationSetProxy;  /* false */
+
 
     /* true if the Proxy has been set programatically */
     private boolean applicationSetProxy;  /* false */
