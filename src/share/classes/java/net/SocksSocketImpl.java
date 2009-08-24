@@ -50,10 +50,6 @@ class SocksSocketImpl extends PlainSocketImpl implements SocksConsts {
     private boolean applicationSetProxy;  /* false */
 
 
-    /* true if the Proxy has been set programatically */
-    private boolean applicationSetProxy;  /* false */
-
-
     SocksSocketImpl() {
         // Nothing needed
     }
