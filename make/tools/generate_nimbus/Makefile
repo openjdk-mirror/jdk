@@ -44,6 +44,7 @@ BUILDTOOL_MAIN        = $(PKGDIR)/Generator.java
 SOURCE_FILES    = Generator.java \
                   ObjectFactory.java \
                   Paint.java \
+		  Shape.java \
                   SynthModel.java \
                   UIDefault.java \
                   UIStyle.java
