@@ -353,19 +353,19 @@ if [ "${ZERO_BUILD}" = true ] ; then
   esac
   export ZERO_LIBARCH
 
-  # ZERO_BITSPERWORD is the number of bits in a pointer
+  # ARCH_DATA_MODEL is the number of bits in a pointer
   case "${ZERO_LIBARCH}" in
     i386|ppc|s390|sparc|arm)
-      ZERO_BITSPERWORD=32
+      ARCH_DATA_MODEL=32
       ;;
     amd64|ppc64|s390x|sparcv9|ia64|alpha)
-      ZERO_BITSPERWORD=64
+      ARCH_DATA_MODEL=64
       ;;
     *)
-      echo "ERROR: Unable to determine ZERO_BITSPERWORD for ${ZERO_LIBARCH}"
+      echo "ERROR: Unable to determine ARCH_DATA_MODEL for ${ZERO_LIBARCH}"
       exit 1
   esac
-  export ZERO_BITSPERWORD
+  export ARCH_DATA_MODEL
 
   # ZERO_ENDIANNESS is the endianness of the processor
   case "${ZERO_LIBARCH}" in
@@ -397,7 +397,7 @@ if [ "${ZERO_BUILD}" = true ] ; then
       ZERO_ARCHFLAG="-m31"
       ;;
     *)
-      ZERO_ARCHFLAG="-m${ZERO_BITSPERWORD}"
+      ZERO_ARCHFLAG="-m${ARCH_DATA_MODEL}"
   esac
   export ZERO_ARCHFLAG
 
@@ -417,8 +417,4 @@ if [ "${ZERO_BUILD}" = true ] ; then
   fi
   export LIBFFI_CFLAGS
   export LIBFFI_LIBS
-  if [ "${LIBFFI_LIBS}" = "" ] ; then
-    echo "ERROR: LIBFFI_LIBS is not set"
-    exit 1
-  fi
 fi
