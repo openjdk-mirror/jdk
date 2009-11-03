@@ -254,7 +254,9 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
      * Called when component receives focus
      */
     public void focusGained(FocusEvent e) {
-        focusLog.fine("{0}", e);
+        if (focusLog.isLoggable(Level.FINER)) {
+            focusLog.fine("{0}", String.valueOf(e));
+        }
         bHasFocus = true;
     }
 
@@ -262,8 +264,10 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
      * Called when component loses focus
      */
     public void focusLost(FocusEvent e) {
-        focusLog.fine("{0}", e);
-        bHasFocus = false;
+        if (focusLog.isLoggable(Level.FINER)) {
+            focusLog.fine("{0}", String.valueOf(e));
+            bHasFocus = false;
+        }
     }
 
     public boolean isFocusable() {
@@ -415,7 +419,10 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
      * @see java.awt.peer.ComponentPeer
      */
     public void setEnabled(boolean value) {
-        enableLog.fine("{0}ing {1}", (value?"Enabl":"Disabl"), this);
+        if (enableLog.isLoggable(Level.FINE)) {
+            enableLog.fine("{0}ing {1}", (value?"Enabl":"Disabl"),
+                           String.valueOf(this));
+        }
         boolean repaintNeeded = (enabled != value);
         enabled = value;
         if (target instanceof Container) {
@@ -1263,7 +1270,10 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
      * ButtonPress, ButtonRelease, KeyPress, KeyRelease, EnterNotify, LeaveNotify, MotionNotify
      */
     protected boolean isEventDisabled(XEvent e) {
-        enableLog.finest("Component is {1}, checking for disabled event {0}", e, (isEnabled()?"enabled":"disable"));
+        if (enableLog.isLoggable(Level.FINEST)) {
+            enableLog.finest("Component is {1}, checking for disabled event {0}",
+                             String.valueOf(e), (isEnabled()?"enabled":"disable"));
+        }
         if (!isEnabled()) {
             switch (e.get_type()) {
               case XConstants.ButtonPress:
@@ -1273,7 +1283,9 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
               case XConstants.EnterNotify:
               case XConstants.LeaveNotify:
               case XConstants.MotionNotify:
-                  enableLog.finer("Event {0} is disable", e);
+                  if (enableLog.isLoggable(Level.FINER)) {
+                      enableLog.finer("Event {0} is disable", String.valueOf(e));
+                  }
                   return true;
             }
         }

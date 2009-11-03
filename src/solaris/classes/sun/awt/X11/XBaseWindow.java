@@ -824,7 +824,9 @@ public class XBaseWindow {
      * The active grab overrides activated automatic grab.
      */
     public boolean grabInput() {
-        grabLog.fine("Grab input on {0}", this);
+        if (grabLog.isLoggable(Level.FINE)) {
+            grabLog.fine("Grab input on {0}", String.valueOf(this));
+        }
 
         XToolkit.awtLock();
         try {
@@ -887,7 +889,9 @@ public class XBaseWindow {
         XToolkit.awtLock();
         try {
             XBaseWindow grabWindow = XAwtState.getGrabWindow();
-            grabLog.fine("UnGrab input on {0}", grabWindow);
+            if (grabLog.isLoggable(Level.FINE)) {
+                grabLog.fine("UnGrab input on {0}", String.valueOf(grabWindow));
+            }
             if (grabWindow != null) {
                 grabWindow.ungrabInputImpl();
                 if (!XToolkit.getSunAwtDisableGrab()) {
@@ -940,7 +944,7 @@ public class XBaseWindow {
             XPropertyCache.clearCache(window, XAtom.get(msg.get_atom()));
         }
         if (eventLog.isLoggable(PlatformLogger.FINER)) {
-            eventLog.finer("{0}", msg);
+            eventLog.finer("{0}", String.valueOf(msg));
         }
     }
 
@@ -1021,7 +1025,9 @@ public class XBaseWindow {
     }
     public void handleConfigureNotifyEvent(XEvent xev) {
         XConfigureEvent xe = xev.get_xconfigure();
-        insLog.finer("Configure, {0}", xe);
+        if (insLog.isLoggable(Level.FINER)) {
+            insLog.finer("Configure, {0}", String.valueOf(xe));
+        }
         x = xe.get_x();
         y = xe.get_y();
         width = xe.get_width();

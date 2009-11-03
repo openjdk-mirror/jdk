@@ -53,7 +53,9 @@ final class XNETProtocol extends XProtocol implements XStateProtocol, XLayerProt
 
     private void setInitialState(XWindowPeer window, int state) {
         XAtomList old_state = window.getNETWMState();
-        log.fine("Current state of the window {0} is {1}", window, old_state);
+        if (log.isLoggable(Level.FINE)) {
+          log.fine("Current state of the window {0} is {1}",
+                   String.valueOf(window), String.valueOf(old_state));
         if ((state & Frame.MAXIMIZED_VERT) != 0) {
             old_state.add(XA_NET_WM_STATE_MAXIMIZED_VERT);
         } else {
@@ -64,7 +66,8 @@ final class XNETProtocol extends XProtocol implements XStateProtocol, XLayerProt
         } else {
             old_state.remove(XA_NET_WM_STATE_MAXIMIZED_HORZ);
         }
-        log.fine("Setting initial state of the window {0} to {1}", window, old_state);
+        log.fine("Setting initial state of the window {0} to {1}",
+                 String.valueOf(window), String.valueOf(old_state));
         window.setNETWMState(old_state);
     }
 
@@ -179,7 +182,9 @@ final class XNETProtocol extends XProtocol implements XStateProtocol, XLayerProt
             req.set_data(1, state.getAtom());
             // Fix for 6735584: req.data[2] must be set to 0 when only one property is changed
             req.set_data(2, 0);
-            log.fine("Setting _NET_STATE atom {0} on {1} for {2}", state, window, Boolean.valueOf(isAdd));
+            log.fine("Setting _NET_STATE atom {0} on {1} for {2}",
+                     String.valueOf(state), String.valueOf(window),
+                     Boolean.valueOf(isAdd));
             XToolkit.awtLock();
             try {
                 XlibWrapper.XSendEvent(XToolkit.getDisplay(),
@@ -211,13 +216,15 @@ final class XNETProtocol extends XProtocol implements XStateProtocol, XLayerProt
             requestState(window, state, set);
         } else {
             XAtomList net_wm_state = window.getNETWMState();
-            log.finer("Current state on {0} is {1}", window, net_wm_state);
+            log.finer("Current state on {0} is {1}",
+                      String.valueOf(window), String.valueOf(net_wm_state));
             if (!set) {
                 net_wm_state.remove(state);
             } else {
                 net_wm_state.add(state);
             }
-            log.fine("Setting states on {0} to {1}", window, net_wm_state);
+            log.fine("Setting states on {0} to {1}",
+                     String.valueOf(window), String.valueOf(net_wm_state));
             window.setNETWMState(net_wm_state);
         }
         XToolkit.XSync();

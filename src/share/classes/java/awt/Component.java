@@ -4539,7 +4539,7 @@ public abstract class Component implements ImageObserver, MenuContainer,
         }
 
         if (eventLog.isLoggable(PlatformLogger.FINEST)) {
-            eventLog.finest("{0}", e);
+            eventLog.finest("{0}", String.valueOf(e));
         }
 
         /*

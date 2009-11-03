@@ -282,7 +282,9 @@ class XFramePeer extends XDecoratedPeer implements FramePeer {
         super.handlePropertyNotify(xev);
         XPropertyEvent ev = xev.get_xproperty();
 
-        log.finer("Property change {0}", ev);
+        if (log.isLoggable(Level.FINER)) {
+            log.finer("Property change {0}", String.valueOf(ev));
+        }
         /*
          * Let's see if this is a window state protocol message, and
          * if it is - decode a new state in terms of java constants.

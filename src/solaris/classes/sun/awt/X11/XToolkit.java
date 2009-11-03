@@ -622,7 +622,7 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
                 }
 
                 if (eventLog.isLoggable(PlatformLogger.FINER)) {
-                    eventLog.finer("{0}", ev);
+                    eventLog.finer("{0}", String.valueOf(ev));
                 }
 
                 // Check if input method consumes the event
@@ -1836,7 +1836,8 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
                 timeoutTaskLog.finer("XToolkit.schedule(): current time={0}" +
                                      ";  interval={1}" +
                                      ";  task being added={2}" + ";  tasks before addition={3}",
-                                     Long.valueOf(System.currentTimeMillis()), Long.valueOf(interval), task, timeoutTasks);
+                                     Long.valueOf(System.currentTimeMillis()), Long.valueOf(interval),
+                                     String.valueOf(task), String.valueOf(timeoutTasks));
             }
 
             if (timeoutTasks == null) {
@@ -1881,7 +1882,8 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
     private static void callTimeoutTasks() {
         if (timeoutTaskLog.isLoggable(PlatformLogger.FINER)) {
             timeoutTaskLog.finer("XToolkit.callTimeoutTasks(): current time={0}" +
-                                 ";  tasks={1}", Long.valueOf(System.currentTimeMillis()), timeoutTasks);
+                                 ";  tasks={1}", Long.valueOf(System.currentTimeMillis()),
+                                 String.valueOf(timeoutTasks));
         }
 
         if (timeoutTasks == null || timeoutTasks.isEmpty()) {
@@ -1899,7 +1901,8 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
 
                 if (timeoutTaskLog.isLoggable(PlatformLogger.FINER)) {
                     timeoutTaskLog.finer("XToolkit.callTimeoutTasks(): current time={0}" +
-                                         ";  about to run task={1}", Long.valueOf(currentTime), task);
+                                         ";  about to run task={1}", Long.valueOf(currentTime),
+                                         String.valueOf(task));
                 }
 
                 try {

@@ -116,7 +116,8 @@ public final class XContentWindow extends XWindow {
                 newBounds.setLocation(-in.left, -in.top);
             }
             if (insLog.isLoggable(PlatformLogger.FINE)) insLog.fine("Setting content bounds {0}, old bounds {1}",
-                                                                    newBounds, getBounds());
+                                                                    String.valueOf(newBounds),
+                                                                    String.valueOf(getBounds()));
             // Fix for 5023533:
             // Change in the size of the content window means, well, change of the size
             // Change in the location of the content window means change in insets

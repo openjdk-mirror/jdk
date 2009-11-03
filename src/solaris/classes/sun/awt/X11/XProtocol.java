@@ -54,7 +54,8 @@ class XProtocol {
         } finally {
             if (firstCheck) {
                 firstCheck = false;
-                log.fine("{0}:{1} supports {2}", this, listName, protocols);
+                log.fine("{0}:{1} supports {2}", String.valueOf(this),
+                         String.valueOf(listName), String.valueOf(protocols));
             }
         }
     }

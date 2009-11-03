@@ -324,8 +324,11 @@ public abstract class X11InputMethod extends InputMethodAdapter {
             return;
 
         if (lastXICFocussedComponent != null){
-            if (log.isLoggable(PlatformLogger.FINE)) log.fine("XICFocused {0}, AWTFocused {1}",
-                                                              lastXICFocussedComponent, awtFocussedComponent);
+            if (log.isLoggable(PlatformLogger.FINE)) {
+                log.fine("XICFocused {0}, AWTFocused {1}",
+                         String.valueOf(lastXICFocussedComponent),
+                         String.valueOf(awtFocussedComponent));
+            }
         }
 
         if (pData == 0) {
