@@ -1,5 +1,5 @@
 /*
- * Copyright 1997-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1997-2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,10 +35,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Enumeration;
 import java.util.Vector;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import java.util.concurrent.*;
 
@@ -4056,8 +4053,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
         return modifiers;
     }
 
-    private static final Object KEYMAP_TABLE =
-        new StringBuilder("JTextComponent_KeymapTable");
+    private static final Object KEYMAP_TABLE = new Object(); // JTextComponent_KeymapTable
     private JTextComponent editor;
     //
     // member variables used for on-the-spot input method
@@ -4390,8 +4386,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
         }
     }
 
-    private static final Object FOCUSED_COMPONENT =
-        new StringBuilder("JTextComponent_FocusedComponent");
+    private static final Object FOCUSED_COMPONENT = new Object(); // JTextComponent_FocusedComponent
 
     /**
      * The default keymap that will be shared by all

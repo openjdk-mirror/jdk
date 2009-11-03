@@ -1,5 +1,5 @@
 /*
- * Copyright 1997-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1997-2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,12 +27,10 @@ package javax.swing;
 import sun.swing.SwingUtilities2;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import java.io.*;
-import java.util.*;
 
 import javax.swing.plaf.*;
 import javax.swing.text.*;
@@ -1530,12 +1528,9 @@ public class JEditorPane extends JTextComponent {
     /*
      * Private AppContext keys for this class's static variables.
      */
-    private static final Object kitRegistryKey =
-        new StringBuffer("JEditorPane.kitRegistry");
-    private static final Object kitTypeRegistryKey =
-        new StringBuffer("JEditorPane.kitTypeRegistry");
-    private static final Object kitLoaderRegistryKey =
-        new StringBuffer("JEditorPane.kitLoaderRegistry");
+    private static final Object kitRegistryKey = new Object(); // JEditorPane.kitRegistry
+    private static final Object kitTypeRegistryKey = new Object(); // JEditorPane.kitTypeRegistry
+    private static final Object kitLoaderRegistryKey = new Object(); // JEditorPane.kitLoaderRegistry
 
     /**
      * @see #getUIClassID

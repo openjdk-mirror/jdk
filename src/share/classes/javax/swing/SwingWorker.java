@@ -809,7 +809,7 @@ public abstract class SwingWorker<T, V> implements RunnableFuture<T> {
         return executorService;
     }
 
-    private static final Object DO_SUBMIT_KEY = new StringBuilder("doSubmit");
+    private static final Object DO_SUBMIT_KEY = new Object(); // doSubmit
     private static AccumulativeRunnable<Runnable> getDoSubmit() {
         synchronized (DO_SUBMIT_KEY) {
             final AppContext appContext = AppContext.getAppContext();

@@ -27,22 +27,15 @@ package javax.swing;
 
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Vector;
 import java.util.EventListener;
 import java.util.Set;
-import java.util.Map;
-import java.util.HashMap;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.VolatileImage;
-import java.awt.Graphics2D;
 import java.awt.peer.LightweightPeer;
-import java.awt.dnd.DropTarget;
-import java.awt.font.FontRenderContext;
 import java.beans.PropertyChangeListener;
 import java.beans.VetoableChangeListener;
 import java.beans.VetoableChangeSupport;
@@ -224,8 +217,7 @@ public abstract class JComponent extends Container implements Serializable,
      * indicates the EDT is calling into the InputVerifier from the
      * returned component.
      */
-    private static final Object INPUT_VERIFIER_SOURCE_KEY =
-            new StringBuilder("InputVerifierSourceKey");
+    private static final Object INPUT_VERIFIER_SOURCE_KEY = new Object(); // InputVerifierSourceKey
 
     /* The following fields support set methods for the corresponding
      * java.awt.Component properties.
@@ -373,8 +365,7 @@ public abstract class JComponent extends Container implements Serializable,
     private static final String defaultLocale = "JComponent.defaultLocale";
 
     private static Component componentObtainingGraphicsFrom;
-    private static Object componentObtainingGraphicsFromLock = new
-            StringBuilder("componentObtainingGraphicsFrom");
+    private static Object componentObtainingGraphicsFromLock = new Object(); // componentObtainingGraphicsFrom
 
     /**
      * AA text hints.

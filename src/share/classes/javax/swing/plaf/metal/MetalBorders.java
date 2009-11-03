@@ -1,5 +1,5 @@
 /*
- * Copyright 1998-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1998-2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,14 +33,11 @@ import javax.swing.text.JTextComponent;
 
 import java.awt.Component;
 import java.awt.Insets;
-import java.awt.Dimension;
-import java.awt.Rectangle;
 import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Window;
-import java.io.Serializable;
 
 import sun.swing.StringUIClientPropertyKey;
 
