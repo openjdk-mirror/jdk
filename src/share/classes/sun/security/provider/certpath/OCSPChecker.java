@@ -299,20 +299,29 @@ class OCSPChecker extends PKIXCertPathChecker {
                 }
                 if (filter != null) {
                     List<CertStore> certStores = pkixParams.getCertStores();
+                    AlgorithmChecker algChecker=
+                        AlgorithmChecker.getInstance();
                     for (CertStore certStore : certStores) {
-                        Iterator i = null;
-                        try {
-                            i = certStore.getCertificates(filter).iterator();
-                        } catch (CertStoreException cse) {
-                            // ignore and try next certStore
-                            if (DEBUG != null) {
-                                DEBUG.println("CertStore exception:" + cse);
+                        for (Certificate selected :
+                                 certStore.getCertificates(filter)) {
+                            try {
+                                // don't bother to trust algorithm disabled
+                                // certificate as responder
+                                algChecker.check(selected);
+
+                                responderCert = (X509Certificate)selected;
+                                seekResponderCert = false; // done
+                                break;
+                            } catch (CertPathValidatorException cpve) {
+                                if (DEBUG != null) {
+                                    DEBUG.println(
+                                                  "OCSP responder certificate " +
+                                                  "algorithm check failed: " + cpve);
+                                }
                             }
-                            continue;
                         }
-                        if (i.hasNext()) {
-                            responderCert = (X509Certificate) i.next();
-                            seekResponderCert = false; // done
+
+                        if (!seekResponderCert) {
                             break;
                         }
                     }
