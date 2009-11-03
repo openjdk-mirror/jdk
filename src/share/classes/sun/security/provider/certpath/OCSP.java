@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 import static sun.security.provider.certpath.OCSPResponse.*;
+import sun.misc.IOUtils;
 import sun.security.util.Debug;
 import sun.security.x509.AccessDescription;
 import sun.security.x509.AuthorityInfoAccessExtension;
@@ -197,23 +198,7 @@ public final class OCSP {
                     + " - " + con.getResponseMessage());
             }
             in = con.getInputStream();
-            int contentLength = con.getContentLength();
-            if (contentLength == -1) {
-                contentLength = Integer.MAX_VALUE;
-            }
-            response = new byte[contentLength > 2048 ? 2048 : contentLength];
-            int total = 0;
-            while (total < contentLength) {
-                int count = in.read(response, total, response.length - total);
-                if (count < 0)
-                    break;
-
-                total += count;
-                if (total >= response.length && total < contentLength) {
-                    response = Arrays.copyOf(response, total * 2);
-                }
-            }
-            response = Arrays.copyOf(response, total);
+            response = IOUtils.readFully(in, contentLength, false);
         } finally {
             if (in != null) {
                 try {

@@ -51,6 +51,7 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import sun.awt.AppContext;
 import sun.awt.SunToolkit;
+import sun.misc.IOUtils;
 import sun.net.www.ParseUtil;
 import sun.security.util.SecurityConstants;
 
@@ -331,36 +332,7 @@ public class AppletClassLoader extends URLClassLoader {
 
         byte[] b;
         try {
-            if (len != -1) {
-                // Read exactly len bytes from the input stream
-                b = new byte[len];
-                while (len > 0) {
-                    int n = in.read(b, b.length - len, len);
-                    if (n == -1) {
-                        throw new IOException("unexpected EOF");
-                    }
-                    len -= n;
-                }
-            } else {
-                // Read until end of stream is reached - use 8K buffer
-                // to speed up performance [stanleyh]
-                b = new byte[8192];
-                int total = 0;
-                while ((len = in.read(b, total, b.length - total)) != -1) {
-                    total += len;
-                    if (total >= b.length) {
-                        byte[] tmp = new byte[total * 2];
-                        System.arraycopy(b, 0, tmp, 0, total);
-                        b = tmp;
-                    }
-                }
-                // Trim array to correct size, if necessary
-                if (total != b.length) {
-                    byte[] tmp = new byte[total];
-                    System.arraycopy(b, 0, tmp, 0, total);
-                    b = tmp;
-                }
-            }
+            b = IOUtils.readFully(in, len, true);
         } finally {
             in.close();
         }
