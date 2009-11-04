@@ -25,10 +25,12 @@
 
 package sun.util.calendar;
 
+import  java.io.BufferedInputStream;
 import  java.io.File;
 import  java.io.FileInputStream;
 import  java.io.FileNotFoundException;
 import  java.io.IOException;
+import  java.io.InputStream;
 import  java.lang.ref.SoftReference;
 import  java.security.AccessController;
 import  java.security.PrivilegedAction;
@@ -38,6 +40,7 @@ import  java.util.ArrayList;
 import  java.util.HashMap;
 import  java.util.List;
 import  java.util.Map;
+import  java.util.Properties;
 
 /**
  * <code>ZoneInfoFile</code> reads Zone information files in the
@@ -473,15 +476,50 @@ public class ZoneInfoFile {
     private static Map<String, ZoneInfo> zoneInfoObjects = null;
 
     private static final String ziDir;
+
     static {
-        String zi = (String) AccessController.doPrivileged(
-                         new sun.security.action.GetPropertyAction("java.home"))
-                    + File.separator + "lib" + File.separator + "zi";
+        final String homeDir =
+            AccessController.doPrivileged(
+             new sun.security.action.GetPropertyAction("java.home"));
+        if (homeDir == null) {
+            throw new Error("java.home is not set");
+        }
+        String zi = homeDir + File.separator + "lib" +
+            File.separator + "zi";
         try {
+            String otherDir = getZoneInfoDir(homeDir);
+            if (otherDir != null)
+                zi = otherDir;
             zi = new File(zi).getCanonicalPath();
         } catch (Exception e) {
         }
         ziDir = zi;
+    }
+
+    private static String getZoneInfoDir(final String homeDir) {
+        try {
+            return AccessController.doPrivileged
+                (new PrivilegedExceptionAction<String>() {
+                    public String run() throws IOException {
+                        File f = new File(homeDir + File.separator + "lib" +
+                                          File.separator + "tz.properties");
+                        InputStream in = new FileInputStream(f);
+                        BufferedInputStream bin = new BufferedInputStream(in);
+                        Properties props = new Properties();
+                        props.load(bin);
+                        bin.close();
+                        String dir = props.getProperty("sun.zoneinfo.dir");
+                        if (dir == null)
+                            return null;
+                        File zim = new File(dir, "ZoneInfoMappings");
+                        if (zim.exists())
+                            return dir;
+                        return null;
+                    }
+                });
+        } catch (PrivilegedActionException e) {
+            return null;
+        }
     }
 
     /**
@@ -1032,8 +1070,8 @@ public class ZoneInfoFile {
         byte[] buffer = null;
 
         try {
-            buffer = (byte[]) AccessController.doPrivileged(new PrivilegedExceptionAction() {
-                public Object run() throws IOException {
+            buffer = AccessController.doPrivileged(new PrivilegedExceptionAction<byte[]>() {
+                public byte[] run() throws IOException {
                     File file = new File(ziDir, fileName);
                     if (!file.exists() || !file.isFile()) {
                         return null;
