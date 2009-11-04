@@ -75,7 +75,7 @@ public class XIconWindow extends XBaseWindow {
             XIconSize[] res = new XIconSize[count];
             for (int i = 0; i < count; i++, sizes_ptr += XIconSize.getSize()) {
                 res[i] = new XIconSize(sizes_ptr);
-                if (log.isLoggable(Level.FINEST)) {
+                if (log.isLoggable(PlatformLogger.FINEST)) {
                     log.finest("sizes_ptr[{1}] = {0}", String.valueOf(res[i]), Integer.valueOf(i));
                 }
             }
@@ -94,7 +94,7 @@ public class XIconWindow extends XBaseWindow {
         }
 
         XIconSize[] sizeList = getIconSizes();
-        if (log.isLoggable(Level.FINEST)) {
+        if (log.isLoggable(PlatformLogger.FINEST)) {
             log.finest("Icon sizes: {0}", String.valueOf(sizeList));
         }
         if (sizeList == null) {
@@ -448,10 +448,9 @@ public class XIconWindow extends XBaseWindow {
             }
             Dimension iconSize = getIconSize(width, height);
             if (iconSize != null) {
-                if (log.isLoggable(Level.FINEST)) {
+                if (log.isLoggable(PlatformLogger.FINEST)) {
                     log.finest("Icon size: {0}", String.valueOf(iconSize));
                 }
-            }
                 iconWidth = iconSize.width;
                 iconHeight = iconSize.height;
             } else {

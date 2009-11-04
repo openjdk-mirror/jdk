@@ -282,7 +282,7 @@ class XFramePeer extends XDecoratedPeer implements FramePeer {
         super.handlePropertyNotify(xev);
         XPropertyEvent ev = xev.get_xproperty();
 
-        if (log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(PlatformLogger.FINER)) {
             log.finer("Property change {0}", String.valueOf(ev));
         }
         /*

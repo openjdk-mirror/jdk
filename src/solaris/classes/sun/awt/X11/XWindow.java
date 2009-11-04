@@ -996,7 +996,7 @@ public class XWindow extends XBaseWindow implements X11ComponentPeer {
         Rectangle oldBounds = getBounds();
 
         super.handleConfigureNotifyEvent(xev);
-        if (insLog.isLoggable(Level.FINER)) {
+        if (insLog.isLoggable(PlatformLogger.FINER)) {
             insLog.finer("Configure, {0}, event disabled: {1}",
                          String.valueOf(xev.get_xconfigure()),
                          isEventDisabled(xev));
@@ -1019,7 +1019,7 @@ public class XWindow extends XBaseWindow implements X11ComponentPeer {
 
     public void handleMapNotifyEvent(XEvent xev) {
         super.handleMapNotifyEvent(xev);
-        if (insLog.isLoggable(Level.FINE)) {
+        if (insLog.isLoggable(PlatformLogger.FINE)) {
             log.fine("Mapped {0}", String.valueOf(this));
         }
         if (isEventDisabled(xev)) {
@@ -1337,12 +1337,12 @@ public class XWindow extends XBaseWindow implements X11ComponentPeer {
     void updateSizeHints(int x, int y, int width, int height) {
         long flags = XUtilConstants.PSize | (isLocationByPlatform() ? 0 : (XUtilConstants.PPosition | XUtilConstants.USPosition));
         if (!isResizable()) {
-            if (insLog.isLoggable(Level.FINER)) {
+            if (insLog.isLoggable(PlatformLogger.FINER)) {
                 log.finer("Window {0} is not resizable", String.valueOf(this));
             }
             flags |= XUtilConstants.PMinSize | XUtilConstants.PMaxSize;
         } else {
-            if (insLog.isLoggable(Level.FINER)) {
+            if (insLog.isLoggable(PlatformLogger.FINER)) {
                 log.finer("Window {0} is resizable", String.valueOf(this));
             }
         }
@@ -1352,12 +1352,12 @@ public class XWindow extends XBaseWindow implements X11ComponentPeer {
     void updateSizeHints(int x, int y) {
         long flags = isLocationByPlatform() ? 0 : (XUtilConstants.PPosition | XUtilConstants.USPosition);
         if (!isResizable()) {
-            if (insLog.isLoggable(Level.FINER)) {
+            if (insLog.isLoggable(PlatformLogger.FINER)) {
                 log.finer("Window {0} is not resizable", String.valueOf(this));
             }
             flags |= XUtilConstants.PMinSize | XUtilConstants.PMaxSize | XUtilConstants.PSize;
         } else {
-            if (insLog.isLoggable(Level.FINER)) {
+            if (insLog.isLoggable(PlatformLogger.FINER)) {
                 log.finer("Window {0} is resizable", String.valueOf(this));
             }
         }

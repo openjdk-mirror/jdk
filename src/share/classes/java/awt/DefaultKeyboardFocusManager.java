@@ -832,7 +832,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
                         }
                     }
                     if (ke != null) {
-                        if (focusLog.isLoggable(Level.FINER)) {
+                        if (focusLog.isLoggable(PlatformLogger.FINER)) {
                             focusLog.finer("Pumping approved event {0}",
                                            String.valueOf(ke));
                         }
@@ -885,7 +885,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
                         // The fix is rolled out.
 
                         if (ke.getWhen() > marker.after) {
-                            if (focusLog.isLoggable(Level.FINER)) {
+                            if (focusLog.isLoggable(PlatformLogger.FINER)) {
                                 focusLog.finer("Storing event {0} because of marker {1}",
                                                String.valueOf(ke), String.valueOf(marker));
                             }
@@ -900,7 +900,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
             }
 
             case FocusEvent.FOCUS_GAINED:
-                if (focusLog.isLoggable(Level.FINEST)) {
+                if (focusLog.isLoggable(PlatformLogger.FINEST)) {
                     focusLog.finest("Markers before FOCUS_GAINED on {0}",
                                     String.valueOf(target));
                 }
@@ -932,7 +932,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
                         }
                     } else {
                         // Exception condition - event without marker
-                        if (focusLog.isLoggable(Level.FINER)) {
+                        if (focusLog.isLoggable(PlatformLogger.FINER)) {
                             focusLog.finer("Event without marker {0}",
                                            String.valueOf(e));
                         }
@@ -1175,7 +1175,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
             return;
         }
 
-        if (focusLog.isLoggable(Level.FINER)) {
+        if (focusLog.isLoggable(PlatformLogger.FINER)) {
             focusLog.finer("Enqueue at {0} for {1}",
                            after, String.valueOf(untilFocused));
         }
@@ -1217,7 +1217,7 @@ public class DefaultKeyboardFocusManager extends KeyboardFocusManager {
             return;
         }
 
-        if (focusLog.isLoggable(Level.FINER)) {
+        if (focusLog.isLoggable(PlatformLogger.FINER)) {
             focusLog.finer("Dequeue at {0} for {1}",
                            after, String.valueOf(untilFocused));
         }

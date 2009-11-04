@@ -401,7 +401,7 @@ final class XWM
     static boolean isCDE() {
 
         if (!XA_DT_SM_WINDOW_INFO.isInterned()) {
-            if (log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(PlatformLogger.FINER)) {
                 log.finer("{0} is not interned", String.valueOf(XA_DT_SM_WINDOW_INFO));
             }
             return false;
@@ -434,7 +434,7 @@ final class XWM
 
             /* Now check that this window has _DT_SM_STATE_INFO (ignore contents) */
             if (!XA_DT_SM_STATE_INFO.isInterned()) {
-                if (log.isLoggable(Level.FINER)) {
+                if (log.isLoggable(PlatformLogger.FINER)) {
                     log.finer("{0} is not interned", String.valueOf(XA_DT_SM_STATE_INFO));
                 }
                 return false;
@@ -600,7 +600,7 @@ final class XWM
          */
 
         if (!XA_ICEWM_WINOPTHINT.isInterned()) {
-            if (log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(PlatformLogger.FINER)) {
                 log.finer("{0} is not interned", String.valueOf(XA_ICEWM_WINOPTHINT));
             }
             return false;
@@ -635,7 +635,7 @@ final class XWM
      */
     static boolean isIceWM() {
         if (!XA_ICEWM_WINOPTHINT.isInterned()) {
-            if (log.isLoggable(Level.FINER)) {
+            if (log.isLoggable(PlatformLogger.FINER)) {
                 log.finer("{0} is not interned",
                           String.valueOf(XA_ICEWM_WINOPTHINT));
             }
@@ -1363,7 +1363,7 @@ final class XWM
         XNETProtocol net_protocol = getWM().getNETProtocol();
         if (net_protocol != null && net_protocol.active()) {
             Insets insets = getInsetsFromProp(window, XA_NET_FRAME_EXTENTS);
-            if (log.isLoggable(Level.FINE)) {
+            if (log.isLoggable(PlatformLogger.FINE)) {
                 insLog.fine("_NET_FRAME_EXTENTS: {0}", String.valueOf(insets));
             }
 
@@ -1506,7 +1506,7 @@ final class XWM
          *       [mwm, e!, kwin, fvwm2 ... ]
          */
         Insets correctWM = XWM.getInsetsFromExtents(window);
-        if (log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(PlatformLogger.FINER)) {
             insLog.finer("Got insets from property: {0}",
                          String.valueOf(correctWM));
         }
@@ -1570,7 +1570,7 @@ final class XWM
                   }
                   case XWM.OTHER_WM:
                   default: {                /* this is very similar to the E! case above */
-                      if (log.isLoggable(Level.FINEST)) {
+                      if (log.isLoggable(PlatformLogger.FINEST)) {
                           insLog.finest("Getting correct insets for OTHER_WM/default, parent: {0}",
                                         String.valueOf(parent));
                       }
@@ -1600,7 +1600,7 @@ final class XWM
                           && lwinAttr.get_width()+2*lwinAttr.get_border_width() == pattr.get_width()
                           && lwinAttr.get_height()+2*lwinAttr.get_border_width() == pattr.get_height())
                       {
-                          if (log.isLoggable(Level.FINEST)) {
+                          if (log.isLoggable(PlatformLogger.FINEST)) {
                               insLog.finest("Double reparenting detected, pattr({2})={0}, lwinAttr({3})={1}",
                                             String.valueOf(lwinAttr), String.valueOf(pattr),
                                             String.valueOf(parent), String.valueOf(window));
@@ -1631,10 +1631,11 @@ final class XWM
                        * widths and inner/outer distinction, so for the time
                        * being, just ignore it.
                        */
-                      if (log.isLoggable(Level.FINEST)) {
+                      if (log.isLoggable(PlatformLogger.FINEST)) {
                           insLog.finest("Attrs before calculation: pattr({2})={0}, lwinAttr({3})={1}",
                                         String.valueOf(lwinAttr), String.valueOf(pattr),
                                         String.valueOf(parent), String.valueOf(window));
+                      }
                       correctWM = new Insets(lwinAttr.get_y() + lwinAttr.get_border_width(),
                                              lwinAttr.get_x() + lwinAttr.get_border_width(),
                                              pattr.get_height() - (lwinAttr.get_y() + lwinAttr.get_height() + 2*lwinAttr.get_border_width()),

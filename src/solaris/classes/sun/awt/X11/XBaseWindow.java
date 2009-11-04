@@ -824,7 +824,7 @@ public class XBaseWindow {
      * The active grab overrides activated automatic grab.
      */
     public boolean grabInput() {
-        if (grabLog.isLoggable(Level.FINE)) {
+        if (grabLog.isLoggable(PlatformLogger.FINE)) {
             grabLog.fine("Grab input on {0}", String.valueOf(this));
         }
 
@@ -889,7 +889,7 @@ public class XBaseWindow {
         XToolkit.awtLock();
         try {
             XBaseWindow grabWindow = XAwtState.getGrabWindow();
-            if (grabLog.isLoggable(Level.FINE)) {
+            if (grabLog.isLoggable(PlatformLogger.FINE)) {
                 grabLog.fine("UnGrab input on {0}", String.valueOf(grabWindow));
             }
             if (grabWindow != null) {
@@ -1025,7 +1025,7 @@ public class XBaseWindow {
     }
     public void handleConfigureNotifyEvent(XEvent xev) {
         XConfigureEvent xe = xev.get_xconfigure();
-        if (insLog.isLoggable(Level.FINER)) {
+        if (insLog.isLoggable(PlatformLogger.FINER)) {
             insLog.finer("Configure, {0}", String.valueOf(xe));
         }
         x = xe.get_x();

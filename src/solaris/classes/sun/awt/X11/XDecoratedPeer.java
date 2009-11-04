@@ -956,7 +956,7 @@ abstract class XDecoratedPeer extends XWindowPeer {
     }
 
     public void setVisible(boolean vis) {
-        if (log.isLoggable(Level.FINER)) {
+        if (log.isLoggable(PlatformLogger.FINER)) {
           log.finer("Setting {0} to visible {1}", String.valueOf(this), Boolean.valueOf(vis));
         }
         if (vis && !isVisible()) {
@@ -1009,7 +1009,7 @@ abstract class XDecoratedPeer extends XWindowPeer {
     }
 
     private void handleWmTakeFocus(XClientMessageEvent cl) {
-        if (focusLog.isLoggable(Level.FINE)) {
+        if (focusLog.isLoggable(PlatformLogger.FINE)) {
             focusLog.fine("WM_TAKE_FOCUS on {0}", String.valueOf(this));
         }
         requestWindowFocus(cl.get_data(1), true);

@@ -53,9 +53,10 @@ final class XNETProtocol extends XProtocol implements XStateProtocol, XLayerProt
 
     private void setInitialState(XWindowPeer window, int state) {
         XAtomList old_state = window.getNETWMState();
-        if (log.isLoggable(Level.FINE)) {
+        if (log.isLoggable(PlatformLogger.FINE)) {
           log.fine("Current state of the window {0} is {1}",
                    String.valueOf(window), String.valueOf(old_state));
+        }
         if ((state & Frame.MAXIMIZED_VERT) != 0) {
             old_state.add(XA_NET_WM_STATE_MAXIMIZED_VERT);
         } else {

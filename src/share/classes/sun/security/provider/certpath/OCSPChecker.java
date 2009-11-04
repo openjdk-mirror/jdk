@@ -302,14 +302,24 @@ class OCSPChecker extends PKIXCertPathChecker {
                     AlgorithmChecker algChecker=
                         AlgorithmChecker.getInstance();
                     for (CertStore certStore : certStores) {
-                        for (Certificate selected :
-                                 certStore.getCertificates(filter)) {
+                        Iterator<? extends Certificate> i = null;
+                        try {
+                            i = certStore.getCertificates(filter).iterator();
+                        } catch (CertStoreException cse) {
+                            // ignore and try next certStore
+                            if (DEBUG != null) {
+                                DEBUG.println("CertStore exception:" + cse);
+                            }
+                            continue;
+                        }
+                        if (i.hasNext()) {
                             try {
                                 // don't bother to trust algorithm disabled
                                 // certificate as responder
+                                Certificate selected = i.next();
                                 algChecker.check(selected);
 
-                                responderCert = (X509Certificate)selected;
+                                responderCert = (X509Certificate) selected;
                                 seekResponderCert = false; // done
                                 break;
                             } catch (CertPathValidatorException cpve) {

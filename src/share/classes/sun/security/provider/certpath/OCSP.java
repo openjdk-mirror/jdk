@@ -198,6 +198,7 @@ public final class OCSP {
                     + " - " + con.getResponseMessage());
             }
             in = con.getInputStream();
+            int contentLength = con.getContentLength();
             response = IOUtils.readFully(in, contentLength, false);
         } finally {
             if (in != null) {
