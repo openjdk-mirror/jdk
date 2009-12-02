@@ -689,6 +689,9 @@ LPMATSHAPER cmsBuildGrayOutputMatrixShaper(cmsHPROFILE hProfile)
                 GrayTRC = cmsReadICCGamma(hProfile, icSigGrayTRCTag);
                 FromLstarToXYZ(GrayTRC, Shapes1);
 
+                if (GrayTRC == NULL)
+                  return NULL;
+
                 // Reversing must be done after curve translation
 
                 Shapes[0] = cmsReverseGamma(Shapes1[0]->nEntries, Shapes1[0]);
@@ -703,6 +706,9 @@ LPMATSHAPER cmsBuildGrayOutputMatrixShaper(cmsHPROFILE hProfile)
                 // Normal case
 
                 GrayTRC = cmsReadICCGammaReversed(hProfile, icSigGrayTRCTag);   // Y
+
+                if (GrayTRC == NULL)
+                  return NULL;
 
                 Shapes[0] = cmsDupGamma(GrayTRC);
                 Shapes[1] = cmsDupGamma(GrayTRC);
@@ -1343,7 +1349,7 @@ _LPcmsTRANSFORM PickTransformRoutine(_LPcmsTRANSFORM p,
                      p -> ToDevice = PCStoShaperMatrix;
                      p -> OutMatShaper = cmsBuildOutputMatrixShaper(p->OutputProfile);
 
-                     if (!p -> OutMatShaper) {
+                     if (!p || !p -> OutMatShaper) {
                             cmsSignalError(LCMS_ERRC_ABORTED, "profile is unsuitable for output");
                             return NULL;
                             }
@@ -1920,6 +1926,8 @@ cmsHTRANSFORM LCMSEXPORT cmsCreateMultiprofileTransform(cmsHPROFILE hProfiles[],
 
         ColorSpace = ColorSpaceIn;
 
+	Transforms[i] = NULL;
+
 
         if (ColorSpace == CurrentColorSpace) {
 
@@ -1968,6 +1976,11 @@ cmsHTRANSFORM LCMSEXPORT cmsCreateMultiprofileTransform(cmsHPROFILE hProfiles[],
                 cmsSignalError(LCMS_ERRC_ABORTED, "cmsCreateMultiprofileTransform: ColorSpace mismatch");
                 goto ErrorCleanup;
         }
+
+	if (Transforms[i] == NULL) {
+          cmsSignalError(LCMS_ERRC_ABORTED, "cmsCreateMultiprofileTransform: Invalid profile");
+          goto ErrorCleanup;
+	} 
 
         CurrentColorSpace = ColorSpaceOut;
 
