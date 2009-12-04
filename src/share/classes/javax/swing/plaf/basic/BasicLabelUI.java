@@ -65,7 +65,6 @@ public class BasicLabelUI extends LabelUI implements  PropertyChangeListener
     * name in defaults table under the key "LabelUI".
     */
     protected static BasicLabelUI labelUI = new BasicLabelUI();
-    
     private static final Object BASIC_LABEL_UI_KEY = new Object();
 
     private Rectangle paintIconR = new Rectangle();
@@ -398,14 +397,14 @@ public class BasicLabelUI extends LabelUI implements  PropertyChangeListener
     public static ComponentUI createUI(JComponent c) {
         if (System.getSecurityManager() != null) {
             AppContext appContext = AppContext.getAppContext();
-            BasicLabelUI safeBasicLabelUI = 
+            BasicLabelUI safeBasicLabelUI =
                     (BasicLabelUI) appContext.get(BASIC_LABEL_UI_KEY);
             if (safeBasicLabelUI == null) {
                 safeBasicLabelUI = new BasicLabelUI();
                 appContext.put(BASIC_LABEL_UI_KEY, safeBasicLabelUI);
             }
             return safeBasicLabelUI;
-        }   
+        }
         return labelUI;
     }
 

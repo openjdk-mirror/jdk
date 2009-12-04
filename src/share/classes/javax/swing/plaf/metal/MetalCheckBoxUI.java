@@ -68,7 +68,7 @@ public class MetalCheckBoxUI extends MetalRadioButtonUI {
     // ********************************
     public static ComponentUI createUI(JComponent b) {
         AppContext appContext = AppContext.getAppContext();
-        MetalCheckBoxUI checkboxUI = 
+        MetalCheckBoxUI checkboxUI =
                 (MetalCheckBoxUI) appContext.get(METAL_CHECK_BOX_UI_KEY);
         if (checkboxUI == null) {
             checkboxUI = new MetalCheckBoxUI();

@@ -53,20 +53,20 @@ public class MetalLabelUI extends BasicLabelUI
     * name in defaults table under the key "LabelUI".
     */
     protected static MetalLabelUI metalLabelUI = new MetalLabelUI();
-    
+
     private static final Object METAL_LABEL_UI_KEY = new Object();
 
     public static ComponentUI createUI(JComponent c) {
         if (System.getSecurityManager() != null) {
             AppContext appContext = AppContext.getAppContext();
-            MetalLabelUI safeMetalLabelUI = 
+            MetalLabelUI safeMetalLabelUI =
                     (MetalLabelUI) appContext.get(METAL_LABEL_UI_KEY);
             if (safeMetalLabelUI == null) {
                 safeMetalLabelUI = new MetalLabelUI();
                 appContext.put(METAL_LABEL_UI_KEY, safeMetalLabelUI);
             }
             return safeMetalLabelUI;
-        }   
+        }
         return metalLabelUI;
     }
 

@@ -60,7 +60,7 @@ public class BasicCheckBoxUI extends BasicRadioButtonUI {
     // ********************************
     public static ComponentUI createUI(JComponent b) {
         AppContext appContext = AppContext.getAppContext();
-        BasicCheckBoxUI checkboxUI = 
+        BasicCheckBoxUI checkboxUI =
                 (BasicCheckBoxUI) appContext.get(BASIC_CHECK_BOX_UI_KEY);
         if (checkboxUI == null) {
             checkboxUI = new BasicCheckBoxUI();

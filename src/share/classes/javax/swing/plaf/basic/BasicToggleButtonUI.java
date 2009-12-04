@@ -54,7 +54,7 @@ public class BasicToggleButtonUI extends BasicButtonUI {
     // ********************************
     public static ComponentUI createUI(JComponent b) {
         AppContext appContext = AppContext.getAppContext();
-        BasicToggleButtonUI toggleButtonUI = 
+        BasicToggleButtonUI toggleButtonUI =
                 (BasicToggleButtonUI) appContext.get(BASIC_TOGGLE_BUTTON_UI_KEY);
         if (toggleButtonUI == null) {
             toggleButtonUI = new BasicToggleButtonUI();

@@ -865,7 +865,9 @@ public class ICC_Profile implements Serializable {
         case ColorSpace.CS_PYCC:
             synchronized(ICC_Profile.class) {
                 if (PYCCprofile == null) {
-                    if (getProfileFile("PYCC.pf") != null) {
+                    if (BootClassLoaderHook.getHook() != null ||
+                        standardProfileExists("PYCC.pf"))
+                    {
                         ProfileDeferralInfo pInfo =
                             new ProfileDeferralInfo("PYCC.pf",
                                                     ColorSpace.TYPE_3CLR, 3,
@@ -1095,7 +1097,7 @@ public class ICC_Profile implements Serializable {
                         return new FileInputStream(f);
                     } catch (FileNotFoundException e) {}
                 }
-                 return null;
+                return null;
             }
         };
         if ((fis = AccessController.doPrivileged(pa)) == null) {
@@ -1797,46 +1799,43 @@ public class ICC_Profile implements Serializable {
      * available, such as a profile for sRGB.  Built-in profiles use .pf as
      * the file name extension for profiles, e.g. sRGB.pf.
      */
-    private static File getProfileFile(final String fileName) {
+    private static File getProfileFile(String fileName) {
         String path, dir, fullPath;
 
         File f = new File(fileName); /* try absolute file name */
-
         if (f.isAbsolute()) {
             /* Rest of code has little sense for an absolute pathname,
                so return here. */
             return f.isFile() ? f : null;
         }
-
         if ((!f.isFile()) &&
                 ((path = System.getProperty("java.iccprofile.path")) != null)){
                                     /* try relative to java.iccprofile.path */
-            StringTokenizer st =
-                new StringTokenizer(path, File.pathSeparator);
-            while (st.hasMoreTokens() && ((f == null) || (!f.isFile()))) {
-                dir = st.nextToken();
-                fullPath = dir + File.separatorChar + fileName;
-                f = new File(fullPath);
-                if (!isChildOf(f, dir)) {
-                    f = null;
+                StringTokenizer st =
+                    new StringTokenizer(path, File.pathSeparator);
+                while (st.hasMoreTokens() && ((f == null) || (!f.isFile()))) {
+                    dir = st.nextToken();
+                    fullPath = dir + File.separatorChar + fileName;
+                    f = new File(fullPath);
+                    if (!isChildOf(f, dir)) {
+                        f = null;
+                    }
+                }
+            }
+
+        if (((f == null) || (!f.isFile())) &&
+                ((path = System.getProperty("java.class.path")) != null)) {
+                                    /* try relative to java.class.path */
+                StringTokenizer st =
+                    new StringTokenizer(path, File.pathSeparator);
+                while (st.hasMoreTokens() && ((f == null) || (!f.isFile()))) {
+                    dir = st.nextToken();
+                    fullPath = dir + File.separatorChar + fileName;
+                    f = new File(fullPath);
                 }
             }
         }
 
-        if (((f == null) || (!f.isFile())) &&
-                  ((path = System.getProperty("java.class.path")) != null)) {
-                                      /* try relative to java.class.path */
-            StringTokenizer st =
-                new StringTokenizer(path, File.pathSeparator);
-            while (st.hasMoreTokens() && ((f == null) || (!f.isFile()))) {
-                dir = st.nextToken();
-                fullPath = dir + File.separatorChar + fileName;
-                f = new File(fullPath);
-                if (!isChildOf(f, dir)) {
-                    f = null;
-                }
-            }
-        }
         if ((f == null) || (!f.isFile())) {
             /* try the directory of built-in profiles */
             f = getStandardProfileFile(fileName);
@@ -1858,6 +1857,13 @@ public class ICC_Profile implements Serializable {
             File.separatorChar + "lib" + File.separatorChar + "cmm";
         String fullPath = dir + File.separatorChar + fileName;
         File f = new File(fullPath);
+        if (!f.isFile()) {
+            //make sure file was installed in the kernel mode
+            BootClassLoaderHook hook = BootClassLoaderHook.getHook();
+            if (hook != null) {
+                hook.prefetchFile("lib/cmm/"+fileName);
+            }
+        }
         return (f.isFile() && isChildOf(f, dir)) ? f : null;
     }
 
@@ -1880,6 +1886,18 @@ public class ICC_Profile implements Serializable {
             return false;
         }
     }
+
+    /**
+     * Checks whether built-in profile specified by fileName exists.
+     */
+    private static boolean standardProfileExists(final String fileName) {
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+                public Boolean run() {
+                    return getStandardProfileFile(fileName) != null;
+                }
+            });
+    }
+
 
     /*
      * Serialization support.

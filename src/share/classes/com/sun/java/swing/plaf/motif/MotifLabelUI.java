@@ -50,7 +50,7 @@ public class MotifLabelUI extends BasicLabelUI
 
     public static ComponentUI createUI(JComponent c) {
         AppContext appContext = AppContext.getAppContext();
-        MotifLabelUI motifLabelUI = 
+        MotifLabelUI motifLabelUI =
                 (MotifLabelUI) appContext.get(MOTIF_LABEL_UI_KEY);
         if (motifLabelUI == null) {
             motifLabelUI = new MotifLabelUI();

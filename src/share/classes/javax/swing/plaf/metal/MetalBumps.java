@@ -25,22 +25,12 @@
 
 package javax.swing.plaf.metal;
 
-import sun.awt.AppContext;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
-import java.awt.Image;
-import java.awt.Transparency;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.IndexColorModel;
+import java.awt.*;
+import java.awt.image.*;
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.Icon;
+import sun.awt.AppContext;
 
 /**
  * Implements the bumps used throughout the Metal Look and Feel.
@@ -83,9 +73,9 @@ class MetalBumps implements Icon {
             context.put(METAL_BUMPS, buffers);
         }
         for (BumpBuffer buffer : buffers) {
-          if (buffer.hasSameConfiguration(gc, topColor, shadowColor, backColor)) {
-               return buffer;
-          }
+            if (buffer.hasSameConfiguration(gc, topColor, shadowColor, backColor)) {
+                return buffer;
+            }
         }
         BumpBuffer buffer = new BumpBuffer(gc, topColor, shadowColor, backColor);
         buffers.add(buffer);

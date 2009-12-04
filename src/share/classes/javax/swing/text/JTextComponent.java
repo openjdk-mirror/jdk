@@ -2066,7 +2066,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
      *   width to match its own
      */
     public boolean getScrollableTracksViewportWidth() {
-        JViewport port = SwingUtilities2.getViewport(this);
+        JViewport port = SwingUtilities.getParentViewport(this);
         if (port != null) {
             return port.getWidth() > getPreferredSize().width;
         }
@@ -2087,7 +2087,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
      *   to match its own
      */
     public boolean getScrollableTracksViewportHeight() {
-        JViewport port = SwingUtilities2.getViewport(this);
+        JViewport port = SwingUtilities.getParentViewport(this);
         if (port != null) {
             return (port.getHeight() > getPreferredSize().height);
         }

@@ -821,7 +821,6 @@ public abstract class ClassLoader {
                                          ProtectionDomain protectionDomain)
         throws ClassFormatError
     {
-
         int len = b.remaining();
 
         // Use byte[] if not a direct ByteBufer:
@@ -2175,3 +2174,4 @@ class SystemClassLoaderAction
         return sys;
     }
 }
+

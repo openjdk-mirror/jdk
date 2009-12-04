@@ -55,7 +55,7 @@ public class BasicRadioButtonUI extends BasicToggleButtonUI
     // ********************************
     public static ComponentUI createUI(JComponent b) {
         AppContext appContext = AppContext.getAppContext();
-        BasicRadioButtonUI radioButtonUI = 
+        BasicRadioButtonUI radioButtonUI =
                 (BasicRadioButtonUI) appContext.get(BASIC_RADIO_BUTTON_UI_KEY);
         if (radioButtonUI == null) {
             radioButtonUI = new BasicRadioButtonUI();

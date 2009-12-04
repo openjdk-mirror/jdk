@@ -70,7 +70,7 @@ public class MetalToggleButtonUI extends BasicToggleButtonUI {
     // ********************************
     public static ComponentUI createUI(JComponent b) {
         AppContext appContext = AppContext.getAppContext();
-        MetalToggleButtonUI metalToggleButtonUI = 
+        MetalToggleButtonUI metalToggleButtonUI =
                 (MetalToggleButtonUI) appContext.get(METAL_TOGGLE_BUTTON_UI_KEY);
         if (metalToggleButtonUI == null) {
             metalToggleButtonUI = new MetalToggleButtonUI();

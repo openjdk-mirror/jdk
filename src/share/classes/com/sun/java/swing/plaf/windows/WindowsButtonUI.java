@@ -67,7 +67,7 @@ public class WindowsButtonUI extends BasicButtonUI
     // ********************************
     //          Create PLAF
     // ********************************
-    public static ComponentUI createUI(JComponent c){
+    public static ComponentUI createUI(JComponent c) {
         AppContext appContext = AppContext.getAppContext();
         WindowsButtonUI windowsButtonUI =
                 (WindowsButtonUI) appContext.get(WINDOWS_BUTTON_UI_KEY);

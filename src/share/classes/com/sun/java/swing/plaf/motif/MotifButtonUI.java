@@ -57,7 +57,7 @@ public class MotifButtonUI extends BasicButtonUI {
     // ********************************
     //          Create PLAF
     // ********************************
-    public static ComponentUI createUI(JComponent c){
+    public static ComponentUI createUI(JComponent c) {
         AppContext appContext = AppContext.getAppContext();
         MotifButtonUI motifButtonUI =
                 (MotifButtonUI) appContext.get(MOTIF_BUTTON_UI_KEY);

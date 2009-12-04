@@ -59,7 +59,9 @@ public class BasicButtonUI extends ButtonUI{
     protected int defaultTextShiftOffset;
 
     private final static String propertyPrefix = "Button" + ".";
-    
+
+    private static final Object BASIC_BUTTON_UI_KEY = new Object();
+
     private static final Object BASIC_BUTTON_UI_KEY = new Object();
 
     // ********************************
@@ -67,7 +69,7 @@ public class BasicButtonUI extends ButtonUI{
     // ********************************
     public static ComponentUI createUI(JComponent c) {
         AppContext appContext = AppContext.getAppContext();
-        BasicButtonUI buttonUI = 
+        BasicButtonUI buttonUI =
                 (BasicButtonUI) appContext.get(BASIC_BUTTON_UI_KEY);
         if (buttonUI == null) {
             buttonUI = new BasicButtonUI();
