@@ -62,8 +62,6 @@ public class BasicButtonUI extends ButtonUI{
 
     private static final Object BASIC_BUTTON_UI_KEY = new Object();
 
-    private static final Object BASIC_BUTTON_UI_KEY = new Object();
-
     // ********************************
     //          Create PLAF
     // ********************************

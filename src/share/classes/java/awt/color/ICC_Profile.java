@@ -1834,7 +1834,6 @@ public class ICC_Profile implements Serializable {
                     f = new File(fullPath);
                 }
             }
-        }
 
         if ((f == null) || (!f.isFile())) {
             /* try the directory of built-in profiles */
