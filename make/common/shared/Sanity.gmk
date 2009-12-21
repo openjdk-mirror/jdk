@@ -68,6 +68,14 @@ endef
 
 # Settings and rules to validate the JDK build environment.
 
+ifeq ($(PLATFORM), haiku)
+  GET_FREE_BLOCKS := $(GREP) "Free Blocks" | $(NAWK) -F'(' '{print $$2;}' | $(NAWK) '{print $$1;}'
+  FREE_SPACE := $(shell $(DF) -b $(OUTPUTDIR) | $(GET_FREE_BLOCKS))
+  TEMP_FREE_SPACE := $(shell $(DF) -b $(TEMP_DISK) | $(GET_FREE_BLOCKS))
+  OS_VERSION := $(shell uname -s)
+  OS_VARIANT_NAME := $(shell uname -v) | $(NAWK) '{print $$1;}'
+endif
+
 ifeq ($(PLATFORM), solaris)
   FREE_SPACE := $(shell $(DF) -b $(OUTPUTDIR) | $(TAIL) -1 | $(NAWK) '{print $$2;}')
   TEMP_FREE_SPACE := $(shell $(DF) -b $(TEMP_DISK) | $(TAIL) -1 | $(NAWK) '{print $$2;}')
