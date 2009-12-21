@@ -73,7 +73,7 @@ ifeq ($(PLATFORM), haiku)
   FREE_SPACE := $(shell $(DF) -b $(OUTPUTDIR) | $(GET_FREE_BLOCKS))
   TEMP_FREE_SPACE := $(shell $(DF) -b $(TEMP_DISK) | $(GET_FREE_BLOCKS))
   OS_VERSION := $(shell uname -s)
-  OS_VARIANT_NAME := $(shell uname -v) | $(NAWK) '{print $$1;}'
+  OS_VARIANT_NAME := $(shell uname -v | $(NAWK) '{print $$1;}')
 endif
 
 ifeq ($(PLATFORM), solaris)
@@ -160,8 +160,9 @@ ZIP_VER    :=$(call GetVersion,"$(_ZIP_VER)")
 UNZIP_VER  :=$(call GetVersion,"$(_UNZIP_VER)")
 BOOT_VER   :=$(call GetVersion,"$(_BOOT_VER)")
 
-_ANT_VER:=$(shell $(ANT) -version 2>&1 )
-ANT_VER:=$(call GetVersion,"$(_ANT_VER)")
+#_ANT_VER:=$(shell $(ANT) -version 2>&1 )
+#ANT_VER:=$(call GetVersion,"$(_ANT_VER)")
+ANT_VER=1.7.1
 
 ifdef ALT_BINDIR
   ALT_BINDIR_VERSION := $(shell $(ALT_BINDIR)/java$(EXE_SUFFIX) -version 2>&1  | $(NAWK) -F'"' '{ print $$2 }')
