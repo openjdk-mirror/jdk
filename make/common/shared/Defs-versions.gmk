@@ -110,6 +110,18 @@
 #
 ##########################################################################
 
+# Haiku specific
+ifeq ($(PLATFORM), haiku)
+  REQUIRED_OS_VERSION         = 1.0
+  REQUIRED_FREE_SPACE         = 1040000
+  REQUIRED_COMPILER_NAME      = GCC4
+  REQUIRED_COMPILER_VERSION   = GCC4
+  REQUIRED_GCC_VER            = 2.95
+  ifeq ($(CC_VERSION),gcc)
+    REQUIRED_CC_VER           = 4.3.0
+  endif
+endif
+
 # Solaris specific
 ifeq ($(PLATFORM), solaris)
   REQUIRED_OS_VERSION         = 5.10
