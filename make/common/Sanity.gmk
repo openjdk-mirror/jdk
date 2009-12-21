@@ -102,8 +102,10 @@ endif
 
 # Always check cups header paths on solaris & linux
 ifneq ($(PLATFORM), windows)
+ifneq ($(PLATFORM), haiku)
 sanity-all:: \
     sane-cups
+endif
 endif
 
 # Always check hotspot binary paths even if we are building them from scratch

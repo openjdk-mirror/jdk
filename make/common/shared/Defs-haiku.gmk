@@ -134,7 +134,7 @@ else
   GCC29_COMPILER_PATH = $(JDK_DEVTOOLS_DIR)/$(PLATFORM)/gcc29/usr/
 endif
 
-_CUPS_HEADERS_PATH=/usr/include
+#_CUPS_HEADERS_PATH=/usr/include
 
 # Import JDK images allow for partial builds, components not built are
 #    imported (or copied from) these import areas when needed.

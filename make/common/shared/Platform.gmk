@@ -127,7 +127,7 @@ ifeq ($(SYSTEM_UNAME), Haiku)
   BUNDLE_FILE_SUFFIX=.tar.gz
   # How much RAM does this machine have:
   MAX_RAM_CMD := sysinfo -mem | fgrep max | awk '{print $$7;}' | cut -d')' -f1 
-  MB_OF_MEMORY := $(shell $(MAX_RAM_CMD))
+  MB_OF_MEMORY := $(shell expr `$(MAX_RAM_CMD)` '/' 1024 '/' 1024)
   
 endif
 
