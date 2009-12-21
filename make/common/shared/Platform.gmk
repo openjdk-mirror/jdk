@@ -89,6 +89,47 @@ ifndef VARIANT
   VARIANT=OPT
 endif
 
+# Platform settings specific to Haiku
+ifeq ($(SYSTEM_UNAME), Haiku)
+  PLATFORM = haiku
+  mach := $(shell uname -m)
+  archExpr = case "$(mach)" in \
+                BePC) \
+                    echo i586 \
+                    ;; \
+                *) \
+                    echo $(mach) \
+                    ;; \
+      esac
+  ARCH        := $(shell $(archExpr) )
+  ARCH_FAMILY := $(ARCH)
+
+  # i586 is 32-bit, amd64 is 64-bit
+  ifndef ARCH_DATA_MODEL
+    ifeq ($(ARCH), i586)
+      ARCH_DATA_MODEL=32
+    else
+      ARCH_DATA_MODEL=64
+    endif
+  endif
+
+  # Need to maintain the jre/lib/i386 location for 32-bit Intel
+  ifeq ($(ARCH), i586)
+    LIBARCH = i386
+  else
+    LIBARCH = $(ARCH)
+  endif
+
+  # Value of Java os.arch property
+  ARCHPROP  = $(LIBARCH)
+
+  # Suffix for file bundles used in previous release
+  BUNDLE_FILE_SUFFIX=.tar.gz
+  # How much RAM does this machine have:
+  MB_OF_MEMORY := $(shell sysinfo -mem | fgrep max | awk '{print $$7;}' | cut -d')' -f1 )
+  
+endif
+
 # Platform settings specific to Solaris
 ifeq ($(SYSTEM_UNAME), SunOS)
   PLATFORM = solaris

@@ -209,6 +209,7 @@ BOOT_JAR_JFLAGS += $(JAR_JFLAGS)
 
 BOOT_JAVACFLAGS  += $(NO_PROPRIETARY_API_WARNINGS)
 
+# On BeOS, we used to use (BINDIR)/java here
 BOOT_JAVA_CMD      = $(BOOTDIR)/bin/java $(JAVA_TOOLS_FLAGS)
 BOOT_JAVAC_CMD     = $(BOOTDIR)/bin/javac $(JAVAC_JVM_FLAGS) $(BOOT_JAVACFLAGS)
 BOOT_JAR_CMD       = $(BOOTDIR)/bin/jar
@@ -216,6 +217,7 @@ BOOT_JARSIGNER_CMD = $(BOOTDIR)/bin/jarsigner
 
 # Various tools we need to run (FIXUP: Are these the right ones?)
 NATIVE2ASCII    = $(BOOTDIR)/bin/native2ascii $(JAVA_TOOLS_FLAGS:%=-J%)
+# On BeOS, we used to use (BINDIR)/rmic here
 RMIC		= $(BOOTDIR)/bin/rmic $(JAVA_TOOLS_FLAGS:%=-J%)
 IDLJ		= $(BOOTDIR)/bin/idlj $(JAVA_TOOLS_FLAGS:%=-J%)
 
