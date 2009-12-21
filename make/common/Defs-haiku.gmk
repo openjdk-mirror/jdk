@@ -186,7 +186,7 @@ ifeq ($(FASTDEBUG), true)
   CXXFLAGS_DBG	+= $(CC_OPT/$(FASTDEBUG_OPTIMIZATION_LEVEL))
 endif
 
-CPPFLAGS_COMMON = -D$(ARCH) -DARCH='"$(ARCH)"' -DLINUX $(VERSION_DEFINES) \
+CPPFLAGS_COMMON = -D$(ARCH) -DARCH='"$(ARCH)"' -DHAIKU $(VERSION_DEFINES) \
 		  -D_LARGEFILE64_SOURCE -D_GNU_SOURCE -D_REENTRANT
 
 ifeq ($(ARCH_DATA_MODEL), 64)
@@ -287,7 +287,6 @@ JAVALIB         = -ljava $(JVMLIB)
 #
 PRIVATIZE_JVM_SYMBOLS = false
 
-USE_PTHREADS = true
 override ALT_CODESET_KEY         = _NL_CTYPE_CODESET_NAME
 override AWT_RUNPATH             =
 override HAVE_ALTZONE            = false
@@ -302,16 +301,13 @@ else
 override LIBCXX                  = -lstdc++
 endif
 override LIBPOSIX4               =
-override LIBSOCKET               =
-override LIBTHREAD               =
+override LIBSOCKET               = -lnetwork
+override LIBTHREAD               = -lroot
 override MOOT_PRIORITIES         = true
 override NO_INTERRUPTIBLE_IO     = true
-override OPENWIN_HOME            = /usr/X11R6
-ifeq ($(ARCH), amd64)
-override OPENWIN_LIB             = $(OPENWIN_HOME)/lib64
-else
-override OPENWIN_LIB             = $(OPENWIN_HOME)/lib
-endif
+override OPENWIN_HOME            = 
+override OPENWIN_LIB             =
+# On BeOS we commented out __GLIBC__ below
 override OTHER_M4FLAGS           = -D__GLIBC__ -DGNU_ASSEMBLER
 override SUN_CMM_SUBDIR          =
 override THREADS_FLAG            = native
@@ -343,10 +339,10 @@ HOTSPOT_SALIB_PATH   = $(HOTSPOT_IMPORT_PATH)/jre/lib/$(LIBARCH)
 SALIB_NAME = $(LIB_PREFIX)saproc.$(LIBRARY_SUFFIX)
 
 # The JDI - Serviceability Agent binding is not currently supported
-# on Linux-ia64.
-ifeq ($(ARCH), ia64)
+# on Haiku.
+#ifeq ($(ARCH), ia64)
   INCLUDE_SA = false
-else
-  INCLUDE_SA = true
-endif
+#else
+#  INCLUDE_SA = true
+#endif
 

@@ -594,6 +594,11 @@ ifeq ($(PLATFORM), linux)
   override CC_VERSION = gcc
 endif
 
+# Haiku uses GNU compilers by default
+ifeq ($(PLATFORM), linux)
+  override CC_VERSION = gcc
+endif
+
 # Get the REQUIRED versions (needs CC_VERSION set)
 include $(JDK_MAKE_SHARED_DIR)/Defs-versions.gmk
 

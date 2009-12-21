@@ -53,15 +53,20 @@ define OptFullPath
 $(shell if [ "$1" != "" -a -d "$1" ]; then (cd $1 && pwd); else echo "$1"; fi)
 endef
 
+# Load paths from finddir
+BOOTSYSTEMBIN_PATH = $(shell finddir B_SYSTEM_BIN_DIRECTORY)/
+BOOTCOMMONBIN_PATH = $(shell finddir B_COMMON_BIN_DIRECTORY)/
+BOOTDEVELOP_PATH = $(shell finddir B_COMMON_DEVELOP_DIRECTORY)/
+
 # Location on system where jdk installs might be
-USRJDKINSTANCES_PATH =/opt/java
+USRJDKINSTANCES_PATH = $(BOOTCOMMONBIN_PATH)/java
 
 # UNIXCOMMAND_PATH: path to where the most common Unix commands are.
 #  NOTE: Must end with / so that it could be empty, allowing PATH usage.
 ifneq "$(origin ALT_UNIXCOMMAND_PATH)" "undefined"
   UNIXCOMMAND_PATH :=$(call PrefixPath,$(ALT_UNIXCOMMAND_PATH))
 else
-  UNIXCOMMAND_PATH  = $(shell finddir B_SYSTEM_BIN_DIRECTORY)/
+  UNIXCOMMAND_PATH  = $(BOOTSYSTEMBIN_PATH)
 endif
 
 # USRBIN_PATH: path to where the most common Unix commands are.
@@ -69,7 +74,7 @@ endif
 ifneq "$(origin ALT_USRBIN_PATH)" "undefined"
   USRBIN_PATH :=$(call PrefixPath,$(ALT_USRBIN_PATH))
 else
-  USRBIN_PATH  = $(shell finddir B_COMMON_BIN_DIRECTORY)/
+  USRBIN_PATH  = $(BOOTCOMMONBIN_PATH)
 endif
 
 # UNIXCCS_PATH: path to where the Solaris ported UNIX commands can be found
@@ -77,7 +82,7 @@ endif
 ifneq "$(origin ALT_UNIXCCS_PATH)" "undefined"
   UNIXCCS_PATH :=$(call PrefixPath,$(ALT_UNIXCCS_PATH))
 else
-  UNIXCCS_PATH = $(shell finddir B_COMMON_DEVELOP_DIRECTORY)/abi/current/tools/current/
+  UNIXCCS_PATH = $(BOOTDEVELOP_PATH)abi/current/tools/current/
 endif
 
 # SLASH_JAVA: location of all network accessable files
@@ -99,7 +104,7 @@ endif
 ifneq "$(origin ALT_COMPILER_PATH)" "undefined"
   COMPILER_PATH :=$(call PrefixPath,$(ALT_COMPILER_PATH))
 else
-  COMPILER_PATH  =$(shell finddir B_COMMON_DEVELOP_DIRECTORY)/abi/current/tools/current/
+  COMPILER_PATH  =$(BOOTDEVELOP_PATH)/abi/current/tools/current/
 endif
 
 # DEVTOOLS_PATH: for other tools required for building (such as zip, etc.)
@@ -107,7 +112,7 @@ endif
 ifneq "$(origin ALT_DEVTOOLS_PATH)" "undefined"
   DEVTOOLS_PATH :=$(call PrefixPath,$(ALT_DEVTOOLS_PATH))
 else
-  DEVTOOLS_PATH = $(shell finddir B_COMMON_DEVELOP_DIRECTORY)/abi/current/tools/current/
+  DEVTOOLS_PATH = $(BOOTDEVELOP_PATH)/abi/current/tools/current/
 endif
 
 # _BOOTDIR1: First choice for a Bootstrap JDK, previous released JDK.
