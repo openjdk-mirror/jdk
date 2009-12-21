@@ -72,9 +72,9 @@ ifeq ($(PLATFORM), haiku)
   GET_FREE_BLOCKS := $(GREP) "Free Blocks" | $(NAWK) -F'(' '{print $$2;}' | $(NAWK) '{print $$1;}'
   FREE_SPACE := $(shell $(DF) -b $(OUTPUTDIR) | $(GET_FREE_BLOCKS))
   TEMP_FREE_SPACE := $(shell $(DF) -b $(TEMP_DISK) | $(GET_FREE_BLOCKS))
-  OS_VERSION := $(shell uname -s)
-  OS_VARIANT_NAME := haiku
-  OS_VARIANT_VERSION := $(shell uname -v | $(NAWK) '{print $$1;}')
+  OS_VERSION := $(shell uname -r)
+  OS_VARIANT_NAME := $(shell uname -s)
+  OS_VARIANT_VERSION := $(shell uname -v | $(NAWK) '{print $$1;}' | cut -c2-)
 endif
 
 ifeq ($(PLATFORM), solaris)
