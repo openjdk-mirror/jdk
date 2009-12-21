@@ -595,7 +595,7 @@ ifeq ($(PLATFORM), linux)
 endif
 
 # Haiku uses GNU compilers by default
-ifeq ($(PLATFORM), linux)
+ifeq ($(PLATFORM), haiku)
   override CC_VERSION = gcc
 endif
 
