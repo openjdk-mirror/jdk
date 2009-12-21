@@ -24,15 +24,15 @@
 #
 
 #
-# Definitions for Linux.
+# Definitions for Haiku.
 #
 
-# Default for COMPILER_WARNINGS_FATAL on Linux (C & C++ compiler warnings)
+# Default for COMPILER_WARNINGS_FATAL on Haiku (C & C++ compiler warnings)
 ifndef COMPILER_WARNINGS_FATAL
   COMPILER_WARNINGS_FATAL=false
 endif
 
-# Linux should use parallel compilation for best build times
+# Haiku should use parallel compilation for best build times
 ifndef COMPILE_APPROACH
   COMPILE_APPROACH = parallel
 endif
@@ -117,9 +117,9 @@ ifndef ALT_BOOTDIR
   _BOOTDIR2  =$(USRJDKINSTANCES_PATH)/jdk$(PREVIOUS_JDK_VERSION)
 endif
 
-# Always build headless on Linux
+# Always build headless on Haiku
 BUILD_HEADLESS = true
-LIBM=-lm
+LIBM=-lroot
 
 # GCC29_COMPILER_PATH: is the path to where the gcc 2.9 compiler is installed
 #  NOTE: Must end with / so that it could be empty, allowing PATH usage.
