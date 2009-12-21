@@ -48,9 +48,9 @@
 
 ifeq ($(PLATFORM),haiku)
   UTILS_COMMAND_PATH=$(UNIXCOMMAND_PATH)
-  UTILS_USR_BIN_PATH=$(USRBIN_PATH)
-  UTILS_CCS_BIN_PATH=$(UNIXCCS_PATH)
-  UTILS_DEVTOOL_PATH=$(DEVTOOLS_PATH)
+  UTILS_USR_BIN_PATH=$(UNIXCOMMAND_PATH)
+  UTILS_CCS_BIN_PATH=$(DEVTOOLS_PATH)
+  UTILS_DEVTOOL_PATH=$(UNIXCOMMAND_PATH)
 endif
 
 ifeq ($(PLATFORM),linux)
@@ -148,6 +148,18 @@ ZIPEXE         = $(UTILS_DEVTOOL_PATH)zip
 # Special cases
 #RM   is defined by GNU Make as 'rm -f'
 CD             = cd # intrinsic unix command
+
+# Haiku specific
+ifeq ($(PLATFORM),haiku)
+  ADB = $(UNIXCOMMAND_PATH)gdb
+  CPIO = $(USRBIN_PATH)cpio
+  # Intrinsic unix command, with backslash-escaped character interpretation
+  ECHO = $(UNIXCOMMAND_PATH)echo -e
+  LEX = $(USRBIN_PATH)flex
+  M4 = $(USRBIN_PATH)m4
+  NAWK = $(UNIXCOMMAND_PATH)gawk
+  YACC = $(USRBIN_PATH)yacc
+endif
 
 # Windows specific
 ifeq ($(PLATFORM),windows)
