@@ -286,6 +286,10 @@ ifdef PROGRAM
     LDLIBS_COMMON = -ldl
   endif
 
+  ifeq ($(PLATFORM), haiku)
+    LDLIBS_COMMON = -lbe
+  endif
+
 endif # PROGRAM
 
 LDLIBS_COMMON += $(EXTRA_LIBS)

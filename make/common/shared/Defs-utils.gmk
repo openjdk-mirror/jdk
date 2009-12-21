@@ -46,6 +46,13 @@
 #       Some only make sense for one platform, but are harmless.
 #
 
+ifeq ($(PLATFORM),haiku)
+  UTILS_COMMAND_PATH=$(UNIXCOMMAND_PATH)
+  UTILS_USR_BIN_PATH=$(USRBIN_PATH)
+  UTILS_CCS_BIN_PATH=$(UNIXCCS_PATH)
+  UTILS_DEVTOOL_PATH=$(DEVTOOLS_PATH)
+endif
+
 ifeq ($(PLATFORM),linux)
   UTILS_COMMAND_PATH=$(UNIXCOMMAND_PATH)
   UTILS_USR_BIN_PATH=$(USRBIN_PATH)
