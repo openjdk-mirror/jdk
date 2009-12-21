@@ -215,7 +215,7 @@ ifdef LIBRARY
   LDFLAGS_COMMON += $(LD_RUNPATH_EXTRAS:%=-Xlinker -z -Xlinker origin -Xlinker -rpath -Xlinker \$$ORIGIN/%)
 endif
 
-EXTRA_LIBS += -lc
+EXTRA_LIBS += -lroot
 
 LDFLAGS_DEFS_OPTION  = -z defs
 LDFLAGS_COMMON  += $(LDFLAGS_DEFS_OPTION)
