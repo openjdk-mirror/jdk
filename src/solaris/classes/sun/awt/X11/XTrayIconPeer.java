@@ -305,7 +305,7 @@ public class XTrayIconPeer implements TrayIconPeer,
     }
 
     public static void suppressWarningString(Window w) {
-        WindowAccessor.setTrayIconWindow(w, true);
+        AWTAccessor.getWindowAccessor().setTrayIconWindow(w, true);
     }
 
     public void setToolTip(String tooltip) {
@@ -491,12 +491,6 @@ public class XTrayIconPeer implements TrayIconPeer,
         public void mouseMoved(MouseEvent e) {
             handleEvent(e);
         }
-    }
-
-    static boolean isTrayIconStuffWindow(Window w) {
-        return (w instanceof InfoWindow.Tooltip) ||
-               (w instanceof InfoWindow.Balloon) ||
-               (w instanceof XTrayIconEmbeddedFrame);
     }
 
     // ***************************************
