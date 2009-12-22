@@ -1,0 +1,3 @@
+# @(#)javax.print.StreamPrintServiceFactory	1.1 00/11/14
+# Provider for Java 2D Stream print services.
+sun.print.PSStreamPrinterFactory
