@@ -1,0 +1,399 @@
+Andrew Bachmann
+July 29, 2004
+
+* Introduction
+
+This is a design document and also a historical record.  Its purpose is to explain some of the the things that we tried during our design, and how they turned out.  It also is a proposal (at this point) for a reorganization and approach to implementing the awt widgets.
+
+
+
+* The Foundation
+
+The awt story begins at the GetJavaProperties in java_props_md.c, where there is a property called "awt_toolkit" that contains the name of a class to be instantiated as the system toolkit.  On Haiku this is set to BToolkit.
+
+When a awt widget is instantiated, as part of its static initialization, it loads the system libraries through the java.awt.Toolkit class.  Loading the library starts the thread which will ultimately run the underlying BApplication for this instance of java, if there is not already a BApplication running in the current team.
+
+	Decision: BApplication allocating and mapping
+		A BApplication will be allocated together with the
+	BToolkit.  Both of these are singletons within a java VM.
+		Why? Only 1 BApplication may be allocated within
+	a team.  Currently we are operating with a single team, so
+	we may only have on BApplication.  Having a BApplication
+	allocated is also necessary for creating BWindows.  It also
+	allows us to have an entry on the Deskbar, which gives the
+	user visibility and access on the windows.
+
+	Decision: run the BApplication if not already running.
+		The BApplication will be run after the event loop is
+	started.
+		Why? Although it is not necessary to run the BApplication
+	in order to create and use windows, it is useful to have a central
+	event thread.  Additionally, some events arrive that are directed
+	to the BApplication. (system events such as printer notifications)
+	Events of this nature will need to be handled through the use of 
+	EventFilters added to the currently running be_app.
+
+Once a BToolkit is instantiated, it is used as a factory to build all the other awt components.  As an example, when you create a java.awt.TextField and then call addNotify() on it, it calls to the BToolkit.createTextField:
+
+	public TextFieldPeer createTextField(TextField target) {
+		TextFieldPeer peer = new BTextFieldPeer(target);
+		targetCreatedPeer(target, peer);
+		return peer;
+	}
+
+As it can be seen above, these instances are required to implement  corresponding interfaces for each awt widget.  In fact, because our instances are returned as the interface type, the methods on the interfaces are the complete set of methods that must be implemented on our types.
+
+	Decision: naming convention for instances implementing
+	the interfaces
+		The concrete instances implementing a particular
+	awt widget interface will be named by prefixing B on to
+	the interface name.
+		Why? This is justified as following the example of
+	the other platforms, and maximizing readability.
+
+	Decision: access permissions for instance methods:
+		The concrete instances shall only have public
+	methods for those methods defined in the interfaces
+	that they implement.
+		Why? This prevents java programs from improperly
+	accessing or depending on the underlying implementation.
+
+When implementing the peers we initially followed the win32 model because haiku was closer to it than to motif.  Throughout this project we have tried to copy other platforms wherever possible, in order to facilitate understanding of our code by people familiar with how the other platforms work.  This has helped us to get things working without having to obtain a deep understanding of how things need to be done, which has saved us some time.  However, in this case, another effect of this was that we inherited win32's confusing and sometimes inappropriate inheritance heirarchy.
+
+	Decision: the peer heirarchy
+		The peer heirarchy will be modified to make it map
+	more closely to the java.awt.* heirarchies.
+		Why? This makes it simpler to understand where peers
+	have their functionality implemented.  This is particularly
+	important because the peers are not spec'd.  The java.awt.*
+	heirarchies are spec'd, documented, and well understood.
+		Additionally, the peer interfaces form an excellent
+	abstraction barrier that we can use to determine what needs
+	to be implemented.  As such, we don't need to depend on
+	extensive code readings and searches for the contexts in
+	which the methods on our classes will be invoked.
+
+When our concrete class for a particular widget is constructed via the BToolkit, we also have to initialize a corresponding native object.  In this situation we have again followed the windows model to some extent.  The heirarchy for the natives mirrors the heirarchy for the peers, as in windows, but as we just stated, our heirarchy is more representative of the java.awt.* heirarchies.
+
+	Decision: naming convention for corresponding native objects
+		The native objects will be named by prefixing Awt on to
+	the name of the corresponding awt classname. (without the
+	package name)
+		Why? This is the naming convention used by windows.  It
+	is fairly short and uniquely identifies these classes.
+
+	Decision: file naming convention for Awt classes
+		The files containing a particular Awt class will be named
+	by prefixing awt_ on to the name of the corresponding awt
+	classname. (without the package name)
+		Why? This is the naming convention used by windows.  In
+	CVS it is somewhat annoying to rename files, and renaming
+	them would also affect the makefiles, so it is simpler to
+	remain with this early choice.
+
+	Decision: JNI methods co-located with Awt class methods
+		The JNI methods for a peer class are stored in the
+	same file as the Awt class method definitions.  JNI methods
+	are stored at the end of the file, and their prototypes are
+	copied from the header, which is included.
+		Why? Co-location is the convention used by windows.  It
+	makes it easier to move between the JNI method and its
+	corresponding class method.  Storing JNI methods at the end
+	of the file makes it easy to look at either the JNI methods
+	or the class methods by themselves.  Including the header
+	for the JNI properly externs the prototypes, allowing us to
+	not have to extern them in the source files.
+
+	Decision: native method naming and access
+		Native methods are prefixed with an underscore (_).  They
+	are declared private.  Each native method is called by a
+	corresponding method without an underscore.  The native methods
+	are not called by any other methods.
+		Why? The underscore provides a visual signifier that a
+	method is a native, and improves readability.  Using only one
+	method to call the native method makes it easier to insert
+	debug operations into the call to the native method.  It also
+	allows for the simplification of the JNI methods because the
+	arguments to the JNI can be preprocessed.  (passing relevant
+	fields instead of an object, for example) 
+
+All of the decisions that we covered so far have remained in our current design up to the authoring of this document.
+
+
+
+* Design Evolution
+
+When a user affects a widget in Haiku there are generally two ways that the program is notified.  The usual way for a program to accept the notification is by subclassing the widget and then doing some action when a hook function is called.  For example, on a BWindow there is a method FrameResized which is called when the window is resized.  The second way for a program to be notified is through a message.  For example, when the user clicks on a menu item, a message is sent.
+
+Because of my (Andrew Bachmann) concern about BFilePanel, which internally constructs its own BWindow, we initially decided to try to avoid using subclassing.  We decided to use BMessageFilter to intercept the messages for the window.  This can be done by adding the filter to the window after construction in the BWindow::AddCommonFilter method.  Our independent tests showed that this would work pretty well.
+
+	Approach #1: don't subclass widgets
+		When constructing our Awt classes we would not
+	construct subclasses of the Haiku widgets.  The Awt
+	classes themselves would not be subclasses of the Haiku
+	widgets, and we would not independently create
+	subclasses either.
+		Why? Because we couldn't subclass the Window
+	that was used by the BFilePanel.
+
+	Approach #2: use a BMessageFilter on the window
+		Construct a subclass of BMessageFilter and add
+	it through AddCommonFilter to windows.
+		Why? To intercept all the events on the Haiku
+	widgets and pass notification of them to the
+	corresponding Awt class so that it could generate
+	the java events.
+
+We constructed a BMessageFilter subclass, called it EventMessageFilter, and attached it to all the windows.  Most of the system standard messages were easy to parse and we sent off window resized messages, activations, etc.
+
+Next we came to some widgets like BButton and BMenuItem that send a BMessage that the user constructed.  We took advantage of this as a way to pass a pointer to the AwtButton and AwtMenuItem.  We gave a specific "what" to the message so that our EventMessageFilter could identify these messages and then retrieve the pointer and invoke it.  This was implemented by having AwtButton and AwtMenuItem be subclasses of an EventSource class, which defined the method to be invoked.  It was a little bit dissatisfying to have to generate additional information and modify the BMessage after passing it to the widget as well.
+
+	Approach #3: use an interface class and message for dispatch
+		We created a mixin class EventSource to act as the
+	interface for the EventMessageFilter to call when it saw
+	a message with EventSource::WHAT as the message "what"
+	field.  It called to a pointer put on the message as a
+	EventSource::WHO.  The pointer was cast to EventSource.
+
+Ultimately we ran into some other problems.  Some messages that we were receiving in the EventMessageFilter didn't have enough information to identify the affected component.  For example, the "value changed" message for a scrollbar didn't indicate which scrollbar changed.
+
+At this point we decided that perhaps we could subclass some of the Components.  In particular we decided that we would not subclass BWindow so that we wouldn't have an issue with BFilePanel, but we could subclass any of the other widgets.
+
+	Modification of Approach #1:
+	Approach #4: allow Awt classes to subclass Haiku widgets
+		We changed it so that some of the Awt classes used
+	multiple inheritance and derived from both the Awt heirarchy
+	and the Haiku widget that implemented them.  We overrode
+	some of the methods such as BScrollBar::ValueChanged in
+	order to construct the events.
+		Why? We couldn't get enough information from the
+	BMessage in the EventMessageFilter, and there was no
+	template BMessage associated with the widget that we
+	could modify.
+
+Because we were now subclassing, it seemed that we could take advantage of the Haiku built in unwrapping of some of the messages.
+
+	Modification of Approach #2:
+	Approach #5: handle messages through methods
+		We changed our approach for some messages to
+	simply allow them to pass through the EventMessageFilter.
+	Then we handled them through the messages that they
+	were dispatched to.
+		Why? Because we were allowing subclassing, we could
+	take advantage of the normal dispatch which would unwrap
+	the messages for us.
+
+In particular, we began with the KeyDown method to try to generate some key events.  Problems shortly followed as we realized that the KeyDown method doesn't unwrap all of the information that we wanted for our events.  We realized that we could use Window()->CurrentMessage() to get the other fields.  This was dissatisfying because we ended up doing unwrapping anyway.
+
+At this point we had accumulated a few dissatisfying elements in our design.  The design suffered from being a collection of varying approaches all tied together that seemed to be redundant in ways and also overly complicated.
+
+
+
+* Indepth Study Conclusions
+
+In response to the complexity, we began a high-intensity prototyping effort which included an indepth look into the Haiku messaging architecture and an indepth look into the inheritance of the Haiku widgets.
+
+Here are some of the conclusions from this effort.
+
+
+- Conclusion #1: widgets have three common superclasses
+
+The Haiku widgets derive from three families.  Some are members of more than one.
+
+	BLooper/BWindow family.
+		BWindow derives from BLooper and it is the only
+	"widget" to do so.
+
+	BHandler/BView family.
+		BViews derive from BHandler.  Nearly all widgets
+	are BViews.
+
+	BInvoker family
+		Nearly all members of this family are also members
+	of the BHandler/BView family.  In particular, all
+	subclasses of BControl are in both families.  The only
+	"widgets" that are in this family and is not in the 
+	BHandler/BView family are BMenuItem and its subclasses.
+
+
+- Conclusion #2: our approach depends on the widget family
+
+Our ability to utilize some of the approaches that we tried above depends on which family the widget belongs to.  No approach will be compatible with all families.
+
+For example, AddCommonFilter can only be used with a subclass of BLooper.  Because of this, it is not suitable for any of the other families.
+
+Similarly, only in certain cases can we use an approach  where we pass a pointer to the Awt class in the message. This approach will not work for widgets that are not in the BInvoker family.  Only BInvoker family widgets have the requisite SetMessage. (or accepting of a Message in the constructor)
+
+
+- Conclusion #3: two methods exist for the BLooper family
+
+There are only two methods for use with the BLooper/BWindow family.  Each of these seems appropriate in different circumstances.
+
+
+	BLooper.1
+		Use a subclass of BMessageFilter, added to the BWindow
+	via AddCommonFilter.
+
+This is the method we began with above, and it is suitable for use with BFilePanel.
+
+
+	BLooper.2
+		Use a subclass of BWindow, by overriding its methods.
+	(in particular: DispatchMessage)
+
+This method can not be used with BFilePanel.  However, since we already are using subclassing to create a window on which we can do 2d acceleration, this approach saves us from having to create another subclass, another class instance, and also another layer of indirection.
+
+
+- Conclusion #4: four methods exist for the BInvoker family
+
+There are four methods for use with the BInvoker family.
+
+
+	BInvoker.1
+		Use a BMessage with a specific "what", and a pointer
+	field in the BMessage with the Awt class.  Use a subclass of
+	BMessageFilter on the BWindow to deliver the message to
+	the Awt class.
+
+This approach is basically the approach that we took above when we used EventSource.
+
+
+	BInvoker.2
+		Use a BMessage with a specific "what", and a pointer
+	field in the BMessage with the Awt class.  Override
+	DispatchMessage in the subclass of BWindow to deliver
+	the message to the Awt class.
+
+This is a variant on the first approach, with only a different delivery mechanism.  In the situation where one utilizes BLooper.2 instead of BLooper.1, BInvoker.2 seems more appropriate than BInvoker.1.
+
+
+	BInvoker.3
+		Use a subclass of BHandler and a BMessage without
+	a pointer field.  Set the BHandler as the target for the
+	BInvoker via SetTarget.
+
+This approach works, however there is an issue that the BHandler needs to be added to a BLooper before SetTarget is called.  This approach has the advantage that casting is not required.
+
+One approach we tried for AwtButton was to have it derive from both BButton and BMessageFilter, and then we set the AwtButton as the target for the BInvoker, and also added the AwtButton as the Filter for the BHandler. (this was a combination of BInvoker.3 and BHandler.2)  This works although it is a somewhat heady amount of multiple inheritance. (and it was strange looking at AddFilter(this) SetTarget(this) )
+
+
+	BInvoker.4
+		Use a subclass of the BInvoker, by overriding its 
+	methods. (the only possibility is the Invoke method)
+
+This approach shares the advantage with BInvoker.3 that casting is not required.  A slight weirdness about this method is that one can end up running on an unexpected thread. (not the window thread!)
+
+
+- Conclusion #5: two methods exist for the BHandler family
+
+There are two methods for use with the BHandler family.
+
+
+	BHandler.1
+		Use a subclass of the BView, by overriding its
+	methods.
+
+This is the approach that we tried earlier, prompted by the problems with BScrollBar.  Although it works in at least some cases, it has the cumbersome feature that one often needs to get the current message from the window of the BView.  (as we saw above with KeyDown)  Although we would like to intercept the message prior to unwrapping by overriding BView::DispatchMessage, there unfortunately is no such function.  It's worth pointing out that BView::MessageReceived does not perform the dispatch, either.
+
+
+	BHandler.2
+		Use a subclass of BMessageFilter, by adding it to
+	the looper via BHandler::AddFilter.
+
+This approach parallels BLooper.1.  It turns out that this has the nice property that this will deliver the message to our filter before the message even arrives at the BWindow::DispatchMessage.  Also, the only messages that come in on this BMessageFilter are those from this BView.  However, like BInvoker.3, we have to wait for the BView to be added to the BWindow before calling AddFilter.
+
+
+- Conclusion #6: FileDialog does not have to maintain Dialog behavior
+
+In the beginning we started with a goal to generate events for actions on the FileDialog.  This was the incentive that caused us to investigate and ultimately adopt the EventMessageFilter.  However, other platforms support almost none of the Dialog behavior.  For example, all other platforms will return zero as the value of countComponents.  This automatically rules out the possibility of registering a listener for events on any of the contained components.  It is possible to register a listener to the FileDialog itself in order to attempt to get Window events, but the other platforms do not even pass a window moved event back.  Similarly, other dialog functions such as SetModal, SetFont, etc., work only to varying degrees on other platforms.  (those work not at all on windows, and halfway on motif)
+
+
+
+* Selection
+
+Looking back on those conclusions we can start to follow a pattern of elimination to arrive at a final design.
+
+First, let's start at the BHandler/BView family.  The BHandler.1 approach is fairly unsatisfactory because more work gets done than is necessary.  We have to go completely through the normal window dispatch before getting to a hook function where we have to do extra work to get the message, and then end up having to unwrap the message ourselves. (again)  The BHandler.2 approach allows us to avoid having to subclass the BView for the purposes of overriding its methods.  Also, we get the message sooner, and without redundant unwrapping.
+
+Let's assume that we take BHandler.2 as our approach.  Now we have to deal with the issue of waiting for the BView to be added to the BWindow before calling AddFilter.  As we pointed out earlier, we already tried using the BHandler.2 approach with AwtButton. (and in fact, with _all_ AwtComponents)  In this situation we simply added the filter in the AwtComponent constructor, because all AwtComponents are constructed after their parents.  This worked fairly well, although it relies on nonlocal assumptions.  An alternative approach might be to override the AttachedToWindow() function in a subclass of the BView.
+
+There is also a secondary minor issue of where the BMessageFilter functionality exists.  It's possible to have the Awt class as a subclass of BMessageFilter, and we tried this approach before.  It works okay although it is necessary to remove the filter before the BView is deleted, or else the Awt class will be deleted at that time as well. (which may or may not be a problem if it is not being deleted elsewhere)
+
+	BHandler/BView family == approach BHandler.2
+
+Next, let's move on to the BLooper/BWindow family.  Because of our conclusion #6 above regarding FileDialog, it seems reasonable to use the BLooper.2 approach for our BWindows.  We will handle FileDialog as a special case, where we may or may not have to use a BMessageFilter.
+
+	BLooper/BWindow family == approach BLooper.2
+
+There's not much more to say about BLooper/BWindow so let's move right along to the BInvoker family.  Because we decided to use BLooper.2, we can rule out BInvoker.1.
+
+BMenuItem is a BInvoker family member alone, so let's focus on it for our approach. Let's consider BInvoker.4 because it is quite simple.  If we are invoked, then we are not running on the window thread.  Also, if we call Menu() and then Window() we end up on a temporary menu window instead of the window that we are associated with.  This means that we have to keep a pointer to the window we are associated with.  This is equivalent to managing the issue of adding a handler only when attached.  This doesn't rule out using BInvoker.4 but it does seem to bring it down to equivalence with BInvoker.3 which also has this issue.
+
+Let's get back to the other members of the BInvoker family then.  BButton is a simple member of the BInvoker family.  If we use BInvoker.4 with BButton we notice that the thread we are running on is the window thread.  This is an inconsistency between BMenuItem and BButton that we'd like to not have to think about, so perhaps it is best to rule out BInvoker.4.
+
+This leaves us with BInvoker.2 and BInvoker.3.  BInvoker.2 allows us to dodge the looper issue.  However, if we are averse to blind casts the best way to go is BInvoker.3.  BInvoker.3 also does not require the nonlocal support that BInvoker.2 does.  Additionally BInvoker.3 can be used in concert with BHandler.2 which we have already adopted.
+
+	BInvoker family == approach BInvoker.3
+
+
+* Synthesis
+
+These methods for being notified when events occur do not constitute a design.  Our choices for these have implied a number of subclasses, although we have not committed to either multiple inheritance, or other alternative.
+
+Our prior approach was generally one of containment, although we mixed it up with multiple inheritance in some cases.
+
+Because we want the external widgets on our interfaces to be consistent with the inheritance tree in java, containment seems appropriate.  Also since this inheritance tree is the same for both manipulation and event generation, it seems appropriate that the container act both as the manipulation interface and the event generation class.
+
+* Testing
+
+Here are the ideal test cases:
+
+	1. java.awt.Window = BWindow (BLooper/BWindow family)
+	2. java.awt.FileDialog = BFilePanel (BLooper/BWindow family: special case)
+	3. java.awt.Panel = BView (BHandler/BView family)
+	4. java.awt.Button = BButton (BHandler/BView family + BInvoker)
+	5. java.awt.MenuItem = BMenuItem (BInvoker family)
+	6. java.awt.List = BListView (BHandler/BView family + BInvoker * 2 different messages)
+
+* Final Choices
+
+	_BLooper.2_ is better than BLooper.1
+		August 1, 2005: Andrew preliminary choice
+		April 29, 2005: Andrew & Bryan consensus
+	_BHandler.1_ is better than BHandler.2
+		April 29, 2005: Andrew & Bryan consensus
+	BInvoker.2 is better than BInvoker.1
+		August 1, 2005: Andrew analysis "where one utilizes BLooper.2 instead of BLooper.1, BInvoker.2 seems more appropriate than BInvoker.1"
+		April 29, 2005: Andrew & Bryan consensus
+	BInvoker.3 is better than BInvoker.4
+		August 1, 2005: Andrew analysis "one can end up running on an unexpected thread. (not the window thread!)"
+		April 29, 2005: Andrew & Bryan consensus
+	_BInvoker.3_ is better than BInvoker.2
+		April 30, 2005: Bryan experimental conclusion
+	_BInvoker.2_ is better than BInvoker.3 for MenuItem
+
+* Summary
+
+BLooper.1 (FileDialog)
+		Use a subclass of BMessageFilter, added to the BWindow
+	via AddCommonFilter.
+
+BLooper.2 (Window)
+		Use a subclass of BWindow, by overriding its methods.
+	(in particular: DispatchMessage)
+
+BHandler.1 (Component)
+		Use a subclass of the BView, by overriding its methods.
+	Where required, use BWindow::CurrentMessage() to get more
+	information.
+
+BInvoker.3 (Component)
+		Use a subclass of BHandler and a BMessage without
+	a pointer field.  Set the BHandler as the target for the
+	BInvoker via SetTarget.
+
+BInvoker.2 (MenuItem)
+		Use a BMessage with a specific "what", and a pointer
+	field in the BMessage with the Awt class.  Override
+	DispatchMessage in the subclass of BWindow to deliver
+	the message to the Awt class.
