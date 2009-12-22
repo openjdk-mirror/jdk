@@ -1,0 +1,71 @@
+{\rtf1\ansi\deflang1033\deflangfe1041\deff42
+{\fonttbl{\f0\froman \fcharset0 Baskerville Roman;}{\f1\froman \fcharset0 Baskerville Bold;}{\f2\froman \fcharset0 Baskerville Bold Italic;}{\f3\froman \fcharset0 Baskerville Italic;}{\f4\fnil \fcharset0 Bryan Freehand Regular;}{\f5\froman \fcharset0 ClassGarmnd BT Roman;}{\f6\froman \fcharset0 ClassGarmnd BT Bold;}{\f7\froman \fcharset0 ClassGarmnd BT Bold Italic;}{\f8\froman \fcharset0 ClassGarmnd BT Italic;}{\f9\fscript \fcharset0 CommercialScript Regular;}{\f10\fdecor \fcharset0 CopprplGoth Bd BT Bold;}{\f11\fnil \fcharset0 Courier10 BT Roman;}{\f12\fnil \fcharset0 Courier10 BT Bold;}{\f13\fnil \fcharset0 Courier10 BT Bold Italic;}{\f14\fnil \fcharset0 Courier10 BT Italic;}{\f15\froman \fcharset0 Dutch801 Rm BT Roman;}{\f16\froman \fcharset0 Dutch801 Rm BT Bold;}{\f17\froman \fcharset0 Dutch801 Rm BT Bold Italic;}{\f18\froman \fcharset0 Dutch801 Rm BT Italic;}{\f19\fscript \fcharset0 Embassy Regular;}{\f20\fnil \fcharset0 Gobe Pronunciation Regular;}{\f21\fswiss \fcharset0 Humnst777 BT Roman;}{\f22\fswiss \fcharset0 Humnst777 BT Bold;}{\f23\fswiss \fcharset0 Humnst777 BT Bold Italic;}{\f24\fswiss \fcharset0 Humnst777 BT Italic;}{\f25\fnil \fcharset0 Lucida Bright Demibold;}{\f26\fnil \fcharset0 Lucida Bright Demibold Italic;}{\f27\fnil \fcharset0 Lucida Bright Italic;}{\f28\fnil \fcharset0 Lucida Bright Regular;}{\f29\fnil \fcharset0 Lucida Sans Demibold;}{\f30\fnil \fcharset0 Lucida Sans Demibold Oblique;}{\f31\fnil \fcharset0 Lucida Sans Oblique;}{\f32\fnil \fcharset0 Lucida Sans Regular;}{\f33\fnil \fcharset0 Lucida Sans Typewriter Bold;}{\f34\fnil \fcharset0 Lucida Sans Typewriter Bold Oblique;}{\f35\fnil \fcharset0 Lucida Sans Typewriter Oblique;}{\f36\fnil \fcharset0 Lucida Sans Typewriter Regular;}{\f37\fswiss \fcharset0 Monospac821 BT Roman;}{\f38\fswiss \fcharset0 Monospac821 BT Bold;}{\f39\fswiss \fcharset0 Monospac821 BT Bold Italic;}{\f40\fswiss \fcharset0 Monospac821 BT Italic;}{\f41\fnil \fcharset0 ProFontISOLatin1 Regular;}{\f42\fswiss \fcharset0 Swis721 BT Roman;}{\f43\fswiss \fcharset0 Swis721 BT Bold;}{\f44\fswiss \fcharset0 Swis721 BT Bold Italic;}{\f45\fswiss \fcharset0 Swis721 BT Italic;}{\f46\fnil \fcharset0 Swiss911 XCm BT Regular;}{\f47\ftech \fcharset0 SymbolProp BT Regular;}{\f48\fswiss \fcharset0 VAGRounded BT Regular;}{\f49\fnil \fcharset0 Zurich Roman;}{\f50\fnil \fcharset0 Zurich Bold;}{\f51\fnil \fcharset0 Zurich Bold Italic;}{\f52\fnil \fcharset0 Zurich Italic;}}
+{\colortbl;\red0\green0\blue0;\red0\green0\blue255;\red0\green255\blue255;\red0\green255\blue0;\red255\green0\blue255;\red255\green0\blue0;\red255\green255\blue0;\red255\green255\blue255;\red0\green0\blue128;\red0\green128\blue128;\red0\green128\blue0;\red128\green0\blue128;\red128\green0\blue0;\red128\green128\blue0;\red128\green128\blue128;\red192\green192\blue192;}
+\paperw12240\paperh15840\margt1440\margb1440\margl1440\margr1440\widowctrl\ftnbj\ftnrestart\ftnstart1\pgnstart1\deftab720\linemod0\linex0\cols1\colsx0\sectd\pard\plain\uc1
+\pard\qc\li0\fi0\ri0{\plain\f42\fs48\cf0 Haiku Java 1.4.2 Project Analysis}{\plain\f42\fs28\cf0 \par}
+\pard\qc\li0\fi0\ri0{\plain\f42\fs28\cf0 \par}
+\pard\qc\li0\fi0\ri0{\plain\f42\fs28\cf0 	The objective of this document is to outline the current state of the Haiku Java 1.4.2 port and give details on the current shortcommings of the port. The Java platform has been broken down into general subsystems, each of which are somewhat independant of other portions. For the areas where you are familliar, please fill in the general status.\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 Hotspot}{\plain\f43\fs36\b\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 	The virtual machine appears to be relatively stable in single processor modes. However when multiple processors are present and activated, appears to fail an assert during garbage collection. It appears that some threads are not being suspended before the GC thread activates. This bug is reproducable in debug mode, where the assertion is checked.\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 J2SE Classes\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 	The majority of the j2se classes requiring native code have been completed and are working. The following subprojects outline this in more detail.\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 AWT}{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 	The Haiku AWT is functional.\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 	Unverified / Incomplete:\par}
+\pard\ql{\plain\f42\fs28\cf0 		Clipboard (Andrew - please update)\par}
+\pard\ql{\plain\f42\fs28\cf0 		Keyboard Events\par}
+\pard\ql{\plain\f42\fs28\cf0 			Needs to use SequencedEvents to ensure delivery order.\par}
+\pard\ql{\plain\f42\fs28\cf0 			Keyboard scancode->java character needs revisited from \par}
+\pard\ql{\plain\f42\fs28\cf0 			a locale & alternate keymap perspective.\par}
+\pard\ql{\plain\f42\fs28\cf0 		Some Mouse Events (MOUSE_DRAGGED)\par}
+\pard\ql{\plain\f42\fs28\cf0 			Left mouse button is occasionally reported as a popup\par}
+\pard\ql{\plain\f42\fs28\cf0 			menu trigger. This is incorrect behavior.\par}
+\pard\ql{\plain\f42\fs28\cf0 			Waiting on a build to re-evaluate.\par}
+\pard\ql{\plain\f42\fs28\cf0 	\par}
+\pard\ql{\plain\f42\fs28\cf0 		BDataTransfer (Andrew?)\par}
+\pard\ql{\plain\f42\fs28\cf0 		BGlobalCursorManager (Andrew?)\par}
+\pard\ql{\plain\f42\fs28\cf0 		BInputMethod (Should be part of the Locale work for KeyEvent)\par}
+\pard\ql{\plain\f42\fs28\cf0 		BChoicePeer._getMinimumSize() (Andrew?)\par}
+\pard\ql{\plain\f42\fs28\cf0 		BFontPeer.getFontCharset()\par}
+\pard\ql{\plain\f42\fs28\cf0 		BPopupMenuPeer (Andrew?)\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 	Known Issues / Bugs:\par}
+\pard\ql{\plain\f42\fs28\cf0 		Window size - surfacedata seems to have an off-by-one.\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 Java2D}{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 	The current Java2D implementation is a workable stub implementation that relies heavily on Sun's basic Java2D implementation. It lacks functionality in many various areas. It is stable enough to promote the futher development of other subsystems concurrently.\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 	}{\plain\f43\fs28\b\cf0 Missing}{\plain\f42\fs28\cf0 :\par}
+\pard\ql{\plain\f42\fs28\cf0 		Multiple Colorspace support. Everything is 32bit RGBA.\par}
+\pard\ql{\plain\f42\fs28\cf0 		Custom surfacedata and graphics implementations for\par}
+\pard\ql{\plain\f42\fs28\cf0 		BOffScreenImage.\par}
+\pard\ql{\plain\f42\fs28\cf0 		Custom Haiku Renderers and rendering loops, which may \par}
+\pard\ql{\plain\f42\fs28\cf0 		eliminate the need for the HaikuGraphics2D class.\par}
+\pard\ql{\plain\f42\fs28\cf0 		Pallette based colorspaces, and color lookup table support\par}
+\pard\ql{\plain\f42\fs28\cf0 	\par}
+\pard\ql{\plain\f43\fs28\b\cf0 	Unverified / Incomplete:\par}
+\pard\ql{\plain\f42\fs28\cf0 		Native SurfaceData implementation\par}
+\pard\ql{\plain\f42\fs28\cf0 	\par}
+\pard\ql{\plain\f43\fs28\b\cf0 	Known Issues / Bugs:\par}
+\pard\ql{\plain\f42\fs28\cf0 		Window size - surfacedata seems to have an off-by-one.\par}
+\pard\ql{\plain\f42\fs28\cf0 		Transparency fails when drawn to a RootView (Window) peer\par}
+\pard\ql{\plain\f42\fs28\cf0 		surface.\par}
+\pard\ql{\plain\f42\fs28\cf0 	\par}
+\pard\ql{\plain\f43\fs28\b\cf0 Media}{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 	Media has not been started.\par}
+\pard\ql{\plain\f42\fs28\cf0 	Native implementations appear in \par}
+\pard\ql{\plain\f42\fs28\cf0 		}{\plain\f42\fs24\cf0 j2se/src/<platform>/native/com/sun/media/sound/engine}{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 Security\par}
+\pard\ql{\plain\f42\fs28\cf0 	It appears we've simply reused the unix auth module from solaris / linux. I assume this should work just fine.\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f43\fs28\b\cf0 Mozilla Plugin (Kian?)\par}
+\pard\ql{\plain\f42\fs28\cf0 \par}
+\pard\ql{\plain\f42\fs28\cf0 	I have not looked into this yet. We may need a working mozilla build environment in order to build this plugin. A mozilla installation and the appropriate headers may also be the only necessary components.\par}
+}
