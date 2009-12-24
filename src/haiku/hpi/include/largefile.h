@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1999 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,28 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+#ifndef _JAVASOFT_LARGEFILE_SUPPORT_H_
+#define _JAVASOFT_LARGEFILE_SUPPORT_H_
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+#ifdef __solaris__
+#include "largefile_solaris.h"
+#endif
 
-extern void InitializeMem(void);
+#ifdef __linux__
+#include "largefile_linux.h"
+#endif
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+/*
+ * Prototypes for wrappers that we define.  These wrapper functions
+ * are low-level I/O routines that will use 64 bit versions if
+ * available, else revert to the 32 bit ones.
+ */
+extern off64_t lseek64_w(int fd, off64_t offset, int whence);
+extern int fstat64_w(int fd, struct stat *buf);
+extern int ftruncate64_w(int fd, off64_t length);
+extern int open64_w(const char *path, int oflag, int mode);
+
+/* This is defined in system_md.c */
+extern int sysFfileMode(int fd, int* mode);
+
+#endif /* _JAVASOFT_LARGEFILE_SUPPORT_H_ */

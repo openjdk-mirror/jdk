@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-1998 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,25 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+/*
+ * Interface to condition variable HPI implementation for Solaris
+ */
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+#ifndef _JAVASOFT_CONDVAR_MD_H_
+#define _JAVASOFT_CONDVAR_MD_H_
 
-extern void InitializeMem(void);
+#include "threads_md.h"
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+typedef struct condvar {
+    cond_t  cond;           /* Manual-reset event for notifications */
+    unsigned int counter;   /* Current number of notifications */
+} condvar_t;
+
+int condvarInit(condvar_t *);
+int condvarDestroy(condvar_t *);
+int condvarWait(condvar_t *, mutex_t *, thread_state_t wtype);
+int condvarTimedWait(condvar_t *, mutex_t *, jlong millis, thread_state_t wtype);
+int condvarSignal(condvar_t *);
+int condvarBroadcast(condvar_t *);
+
+#endif /* !_JAVASOFT_CONDVAR_MD_H_ */

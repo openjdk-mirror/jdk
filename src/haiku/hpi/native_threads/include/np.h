@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1998-2000 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,29 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+/*
+ *  Non-posix parts of the threads HPI.
+ */
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+#ifndef _JAVASOFT_NP_H_
+#define _JAVASOFT_NP_H_
 
-extern void InitializeMem(void);
+extern int      np_suspend(sys_thread_t *tid);
+extern int      np_continue(sys_thread_t *tid);
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+extern int      np_single(void);
+extern void     np_multi(void);
+extern int      np_stackinfo(void **addr, long *size);
+extern int      np_initialize(void);
+extern void     np_initialize_thread(sys_thread_t *tid);
+#ifdef __linux__
+extern int      np_initial_suspend(sys_thread_t *tid);
+extern void   np_free_thread(sys_thread_t *tid);
+#endif
+
+extern void     np_profiler_init(sys_thread_t *tid);
+extern int      np_profiler_suspend(sys_thread_t *tid);
+extern int      np_profiler_continue(sys_thread_t *tid);
+extern bool_t   np_profiler_thread_is_running(sys_thread_t *tid);
+
+#endif /* !_JAVASOFT_NP_H_ */

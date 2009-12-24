@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-1998 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,31 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+/*
+ * Mutex HPI implementation for Solaris
+ *
+ * Mutexes are used both by the system-independent monitor implementation and
+ * to implement critical regions elsewhere within the runtime.
+ */
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+#include <errno.h>
 
-extern void InitializeMem(void);
+#include "hpi_impl.h"
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+#include "mutex_md.h"
+#include "threads_md.h"
+
+/*
+ * Return true of the mutex in question is already locked.  note:
+ * this does not tell if the mutex is already locked by *this*
+ * thread, only that is is locked by *some* thread.
+ */
+bool_t
+mutexLocked(mutex_t *mutex)
+{
+    if (mutex_trylock(mutex) == 0) {
+        mutex_unlock(mutex);
+        return FALSE;
+    }
+    return TRUE;
+}

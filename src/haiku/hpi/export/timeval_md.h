@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-1998 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,12 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+#ifndef _JAVASOFT_SOLARIS_TIMEVAL_H_
+#define _JAVASOFT_SOLARIS_TIMEVAL_H_
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+typedef struct {
+        long tv_sec;            /* seconds */
+        long tv_usec;           /* microseconds (NOT milliseconds) */
+} timeval_t;
 
-extern void InitializeMem(void);
-
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+#endif /* !_JAVASOFT_SOLARIS_TIMEVAL_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-1998 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,17 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+/*
+ * Solaris-dependent search path definitions and API
+ */
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+#ifndef _JAVASOFT_SOLARIS_PATH_MD_H_
+#define _JAVASOFT_SOLARIS_PATH_MD_H_
 
-extern void InitializeMem(void);
+#define PATH_SEPARATOR          ":"
+#define PATH_CURDIR             "."
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+#define DIR_SEPARATOR           '/'
+#define LOCAL_DIR_SEPARATOR     '/'
+
+#endif /* !_JAVASOFT_SOLARIS_PATH_MD_H_ */

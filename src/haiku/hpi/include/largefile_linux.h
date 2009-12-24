@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1999 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,14 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+#ifndef _JAVASOFT_LINUX_LARGEFILE_SUPPORT_H_
+#define _JAVASOFT_LINUX_LARGEFILE_SUPPORT_H_
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+/*
+ * For building on glibc-2.0 we need to define stat64 here.
+ */
 
-extern void InitializeMem(void);
+#include <sys/types.h>
+#include <sys/stat.h>
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+#endif /* _JAVASOFT_LINUX_LARGEFILE_SUPPORT_H_ */

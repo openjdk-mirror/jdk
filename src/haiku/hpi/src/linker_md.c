@@ -51,21 +51,10 @@
 sys_mon_t _dl_lock;
 
 /*
- * glibc-2.0 libdl is not MT safe.  If you are building with any glibc,
- * chances are you might want to run the generated bits against glibc-2.0
- * libdl.so, so always use locking for any version of glibc.
- */
-#ifdef __GLIBC__
-#ifndef HAIKU
-    #define NEED_DL_LOCK
-#endif
-#endif
-
-/*
  * Solaris green threads needs to lock around libdl.so.
  */
 #if defined(__solaris__) && !defined(NATIVE)
-	#define NEED_DL_LOCK
+    #define NEED_DL_LOCK
 #endif
 
 /*
@@ -89,13 +78,6 @@ void
 sysBuildLibName(char *holder, int holderlen, char *pname, char *fname)
 {
     const size_t pnamelen = pname ? strlen(pname) : 0;
-    char *suffix;
-
-#ifdef DEBUG
-	suffix = "_g";
-#else
-	suffix = "";
-#endif
 
     /* Quietly truncate on buffer overflow.  Should be an error. */
     if (pnamelen + strlen(fname) + 10 > (size_t) holderlen) {
@@ -104,9 +86,9 @@ sysBuildLibName(char *holder, int holderlen, char *pname, char *fname)
     }
 
     if (pnamelen == 0) {
-        sprintf(holder, "lib%s%s.so", fname, suffix);
+        sprintf(holder, "lib%s.so", fname);
     } else {
-        sprintf(holder, "%s/lib%s%s.so", pname, fname, suffix);
+        sprintf(holder, "%s/lib%s.so", pname, fname);
     }
 }
 
@@ -120,7 +102,7 @@ sysBuildLibName(char *holder, int holderlen, char *pname, char *fname)
    #ifndef NATIVE
    extern int thr_main(void);
    #endif
-#endif 
+#endif
 
 void *
 sysLoadLibrary(const char *name, char *err_buf, int err_buflen)
@@ -132,11 +114,7 @@ sysLoadLibrary(const char *name, char *err_buf, int err_buflen)
     result = dlopen(name, RTLD_NOW);
     sysMonitorExit(sysThreadSelf(), &_dl_lock);
 #else
-#ifdef HAIKU
-    result = dlopen(name, RTLD_HAIKU);
-#else
     result = dlopen(name, RTLD_LAZY);
-#endif
 #endif
     /*
      * This is a bit of bulletproofing to catch the commonly occurring
@@ -150,8 +128,8 @@ sysLoadLibrary(const char *name, char *err_buf, int err_buflen)
     }
 #endif
     if (result == NULL) {
-	strncpy(err_buf, dlerror(), err_buflen-2);
-	err_buf[err_buflen-1] = '\0';
+        strncpy(err_buf, dlerror(), err_buflen-2);
+        err_buf[err_buflen-1] = '\0';
     }
     return result;
 }

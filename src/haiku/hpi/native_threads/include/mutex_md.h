@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-1998 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,28 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+/*
+ * Interface to mutex HPI implementation for Solaris
+ */
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+#ifndef _JAVASOFT_MUTEX_MD_H_
+#define _JAVASOFT_MUTEX_MD_H_
 
-extern void InitializeMem(void);
+#include "porting.h"
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+/*
+ * Generally, we would typedef mutex_t to be whatever the system
+ * supplies.  But Solaris gives us mutex_t directly.
+ */
+
+#ifdef USE_PTHREADS
+#define mutexInit(m) pthread_mutex_init(m, 0)
+#else
+#define mutexInit(m) mutex_init(m, USYNC_THREAD, 0)
+#endif
+#define mutexDestroy(m) mutex_destroy(m)
+#define mutexLock(m) mutex_lock(m)
+#define mutexUnlock(m) mutex_unlock(m)
+bool_t mutexLocked(mutex_t *);
+
+#endif /* !_JAVASOFT_MUTEX_MD_H_ */

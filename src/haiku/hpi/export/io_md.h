@@ -1,5 +1,5 @@
 /*
- * Copyright 1998 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1994-1998 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,15 +23,23 @@
  * have any questions.
  */
 
-#ifndef _JAVASOFT_SOLARIS_HPI_INIT_H_
-#define _JAVASOFT_SOLARIS_HPI_INIT_H_
+/*
+ * Solaris-dependent I/O
+ */
 
-#ifndef NATIVE
-extern void InitializeSbrk(void);
-extern void InitializeAsyncIO(void);
-extern void InitializeHelperThreads(void);
-#endif /* NATIVE */
+#ifndef _JAVASOFT_SOLARIS_IO_MD_H_
+#define _JAVASOFT_SOLARIS_IO_MD_H_
 
-extern void InitializeMem(void);
+#include <sys/param.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
-#endif /* _JAVASOFT_SOLARIS_HPI_INIT_H_ */
+#define LINE_SEPARATOR "\n"
+
+/* file system macros moved to sysmacros_md.h */
+
+#endif /* !_JAVASOFT_SOLARIS_IO_MD_H_ */
