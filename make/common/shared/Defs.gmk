@@ -204,7 +204,7 @@ endif
 
 # Default names
 ifdef OPENJDK
-  LAUNCHER_NAME = openjdk
+  LAUNCHER_NAME = java
   PRODUCT_NAME = OpenJDK
   PRODUCT_SUFFIX = Runtime Environment
   JDK_RC_PLATFORM_NAME = Platform

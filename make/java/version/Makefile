@@ -39,7 +39,12 @@ $(GENSRCDIR)/sun/misc/Version.java: \
 	$(SED) -e 's/@@launcher_name@@/$(LAUNCHER_NAME)/g' \
 	    -e 's/@@java_version@@/$(RELEASE)/g' \
 	    -e 's/@@java_runtime_version@@/$(FULL_VERSION)/g' \
+	    -e 's/@@jdk_derivative_name@@/$(JDK_DERIVATIVE_NAME)/g' \
+	    -e 's/@@distro_name@@/$(DISTRO_NAME)/g' \
+	    -e 's/@@distro_package_version@@/$(DISTRO_PACKAGE_VERSION)/g' \
 	    -e 's/@@java_runtime_name@@/$(RUNTIME_NAME)/g' \
+	    -e 's/@@jdk_revid@@/$(JDK_REVID)/g' \
+	    -e 's/@@hotspot_revid@@/$(HOTSPOT_REVID)/g' \
 	$< > $@.temp
 	@$(MV) $@.temp $@
 

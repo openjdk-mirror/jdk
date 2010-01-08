@@ -41,6 +41,21 @@ public class Version {
     private static final String java_runtime_version =
         "@@java_runtime_version@@";
 
+    private static final String jdk_derivative_name =
+        "@@jdk_derivative_name@@";
+
+    private static final String distro_name =
+        "@@distro_name@@";
+
+    private static final String distro_package_version =
+        "@@distro_package_version@@";
+
+    private static final String jdk_revid =
+        "@@jdk_revid@@";
+
+    private static final String hotspot_revid =
+        "@@hotspot_revid@@";
+
     static {
         init();
     }
@@ -90,14 +105,36 @@ public class Version {
         /* First line: platform version. */
         ps.println(launcher_name + " version \"" + java_version + "\"");
 
+        String java_vm_name    = System.getProperty("java.vm.name");
+
         /* Second line: runtime version (ie, libraries). */
-        ps.println(java_runtime_name + " (build " +
-                           java_runtime_version + ")");
+        StringBuilder sb = new StringBuilder();
+        if (java_vm_name.toLowerCase().startsWith("cacao")) {
+            sb.append("IcedTea Runtime Environment");
+        } else {
+            sb.append(java_runtime_name);
+        }
+        if (jdk_derivative_name.length() > 0) {
+            sb.append(" (").append(jdk_derivative_name).append(")");
+        }
+        if (distro_package_version.length() > 0) {
+            sb.append(" (").append(distro_package_version).append(")");
+        } else {
+            sb.append(" (");
+            if (distro_name.length() > 0)
+                sb.append(distro_name).append(" ");
+            sb.append("build ").append(java_runtime_version);
+            if (jdk_revid.length() > 0)
+                sb.append("+").append(jdk_revid);
+            sb.append(")");
+        }
+        ps.println(sb.toString());
 
         /* Third line: JVM information. */
-        String java_vm_name    = System.getProperty("java.vm.name");
         String java_vm_version = System.getProperty("java.vm.version");
         String java_vm_info    = System.getProperty("java.vm.info");
+        if (hotspot_revid.length() > 0)
+            java_vm_version += "+" + hotspot_revid;
         ps.println(java_vm_name + " (build " + java_vm_version + ", " +
                    java_vm_info + ")");
     }
