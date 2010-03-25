@@ -1977,11 +1977,10 @@ cmsHTRANSFORM LCMSEXPORT cmsCreateMultiprofileTransform(cmsHPROFILE hProfiles[],
                 goto ErrorCleanup;
         }
 
-	if (Transforms[i] == NULL) {
-          cmsSignalError(LCMS_ERRC_ABORTED, "cmsCreateMultiprofileTransform: Invalid profile");
-          goto ErrorCleanup;
-	} 
-
+        if (Transforms[i] == NULL) {
+            cmsSignalError(LCMS_ERRC_ABORTED, "cmsCreateMultiprofileTransform: unable to create transform");
+            goto ErrorCleanup;
+        }
         CurrentColorSpace = ColorSpaceOut;
 
     }
