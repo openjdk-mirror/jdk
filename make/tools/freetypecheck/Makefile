@@ -50,7 +50,10 @@ else
   ifeq ($(PLATFORM), solaris)
     FT_LD_OPTIONS += -R $(FREETYPE_LIB_PATH) -lfreetype
   else #linux
-      FT_LD_OPTIONS += -Wl,-rpath -Wl,$(FREETYPE_LIB_PATH) -lfreetype
+    ifeq ($(PLATFORM), haiku)
+      need to check if this is ok
+    endif
+    FT_LD_OPTIONS += -Wl,-rpath -Wl,$(FREETYPE_LIB_PATH) -lfreetype
   endif
 endif
 FT_OPTIONS += -I$(FREETYPE_HEADERS_PATH)

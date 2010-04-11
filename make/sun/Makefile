@@ -47,7 +47,9 @@ ifneq ($(PLATFORM), windows)
     endif
   endif
   HEADLESS_SUBDIR = headless
-  XAWT_SUBDIR     = xawt
+  ifneq ($(PLATFORM), haiku)
+    XAWT_SUBDIR     = xawt
+  endif
 endif
 
 ifndef OPENJDK
