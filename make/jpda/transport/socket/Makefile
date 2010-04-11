@@ -44,6 +44,10 @@ ifeq ($(PLATFORM), solaris)
   OTHER_LDLIBS += -lnsl $(LIBSOCKET)
 endif
 
+ifeq ($(PLATFORM), haiku)
+  OTHER_LDLIBS += $(LIBSOCKET)
+endif
+
 ifeq ($(PLATFORM), windows)
   OTHER_LDLIBS += ws2_32.lib
 endif

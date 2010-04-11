@@ -100,6 +100,11 @@ ifeq ($(PLATFORM), windows)
   #MXSPP_ADD = $(PLATFORM)-$(ARCH)/
 endif # PLATFORM win32
 
+ifeq ($(PLATFORM), haiku)
+  SUBDIRS += jsoundhaiku
+  EXTRA_SOUND_JNI_LIBS += jsoundhaiku
+endif # PLATFORM haiku
+
 ifeq ($(PLATFORM), linux)
   # ALSA handles directaudio, ports, and MIDI
   SUBDIRS += jsoundalsa

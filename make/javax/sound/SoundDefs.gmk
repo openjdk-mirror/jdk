@@ -40,6 +40,10 @@ ifeq ($(PLATFORM), linux)
   CPPFLAGS += -DX_PLATFORM=X_LINUX
 endif # PLATFORM linux
 
+ifeq ($(PLATFORM), haiku)
+  CPPFLAGS += -DX_PLATFORM=X_HAIKU
+endif # PLATFORM linux
+
 ifeq ($(PLATFORM), solaris)
   CPPFLAGS += -DX_PLATFORM=X_SOLARIS
 
