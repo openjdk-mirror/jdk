@@ -86,5 +86,8 @@ endif
 # Things that must be linked in.
 #
 ifneq ($(PLATFORM), windows)
-OTHER_LDLIBS += $(LIBSOCKET) -lnsl $(LIBM) -ldl
+OTHER_LDLIBS += $(LIBSOCKET)
+ifneq ($(PLATFORM), haiku)
+OTHER_LDLIBS += -lnsl $(LIBM) -ldl
+endif
 endif

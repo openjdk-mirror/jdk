@@ -104,7 +104,9 @@ ifeq ($(PLATFORM), windows)
 else
   LDFLAGS += -L $(LIBDIR)/$(LIBARCH)/jli
   OTHER_LDLIBS += -ljli
-  OTHER_LDLIBS += -ldl 
+  ifneq ($(PLATFORM), haiku)
+    OTHER_LDLIBS += -ldl 
+  endif
   ifeq ($(PLATFORM), solaris)
     LDFLAGS += -R \$$ORIGIN/jli
   endif
@@ -112,6 +114,9 @@ else
     LDFLAGS += -z origin
     LDFLAGS += -Wl,--allow-shlib-undefined
     LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/jli
+  endif
+  ifeq ($(PLATFORM), haiku)
+    need help here
   endif
 endif
 

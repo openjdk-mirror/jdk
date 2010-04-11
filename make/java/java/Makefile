@@ -165,7 +165,9 @@ OTHER_INCLUDES += -I$(PLATFORM_SRC)/native/java/util
 # Is the altzone extern documented in ctime(3C) available?
 #
 ifneq ($(PLATFORM), windows)
+ifneq ($(PLATFORM), haiku)
 HAVE_ALTZONE=true
+endif
 endif
 
 ifeq ($(HAVE_ALTZONE),true)
@@ -203,8 +205,13 @@ ifeq ($(PLATFORM),windows)
 OTHER_LDLIBS += $(JVMLIB) -libpath:$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) fdlibm.lib \
 		       -libpath:$(OBJDIR)/../../../verify/$(OBJDIRNAME) verify.lib
 else
+ifeq ($(PLATFORM),haiku)
+OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) \
+		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH)
+else
 OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) -lnsl -ldl \
 		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH)
+endif
 endif
 
 #
