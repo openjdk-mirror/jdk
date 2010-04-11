@@ -64,6 +64,10 @@ COMPILER_WARNINGS_FATAL=true
 #OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -ljava -lnet -lpthread -ldl
 OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -lnio -lnet -lpthread -ldl
 endif
+ifeq ($(PLATFORM), haiku)
+#LIBSCTP = -lsctp
+OTHER_LDLIBS += $(LIBSOCKET) -L$(LIBDIR)/$(LIBARCH) -lnet -lnio
+endif # PLATFORM
 ifeq ($(PLATFORM), solaris)
 #LIBSCTP = -lsctp
 OTHER_LDLIBS += $(LIBSOCKET) -L$(LIBDIR)/$(LIBARCH) -lnet -lnio

@@ -859,6 +859,7 @@ endif
 ######################################################
 sane-cups:
 ifneq ($(PLATFORM), windows)
+ifneq ($(PLATFORM), haiku)
 	@if [ ! -r $(CUPS_HEADERS_PATH)/cups/cups.h ]; then \
 	  $(ECHO) "ERROR: You do not have access to valid Cups header files. \n" \
 	    "      Please check your access to \n" \
@@ -868,6 +869,7 @@ ifneq ($(PLATFORM), windows)
             "      or may be downloaded from http://www.cups.org \n" \
 	    "" >> $(ERROR_FILE) ; \
 	fi
+endif
 endif
 
 ######################################################

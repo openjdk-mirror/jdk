@@ -237,7 +237,9 @@ ifndef OPENJDK
   ALL_SETTINGS+=$(call addAltSetting,MOZILLA_HEADERS_PATH)
 endif
 ifneq ($(PLATFORM),windows)
+ifneq ($(PLATFORM),haiku)
   ALL_SETTINGS+=$(call addAltSetting,CUPS_HEADERS_PATH)
+endif
 endif
 
 ifdef OPENJDK

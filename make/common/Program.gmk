@@ -72,7 +72,7 @@ endif
 # On Windows, this is done by using the same directory as the executable
 # itself, as with all the Windows libraries.
 #
-ifneq (,$(findstring $(PLATFORM), linux solaris))	# UNIX systems
+ifneq (,$(findstring $(PLATFORM), linux solaris haiku))	# UNIX systems
     LDFLAGS += -L $(LIBDIR)/$(LIBARCH)/jli
     OTHER_LDLIBS += -ljli
     ifeq ($(PLATFORM), solaris)
@@ -89,6 +89,9 @@ ifneq (,$(findstring $(PLATFORM), linux solaris))	# UNIX systems
 	LDFLAGS += -Wl,--allow-shlib-undefined
 	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../lib/$(LIBARCH)/jli
 	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../jre/lib/$(LIBARCH)/jli
+    endif
+    ifeq ($(PLATFORM), haiku)
+    need some help here
     endif
 endif
 ifeq ($(PLATFORM), windows)
@@ -173,7 +176,11 @@ else # PLATFORM
 # Note that we have to link -lthread even when USE_PTHREADS is true.
 # This is becuase checkForCorrectLibthread() croaks otherwise.
 #
-LIBTHREAD = -lthread
+ifeq ($(PLATFORM), haiku)
+  LIBTHREAD = -lroot
+else # PLATFORM
+  LIBTHREAD = -lthread
+endif # PLATFORM
 ifeq ($(USE_PTHREADS),true)
   THREADLIBS = -lpthread $(LIBTHREAD)
 else # USE_PTHREADS
@@ -248,7 +255,9 @@ endif
 
 
 ifneq ($(PLATFORM), windows)
+ifneq ($(PLATFORM), haiku)
 HAVE_GETHRTIME=true
+endif
 endif
 
 ifeq ($(HAVE_GETHRTIME),true)

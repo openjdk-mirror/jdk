@@ -84,6 +84,18 @@ ifeq ($(PLATFORM), solaris)
   
 endif
 
+ifeq ($(PLATFORM), haiku)
+
+  # Settings specific to Haiku
+  CC             = $(COMPILER_PATH)gcc
+  CPP            = $(COMPILER_PATH)gcc -E
+  CXX            = $(COMPILER_PATH)g++
+
+  # Option used to create a shared library
+  SHARED_LIBRARY_FLAG = -shared -mimpure-text
+  
+endif
+
 # Get gcc version
 _CC_VER :=$(shell $(CC) -dumpversion 2>&1 )
 CC_VER  :=$(call GetVersion,"$(_CC_VER)")

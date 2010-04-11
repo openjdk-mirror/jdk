@@ -73,6 +73,12 @@ ifeq ($(PLATFORM), linux)
   include FILES_c_unix.gmk
 endif # linux 
 
+ifeq ($(PLATFORM), haiku)
+  LIBRARY = jaas_unix
+  include FILES_export_unix.gmk
+  include FILES_c_unix.gmk
+endif # linux 
+
 #
 # Rules.
 #

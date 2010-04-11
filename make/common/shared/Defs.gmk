@@ -547,6 +547,7 @@ MOZILLA_HEADERS_PATH:=$(call AltCheckValue,MOZILLA_HEADERS_PATH)
 
 # CUPS_HEADERS_PATH: path to Cups headers files for Unix printing
 ifneq ($(PLATFORM), windows)
+ifneq ($(PLATFORM), haiku)
 JDK_CUPS_HEADERS_PATH=$(JDK_DEVTOOLS_DIR)/share/cups/include
   ifdef ALT_CUPS_HEADERS_PATH
      CUPS_HEADERS_PATH:=$(call FullPath,$(ALT_CUPS_HEADERS_PATH))
@@ -559,6 +560,7 @@ JDK_CUPS_HEADERS_PATH=$(JDK_DEVTOOLS_DIR)/share/cups/include
          echo "$(_CUPS_HEADERS_PATH)";\
       fi)
   endif
+endif
 endif
 
 # Utilities ant

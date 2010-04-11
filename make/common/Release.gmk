@@ -194,6 +194,12 @@ ifeq ($(PLATFORM), linux)
   JA_DIRNAME=ja_JP.$(JA_SOURCE_ENCODING)
 endif # linux
 
+ifeq ($(PLATFORM), haiku)
+  MANBASEDIRS=$(JDK_TOPDIR)/src/haiku/doc $(IMPORTDOCDIR)
+  MAN1SUBDIR=man
+  JA_DIRNAME=ja_JP.$(JA_SOURCE_ENCODING)
+endif # linux
+
 define copy-man-pages
 $(MKDIR) -p $1/man/man1
 for manbase in $(MANBASEDIRS:%=%/$(MAN1SUBDIR)) ; do \

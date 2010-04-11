@@ -206,6 +206,10 @@ ifeq ($(PLATFORM), solaris)
   # naming conventions
   DEVTOOLS_FT_DIR=$(JDK_DEVTOOLS_DIR)/$(ARCH_FAMILY)/freetype-$(ARCH)
 endif
+ifeq ($(PLATFORM), haiku)
+  ALT_FREETYPE_HEADERS_PATH = /boot/develop/headers/3rdparty
+  ALT_FREETYPE_LIB_PATH = /boot/develop/lib/x86
+endif
 
 DEVTOOLS_FT_DIR_EXISTS = $(shell \
   if [ -f $(DEVTOOLS_FT_DIR)/include/ft2build.h ] ; then \
