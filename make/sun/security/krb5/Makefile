@@ -75,5 +75,9 @@ endif # PLATFORM
 ifeq ($(PLATFORM), windows)
   OTHER_LDLIBS = $(JVMLIB)
 else
-  OTHER_LDLIBS = -ldl $(JVMLIB)
+  ifeq ($(PLATFORM), haiku)
+    OTHER_LDLIBS = $(JVMLIB)
+  else
+    OTHER_LDLIBS = -ldl $(JVMLIB)
+  endif
 endif
