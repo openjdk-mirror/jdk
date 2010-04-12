@@ -104,7 +104,7 @@ endif
 ifneq "$(origin ALT_COMPILER_PATH)" "undefined"
   COMPILER_PATH :=$(call PrefixPath,$(ALT_COMPILER_PATH))
 else
-  COMPILER_PATH  =$(BOOTDEVELOP_PATH)abi/current/tools/current/
+  COMPILER_PATH = $(BOOTDEVELOP_PATH)abi/current/tools/current/bin/
 endif
 
 # DEVTOOLS_PATH: for other tools required for building (such as zip, etc.)
@@ -112,7 +112,7 @@ endif
 ifneq "$(origin ALT_DEVTOOLS_PATH)" "undefined"
   DEVTOOLS_PATH :=$(call PrefixPath,$(ALT_DEVTOOLS_PATH))
 else
-  DEVTOOLS_PATH = $(BOOTDEVELOP_PATH)abi/current/tools/current/
+  DEVTOOLS_PATH = $(BOOTDEVELOP_PATH)abi/current/tools/current/bin/
 endif
 
 # _BOOTDIR1: First choice for a Bootstrap JDK, previous released JDK.

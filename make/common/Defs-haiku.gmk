@@ -43,6 +43,8 @@
 # Get shared JDK settings
 include $(JDK_MAKE_SHARED_DIR)/Defs.gmk
 
+DISABLE_NIMBUS = true # temporarily disable this
+
 # Part of INCREMENTAL_BUILD mechanism.
 #   Compiler emits things like:  path/file.o: file.h
 #   We want something like: relative_path/file.o relative_path/file.d: file.h
