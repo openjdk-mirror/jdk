@@ -38,7 +38,11 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <sys/types.h>
-#include <sys/signal.h>
+#ifdef HAIKU
+   #include <signal.h>
+#else
+   #include <sys/signal.h>
+#endif
 #include <sys/resource.h>
 
 #include "hpi_impl.h"
