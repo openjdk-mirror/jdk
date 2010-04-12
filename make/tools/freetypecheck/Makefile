@@ -49,10 +49,7 @@ else
   # Add runtime lib search path to ensure test will be runnable
   ifeq ($(PLATFORM), solaris)
     FT_LD_OPTIONS += -R $(FREETYPE_LIB_PATH) -lfreetype
-  else #linux
-    ifeq ($(PLATFORM), haiku)
-      need to check if this is ok
-    endif
+  else # linux, haiku
     FT_LD_OPTIONS += -Wl,-rpath -Wl,$(FREETYPE_LIB_PATH) -lfreetype
   endif
 endif
