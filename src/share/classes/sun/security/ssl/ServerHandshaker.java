@@ -115,6 +115,7 @@ final class ServerHandshaker extends Handshaker {
     ServerHandshaker(SSLEngineImpl engine, SSLContextImpl context,
             ProtocolList enabledProtocols, byte clientAuth,
             boolean isRenegotiation, ProtocolVersion activeProtocolVersion) {
+
         super(engine, context, enabledProtocols,
                         (clientAuth != SSLEngineImpl.clauth_none), false);
         doClientAuth = clientAuth;
@@ -271,7 +272,7 @@ final class ServerHandshaker extends Handshaker {
         // if it is a renegotiation request and renegotiation is not allowed
         if (isRenegotiation && !renegotiable) {
             if (activeProtocolVersion.v >= ProtocolVersion.TLS10.v) {
-               // response with a no_negotiation warning,
+                // response with a no_negotiation warning,
                 warningSE(Alerts.alert_no_negotiation);
 
                 // invalidate the handshake so that the caller can

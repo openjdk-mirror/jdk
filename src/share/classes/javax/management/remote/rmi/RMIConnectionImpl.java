@@ -1519,7 +1519,7 @@ public class RMIConnectionImpl implements RMIConnection, Unreferenced {
         private final ClassLoader classLoader;
 
         SetCcl(ClassLoader classLoader) {
-           this.classLoader = classLoader;
+            this.classLoader = classLoader;
         }
 
         public ClassLoader run() {

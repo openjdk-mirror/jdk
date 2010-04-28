@@ -1,5 +1,5 @@
 /*
- * Copyright 1996-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1997-2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -119,16 +119,16 @@ Java_java_util_zip_Inflater_inflateBytes(JNIEnv *env, jobject this, jlong addr,
 
     in_buf = (jbyte *) malloc(this_len);
     if (in_buf == 0) {
-	JNU_ThrowOutOfMemoryError(env, 0);
-	return 0;
+        JNU_ThrowOutOfMemoryError(env, 0);
+        return 0;
     }
     (*env)->GetByteArrayRegion(env, this_buf, this_off, this_len, in_buf);
 
     out_buf = (jbyte *) malloc(len);
     if (out_buf == 0) {
-	free(in_buf);
-	JNU_ThrowOutOfMemoryError(env, 0);
-	return 0;
+        free(in_buf);
+        JNU_ThrowOutOfMemoryError(env, 0);
+        return 0;
     }
 
     strm->next_in  = (Bytef *) in_buf;
@@ -138,38 +138,38 @@ Java_java_util_zip_Inflater_inflateBytes(JNIEnv *env, jobject this, jlong addr,
     ret = inflate(strm, Z_PARTIAL_FLUSH);
 
     if (ret == Z_STREAM_END || ret == Z_OK) {
-	(*env)->SetByteArrayRegion(env, b, off, len - strm->avail_out, out_buf);
+        (*env)->SetByteArrayRegion(env, b, off, len - strm->avail_out, out_buf);
     }
     free(out_buf);
     free(in_buf);
 
     switch (ret) {
     case Z_STREAM_END:
-	(*env)->SetBooleanField(env, this, finishedID, JNI_TRUE);
-	/* fall through */
+        (*env)->SetBooleanField(env, this, finishedID, JNI_TRUE);
+        /* fall through */
     case Z_OK:
-	this_off += this_len - strm->avail_in;
-	(*env)->SetIntField(env, this, offID, this_off);
-	(*env)->SetIntField(env, this, lenID, strm->avail_in);
-	return len - strm->avail_out;
+        this_off += this_len - strm->avail_in;
+        (*env)->SetIntField(env, this, offID, this_off);
+        (*env)->SetIntField(env, this, lenID, strm->avail_in);
+        return len - strm->avail_out;
     case Z_NEED_DICT:
-	(*env)->SetBooleanField(env, this, needDictID, JNI_TRUE);
-	/* Might have consumed some input here! */
-	this_off += this_len - strm->avail_in;
-	(*env)->SetIntField(env, this, offID, this_off);
-	(*env)->SetIntField(env, this, lenID, strm->avail_in);
-	return 0;
+        (*env)->SetBooleanField(env, this, needDictID, JNI_TRUE);
+        /* Might have consumed some input here! */
+        this_off += this_len - strm->avail_in;
+        (*env)->SetIntField(env, this, offID, this_off);
+        (*env)->SetIntField(env, this, lenID, strm->avail_in);
+        return 0;
     case Z_BUF_ERROR:
-	return 0;
+        return 0;
     case Z_DATA_ERROR:
-	ThrowDataFormatException(env, strm->msg);
-	return 0;
+        ThrowDataFormatException(env, strm->msg);
+        return 0;
     case Z_MEM_ERROR:
-	JNU_ThrowOutOfMemoryError(env, 0);
-	return 0;
+        JNU_ThrowOutOfMemoryError(env, 0);
+        return 0;
     default:
-	JNU_ThrowInternalError(env, strm->msg);
-	return 0;
+        JNU_ThrowInternalError(env, strm->msg);
+        return 0;
     }
 }
 

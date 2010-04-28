@@ -1,5 +1,5 @@
 /*
- * Copyright 1996-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright 1997-2009 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -93,7 +93,7 @@ Java_java_util_zip_Deflater_init(JNIEnv *env, jclass cls, jint level,
 
 JNIEXPORT void JNICALL
 Java_java_util_zip_Deflater_setDictionary(JNIEnv *env, jclass cls, jlong addr,
-					  jarray b, jint off, jint len)
+                                          jarray b, jint off, jint len)
 {
     Bytef *buf = (*env)->GetPrimitiveArrayCritical(env, b, 0);
     int res;
@@ -127,93 +127,90 @@ Java_java_util_zip_Deflater_deflateBytes(JNIEnv *env, jobject this, jlong addr,
     jbyte *out_buf;
     int res;
     if ((*env)->GetBooleanField(env, this, setParamsID)) {
-	int level = (*env)->GetIntField(env, this, levelID);
-	int strategy = (*env)->GetIntField(env, this, strategyID);
+        int level = (*env)->GetIntField(env, this, levelID);
+        int strategy = (*env)->GetIntField(env, this, strategyID);
 
-	in_buf = (jbyte *) malloc(this_len);
-	if (in_buf == 0) {
-	    JNU_ThrowOutOfMemoryError(env, 0);
-	    return 0;
-	}
-	(*env)->GetByteArrayRegion(env, this_buf, this_off, this_len, in_buf);
+        in_buf = (jbyte *) malloc(this_len);
+        if (in_buf == 0) {
+            JNU_ThrowOutOfMemoryError(env, 0);
+            return 0;
+        }
+        (*env)->GetByteArrayRegion(env, this_buf, this_off, this_len, in_buf);
+        out_buf = (jbyte *) malloc(len);
+        if (out_buf == 0) {
+            free(in_buf);
+            JNU_ThrowOutOfMemoryError(env, 0);
+            return 0;
+        }
 
-	out_buf = (jbyte *) malloc(len);
-	if (out_buf == 0) {
-	    free(in_buf);
-	    JNU_ThrowOutOfMemoryError(env, 0);
-	    return 0;
-	}
+        strm->next_in = (Bytef *) in_buf;
+        strm->next_out = (Bytef *) out_buf;
+        strm->avail_in = this_len;
+        strm->avail_out = len;
+        res = deflateParams(strm, level, strategy);
+        if (res == Z_OK) {
+            (*env)->SetByteArrayRegion(env, b, off, len - strm->avail_out, out_buf);
+        }
+        free(out_buf);
+        free(in_buf);
 
-	strm->next_in = (Bytef *) in_buf;
-	strm->next_out = (Bytef *) out_buf;
-	strm->avail_in = this_len;
-	strm->avail_out = len;
-	res = deflateParams(strm, level, strategy);
-
-	if (res == Z_OK) {
-	    (*env)->SetByteArrayRegion(env, b, off, len - strm->avail_out, out_buf);
-	}
-	free(out_buf);
-	free(in_buf);
-
-	switch (res) {
-	case Z_OK:
-	    (*env)->SetBooleanField(env, this, setParamsID, JNI_FALSE);
-	    this_off += this_len - strm->avail_in;
-	    (*env)->SetIntField(env, this, offID, this_off);
-	    (*env)->SetIntField(env, this, lenID, strm->avail_in);
-	    return len - strm->avail_out;
-	case Z_BUF_ERROR:
-	    (*env)->SetBooleanField(env, this, setParamsID, JNI_FALSE);
-	    return 0;
-	default:
-	    JNU_ThrowInternalError(env, strm->msg);
-	    return 0;
-	}
+        switch (res) {
+        case Z_OK:
+            (*env)->SetBooleanField(env, this, setParamsID, JNI_FALSE);
+            this_off += this_len - strm->avail_in;
+            (*env)->SetIntField(env, this, offID, this_off);
+            (*env)->SetIntField(env, this, lenID, strm->avail_in);
+            return len - strm->avail_out;
+        case Z_BUF_ERROR:
+            (*env)->SetBooleanField(env, this, setParamsID, JNI_FALSE);
+            return 0;
+        default:
+            JNU_ThrowInternalError(env, strm->msg);
+            return 0;
+        }
     } else {
-	jboolean finish = (*env)->GetBooleanField(env, this, finishID);
+        jboolean finish = (*env)->GetBooleanField(env, this, finishID);
+        in_buf = (jbyte *) malloc(this_len);
+        if (in_buf == 0) {
+            JNU_ThrowOutOfMemoryError(env, 0);
+            return 0;
+        }
+        (*env)->GetByteArrayRegion(env, this_buf, this_off, this_len, in_buf);
 
-	in_buf = (jbyte *) malloc(this_len);
-	if (in_buf == 0) {
-	    JNU_ThrowOutOfMemoryError(env, 0);
-	    return 0;
-	}
-	(*env)->GetByteArrayRegion(env, this_buf, this_off, this_len, in_buf);
+        out_buf = (jbyte *) malloc(len);
+        if (out_buf == 0) {
+            free(in_buf);
+            JNU_ThrowOutOfMemoryError(env, 0);
+            return 0;
+        }
 
-	out_buf = (jbyte *) malloc(len);
-	if (out_buf == 0) {
-	    free(in_buf);
-	    JNU_ThrowOutOfMemoryError(env, 0);
-	    return 0;
-	}
+        strm->next_in = (Bytef *) in_buf;
+        strm->next_out = (Bytef *) out_buf;
+        strm->avail_in = this_len;
+        strm->avail_out = len;
+        res = deflate(strm, finish ? Z_FINISH : flush);
 
-	strm->next_in = (Bytef *) in_buf;
-	strm->next_out = (Bytef *) out_buf;
-	strm->avail_in = this_len;
-	strm->avail_out = len;
-	res = deflate(strm, finish ? Z_FINISH : flush);
+        if (res == Z_STREAM_END || res == Z_OK) {
+            (*env)->SetByteArrayRegion(env, b, off, len - strm->avail_out, out_buf);
+        }
+        free(out_buf);
+        free(in_buf);
 
-	if (res == Z_STREAM_END || res == Z_OK) {
-	    (*env)->SetByteArrayRegion(env, b, off, len - strm->avail_out, out_buf);
-	}
-	free(out_buf);
-	free(in_buf);
-	
-	switch (res) {
-	case Z_STREAM_END:
-	    (*env)->SetBooleanField(env, this, finishedID, JNI_TRUE);
-	    /* fall through */
-	case Z_OK:
-	    this_off += this_len - strm->avail_in;
-	    (*env)->SetIntField(env, this, offID, this_off);
-	    (*env)->SetIntField(env, this, lenID, strm->avail_in);
-	    return len - strm->avail_out;
-	case Z_BUF_ERROR:
-	    return 0;
-	default:
-	    JNU_ThrowInternalError(env, strm->msg);
-	    return 0;
-	}
+        switch (res) {
+        case Z_STREAM_END:
+            (*env)->SetBooleanField(env, this, finishedID, JNI_TRUE);
+            /* fall through */
+        case Z_OK:
+            this_off += this_len - strm->avail_in;
+            (*env)->SetIntField(env, this, offID, this_off);
+            (*env)->SetIntField(env, this, lenID, strm->avail_in);
+            return len - strm->avail_out;
+        case Z_BUF_ERROR:
+            return 0;
+            default:
+            JNU_ThrowInternalError(env, strm->msg);
+            return 0;
+        }
     }
 }
 

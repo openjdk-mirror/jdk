@@ -421,7 +421,7 @@ public class EventHandler implements InvocationHandler {
      */
     public Object invoke(final Object proxy, final Method method, final Object[] arguments) {
         AccessControlContext acc = this.acc;
-        if (acc == null && null != System.getSecurityManager()) {
+        if ((acc == null) && (System.getSecurityManager() != null)) {
             throw new SecurityException("AccessControlContext is not set");
         }
         return AccessController.doPrivileged(new PrivilegedAction<Object>() {

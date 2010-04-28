@@ -420,12 +420,13 @@ class Deflater {
         if (off < 0 || len < 0 || off > b.length - len) {
             throw new ArrayIndexOutOfBoundsException();
         }
-        if (flush == NO_FLUSH || flush == SYNC_FLUSH ||
-            flush == FULL_FLUSH)
-          synchronized (zsRef) {
-            return deflateBytes(zsRef.address(), b, off, len, flush);
-          }
-        throw new IllegalArgumentException();
+        synchronized (zsRef) {
+            ensureOpen();
+            if (flush == NO_FLUSH || flush == SYNC_FLUSH ||
+                flush == FULL_FLUSH)
+                return deflateBytes(zsRef.address(), b, off, len, flush);
+            throw new IllegalArgumentException();
+        }
     }
 
     /**
@@ -538,9 +539,9 @@ class Deflater {
 
     private static native void initIDs();
     private native static long init(int level, int strategy, boolean nowrap);
-    private native static void setDictionary(long addr, byte[] b, int off,
-                                             int len);
-    private native int deflateBytes(long addr, byte[] b, int off, int len, int flush);
+    private native static void setDictionary(long addr, byte[] b, int off, int len);
+    private native int deflateBytes(long addr, byte[] b, int off, int len,
+                                    int flush);
     private native static int getAdler(long addr);
     private native static long getBytesRead(long addr);
     private native static long getBytesWritten(long addr);

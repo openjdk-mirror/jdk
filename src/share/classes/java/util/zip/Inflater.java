@@ -72,6 +72,7 @@ package java.util.zip;
  */
 public
 class Inflater {
+
     private final ZStreamRef zsRef;
     private byte[] buf = defaultBuf;
     private int off, len;
@@ -379,10 +380,6 @@ class Inflater {
         assert Thread.holdsLock(zsRef);
         if (zsRef.address() == 0)
             throw new NullPointerException("Inflater has been closed");
-    }
-
-    private static class NativeStrm {
-        long strm;
     }
 
     private native static void initIDs();

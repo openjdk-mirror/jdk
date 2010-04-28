@@ -2040,7 +2040,7 @@ Java_com_sun_imageio_plugins_jpeg_JPEGImageReader_readImage
             } else {
                 numBytes = numBands;
                 for (in = scanLinePtr+sourceXStart*cinfo->output_components;
-                     in < pixelLimit  &&
+                     in < pixelLimit &&
                        numBytes <= data->pixelBuf.byteBufferLength;
                      in += pixelStride) {
                     for (i = 0; i < numBands; i++) {

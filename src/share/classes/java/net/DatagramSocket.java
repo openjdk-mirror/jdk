@@ -615,7 +615,7 @@ class DatagramSocket implements java.io.Closeable {
         synchronized (p) {
             if (isClosed())
                 throw new SocketException("Socket is closed");
-	    checkAddress (p.getAddress(), "send");
+            checkAddress (p.getAddress(), "send");
             if (connectState == ST_NOT_CONNECTED) {
                 // check the address is ok wiht the security manager on every send.
                 SecurityManager security = System.getSecurityManager();

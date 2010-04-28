@@ -1,5 +1,5 @@
 #
-# Copyright 1995-2009 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright 1995-2010 Sun Microsystems, Inc.  All Rights Reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -37,25 +37,19 @@ GET=
 AWK       = awk
 CAT       = cat
 CD        = cd
-CHMOD     = chmod
 CP        = cp
 CUT       = cut
 ECHO      = echo
 EGREP     = egrep
 EXPAND    = expand
-EXPR      = expr
-KILL      = /usr/bin/kill
 MKDIR     = mkdir
-NOHUP     = nohup
 PWD       = pwd
 SED       = sed
-SLEEP     = sleep
 SORT      = sort
 TEE       = tee
 UNAME     = uname
 UNIQ      = uniq
 WC        = wc
-XHOST     = xhost
 ZIP       = zip
 
 # Get OS name from uname
@@ -76,6 +70,10 @@ endif
 ifeq ($(UNAME_S), Linux)
   OS_NAME     = linux
   OS_ARCH    := $(shell $(UNAME) -m)
+  # Check for unknown arch, try uname -p if uname -m says unknown
+  ifeq ($(OS_ARCH),unknown)
+    OS_ARCH    := $(shell $(UNAME) -p)
+  endif
   OS_VERSION := $(shell $(UNAME) -r)
 endif
 ifndef OS_NAME
@@ -99,16 +97,26 @@ endif
 # Only want major and minor numbers from os version
 OS_VERSION := $(shell $(ECHO) "$(OS_VERSION)" | $(CUT) -d'.' -f1,2)
 
-# Try and use names i586, x64, and ia64 consistently  
-OS_ARCH:=$(subst X64,x64,$(OS_ARCH))
-OS_ARCH:=$(subst AMD64,x64,$(OS_ARCH))
-OS_ARCH:=$(subst amd64,x64,$(OS_ARCH))
-OS_ARCH:=$(subst x86_64,x64,$(OS_ARCH))
-OS_ARCH:=$(subst EM64T,x64,$(OS_ARCH))
-OS_ARCH:=$(subst em64t,x64,$(OS_ARCH))
-OS_ARCH:=$(subst intel64,x64,$(OS_ARCH))
-OS_ARCH:=$(subst Intel64,x64,$(OS_ARCH))
-OS_ARCH:=$(subst INTEL64,x64,$(OS_ARCH))
+# Name to use for x86_64 arch (historically amd64, but should change someday)
+OS_ARCH_X64_NAME:=amd64
+#OS_ARCH_X64_NAME:=x64
+
+# Alternate arch names (in case this arch is known by a second name)
+#   PROBLEM_LISTS may use either name.
+OS_ARCH2-amd64:=x64
+#OS_ARCH2-x64:=amd64
+
+# Try and use the arch names consistently
+OS_ARCH:=$(subst x64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst X64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst AMD64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst amd64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst x86_64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst EM64T,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst em64t,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst intel64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst Intel64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
+OS_ARCH:=$(subst INTEL64,$(OS_ARCH_X64_NAME),$(OS_ARCH))
 OS_ARCH:=$(subst IA64,ia64,$(OS_ARCH))
 OS_ARCH:=$(subst X86,i586,$(OS_ARCH))
 OS_ARCH:=$(subst x86,i586,$(OS_ARCH))
@@ -116,17 +124,32 @@ OS_ARCH:=$(subst i386,i586,$(OS_ARCH))
 OS_ARCH:=$(subst i486,i586,$(OS_ARCH))
 OS_ARCH:=$(subst i686,i586,$(OS_ARCH))
 
-# Check for ARCH_DATA_MODEL, adjust OS_ARCH accordingly
+# Default  ARCH_DATA_MODEL settings
+ARCH_DATA_MODEL-i586 = 32
+ARCH_DATA_MODEL-$(OS_ARCH_X64_NAME) = 64
+ARCH_DATA_MODEL-ia64 = 64
+ARCH_DATA_MODEL-sparc = 32
+ARCH_DATA_MODEL-sparcv9 = 64
+
+# If ARCH_DATA_MODEL is not defined, try and pick a reasonable default
+ifndef ARCH_DATA_MODEL
+  ARCH_DATA_MODEL:=$(ARCH_DATA_MODEL-$(OS_ARCH))
+endif
 ifndef ARCH_DATA_MODEL
   ARCH_DATA_MODEL=32
 endif
+
+# Platform directory name
+PLATFORM_OS = $(OS_NAME)-$(OS_ARCH)
+
+# Check ARCH_DATA_MODEL, adjust OS_ARCH accordingly on solaris
 ARCH_DATA_MODEL_ERROR= \
-  ARCH_DATA_MODEL=$(ARCH_DATA_MODEL) cannot be used with $(OS_NAME)-$(ARCH)
+  ARCH_DATA_MODEL=$(ARCH_DATA_MODEL) cannot be used with $(PLATFORM_OS)
 ifeq ($(ARCH_DATA_MODEL),64)
-  ifeq ($(OS_NAME)-$(OS_ARCH),solaris-i586)
-    OS_ARCH=x64
+  ifeq ($(PLATFORM_OS),solaris-i586)
+    OS_ARCH=$(OS_ARCH_X64_NAME)
   endif
-  ifeq ($(OS_NAME)-$(OS_ARCH),solaris-sparc)
+  ifeq ($(PLATFORM_OS),solaris-sparc)
     OS_ARCH=sparcv9
   endif
   ifeq ($(OS_ARCH),i586)
@@ -137,7 +160,7 @@ ifeq ($(ARCH_DATA_MODEL),64)
   endif
 else
   ifeq ($(ARCH_DATA_MODEL),32)
-    ifeq ($(OS_ARCH),x64)
+    ifeq ($(OS_ARCH),$(OS_ARCH_X64_NAME))
       x:=$(warning "WARNING: $(ARCH_DATA_MODEL_ERROR)")
     endif
     ifeq ($(OS_ARCH),ia64)
@@ -151,6 +174,12 @@ else
   endif
 endif
 
+# Alternate OS_ARCH name (defaults to OS_ARCH)
+OS_ARCH2:=$(OS_ARCH2-$(OS_ARCH))
+ifeq ($(OS_ARCH2),)
+  OS_ARCH2:=$(OS_ARCH)
+endif
+
 # Root of this test area (important to use full paths in some places)
 TEST_ROOT := $(shell $(PWD))
 
@@ -158,21 +187,21 @@ TEST_ROOT := $(shell $(PWD))
 ifdef ALT_OUTPUTDIR
   ABS_OUTPUTDIR = $(ALT_OUTPUTDIR)
 else
-  ABS_OUTPUTDIR = $(TEST_ROOT)/../build/$(OS_NAME)-$(OS_ARCH)
+  ABS_OUTPUTDIR = $(TEST_ROOT)/../build/$(PLATFORM_OS)
 endif
-ABS_BUILD_ROOT = $(ABS_OUTPUTDIR)
-ABS_TEST_OUTPUT_DIR := $(ABS_BUILD_ROOT)/testoutput/$(UNIQUE_DIR)
+ABS_PLATFORM_BUILD_ROOT = $(ABS_OUTPUTDIR)
+ABS_TEST_OUTPUT_DIR := $(ABS_PLATFORM_BUILD_ROOT)/testoutput/$(UNIQUE_DIR)
 
 # Expect JPRT to set PRODUCT_HOME (the product or jdk in this case to test)
 ifndef PRODUCT_HOME
   # Try to use j2sdk-image if it exists
-  ABS_JDK_IMAGE = $(ABS_BUILD_ROOT)/j2sdk-image
-  PRODUCT_HOME :=                       \
-    $(shell                             \
-      if [ -d $(ABS_JDK_IMAGE) ] ; then \
-         $(ECHO) "$(ABS_JDK_IMAGE)";    \
-       else                             \
-         $(ECHO) "$(ABS_BUILD_ROOT)";   \
+  ABS_JDK_IMAGE = $(ABS_PLATFORM_BUILD_ROOT)/j2sdk-image
+  PRODUCT_HOME :=                       		\
+    $(shell                             		\
+      if [ -d $(ABS_JDK_IMAGE) ] ; then 		\
+         $(ECHO) "$(ABS_JDK_IMAGE)";    		\
+       else                             		\
+         $(ECHO) "$(ABS_PLATFORM_BUILD_ROOT)";		\
        fi)
   PRODUCT_HOME := $(PRODUCT_HOME)
 endif
@@ -209,66 +238,6 @@ endif
 ARCHIVE_BUNDLE = $(ABS_TEST_OUTPUT_DIR)/ARCHIVE_BUNDLE.zip
 ifdef JPRT_ARCHIVE_BUNDLE
   ARCHIVE_BUNDLE = $(JPRT_ARCHIVE_BUNDLE)
-endif
-
-# DISPLAY settings for virtual frame buffer
-START_XVFB = start-Xvfb.sh
-NOHUP_OUTPUT = $(ABS_TEST_OUTPUT_DIR)/start-Xvfb.nohup-output.txt
-DISPLAY_PID_FILE=$(ABS_TEST_OUTPUT_DIR)/xvfb-display-number.txt
-DISPLAY_SLEEP_TIME=10
-DISPLAY_MAX_SLEEPS=10
-ifeq ($(OS_NAME),solaris)
-  VIRTUAL_FRAME_BUFFER = true
-endif
-ifeq ($(OS_NAME),linux)
-  VIRTUAL_FRAME_BUFFER = true
-endif
-
-# Does not work yet, display dies as soon as it gets used. :^(
-VIRTUAL_FRAME_BUFFER = false
-
-# Are we using a VIRTUAL_FRAME_BUFFER (Xvfb)
-ifeq ($(VIRTUAL_FRAME_BUFFER),true)
-  
-  PREP_DISPLAY = \
-    $(CP) $(START_XVFB) $(ABS_TEST_OUTPUT_DIR); \
-    $(CHMOD) a+x $(ABS_TEST_OUTPUT_DIR)/$(START_XVFB); \
-    ( $(CD) $(ABS_TEST_OUTPUT_DIR) && \
-      $(NOHUP) $(ABS_TEST_OUTPUT_DIR)/$(START_XVFB) $(DISPLAY_PID_FILE) > $(NOHUP_OUTPUT) 2>&1 && \
-      $(SLEEP) $(DISPLAY_SLEEP_TIME) ) & \
-    count=1; \
-    while [ ! -s $(DISPLAY_PID_FILE) ] ; do \
-      $(ECHO) "Sleeping $(DISPLAY_SLEEP_TIME) more seconds, DISPLAY not ready"; \
-      $(SLEEP) $(DISPLAY_SLEEP_TIME); \
-      count=`$(EXPR) $${count} '+' 1`; \
-      if [ $${count} -gt $(DISPLAY_MAX_SLEEPS) ] ; then \
-        $(ECHO) "ERROR: DISPLAY not ready, giving up on DISPLAY"; \
-        exit 9; \
-      fi; \
-    done ; \
-    DISPLAY=":`$(CAT) $(DISPLAY_PID_FILE)`"; \
-    export DISPLAY; \
-    $(CAT) $(NOHUP_OUTPUT); \
-    $(ECHO) "Prepared DISPLAY=$${DISPLAY}"; \
-    $(XHOST) || \
-    ( $(ECHO) "ERROR: No display" ; exit 8)
-
-  KILL_DISPLAY = \
-    ( \
-      DISPLAY=":`$(CAT) $(DISPLAY_PID_FILE)`"; \
-      export DISPLAY; \
-      if [ -s "$(DISPLAY_PID_FILE)" ] ; then \
-        $(KILL) `$(CAT) $(DISPLAY_PID_FILE)` > /dev/null 2>&1; \
-        $(KILL) -9 `$(CAT) $(DISPLAY_PID_FILE)` > /dev/null 2>&1; \
-      fi; \
-      $(ECHO) "Killed DISPLAY=$${DISPLAY}"; \
-    )
-
-else
-  
-  PREP_DISPLAY = $(ECHO) "VIRTUAL_FRAME_BUFFER=$(VIRTUAL_FRAME_BUFFER)"
-  KILL_DISPLAY = $(ECHO) "VIRTUAL_FRAME_BUFFER=$(VIRTUAL_FRAME_BUFFER)"
-
 endif
 
 # How to create the test bundle (pass or fail, we want to create this)
@@ -327,7 +296,7 @@ BUNDLE_UP_AND_EXIT = \
     $(ECHO) "Missing file: $${_summary}" >> $(STATS_TXT); \
   fi; \
   $(CAT) $(STATS_TXT); \
-  $(ZIP_UP_RESULTS) && $(KILL_DISPLAY) ; \
+  $(ZIP_UP_RESULTS) ; \
   $(TESTEXIT) \
 )
 
@@ -391,8 +360,10 @@ $(EXCLUDELIST): $(PROBLEM_LISTS) $(TESTDIRS)
 	@$(RM) $@ $@.temp1 $@.temp2
 	@(($(CAT) $(PROBLEM_LISTS) | $(EGREP) -- '$(OS_NAME)-all'          ) ;\
 	  ($(CAT) $(PROBLEM_LISTS) | $(EGREP) -- '$(OS_NAME)-$(OS_ARCH)'   ) ;\
+	  ($(CAT) $(PROBLEM_LISTS) | $(EGREP) -- '$(OS_NAME)-$(OS_ARCH2)'  ) ;\
 	  ($(CAT) $(PROBLEM_LISTS) | $(EGREP) -- '$(OS_NAME)-$(OS_VERSION)') ;\
 	  ($(CAT) $(PROBLEM_LISTS) | $(EGREP) -- 'generic-$(OS_ARCH)'      ) ;\
+	  ($(CAT) $(PROBLEM_LISTS) | $(EGREP) -- 'generic-$(OS_ARCH2)'     ) ;\
           ($(CAT) $(PROBLEM_LISTS) | $(EGREP) -- 'generic-all'             ) ;\
           ($(ECHO) "#") ;\
         ) | $(SED) -e 's@^[\ ]*@@' \
@@ -629,7 +600,6 @@ jtreg_tests: prep $(PRODUCT_HOME) $(JTREG) $(EXCLUDELIST)
 	(                                                                    \
 	  ( JT_HOME=$(shell $(GETMIXEDPATH) "$(JT_HOME)");                   \
             export JT_HOME;                                                  \
-	    $(PREP_DISPLAY) &&                                               \
             $(shell $(GETMIXEDPATH) "$(JTREG)")                              \
               $(JTREG_BASIC_OPTIONS)                                         \
               -r:$(shell $(GETMIXEDPATH) "$(ABS_TEST_OUTPUT_DIR)")/JTreport  \

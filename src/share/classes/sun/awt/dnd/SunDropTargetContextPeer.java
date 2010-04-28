@@ -217,6 +217,7 @@ public abstract class SunDropTargetContextPeer implements DropTargetContextPeer,
       throws UnsupportedFlavorException, IOException,
         InvalidDnDOperationException
     {
+
         SecurityManager sm = System.getSecurityManager();
         try {
             if (!dropComplete && sm != null) {
