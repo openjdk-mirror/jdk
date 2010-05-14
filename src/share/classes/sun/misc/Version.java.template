@@ -53,9 +53,6 @@ public class Version {
     private static final String jdk_revid =
         "@@jdk_revid@@";
 
-    private static final String hotspot_revid =
-        "@@hotspot_revid@@";
-
     static {
         init();
     }
@@ -133,8 +130,6 @@ public class Version {
         /* Third line: JVM information. */
         String java_vm_version = System.getProperty("java.vm.version");
         String java_vm_info    = System.getProperty("java.vm.info");
-        if (hotspot_revid.length() > 0)
-            java_vm_version += "+" + hotspot_revid;
         ps.println(java_vm_name + " (build " + java_vm_version + ", " +
                    java_vm_info + ")");
     }
