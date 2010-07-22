@@ -88,8 +88,8 @@ ifeq ($(PLATFORM), solaris)
 endif
 
 ifeq ($(PLATFORM), linux)
-  FREE_SPACE := $(shell $(DF) --sync -kP $(OUTPUTDIR) | $(TAIL) -1 | $(NAWK) '{print $$4;}')
-  TEMP_FREE_SPACE := $(shell $(DF) --sync -kP $(TEMP_DISK) | $(TAIL) -1 | $(NAWK) '{print $$4;}')
+  FREE_SPACE := $(shell $(DF) -kP $(OUTPUTDIR) | $(TAIL) -1 | $(NAWK) '{print $$4;}')
+  TEMP_FREE_SPACE := $(shell $(DF) -kP $(TEMP_DISK) | $(TAIL) -1 | $(NAWK) '{print $$4;}')
   # What kind of system we are using (Variation is the Linux vendor)
   OS_VERSION := $(shell uname -r)
   OS_VARIANT_NAME := $(shell \
