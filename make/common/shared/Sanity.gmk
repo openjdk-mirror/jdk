@@ -109,6 +109,10 @@ ifeq ($(PLATFORM), linux)
   OS_VARIANT_VERSION := $(shell \
     if [ "$(OS_VARIANT_NAME)" = "Fedora" ] ; then \
       $(CAT) /etc/fedora-release | $(HEAD) -1 | $(NAWK) '{ print $$3; }' ; \
+    elif [ "$(OS_VARIANT_NAME)" = "Gentoo" ] ; then \
+      $(CAT) /etc/gentoo-release | $(HEAD) -1 | $(NAWK) '{ print $$5; }' ; \
+    elif [ "$(OS_VARIANT_NAME)" = "Debian" ] ; then \
+      $(CAT) /etc/debian_version ; \
     fi)
   ALSA_INCLUDE=/usr/include/alsa/version.h
   ALSA_LIBRARY=/usr/lib/libasound.so
