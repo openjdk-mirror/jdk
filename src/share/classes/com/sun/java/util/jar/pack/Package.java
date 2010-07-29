@@ -1,12 +1,12 @@
 /*
- * Copyright 2001-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package com.sun.java.util.jar.pack;
@@ -57,8 +57,8 @@ class Package implements Constants {
     // These fields can be adjusted by driver properties.
     short min_class_majver = JAVA_MIN_CLASS_MAJOR_VERSION;
     short min_class_minver = JAVA_MIN_CLASS_MINOR_VERSION;
-    short max_class_majver = JAVA6_MAX_CLASS_MAJOR_VERSION;
-    short max_class_minver = JAVA6_MAX_CLASS_MINOR_VERSION;
+    short max_class_majver = JAVA7_MAX_CLASS_MAJOR_VERSION;
+    short max_class_minver = JAVA7_MAX_CLASS_MINOR_VERSION;
 
     short observed_max_class_majver = min_class_majver;
     short observed_max_class_minver = min_class_minver;
@@ -122,13 +122,16 @@ class Package implements Constants {
     void choosePackageVersion() {
         assert(package_majver <= 0);  // do not call this twice
         int classver = getHighestClassVersion();
-        if (classver != 0 &&
-            (classver >>> 16) < JAVA6_MAX_CLASS_MAJOR_VERSION) {
-            // There are only old classfiles in this segment.
+        if (classver == 0 || (classver >>> 16) < JAVA6_MAX_CLASS_MAJOR_VERSION) {
+            // There are only old classfiles in this segment or resources
             package_majver = JAVA5_PACKAGE_MAJOR_VERSION;
             package_minver = JAVA5_PACKAGE_MINOR_VERSION;
+        } else if ((classver >>> 16) == JAVA6_MAX_CLASS_MAJOR_VERSION) {
+            package_majver = JAVA6_PACKAGE_MAJOR_VERSION;
+            package_minver = JAVA6_PACKAGE_MINOR_VERSION;
         } else {
-            // Normal case.  Use the newest archive format.
+            // Normal case.  Use the newest archive format, when available
+            // TODO: replace the following with JAVA7* when the need arises
             package_majver = JAVA6_PACKAGE_MAJOR_VERSION;
             package_minver = JAVA6_PACKAGE_MINOR_VERSION;
         }

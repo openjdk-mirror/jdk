@@ -1,12 +1,12 @@
 /*
- * Copyright 2003-2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, 2004, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package javax.naming.ldap;
@@ -42,7 +42,7 @@ import java.io.IOException;
 
 /**
  * This class represents a distinguished name as specified by
- * <a href="http://ietf.org//rfc/rfc2253.txt">RFC 2253</a>.
+ * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a>.
  * A distinguished name, or DN, is composed of an ordered list of
  * components called <em>relative distinguished name</em>s, or RDNs.
  * Details of a DN's syntax are described in RFC 2253.
@@ -115,7 +115,7 @@ public class LdapName implements Name {
      *
      * @param name  This is a non-null distinguished name formatted
      * according to the rules defined in
-     * <a href="http://ietf.org/rfc/rfc2253.txt">RFC 2253</a>.
+     * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a>.
      *
      * @throws InvalidNameException if a syntax violation is detected.
      * @see Rdn#escapeValue(Object value)
@@ -614,7 +614,7 @@ public class LdapName implements Name {
 
     /**
      * Returns a string representation of this LDAP name in a format
-     * defined by <a href="http://ietf.org/rfc/rfc2253.txt">RFC 2253</a>
+     * defined by <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a>
      * and described in the class description. If the name has zero
      * components an empty string is returned.
      *

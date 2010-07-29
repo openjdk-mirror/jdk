@@ -1,12 +1,12 @@
 /*
- * Copyright 1996-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -1234,6 +1234,20 @@ public class SimpleDateFormat extends DateFormat {
      * If an error occurs, then the index of <code>pos</code> is not
      * changed, the error index of <code>pos</code> is set to the index of
      * the character where the error occurred, and null is returned.
+     *
+     * <p>This parsing operation uses the {@link DateFormat#calendar
+     * calendar} to produce a {@code Date}. All of the {@code
+     * calendar}'s date-time fields are {@linkplain Calendar#clear()
+     * cleared} before parsing, and the {@code calendar}'s default
+     * values of the date-time fields are used for any missing
+     * date-time information. For example, the year value of the
+     * parsed {@code Date} is 1970 with {@link GregorianCalendar} if
+     * no year value is given from the parsing operation.  The {@code
+     * TimeZone} value may be overwritten, depending on the given
+     * pattern and the time zone value in {@code text}. Any {@code
+     * TimeZone} value that has previously been set by a call to
+     * {@link #setTimeZone(java.util.TimeZone) setTimeZone} may need
+     * to be restored for further operations.
      *
      * @param text  A <code>String</code>, part of which should be parsed.
      * @param pos   A <code>ParsePosition</code> object with index and error

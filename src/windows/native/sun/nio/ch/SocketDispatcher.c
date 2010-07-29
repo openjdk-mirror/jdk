@@ -1,12 +1,12 @@
 /*
- * Copyright 2000-2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2000, 2003, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 #include <windows.h>
@@ -49,6 +49,10 @@ Java_sun_nio_ch_SocketDispatcher_read0(JNIEnv *env, jclass clazz, jobject fdo,
     DWORD flags = 0;
     jint fd = fdval(env, fdo);
     WSABUF buf;
+
+    /* limit size */
+    if (len > MAX_BUFFER_SIZE)
+        len = MAX_BUFFER_SIZE;
 
     /* destination buffer and size */
     buf.buf = (char *)address;
@@ -86,6 +90,7 @@ Java_sun_nio_ch_SocketDispatcher_readv0(JNIEnv *env, jclass clazz, jobject fdo,
     jint fd = fdval(env, fdo);
     struct iovec *iovp = (struct iovec *)address;
     WSABUF *bufs = malloc(len * sizeof(WSABUF));
+    jint rem = MAX_BUFFER_SIZE;
 
     if (bufs == 0) {
         JNU_ThrowOutOfMemoryError(env, 0);
@@ -98,8 +103,16 @@ Java_sun_nio_ch_SocketDispatcher_readv0(JNIEnv *env, jclass clazz, jobject fdo,
 
     /* copy iovec into WSABUF */
     for(i=0; i<len; i++) {
+        jint iov_len = iovp[i].iov_len;
+        if (iov_len > rem)
+            iov_len = rem;
         bufs[i].buf = (char *)iovp[i].iov_base;
-        bufs[i].len = (u_long)iovp[i].iov_len;
+        bufs[i].len = (u_long)iov_len;
+        rem -= iov_len;
+        if (rem == 0) {
+            len = i+1;
+            break;
+        }
     }
 
     /* read into the buffers */
@@ -136,6 +149,10 @@ Java_sun_nio_ch_SocketDispatcher_write0(JNIEnv *env, jclass clazz, jobject fdo,
     jint fd = fdval(env, fdo);
     WSABUF buf;
 
+    /* limit size */
+    if (len > MAX_BUFFER_SIZE)
+        len = MAX_BUFFER_SIZE;
+
     /* copy iovec into WSABUF */
     buf.buf = (char *)address;
     buf.len = (u_long)len;
@@ -171,6 +188,7 @@ Java_sun_nio_ch_SocketDispatcher_writev0(JNIEnv *env, jclass clazz,
     jint fd = fdval(env, fdo);
     struct iovec *iovp = (struct iovec *)address;
     WSABUF *bufs = malloc(len * sizeof(WSABUF));
+    jint rem = MAX_BUFFER_SIZE;
 
     if (bufs == 0) {
         JNU_ThrowOutOfMemoryError(env, 0);
@@ -183,8 +201,16 @@ Java_sun_nio_ch_SocketDispatcher_writev0(JNIEnv *env, jclass clazz,
 
     /* copy iovec into WSABUF */
     for(i=0; i<len; i++) {
+        jint iov_len = iovp[i].iov_len;
+        if (iov_len > rem)
+            iov_len = rem;
         bufs[i].buf = (char *)iovp[i].iov_base;
-        bufs[i].len = (u_long)iovp[i].iov_len;
+        bufs[i].len = (u_long)iov_len;
+        rem -= iov_len;
+        if (rem == 0) {
+            len = i+1;
+            break;
+        }
     }
 
     /* read into the buffers */

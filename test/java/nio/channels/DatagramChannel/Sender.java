@@ -1,5 +1,5 @@
 /*
- * Copyright 2002 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -42,13 +42,11 @@ public class Sender {
     }
 
     static void test() throws Exception {
-        Sprintable server = new Server();
-        Sprintable client = new Client();
+        Server server = new Server();
+        Client client = new Client(server.port());
 
         Thread serverThread = new Thread(server);
         serverThread.start();
-        while (!server.ready())
-            Thread.sleep(50);
 
         Thread clientThread = new Thread(client);
         clientThread.start();
@@ -60,23 +58,17 @@ public class Sender {
         client.throwException();
     }
 
-    public interface Sprintable extends Runnable {
-        public void throwException() throws Exception;
-        public boolean ready();
-    }
-
-    public static class Client implements Sprintable {
+    public static class Client implements Runnable {
+        final int port;
         Exception e = null;
 
-        public void throwException() throws Exception {
-            if (e != null)
-                throw e;
+        Client(int port) {
+            this.port = port;
         }
 
-        private volatile boolean ready = false;
-
-        public boolean ready() {
-            return ready;
+        void throwException() throws Exception {
+            if (e != null)
+                throw e;
         }
 
         public void run() {
@@ -87,7 +79,7 @@ public class Sender {
                 bb.putInt(1).putLong(1);
                 bb.flip();
                 InetAddress address = InetAddress.getLocalHost();
-                InetSocketAddress isa = new InetSocketAddress(address, 8888);
+                InetSocketAddress isa = new InetSocketAddress(address, port);
                 dc.connect(isa);
                 dc.write(bb);
             } catch (Exception ex) {
@@ -96,17 +88,21 @@ public class Sender {
         }
     }
 
-    public static class Server implements Sprintable {
+    public static class Server implements Runnable {
+        final DatagramChannel dc;
         Exception e = null;
-        private volatile boolean ready = false;
 
-        public void throwException() throws Exception {
-            if (e != null)
-                throw e;
+        Server() throws IOException {
+            dc = DatagramChannel.open().bind(new InetSocketAddress(0));
         }
 
-        public boolean ready() {
-            return ready;
+        int port() {
+            return dc.socket().getLocalPort();
+        }
+
+        void throwException() throws Exception {
+            if (e != null)
+                throw e;
         }
 
         void showBuffer(String s, ByteBuffer bb) {
@@ -123,13 +119,10 @@ public class Sender {
             SocketAddress sa = null;
 
             try {
-                DatagramChannel dc = DatagramChannel.open();
-                dc.socket().bind(new InetSocketAddress(8888));
-                dc.configureBlocking(false);
-                ready = true;
                 ByteBuffer bb = ByteBuffer.allocateDirect(12);
                 bb.clear();
                 // Get the one valid datagram
+                dc.configureBlocking(false);
                 while (sa == null)
                     sa = dc.receive(bb);
                 sa = null;

@@ -3,9 +3,9 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -17,9 +17,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -73,10 +73,10 @@ public class ThreadLocalRandom extends Random {
     private long rnd;
 
     /**
-     * Initialization flag to permit the first and only allowed call
-     * to setSeed (inside Random constructor) to succeed.  We can't
-     * allow others since it would cause setting seed in one part of a
-     * program to unintentionally impact other usages by the thread.
+     * Initialization flag to permit calls to setSeed to succeed only
+     * while executing the Random constructor.  We can't allow others
+     * since it would cause setting seed in one part of a program to
+     * unintentionally impact other usages by the thread.
      */
     boolean initialized;
 
@@ -98,11 +98,10 @@ public class ThreadLocalRandom extends Random {
 
     /**
      * Constructor called only by localRandom.initialValue.
-     * We rely on the fact that the superclass no-arg constructor
-     * invokes setSeed exactly once to initialize.
      */
     ThreadLocalRandom() {
         super();
+        initialized = true;
     }
 
     /**
@@ -123,7 +122,6 @@ public class ThreadLocalRandom extends Random {
     public void setSeed(long seed) {
         if (initialized)
             throw new UnsupportedOperationException();
-        initialized = true;
         rnd = (seed ^ multiplier) & mask;
     }
 

@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2007-2010 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2007, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.security.tools;
@@ -38,6 +38,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 
 import com.sun.jarsigner.*;
+import java.security.cert.X509CRL;
 import java.util.Arrays;
 import sun.security.pkcs.*;
 import sun.security.timestamp.*;
@@ -80,6 +81,11 @@ public final class TimestampedSigner extends ContentSigner {
      * Object identifier for the timestamping key purpose.
      */
     private static final String KP_TIMESTAMPING_OID = "1.3.6.1.5.5.7.3.8";
+
+    /*
+     * Object identifier for extendedKeyUsage extension
+     */
+    private static final String EXTENDED_KEY_USAGE_OID = "2.5.29.37";
 
     /*
      * Object identifier for the timestamping access descriptors.
@@ -234,7 +240,7 @@ public final class TimestampedSigner extends ContentSigner {
         // Create the PKCS #7 signed data message
         PKCS7 p7 =
             new PKCS7(algorithms, contentInfo, signerCertificateChain,
-                signerInfos);
+                    parameters.getCRLs().toArray(new X509CRL[parameters.getCRLs().size()]), signerInfos);
         ByteArrayOutputStream p7out = new ByteArrayOutputStream();
         p7.encodeSignedData(p7out);
 
@@ -357,34 +363,26 @@ public final class TimestampedSigner extends ContentSigner {
         }
 
         // Examine the TSA's certificate (if present)
-        List<String> keyPurposes = null;
-        X509Certificate[] certs = tsToken.getCertificates();
-        if (certs != null && certs.length > 0) {
-            // Use certficate from the TSP reply
-            // Pick out the cert for the TS server, which is the end-entity
-            // one inside the chain.
-            for (X509Certificate cert: certs) {
-                boolean isSigner = false;
-                for (X509Certificate cert2: certs) {
-                    if (cert != cert2) {
-                        if (cert.getSubjectDN().equals(cert2.getIssuerDN())) {
-                            isSigner = true;
-                            break;
-                        }
-                    }
+        for (SignerInfo si: tsToken.getSignerInfos()) {
+            X509Certificate cert = si.getCertificate(tsToken);
+            if (cert == null) {
+                // Error, we've already set tsRequestCertificate = true
+                throw new CertificateException(
+                "Certificate not included in timestamp token");
+            } else {
+                if (!cert.getCriticalExtensionOIDs().contains(
+                        EXTENDED_KEY_USAGE_OID)) {
+                    throw new CertificateException(
+                    "Certificate is not valid for timestamping");
                 }
-                if (!isSigner) {
-                    keyPurposes = cert.getExtendedKeyUsage();
-                    if (keyPurposes == null ||
-                            ! keyPurposes.contains(KP_TIMESTAMPING_OID)) {
-                        throw new CertificateException(
-                            "Certificate is not valid for timestamping");
-                    }
-                    break;
+                List keyPurposes = cert.getExtendedKeyUsage();
+                if (keyPurposes == null ||
+                        ! keyPurposes.contains(KP_TIMESTAMPING_OID)) {
+                    throw new CertificateException(
+                    "Certificate is not valid for timestamping");
                 }
             }
         }
-
         return tsReply.getEncodedToken();
     }
 }

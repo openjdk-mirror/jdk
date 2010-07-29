@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, 2004, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,67 +16,71 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
  * @bug 4755720
  * @summary Test if OP_READ is detected with OP_WRITE in interestOps
- * @library ..
  */
 
 import java.net.*;
-import java.io.*;
 import java.nio.*;
 import java.nio.channels.*;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
 
 public class OpRead {
 
-    static final int DAYTIME_PORT = 13;
-    static final String DAYTIME_HOST = TestUtil.HOST;
-
     static void test() throws Exception {
-        InetSocketAddress isa
-            = new InetSocketAddress(InetAddress.getByName(DAYTIME_HOST),
-                                    DAYTIME_PORT);
-        SocketChannel sc = SocketChannel.open();
+        ServerSocketChannel ssc = null;
+        SocketChannel sc = null;
+        SocketChannel peer = null;
+        try {
+            ssc = ServerSocketChannel.open().bind(new InetSocketAddress(0));
 
-        sc.connect(isa);
+            // loopback connection
+            InetAddress lh = InetAddress.getLocalHost();
+            sc = SocketChannel.open(new InetSocketAddress(lh, ssc.socket().getLocalPort()));
+            peer = ssc.accept();
 
-        sc.configureBlocking(false);
+            // peer sends message so that "sc" will be readable
+            int n = peer.write(ByteBuffer.wrap("Hello".getBytes()));
+            assert n > 0;
 
-        Selector selector = SelectorProvider.provider().openSelector();
-        SelectionKey key = sc.register(selector, SelectionKey.OP_READ |
-            SelectionKey.OP_WRITE);
+            sc.configureBlocking(false);
 
-        boolean done = false;
-        int failCount = 0;
-        while (!done) {
-            if (selector.select() > 0) {
-                Set keys = selector.selectedKeys();
-                Iterator iterator = keys.iterator();
-                while (iterator.hasNext()) {
-                    key = (SelectionKey)iterator.next();
-                    iterator.remove();
-                    if (key.isWritable()) {
-                        failCount++;
-                        if (failCount > 10)
-                            throw new RuntimeException("Test failed");
-                        Thread.sleep(100);
-                    }
-                    if (key.isReadable()) {
-                        done = true;
+            Selector selector = Selector.open();
+            SelectionKey key = sc.register(selector, SelectionKey.OP_READ |
+                SelectionKey.OP_WRITE);
+
+            boolean done = false;
+            int failCount = 0;
+            while (!done) {
+                if (selector.select() > 0) {
+                    Set<SelectionKey> keys = selector.selectedKeys();
+                    Iterator<SelectionKey> iterator = keys.iterator();
+                    while (iterator.hasNext()) {
+                        key = iterator.next();
+                        iterator.remove();
+                        if (key.isWritable()) {
+                            failCount++;
+                            if (failCount > 10)
+                                throw new RuntimeException("Test failed");
+                            Thread.sleep(250);
+                        }
+                        if (key.isReadable()) {
+                            done = true;
+                        }
                     }
                 }
             }
+        } finally {
+            if (peer != null) peer.close();
+            if (sc != null) sc.close();
+            if (ssc != null) ssc.close();
         }
-
-
-        sc.close();
     }
 
     public static void main(String[] args) throws Exception {

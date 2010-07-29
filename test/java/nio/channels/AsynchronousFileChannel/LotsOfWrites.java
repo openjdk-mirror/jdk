@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -135,6 +135,7 @@ public class LotsOfWrites {
         latch.await();
 
         // verify content of each file
+        boolean failed = false;
         byte[] buf = new byte[8192];
         for (int i=0; i<count ;i++) {
             Writer writer = writers[i];
@@ -145,18 +146,35 @@ public class LotsOfWrites {
                 int nread = in.read(buf);
                 while (nread > 0) {
                     for (int j=0; j<nread; j++) {
-                        if (buf[j] != expected)
-                            throw new RuntimeException("Unexpected byte");
+                        if (buf[j] != expected) {
+                            System.err.println("Unexpected contents");
+                            failed = true;
+                            break;
+                        }
                         expected++;
                     }
+                    if (failed)
+                        break;
                     size += nread;
                     nread = in.read(buf);
                 }
-                if (size != writer.size())
-                    throw new RuntimeException("Unexpected size");
+                if (!failed && size != writer.size()) {
+                    System.err.println("Unexpected size");
+                    failed = true;
+                }
+                if (failed)
+                    break;
             } finally {
                 in.close();
             }
         }
+
+        // clean-up
+        for (int i=0; i<count; i++) {
+            writers[i].file().delete();
+        }
+
+        if (failed)
+            throw new RuntimeException("Test failed");
     }
 }

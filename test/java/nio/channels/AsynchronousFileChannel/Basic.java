@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -45,16 +45,18 @@ public class Basic {
         File blah = File.createTempFile("blah", null);
         blah.deleteOnExit();
 
-        final AsynchronousFileChannel ch = AsynchronousFileChannel
+        AsynchronousFileChannel ch = AsynchronousFileChannel
             .open(blah.toPath(), READ, WRITE);
+        try {
+            // run tests
+            testUsingCompletionHandlers(ch);
+            testUsingWaitOnResult(ch);
+            testInterruptHandlerThread(ch);
+        } finally {
+            ch.close();
+        }
 
-        // run tests
-        testUsingCompletionHandlers(ch);
-        testUsingWaitOnResult(ch);
-        testInterruptHandlerThread(ch);
-
-        // close channel and invoke test that expects channel to be closed
-        ch.close();
+        // run test that expects channel to be closed
         testClosedChannel(ch);
 
         // these tests open the file themselves
@@ -63,6 +65,9 @@ public class Basic {
         testAsynchronousClose(blah.toPath());
         testCancel(blah.toPath());
         testTruncate(blah.toPath());
+
+        // eagerly clean-up
+        blah.delete();
     }
 
     /*

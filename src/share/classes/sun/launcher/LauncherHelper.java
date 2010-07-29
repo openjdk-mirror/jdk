@@ -1,12 +1,12 @@
 /*
- * Copyright 2007-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2007, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.launcher;
@@ -208,7 +208,7 @@ public enum LauncherHelper {
         Method method = null;
         try {
             method = clazz.getMethod("main", String[].class);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException nsme) {
             ostream.println(getLocalizedMessage("java.launcher.cls.error4",
                     classname));
             throw new RuntimeException("Main method not found in " + classname);
@@ -225,8 +225,7 @@ public enum LauncherHelper {
             throw new RuntimeException("Main method is not static in class " +
                     classname);
         }
-        Class<?> rType = method.getReturnType();
-        if (!rType.isPrimitive() || !rType.getName().equals("void")) {
+        if (method.getReturnType() != java.lang.Void.TYPE) {
             ostream.println(getLocalizedMessage("java.launcher.cls.error3",
                     classname));
             throw new RuntimeException("Main method must return a value" +

@@ -1,12 +1,12 @@
 /*
- * Copyright 1997-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1997, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 package javax.swing.text;
 
@@ -404,6 +404,24 @@ public class Utilities {
     }
 
     /**
+     * Adjust text offset so that the length of a resulting string as a whole
+     * fits into the specified width.
+     */
+    static int adjustOffsetForFractionalMetrics(
+            Segment s, FontMetrics fm, int offset, int width) {
+        // Sometimes the offset returned by getTabbedTextOffset is beyond the
+        // available area, when fractional metrics are enabled. We should
+        // guard against this.
+        if (offset < s.count) {
+            while (offset > 0 &&
+                    fm.charsWidth(s.array, s.offset, offset + 1) > width) {
+                offset--;
+            }
+        }
+        return offset;
+    }
+
+    /**
      * Determine where to break the given text to fit
      * within the given span. This tries to find a word boundary.
      * @param s  the source of the text
@@ -425,7 +443,7 @@ public class Utilities {
         int txtCount = s.count;
         int index = Utilities.getTabbedTextOffset(s, metrics, x0, x,
                                                   e, startOffset, false);
-
+        index = adjustOffsetForFractionalMetrics(s, metrics, index, x - x0);
 
         if (index >= txtCount - 1) {
             return txtCount;

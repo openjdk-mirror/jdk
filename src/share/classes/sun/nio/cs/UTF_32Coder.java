@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.nio.cs;
@@ -86,22 +86,21 @@ class UTF_32Coder {
                         src.position(mark);
                     }
                 }
-                while (src.remaining() > 3) {
+                while (src.remaining() >= 4) {
                     cp = getCP(src);
-                    if (cp < 0 || cp > Surrogate.UCS4_MAX) {
-                        return CoderResult.malformedForLength(4);
-                    }
-                    if (cp < Surrogate.UCS4_MIN) {
+                    if (Character.isBmpCodePoint(cp)) {
                         if (!dst.hasRemaining())
                             return CoderResult.OVERFLOW;
                         mark += 4;
-                        dst.put((char)cp);
-                    } else {
+                        dst.put((char) cp);
+                    } else if (Character.isValidCodePoint(cp)) {
                         if (dst.remaining() < 2)
                             return CoderResult.OVERFLOW;
                         mark += 4;
-                        dst.put(Surrogate.high(cp));
-                        dst.put(Surrogate.low(cp));
+                        dst.put(Character.highSurrogate(cp));
+                        dst.put(Character.lowSurrogate(cp));
+                    } else {
+                        return CoderResult.malformedForLength(4);
                     }
                 }
                 return CoderResult.UNDERFLOW;
@@ -154,7 +153,12 @@ class UTF_32Coder {
             try {
                 while (src.hasRemaining()) {
                     char c = src.get();
-                    if (Character.isHighSurrogate(c)) {
+                    if (!Character.isSurrogate(c)) {
+                        if (dst.remaining() < 4)
+                            return CoderResult.OVERFLOW;
+                        mark++;
+                        put(c, dst);
+                    } else if (Character.isHighSurrogate(c)) {
                         if (!src.hasRemaining())
                             return CoderResult.UNDERFLOW;
                         char low = src.get();
@@ -162,17 +166,13 @@ class UTF_32Coder {
                             if (dst.remaining() < 4)
                                 return CoderResult.OVERFLOW;
                             mark += 2;
-                            put(Surrogate.toUCS4(c, low), dst);
+                            put(Character.toCodePoint(c, low), dst);
                         } else {
                             return CoderResult.malformedForLength(1);
                         }
-                    } else if (Character.isLowSurrogate(c)) {
-                        return CoderResult.malformedForLength(1);
                     } else {
-                        if (dst.remaining() < 4)
-                            return CoderResult.OVERFLOW;
-                        mark++;
-                        put(c, dst);
+                        // assert Character.isLowSurrogate(c);
+                        return CoderResult.malformedForLength(1);
                     }
                 }
                 return CoderResult.UNDERFLOW;

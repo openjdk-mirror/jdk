@@ -1,12 +1,12 @@
 /*
- * Portions Copyright 2000-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -336,38 +336,29 @@ public class EncryptedData implements Cloneable {
     }
 
     /**
-     * Reset data stream after decryption, remove redundant bytes.
+     * Reset asn.1 data stream after decryption, remove redundant bytes.
      * @param data the decrypted data from decrypt().
-     * @param encoded true if the encrypted data is ASN1 encoded data,
-     * false if the encrypted data is not ASN1 encoded data.
      * @return the reset byte array which holds exactly one asn1 datum
      * including its tag and length.
      *
      */
-    public byte[] reset(byte[] data, boolean encoded) {
+    public byte[] reset(byte[] data) {
         byte[]  bytes = null;
-        // if it is encoded data, we use length field to
+        // for asn.1 encoded data, we use length field to
         // determine the data length and remove redundant paddings.
-        if (encoded) {
-            if ((data[1] & 0xFF) < 128) {
-                bytes = new byte[data[1] + 2];
-                System.arraycopy(data, 0, bytes, 0, data[1] + 2);
-            } else
-                if ((data[1] & 0xFF) > 128) {
-                    int len = data[1] & (byte)0x7F;
-                    int result = 0;
-                    for (int i = 0; i < len; i++) {
-                        result |= (data[i + 2] & 0xFF) << (8 * (len - i - 1));
-                    }
-                    bytes = new byte[result + len + 2];
-                    System.arraycopy(data, 0, bytes, 0, result + len + 2);
-                }
+        if ((data[1] & 0xFF) < 128) {
+            bytes = new byte[data[1] + 2];
+            System.arraycopy(data, 0, bytes, 0, data[1] + 2);
         } else {
-            // if it is not encoded, which happens in GSS tokens,
-            // we remove padding data according to padding pattern.
-            bytes = new byte[data.length - data[data.length - 1]];
-            System.arraycopy(data, 0, bytes, 0,
-                             data.length - data[data.length - 1]);
+            if ((data[1] & 0xFF) > 128) {
+                int len = data[1] & (byte)0x7F;
+                int result = 0;
+                for (int i = 0; i < len; i++) {
+                    result |= (data[i + 2] & 0xFF) << (8 * (len - i - 1));
+                }
+                bytes = new byte[result + len + 2];
+                System.arraycopy(data, 0, bytes, 0, result + len + 2);
+            }
         }
         return bytes;
     }

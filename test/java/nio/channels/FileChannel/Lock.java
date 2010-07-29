@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -55,6 +55,7 @@ public class Lock {
         test2(blah, true);
         test2(blah, false);
         test3(blah);
+        blah.delete();
     }
 
     private static void test2(File blah, boolean b) throws Exception {
@@ -90,7 +91,11 @@ public class Lock {
 
         // Exec the tamperer
         String command = System.getProperty("java.home") +
-            File.separator + "bin" + File.separator + "java Lock " + str + " " + blah;
+            File.separator + "bin" + File.separator + "java";
+        String testClasses = System.getProperty("test.classes");
+        if (testClasses != null)
+            command += " -cp " + testClasses;
+        command += " Lock " + str + " " + blah;
         Process p = Runtime.getRuntime().exec(command);
 
         BufferedReader in = new BufferedReader

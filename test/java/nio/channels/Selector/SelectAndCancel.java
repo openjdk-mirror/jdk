@@ -1,5 +1,5 @@
 /*
- * Copyright 2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2004, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -31,11 +31,7 @@ import java.io.IOException;
 import java.net.*;
 
 public class SelectAndCancel {
-    static ServerSocketChannel ssc;
-    static Selector selector;
     static SelectionKey sk;
-    static InetSocketAddress isa;
-    public static int TEST_PORT = 40170;
 
     /*
      * CancelledKeyException is the failure symptom of 4729342
@@ -43,17 +39,17 @@ public class SelectAndCancel {
      * seen immediately when the bug is present.
      */
     public static void main(String[] args) throws Exception {
-        InetAddress lh = InetAddress.getLocalHost();
-        isa = new InetSocketAddress(lh, TEST_PORT);
-        selector = Selector.open();
-        ssc = ServerSocketChannel.open();
+        final Selector selector = Selector.open();
+        final ServerSocketChannel ssc =
+            ServerSocketChannel.open().bind(new InetSocketAddress(0));
+        final InetSocketAddress isa =
+            new InetSocketAddress(InetAddress.getLocalHost(), ssc.socket().getLocalPort());
 
         // Create and start a selector in a separate thread.
         new Thread(new Runnable() {
                 public void run() {
                     try {
                         ssc.configureBlocking(false);
-                        ssc.socket().bind(isa);
                         sk = ssc.register(selector, SelectionKey.OP_ACCEPT);
                         selector.select();
                     } catch (IOException e) {

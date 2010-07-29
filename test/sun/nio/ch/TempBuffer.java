@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, 2003, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -54,8 +54,12 @@ public class TempBuffer {
                     blah.deleteOnExit();
                     TempBuffer.initTestFile(blah);
                     RandomAccessFile raf = new RandomAccessFile(blah, "rw");
-                    FileChannel fs = raf.getChannel();
-                    fs.transferTo(0, SIZE, Channels.newChannel(out));
+                    FileChannel fc = raf.getChannel();
+                    try {
+                        fc.transferTo(0, SIZE, Channels.newChannel(out));
+                    } finally {
+                        fc.close();
+                    }
                     out.flush();
                 } catch (IOException ioe) {
                     throw new RuntimeException(ioe);
@@ -69,10 +73,17 @@ public class TempBuffer {
         File blah = File.createTempFile("blah2", null);
         blah.deleteOnExit();
         RandomAccessFile raf = new RandomAccessFile(blah, "rw");
-        FileChannel fs = raf.getChannel();
-        raf.setLength(SIZE);
-        fs.transferFrom(Channels.newChannel(in), 0, SIZE);
-        fs.close();
+        FileChannel fc = raf.getChannel();
+        try {
+            raf.setLength(SIZE);
+            fc.transferFrom(Channels.newChannel(in), 0, SIZE);
+        } finally {
+            fc.close();
+        }
+
+        sourceChannel.close();
+        sinkChannel.close();
+        blah.delete();
     }
 
     private static void initTestFile(File blah) throws IOException {

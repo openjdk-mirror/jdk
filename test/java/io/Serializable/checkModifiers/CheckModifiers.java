@@ -1,5 +1,5 @@
 /*
- * Copyright 1999 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1999, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -213,33 +213,39 @@ public class CheckModifiers {
 
 
         FileOutputStream fos = new FileOutputStream("fields.ser");
-        ObjectOutputStream oos = new ObjectOutputStream(fos);
-
-        System.out.println("Writing obj 1");
-        oos.writeObject(tc1);
-        System.out.println("Writing obj 2");
-        oos.writeObject(tc2);
-        System.out.println("Writing obj 3");
-        oos.writeObject(tc3);
-        System.out.println("Writing obj 4");
-        oos.writeObject(tc4);
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            System.out.println("Writing obj 1");
+            oos.writeObject(tc1);
+            System.out.println("Writing obj 2");
+            oos.writeObject(tc2);
+            System.out.println("Writing obj 3");
+            oos.writeObject(tc3);
+            System.out.println("Writing obj 4");
+            oos.writeObject(tc4);
+            oos.flush();
+        } finally {
+            fos.close();
+        }
 
         FileInputStream fis = new FileInputStream("fields.ser");
-        ObjectInputStream ois = new ObjectInputStream(fis);
-
-
-        System.out.println("Test modifiers for serialPeristentFields ");
-        System.out.println("---------------------------------------- ");
-        System.out.println("Declaration missing final modifier");
-        ois.readObject();
-        System.out.println();
-        System.out.println("Declaration with public instead of private access");
-        ois.readObject();
-        System.out.println();
-        System.out.println("Declaration with different type");
-        ois.readObject();
-        System.out.println();
-        System.out.println("Declaration as in specification");
-        ois.readObject();
+        try {
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            System.out.println("Test modifiers for serialPeristentFields ");
+            System.out.println("---------------------------------------- ");
+            System.out.println("Declaration missing final modifier");
+            ois.readObject();
+            System.out.println();
+            System.out.println("Declaration with public instead of private access");
+            ois.readObject();
+            System.out.println();
+            System.out.println("Declaration with different type");
+            ois.readObject();
+            System.out.println();
+            System.out.println("Declaration as in specification");
+            ois.readObject();
+        } finally {
+            fis.close();
+        }
     }
 };

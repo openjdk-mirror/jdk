@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -62,7 +62,13 @@ public class MetaInf {
 
     static boolean contains(File jarFile, String entryName)
         throws IOException {
-        return new ZipFile(jarFile).getEntry(entryName) != null;
+        ZipFile zf = new ZipFile(jarFile);
+        if ( zf != null ) {
+            boolean result = zf.getEntry(entryName) != null;
+            zf.close();
+            return result;
+        }
+        return false;
     }
 
     static void checkContains(File jarFile, String entryName)
@@ -94,9 +100,13 @@ public class MetaInf {
         String line;
         while ((line = index.readLine()) != null) {
             if (line.equals(SERVICES)) {
+                index.close();
+                f.close();
                 return;
             }
         }
+        index.close();
+        f.close();
         throw new Error(SERVICES + " not indexed.");
     }
 

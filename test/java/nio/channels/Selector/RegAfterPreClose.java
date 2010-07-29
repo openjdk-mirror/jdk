@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -35,6 +35,7 @@ import java.io.IOException;
 
 public class RegAfterPreClose {
 
+    static final int TEST_ITERATIONS = 300;
     static volatile boolean done;
 
     /**
@@ -96,26 +97,21 @@ public class RegAfterPreClose {
             }
         };
 
-        // schedule test to run for 1 minute
-        Executors.newScheduledThreadPool(1, factory).schedule(new Runnable() {
-            public void run() {
-                done = true;
-                sel.wakeup();
-            }}, 1, TimeUnit.MINUTES);
-
         // create Executor that handles tasks that closes channels
         // "asynchronously" - this creates the conditions to provoke the bug.
-        Executor executor = Executors.newFixedThreadPool(2, factory);
+        ExecutorService executor = Executors.newFixedThreadPool(2, factory);
 
         // submit task that connects to listener
         executor.execute(new Connector(ssc.socket().getLocalPort()));
 
         // loop accepting connections until done (or an IOException is thrown)
-        while (!done) {
+        int remaining = TEST_ITERATIONS;
+        while (remaining > 0) {
             sel.select();
             if (key.isAcceptable()) {
                 SocketChannel sc = ssc.accept();
                 if (sc != null) {
+                    remaining--;
                     sc.configureBlocking(false);
                     sc.register(sel, SelectionKey.OP_READ);
                     executor.execute(new Closer(sc));
@@ -123,5 +119,8 @@ public class RegAfterPreClose {
             }
             sel.selectedKeys().clear();
         }
+        done = true;
+        sel.close();
+        executor.shutdown();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2001 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -33,22 +33,27 @@ public class Trivial {
     public static void main(String[] args) throws Exception {
         SocketChannel sc = SocketChannel.open();
         Selector sel = Selector.open();
-        if (sc.keyFor(sel) != null)
-            throw new Exception("keyFor != null");
-        sc.configureBlocking(false);
-        SelectionKey sk = sc.register(sel, SelectionKey.OP_READ, args);
-        if (sc.keyFor(sel) != sk)
-            throw new Exception("keyFor returned " + sc.keyFor(sel));
-        if (sk.attachment() != args)
-            throw new Exception("attachment() returned " + sk.attachment());
-        Trivial t = new Trivial();
-        sk.attach(t);
-        if (sk.attachment() != t)
-            throw new Exception("Wrong attachment");
-        sk.isReadable();
-        sk.isWritable();
-        sk.isConnectable();
-        sk.isAcceptable();
+        try {
+            if (sc.keyFor(sel) != null)
+                throw new Exception("keyFor != null");
+            sc.configureBlocking(false);
+            SelectionKey sk = sc.register(sel, SelectionKey.OP_READ, args);
+            if (sc.keyFor(sel) != sk)
+                throw new Exception("keyFor returned " + sc.keyFor(sel));
+            if (sk.attachment() != args)
+                throw new Exception("attachment() returned " + sk.attachment());
+            Trivial t = new Trivial();
+            sk.attach(t);
+            if (sk.attachment() != t)
+                throw new Exception("Wrong attachment");
+            sk.isReadable();
+            sk.isWritable();
+            sk.isConnectable();
+            sk.isAcceptable();
+        } finally {
+            sel.close();
+            sc.close();
+        }
     }
 
 }

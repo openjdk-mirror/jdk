@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -44,7 +44,7 @@
 
 #define JVM_ERROR1      "Error: Could not create the Java Virtual Machine.\n" GEN_ERROR
 #define JVM_ERROR2      "Error: Could not detach main thread.\n" JNI_ERROR
-#define JVM_ERROR3      "Error: SPARC V8 processor detected; Server compiler requires V9 or better.\nUse Client compiler on V8 processors.\nCould not create the Java virtual machine."
+#define JVM_ERROR3      "Error: SPARC V8 processor detected;  Required V9 processors or better.\nUse JDK5 client compiler for V8 processors.\n" JVM_ERROR1
 
 #define JAR_ERROR1      "Error: Failed to load Main-Class manifest attribute from\n%s\n%s"
 #define JAR_ERROR2      "Error: Unable to access jarfile %s"
@@ -69,7 +69,8 @@
 #define CFG_ERROR5      "Error: Could not determine application home."
 #define CFG_ERROR6      "Error: could not open `%s'"
 #define CFG_ERROR7      "Error: no known VMs. (check for corrupt jvm.cfg file)"
-#define CFG_ERROR8      "Error: no `%s' JVM at `%s'."
+#define CFG_ERROR8      "Error: missing `%s' JVM at `%s'.\nPlease install or use the JRE or JDK that contains these missing components."
+#define CFG_ERROR9      "Error: could not determine JVM type."
 
 
 #define SPC_ERROR1      "Error: Syntax error in version specification \"%s\""

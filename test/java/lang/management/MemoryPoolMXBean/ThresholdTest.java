@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2007, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -37,11 +37,23 @@ import java.util.*;
 public class ThresholdTest {
     public static void main(String args[]) throws Exception {
         List<MemoryPoolMXBean> pools = ManagementFactory.getMemoryPoolMXBeans();
-        for (MemoryPoolMXBean p : pools) {
-            // verify if isUsageThresholdExceeded() returns correct value
-            checkUsageThreshold(p);
-            // verify if isCollectionUsageThresholdExceeded() returns correct value
-            checkCollectionUsageThreshold(p);
+        try {
+            for (MemoryPoolMXBean p : pools) {
+                // verify if isUsageThresholdExceeded() returns correct value
+                checkUsageThreshold(p);
+                // verify if isCollectionUsageThresholdExceeded() returns correct value
+                checkCollectionUsageThreshold(p);
+            }
+        } finally {
+            // restore the default
+            for (MemoryPoolMXBean p : pools) {
+                if (p.isUsageThresholdSupported()) {
+                    p.setUsageThreshold(0);
+                }
+                if (p.isCollectionUsageThresholdSupported()) {
+                    p.setCollectionUsageThreshold(0);
+                }
+            }
         }
 
         System.out.println("Test passed.");

@@ -1,5 +1,5 @@
 #
-# Copyright 2004 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright (c) 2004, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
 # 2 along with this work; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-# CA 95054 USA or visit www.sun.com if you need additional information or
-# have any questions.
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
 #
 
 # @test
@@ -42,7 +42,11 @@ JPS="${TESTJAVA}/bin/jps"
 JSTAT="${TESTJAVA}/bin/jstat"
 
 HOSTNAME=`uname -n`
-PORT=2099
+PORT=`freePort`
+if [ "${PORT}" = "0" ] ; then
+  echo "Cannot get free port"
+  exit 1
+fi
 
 JSTATD_OUT="jstatd_$$.out"
 
@@ -57,12 +61,11 @@ ${JPS} ${HOSTNAME}:${PORT} 2>&1 | awk -f ${TESTSRC}/jpsOutput1.awk
 if [ $? -ne 0 ]
 then
     echo "Output of jps differs from expected output. Failed."
+    cleanup
     exit 1
 fi
 
-TARGET_PID=`${JPS} | grep "Jstatd" | cut -d" " -f1`
-
-${JSTAT} -gcutil ${TARGET_PID}@${HOSTNAME}:${PORT} 250 5 2>&1 | awk -f ${TESTSRC}/jstatGcutilOutput1.awk
+${JSTAT} -gcutil ${JSTATD_PID}@${HOSTNAME}:${PORT} 250 5 2>&1 | awk -f ${TESTSRC}/jstatGcutilOutput1.awk
 RC=$?
 
 if [ ${RC} -ne 0 ]
@@ -75,5 +78,7 @@ then
     echo "jstatd generated the following, unexpected output:"
     RC=1
 fi
+
+cleanup
 
 exit ${RC}

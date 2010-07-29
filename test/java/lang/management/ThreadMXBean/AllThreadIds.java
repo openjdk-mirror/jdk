@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, 2004, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -28,7 +28,7 @@
  * @author  Alexei Guibadoulline and Mandy Chung
  *
  * @run build Barrier
- * @run main AllThreadIds
+ * @run main/othervm AllThreadIds
  */
 
 import java.lang.management.*;
@@ -70,6 +70,12 @@ public class AllThreadIds {
         }
     }
 
+    private static void fail(String msg) {
+        trace = true;
+        printThreadList();
+        throw new RuntimeException(msg);
+    }
+
     private static void checkThreadCount(int numNewThreads,
                                          int numTerminatedThreads)
         throws Exception {
@@ -82,27 +88,27 @@ public class AllThreadIds {
 
         if ((curLiveThreadCount - prevLiveThreadCount) !=
             (numNewThreads - numTerminatedThreads)) {
-            throw new RuntimeException("Unexpected number of live threads: " +
-                " Prev Total = " + prevTotalThreadCount +
-                " Current Total = " + curTotalThreadCount +
+            fail("Unexpected number of live threads: " +
+                " Prev live = " + prevLiveThreadCount +
+                " Current live = " + curLiveThreadCount +
                 " Threads added = " + numNewThreads +
                 " Threads terminated = " + numTerminatedThreads);
         }
         if (curPeakThreadCount - prevPeakThreadCount != numNewThreads) {
-            throw new RuntimeException("Unexpected number of peak threads: " +
-                " Prev Total = " + prevTotalThreadCount +
-                " Current Total = " + curTotalThreadCount +
+            fail("Unexpected number of peak threads: " +
+                " Prev peak = " + prevPeakThreadCount +
+                " Current peak = " + curPeakThreadCount +
                 " Threads added = " + numNewThreads);
         }
         if (curTotalThreadCount - prevTotalThreadCount != numNewThreads) {
-            throw new RuntimeException("Unexpected number of total threads: " +
+            fail("Unexpected number of total threads: " +
                 " Prev Total = " + prevTotalThreadCount +
                 " Current Total = " + curTotalThreadCount +
                 " Threads added = " + numNewThreads);
         }
         long[] list = mbean.getAllThreadIds();
         if (list.length != curLiveThreadCount) {
-            throw new RuntimeException("Array length returned by " +
+            fail("Array length returned by " +
                 "getAllThreadIds() = " + list.length +
                 " not matched count = " + curLiveThreadCount);
         }

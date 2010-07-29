@@ -1,12 +1,12 @@
 /*
- * Copyright 2001-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2000, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.security.util;
@@ -63,8 +63,8 @@ public class AuthResources_zh_CN extends java.util.ListResourceBundle {
         {"Unable to properly expand config", "\u65e0\u6cd5\u5b8c\u5168\u6269\u5145 {0}"},
         {"extra_config (No such file or directory)",
                 "{0} \uff08\u6ca1\u6709\u6b64\u6587\u4ef6\u6216\u76ee\u5f55\uff09"},
-        {"Unable to locate a login configuration",
-                "\u65e0\u6cd5\u5b9a\u4f4d\u767b\u5f55\u914d\u7f6e"},
+        {"Configuration Error:\n\tNo such file or directory",
+                "\u914d\u7f6e\u9519\u8bef\uff1a\n\t\u6ca1\u6709\u6b64\u6587\u4ef6\u6216\u76ee\u5f55"},
         {"Configuration Error:\n\tInvalid control flag, flag",
                 "\u914d\u7f6e\u9519\u8bef\uff1a\n\t\u65e0\u6548\u7684\u63a7\u5236\u6807\u8bb0\uff0c {0}"},
         {"Configuration Error:\n\tCan not specify multiple entries for appName",

@@ -1,12 +1,12 @@
 /*
- * Copyright 2001-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, 2005, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.nio.cs.ext;
@@ -130,13 +130,13 @@ final class CompoundTextSupport {
     /**
      * Maps a GL or GR escape sequence to an encoding.
      */
-    private static final Map sequenceToEncodingMap;
+    private static final Map<ControlSequence, String> sequenceToEncodingMap;
 
     /**
      * Indicates whether a particular encoding wants the high bit turned on
      * or off.
      */
-    private static final Map highBitsMap;
+    private static final Map<ControlSequence, Boolean> highBitsMap;
 
     /**
      * Maps an encoding to an escape sequence. Rather than manage two
@@ -144,18 +144,21 @@ final class CompoundTextSupport {
      * modify both GL and GR if necessary. This makes the output slightly less
      * efficient, but our code much simpler.
      */
-    private static final Map encodingToSequenceMap;
+    private static final Map<String, ControlSequence> encodingToSequenceMap;
 
     /**
      * The keys of 'encodingToSequenceMap', sorted in preferential order.
      */
-    private static final List encodings;
+    private static final List<String> encodings;
 
     static {
-        HashMap tSequenceToEncodingMap = new HashMap(33, 1.0f);
-        HashMap tHighBitsMap = new HashMap(31, 1.0f);
-        HashMap tEncodingToSequenceMap = new HashMap(21, 1.0f);
-        ArrayList tEncodings = new ArrayList(21);
+        HashMap<ControlSequence, String> tSequenceToEncodingMap =
+            new HashMap<>(33, 1.0f);
+        HashMap<ControlSequence, Boolean> tHighBitsMap =
+            new HashMap<>(31, 1.0f);
+        HashMap<String, ControlSequence> tEncodingToSequenceMap =
+            new HashMap<>(21, 1.0f);
+        ArrayList<String> tEncodings = new ArrayList<>(21);
 
         if (!(isEncodingSupported("US-ASCII") &&
               isEncodingSupported("ISO-8859-1")))
@@ -457,13 +460,12 @@ final class CompoundTextSupport {
         return getNonStandardDecoder(escSequence, null);
     }
     static boolean getHighBit(byte[] escSequence) {
-        Boolean bool = (Boolean)highBitsMap.get
-            (new ControlSequence(escSequence));
+        Boolean bool = highBitsMap.get(new ControlSequence(escSequence));
         return (bool == Boolean.TRUE);
     }
     static CharsetDecoder getNonStandardDecoder(byte[] escSequence,
                                                        byte[] encoding) {
-        return getDecoder((String)sequenceToEncodingMap.get
+        return getDecoder(sequenceToEncodingMap.get
             (new ControlSequence(escSequence, encoding)));
     }
     static CharsetDecoder getDecoder(String enc) {
@@ -474,7 +476,7 @@ final class CompoundTextSupport {
         try {
             cs = Charset.forName(enc);
         } catch (IllegalArgumentException e) {
-            Class cls;
+            Class<?> cls;
             try {
                 cls = Class.forName("sun.awt.motif." + enc);
             } catch (ClassNotFoundException ee) {
@@ -497,22 +499,20 @@ final class CompoundTextSupport {
 
     // For Encoder
     static byte[] getEscapeSequence(String encoding) {
-        ControlSequence seq = (ControlSequence)
-            encodingToSequenceMap.get(encoding);
+        ControlSequence seq = encodingToSequenceMap.get(encoding);
         if (seq != null) {
             return seq.escSequence;
         }
         return null;
     }
     static byte[] getEncoding(String encoding) {
-        ControlSequence seq = (ControlSequence)
-            encodingToSequenceMap.get(encoding);
+        ControlSequence seq = encodingToSequenceMap.get(encoding);
         if (seq != null) {
             return seq.encoding;
         }
         return null;
     }
-    static List getEncodings() {
+    static List<String> getEncodings() {
         return encodings;
     }
     static CharsetEncoder getEncoder(String enc) {
@@ -523,7 +523,7 @@ final class CompoundTextSupport {
         try {
             cs = Charset.forName(enc);
         } catch (IllegalArgumentException e) {
-            Class cls;
+            Class<?> cls;
             try {
                 cls = Class.forName("sun.awt.motif." + enc);
             } catch (ClassNotFoundException ee) {

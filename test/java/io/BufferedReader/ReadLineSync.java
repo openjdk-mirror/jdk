@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /**
@@ -46,16 +46,20 @@ public class ReadLineSync {
 
         BufferedReader reader = new BufferedReader(
                                 new FileReader(f));
-        int threadCount = 2;
+        try {
+            int threadCount = 2;
 
-        ExecutorService es = Executors.newFixedThreadPool(threadCount);
+            ExecutorService es = Executors.newFixedThreadPool(threadCount);
 
-        for (int i=0; i < threadCount; i++)
-            es.execute(new BufferedReaderConsumer(reader));
+            for (int i=0; i < threadCount; i++)
+                es.execute(new BufferedReaderConsumer(reader));
 
-        // Wait for the tasks to complete
-        es.shutdown();
-        while (!es.awaitTermination(60, TimeUnit.SECONDS));
+            // Wait for the tasks to complete
+            es.shutdown();
+            while (!es.awaitTermination(60, TimeUnit.SECONDS));
+        } finally {
+            reader.close();
+        }
     }
 
     static class BufferedReaderConsumer extends Thread {

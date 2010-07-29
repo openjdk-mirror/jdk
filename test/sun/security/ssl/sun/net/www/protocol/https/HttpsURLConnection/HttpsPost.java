@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2002 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, 2002, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -61,6 +61,11 @@ public class HttpsPost {
     volatile static boolean serverReady = false;
 
     /*
+     * Is the connection ready to close?
+     */
+    volatile static boolean closeReady = false;
+
+    /*
      * Turn on SSL debugging?
      */
     static boolean debug = false;
@@ -98,25 +103,34 @@ public class HttpsPost {
         serverReady = true;
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
-        InputStream sslIS = sslSocket.getInputStream();
-        OutputStream sslOS = sslSocket.getOutputStream();
-        BufferedReader br = new BufferedReader(new InputStreamReader(sslIS));
-        PrintStream ps = new PrintStream(sslOS);
-        // process HTTP POST request from client
-        System.out.println("status line: "+br.readLine());
-        String msg = null;
-        while ((msg = br.readLine()) != null && msg.length() > 0);
+        try {
+            InputStream sslIS = sslSocket.getInputStream();
+            OutputStream sslOS = sslSocket.getOutputStream();
+            BufferedReader br =
+                        new BufferedReader(new InputStreamReader(sslIS));
+            PrintStream ps = new PrintStream(sslOS);
 
-        msg = br.readLine();
-        if (msg.equals(postMsg)) {
-            ps.println("HTTP/1.1 200 OK\n\n");
-        } else {
-            ps.println("HTTP/1.1 500 Not OK\n\n");
+            // process HTTP POST request from client
+            System.out.println("status line: "+br.readLine());
+            String msg = null;
+            while ((msg = br.readLine()) != null && msg.length() > 0);
+
+            msg = br.readLine();
+            if (msg.equals(postMsg)) {
+                ps.println("HTTP/1.1 200 OK\n\n");
+            } else {
+                ps.println("HTTP/1.1 500 Not OK\n\n");
+            }
+            ps.flush();
+
+            // close the socket
+            while (!closeReady) {
+                Thread.sleep(50);
+            }
+        } finally {
+            sslSocket.close();
+            sslServerSocket.close();
         }
-        ps.flush();
-        Thread.sleep(2000);
-        sslSocket.close();
-        sslServerSocket.close();
     }
 
     /*
@@ -144,12 +158,17 @@ public class HttpsPost {
 
         http.setRequestMethod("POST");
         PrintStream ps = new PrintStream(http.getOutputStream());
-        ps.println(postMsg);
-        ps.flush();
-        if (http.getResponseCode() != 200) {
-            throw new RuntimeException("test Failed");
+        try {
+            ps.println(postMsg);
+            ps.flush();
+            if (http.getResponseCode() != 200) {
+                throw new RuntimeException("test Failed");
+            }
+        } finally {
+            ps.close();
+            http.disconnect();
+            closeReady = true;
         }
-        ps.close();
     }
 
     static class NameVerifier implements HostnameVerifier {

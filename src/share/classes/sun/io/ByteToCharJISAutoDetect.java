@@ -1,12 +1,12 @@
 /*
- * Copyright 1997-2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1997, 2003, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 package sun.io;
 
@@ -34,13 +34,11 @@ public class ByteToCharJISAutoDetect extends ByteToCharConverter {
     private final static int SJIS1B_MASK = 0x04;
     private final static int EUCJP_KANA1_MASK = 0x08;
     private final static int EUCJP_KANA2_MASK = 0x10;
-    private static byte[] maskTable1;
-    private static byte[] maskTable2;
+    private final static byte[] maskTable1 = JISAutoDetect.getByteMask1();
+    private final static byte[] maskTable2 = JISAutoDetect.getByteMask2();
 
     private final static int SS2 = 0x8e;
     private final static int SS3 = 0x8f;
-
-    private final static JISAutoDetect nioCoder = new JISAutoDetect();
 
     // SJISName is set to either "SJIS" or "MS932"
     private String SJISName;
@@ -57,8 +55,6 @@ public class ByteToCharJISAutoDetect extends ByteToCharConverter {
         defaultConv = new ByteToCharISO8859_1();
         defaultConv.subChars = subChars;
         defaultConv.subMode = subMode;
-        maskTable1 = nioCoder.getByteMask1();
-        maskTable2 = nioCoder.getByteMask2();
     }
 
     public int flush(char [] output, int outStart, int outEnd)
@@ -133,7 +129,7 @@ public class ByteToCharJISAutoDetect extends ByteToCharConverter {
                                 break;
                             }
                             if ((mask == SJIS2B_MASK) || (mask == SJIS1B_MASK)
-                                || (nioCoder.canBeSJIS1B(firstmask) && secondmask == 0)) {
+                                || (JISAutoDetect.canBeSJIS1B(firstmask) && secondmask == 0)) {
                                 convName = SJISName;
                                 break;
                             }
@@ -145,15 +141,15 @@ public class ByteToCharJISAutoDetect extends ByteToCharConverter {
                             // character boundary. If we tried both
                             // possibilities here, it might be able to be
                             // determined correctly.
-                            if ((byte1 == SS3) && nioCoder.canBeEUCJP(secondmask)) {
+                            if ((byte1 == SS3) && JISAutoDetect.canBeEUCJP(secondmask)) {
                                 if (cnt+1 < inEnd) {
                                     int nextbyte = input[cnt+1] & 0xff;
-                                    if (! nioCoder.canBeEUCJP(maskTable2[nextbyte]))
+                                    if (! JISAutoDetect.canBeEUCJP(maskTable2[nextbyte]))
                                         convName = SJISName;
                                 } else
                                     convName = SJISName;
                             }
-                            if (nioCoder.canBeEUCKana(firstmask, secondmask))
+                            if (JISAutoDetect.canBeEUCKana(firstmask, secondmask))
                                 euckana++;
                         } else {
                             if ((firstmask & SJIS1B_MASK) != 0) {

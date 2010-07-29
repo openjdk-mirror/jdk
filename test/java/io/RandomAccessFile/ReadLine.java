@@ -1,5 +1,5 @@
 /*
- * Copyright 1997 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1997, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -33,26 +33,30 @@ public class ReadLine {
     public static void main(String args[]) throws Exception {
         File fn = new File("x.ReadLine");
         RandomAccessFile raf = new RandomAccessFile(fn,"rw");
-        String line;
-        int ctr = 1;
-        String expected;
+        try {
+            String line;
+            int ctr = 1;
+            String expected;
 
-        raf.writeBytes
-            ("ln1\rln2\r\nln3\nln4\rln5\r\nln6\n\rln8\r\rln10\n\nln12\r\r\nln14");
-        raf.seek(0);
+            raf.writeBytes
+                ("ln1\rln2\r\nln3\nln4\rln5\r\nln6\n\rln8\r\rln10\n\nln12\r\r\nln14");
+            raf.seek(0);
 
-        while ((line=raf.readLine()) != null) {
-            if ((ctr == 7) || (ctr == 9) ||
-                (ctr == 11) || (ctr == 13)) {
-                expected = "";
-            } else {
-                expected = "ln" + ctr;
+            while ((line=raf.readLine()) != null) {
+                if ((ctr == 7) || (ctr == 9) ||
+                    (ctr == 11) || (ctr == 13)) {
+                     expected = "";
+                } else {
+                    expected = "ln" + ctr;
+                }
+                if (!line.equals(expected)) {
+                    throw new Exception("Expected \"" + expected + "\"" +
+                                        ", read \"" + line + "\"");
+                }
+                ctr++;
             }
-            if (!line.equals(expected)) {
-                throw new Exception("Expected \"" + expected + "\"" +
-                                    ", read \"" + line + "\"");
-            }
-            ctr++;
+        } finally {
+            raf.close();
         }
         System.err.println("Successfully completed test!");
     }

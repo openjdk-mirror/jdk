@@ -1,12 +1,12 @@
 /*
- * Copyright 2001-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 #include <windows.h>
@@ -67,6 +67,14 @@ typedef struct my_group_source_req {
 #define COPY_INET6_ADDRESS(env, source, target) \
     (*env)->GetByteArrayRegion(env, source, 0, 16, target)
 
+/**
+ * Enable or disable receipt of WSAECONNRESET errors.
+ */
+static void setConnectionReset(SOCKET s, BOOL enable) {
+    DWORD bytesReturned = 0;
+    WSAIoctl(s, SIO_UDP_CONNRESET, &enable, sizeof(enable),
+             NULL, 0, &bytesReturned, NULL, NULL);
+}
 
 
 JNIEXPORT void JNICALL
@@ -109,6 +117,12 @@ Java_sun_nio_ch_Net_socket0(JNIEnv *env, jclass cl, jboolean preferIPv6,
             setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY,
                        (const char *)&opt, sizeof(opt));
         }
+
+        /* Disable WSAECONNRESET errors for initially unconnected UDP sockets */
+        if (!stream) {
+            setConnectionReset(s, FALSE);
+        }
+
     } else {
         NET_ThrowNew(env, WSAGetLastError(), "socket");
     }
@@ -149,12 +163,13 @@ Java_sun_nio_ch_Net_connect0(JNIEnv *env, jclass clazz, jboolean preferIPv6, job
     SOCKETADDRESS sa;
     int rv;
     int sa_len;
+    SOCKET s = (SOCKET)fdval(env, fdo);
 
     if (NET_InetAddressToSockaddr(env, iao, port, (struct sockaddr *)&sa, &sa_len, preferIPv6) != 0) {
         return IOS_THROWN;
     }
 
-    rv = connect(fdval(env, fdo), (struct sockaddr *)&sa, sa_len);
+    rv = connect(s, (struct sockaddr *)&sa, sa_len);
     if (rv != 0) {
         int err = WSAGetLastError();
         if (err == WSAEINPROGRESS || err == WSAEWOULDBLOCK) {
@@ -162,6 +177,13 @@ Java_sun_nio_ch_Net_connect0(JNIEnv *env, jclass clazz, jboolean preferIPv6, job
         }
         NET_ThrowNew(env, err, "connect");
         return IOS_THROWN;
+    } else {
+        /* Enable WSAECONNRESET errors when a UDP socket is connected */
+        int type = 0, optlen = sizeof(type);
+        rv = getsockopt(s, SOL_SOCKET, SO_TYPE, (char*)&type, &optlen);
+        if (rv == 0 && type == SOCK_DGRAM) {
+            setConnectionReset(s, TRUE);
+        }
     }
     return 1;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -82,18 +82,26 @@ public class Test {
         } catch (InvalidClassException e) {
         }
 
+        FileInputStream in = new FileInputStream("a.ser");
         try {
-            new ObjectInputStream(new FileInputStream("a.ser")).readObject();
+            ObjectInputStream oin = new ObjectInputStream(in);
+            oin.readObject();
             throw new Error(
                 "read of A should fail with InvalidClassException");
         } catch (InvalidClassException e) {
+        } finally {
+            in.close();
         }
 
+        in = new FileInputStream("b.ser");
         try {
-            new ObjectInputStream(new FileInputStream("b.ser")).readObject();
+            ObjectInputStream oin = new ObjectInputStream(in);
+            oin.readObject();
             throw new Error(
                 "read of B should fail with InvalidClassException");
         } catch (InvalidClassException e) {
+        } finally {
+            in.close();
         }
     }
 }

@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.security.jgss.wrapper;
@@ -77,26 +77,34 @@ public final class SunNativeProvider extends Provider {
                             if (DEBUG) err.printStackTrace();
                             return null;
                         }
-                        String gssLib = System.getProperty(LIB_PROP);
-                        if (gssLib == null || gssLib.trim().equals("")) {
+                        String gssLibs[] = new String[0];
+                        String defaultLib = System.getProperty(LIB_PROP);
+                        if (defaultLib == null || defaultLib.trim().equals("")) {
                             String osname = System.getProperty("os.name");
                             if (osname.startsWith("SunOS")) {
-                                gssLib = "libgss.so";
+                                gssLibs = new String[]{ "libgss.so" };
                             } else if (osname.startsWith("Linux")) {
-                                gssLib = "libgssapi.so";
+                                gssLibs = new String[]{
+                                    "libgssapi.so",
+                                    "libgssapi_krb5.so",
+                                };
                             }
+                        } else {
+                            gssLibs = new String[]{ defaultLib };
                         }
-                        if (GSSLibStub.init(gssLib)) {
-                            debug("Loaded GSS library: " + gssLib);
-                            Oid[] mechs = GSSLibStub.indicateMechs();
-                            HashMap<String, String> map =
-                                        new HashMap<String, String>();
-                            for (int i = 0; i < mechs.length; i++) {
-                                debug("Native MF for " + mechs[i]);
-                                map.put("GssApiMechanism." + mechs[i],
-                                        MF_CLASS);
+                        for (String libName: gssLibs) {
+                            if (GSSLibStub.init(libName)) {
+                                debug("Loaded GSS library: " + libName);
+                                Oid[] mechs = GSSLibStub.indicateMechs();
+                                HashMap<String, String> map =
+                                            new HashMap<String, String>();
+                                for (int i = 0; i < mechs.length; i++) {
+                                    debug("Native MF for " + mechs[i]);
+                                    map.put("GssApiMechanism." + mechs[i],
+                                            MF_CLASS);
+                                }
+                                return map;
                             }
-                            return map;
                         }
                         return null;
                     }

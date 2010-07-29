@@ -1,12 +1,12 @@
 /*
- * Copyright 2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.nio.cs.ext;
@@ -34,7 +34,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.util.Arrays;
 import sun.nio.cs.HistoricallyNamedCharset;
-import sun.nio.cs.Surrogate;
 import static sun.nio.cs.CharsetMapping.*;
 
 public class EUC_TW extends Charset implements HistoricallyNamedCharset
@@ -159,8 +158,8 @@ public class EUC_TW extends Charset implements HistoricallyNamedCharset
                 c1[0] = c;
                 return c1;
             } else {
-                c2[0] = Surrogate.high(0x20000 + c);
-                c2[1] = Surrogate.low(0x20000 + c);
+                c2[0] = Character.highSurrogate(0x20000 + c);
+                c2[1] = Character.lowSurrogate(0x20000 + c);
                 return c2;
             }
         }
@@ -423,7 +422,7 @@ public class EUC_TW extends Charset implements HistoricallyNamedCharset
                     if (dst.remaining() < outSize)
                         return CoderResult.OVERFLOW;
                     for (int i = 0; i < outSize; i++)
-                        dst.put((byte)bb[i]);
+                        dst.put(bb[i]);
                     mark += inSize;
                 }
                 return CoderResult.UNDERFLOW;
@@ -441,7 +440,7 @@ public class EUC_TW extends Charset implements HistoricallyNamedCharset
         }
 
         static int encode(char hi, char low, byte[] bb) {
-            int c = Surrogate.toUCS4(hi, low);
+            int c = Character.toCodePoint(hi, low);
             if ((c & 0xf0000) != 0x20000)
                 return -1;
             c -= 0x20000;

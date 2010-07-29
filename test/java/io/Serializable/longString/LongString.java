@@ -1,5 +1,5 @@
 /*
- * Copyright 1999 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1999, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -68,17 +68,25 @@ public class LongString {
         mesgf = new File(System.getProperty("test.src", "."), "mesg.ser");
         fin = new FileInputStream(mesgf);
         bout = new ByteArrayOutputStream();
-        while (fin.available() > 0)
-            bout.write(fin.read());
+        try {
+            while (fin.available() > 0)
+                bout.write(fin.read());
+        } finally {
+            fin.close();
+        }
         byte[] buf2 = bout.toByteArray();
 
         if (! Arrays.equals(buf1, buf2))
             throw new Error("incompatible string format (write)");
 
         fin = new FileInputStream(mesgf);
-        oin = new ObjectInputStream(fin);
-        String mesgcopy = (String) oin.readObject();
-        if (! mesg.equals(mesgcopy))
-            throw new Error("incompatible string format (read)");
+        try {
+            oin = new ObjectInputStream(fin);
+            String mesgcopy = (String) oin.readObject();
+            if (! mesg.equals(mesgcopy))
+                throw new Error("incompatible string format (read)");
+        } finally {
+            fin.close();
+        }
     }
 }

@@ -1,12 +1,12 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,35 +18,33 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package java.dyn;
 
 /**
- * Syntactic marker to request javac to emit an {@code invokedynamic} instruction.
- * An {@code invokedynamic} instruction is a 5-byte bytecoded instruction
- * which begins with an opcode byte of value 186 ({@code 0xBA}),
- * and is followed by a two-byte index of a {@code NameAndType} constant
- * pool entry, then by two zero bytes.  The constant pool reference gives
- * the method name and argument and return types of the call site; there
- * is no other information provided at the call site.
+ * {@code InvokeDynamic} is a class with neither methods nor instances,
+ * which serves only as a syntactic marker in Java source code for
+ * an {@code invokedynamic} instruction.
+ * (See <a href="package-summary.html#jvm_mods">the package information</a> for specifics on this instruction.)
  * <p>
  * The {@code invokedynamic} instruction is incomplete without a target method.
- * The target method is a property of the reified call site object
- * (of type {@link CallSite}) which is in a one-to-one association with each
- * corresponding {@code invokedynamic} instruction.  The call site object
- * is initially produced by a <em>bootstrap method</em> associated with
- * the call site, via the various overloadings of {@link Linkage#registerBootstrapMethod}.
+ * The target method is a property of the reified {@linkplain CallSite call site object}
+ * which is linked to each active {@code invokedynamic} instruction.
+ * The call site object is initially produced by a
+ * {@linkplain java.dyn.Linkage#registerBootstrapMethod(Class, MethodHandle) bootstrap method}
+ * associated with the class whose bytecodes include the dynamic call site.
  * <p>
  * The type {@code InvokeDynamic} has no particular meaning as a
  * class or interface supertype, or an object type; it can never be instantiated.
  * Logically, it denotes a source of all dynamically typed methods.
- * It may be viewed as a pure syntactic marker (an importable one) of static calls.
+ * It may be viewed as a pure syntactic marker of static calls.
+ * It may be imported for ease of use.
  * <p>
- * Here are some examples of usage:
+ * Here are some examples:
  * <p><blockquote><pre>
  * Object x; String s; int i;
  * x = InvokeDynamic.greet("world"); // greet(Ljava/lang/String;)Ljava/lang/Object;
@@ -65,6 +63,7 @@ package java.dyn;
  * which must be registered by the static initializer of the enclosing class.
  * @author John Rose, JSR 292 EG
  */
+@MethodHandle.PolymorphicSignature
 public final class InvokeDynamic {
     private InvokeDynamic() { throw new InternalError(); }  // do not instantiate
 

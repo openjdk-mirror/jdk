@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -32,17 +32,19 @@ import java.nio.channels.*;
 public class CloseThenRegister {
 
     public static void main (String [] args) throws Exception {
+        Selector sel = Selector.open();
+        sel.close();
+        ServerSocketChannel ssc = ServerSocketChannel.open();
         try {
-            Selector s = Selector.open();
-            s.close();
-            ServerSocketChannel c = ServerSocketChannel.open();
-            c.socket().bind(new InetSocketAddress(40000));
-            c.configureBlocking(false);
-            c.register(s, SelectionKey.OP_ACCEPT);
+            ssc.bind(new InetSocketAddress(0));
+            ssc.configureBlocking(false);
+            ssc.register(sel, SelectionKey.OP_ACCEPT);
+            throw new RuntimeException("register after close does not cause CSE!");
         } catch (ClosedSelectorException cse) {
-            return;
+            // expected
+        } finally {
+            ssc.close();
         }
-        throw new RuntimeException("register after close does not cause CSE!");
     }
 
 }

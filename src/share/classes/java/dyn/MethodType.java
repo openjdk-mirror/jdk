@@ -1,12 +1,12 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package java.dyn;
@@ -36,15 +36,24 @@ import sun.dyn.util.BytecodeDescriptor;
 import static sun.dyn.MemberName.newIllegalArgumentException;
 
 /**
- * Run-time token used to match call sites with method handles.
+ * A method type represents the arguments and return type accepted and
+ * returned by a method handle, or the arguments and return type passed
+ * and expected  by a method handle caller.  Method types must be properly
+ * matched between a method handle and all its callers,
+ * and the JVM's operations enforce this matching at all times.
+ * <p>
  * The structure is a return type accompanied by any number of parameter types.
  * The types (primitive, void, and reference) are represented by Class objects.
+ * <p>
  * All instances of <code>MethodType</code> are immutable.
  * Two instances are completely interchangeable if they compare equal.
- * Equality depends exactly on the return and parameter types.
+ * Equality depends on pairwise correspondence of the return and parameter types and on nothing else.
  * <p>
- * This type can be created only by factory methods, which manage interning.
- *
+ * This type can be created only by factory methods.
+ * All factory methods may cache values, though caching is not guaranteed.
+ * <p>
+ * Note: Like classes and strings, method types can be represented directly
+ * as constants to be loaded by {@code ldc} bytecodes.
  * @author John Rose, JSR 292 EG
  */
 public final
@@ -109,7 +118,7 @@ class MethodType {
     /** Find or create an instance of the given method type.
      * @param rtype  the return type
      * @param ptypes the parameter types
-     * @return the interned method type with the given parts
+     * @return a method type with the given parts
      * @throws NullPointerException if rtype or any ptype is null
      * @throws IllegalArgumentException if any of the ptypes is void
      */
@@ -626,7 +635,7 @@ class MethodType {
     }
 
     /** Convenience method for {@link #methodType(java.lang.Class, java.lang.Class[])}.
-     * Find or create an instance (interned) of the given method type.
+     * Find or create an instance of the given method type.
      * Any class or interface name embedded in the signature string
      * will be resolved by calling {@link ClassLoader#loadClass(java.lang.String)}
      * on the given loader (or if it is null, on the system class loader).

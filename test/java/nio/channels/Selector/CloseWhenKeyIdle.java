@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2007, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -111,10 +111,14 @@ public class CloseWhenKeyIdle {
         // select should block
 
         int spinCount = 0;
+        boolean failed = false;
         for (;;) {
             int n = sel.select();
-            if (n > 0)
-                throw new RuntimeException("channel should not be selected");
+            if (n > 0) {
+                System.err.println("Channel should not be selected!!!");
+                failed = true;
+                break;
+            }
 
             // wakeup
             if (wakeupDone)
@@ -123,9 +127,18 @@ public class CloseWhenKeyIdle {
             // wakeup for no reason - if it happens a few times then we have a
             // problem
             spinCount++;
-            if (spinCount >= 3)
-                throw new RuntimeException("Selector appears to be spinning");
+            if (spinCount >= 3) {
+                System.err.println("Selector appears to be spinning");
+                failed = true;
+                break;
+            }
         }
+
+        sc1.close();
+        sel.close();
+
+        if (failed)
+            throw new RuntimeException("Test failed");
 
         System.out.println("PASS");
     }

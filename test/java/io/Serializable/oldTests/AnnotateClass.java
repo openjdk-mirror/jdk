@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -37,36 +37,43 @@ public class AnnotateClass {
                            "methods \n");
         try {
             FileOutputStream ostream = new FileOutputStream("subtest1.tmp");
-            TestOutputStream p = new TestOutputStream(ostream);
-
-            p.writeObject(System.out);
-            p.writeObject(System.err);
-            p.writeObject(new PrintStream(ostream));
-            p.flush();
-            ostream.close();
+            try {
+                TestOutputStream p = new TestOutputStream(ostream);
+                p.writeObject(System.out);
+                p.writeObject(System.err);
+                p.writeObject(new PrintStream(ostream));
+                p.flush();
+            } finally {
+                ostream.close();
+            }
 
             FileInputStream istream = new FileInputStream("subtest1.tmp");
-            TestInputStream q = new TestInputStream(istream);
+            try {
+                TestInputStream q = new TestInputStream(istream);
 
-            PrintStream out = (PrintStream)q.readObject();
-            PrintStream err = (PrintStream)q.readObject();
-            Object other = q.readObject();
-            if (out != System.out) {
-                System.err.println(
-                    "\nTEST FAILED: System.out not read correctly");
-                throw new Error();
+                PrintStream out = (PrintStream)q.readObject();
+                PrintStream err = (PrintStream)q.readObject();
+                Object other = q.readObject();
+                if (out != System.out) {
+                    System.err.println(
+                        "\nTEST FAILED: System.out not read correctly");
+                    throw new Error();
+                }
+                if (err != System.err) {
+                    System.err.println(
+                        "\nTEST FAILED: System.err not read correctly");
+                    throw new Error();
+                }
+                if (other != null) {
+                    System.err.println(
+                        "\nTEST FAILED: Non-system PrintStream should have " +
+                        "been written/read as null");
+                    throw new Error();
+                }
+            } finally {
+                istream.close();
             }
-            if (err != System.err) {
-                System.err.println(
-                    "\nTEST FAILED: System.err not read correctly");
-                throw new Error();
-            }
-            if (other != null) {
-                System.err.println(
-                    "\nTEST FAILED: Non-system PrintStream should have " +
-                    "been written/read as null");
-                throw new Error();
-            }
+
             System.err.println("\nTEST PASSED");
         } catch (Exception e) {
             System.err.print("TEST FAILED: ");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2001 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,12 +16,13 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
+ * @bug 4313882 4981129
  * @summary Unit test for datagram-socket-channel adaptors
  * @library ..
  */
@@ -81,8 +82,6 @@ public class AdaptDatagramSocket {
                 }
                 throw x;
             }
-            if (shouldTimeout)
-                throw new Exception("Receive did not time out");
             break;
         }
 
@@ -93,6 +92,11 @@ public class AdaptDatagramSocket {
             if (ip.getData()[ip.getOffset() + i]
                 != op.getData()[op.getOffset() + i])
                 throw new Exception("Incorrect data received");
+
+        if (!(ip.getSocketAddress().equals(dst))) {
+            throw new Exception("Incorrect sender address, expected: " + dst
+                + " actual: " + ip.getSocketAddress());
+        }
     }
 
     static void test(InetSocketAddress dst,

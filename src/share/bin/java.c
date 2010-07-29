@@ -1,12 +1,12 @@
 /*
- * Copyright 1995-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -192,8 +192,8 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
     int ret;
     InvocationFunctions ifn;
     jlong start, end;
-    char jrepath[MAXPATHLEN], jvmpath[MAXPATHLEN];
-    char ** original_argv = argv;
+    char jvmpath[MAXPATHLEN];
+    char jrepath[MAXPATHLEN];
 
     _fVersion = fullversion;
     _dVersion = dotversion;
@@ -225,14 +225,17 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
      */
     SelectVersion(argc, argv, &main_class);
 
-    /* copy original argv */
-    JLI_TraceLauncher("Command line Args:\n");
-    original_argv = (JLI_CopyArgs(argc, (const char**)argv));
+    if (JLI_IsTraceLauncher()) {
+        int i;
+        printf("Command line args:\n");
+        for (i = 0; i < argc ; i++) {
+            printf("argv[%d] = %s\n", i, argv[i]);
+        }
+    }
 
     CreateExecutionEnvironment(&argc, &argv,
                                jrepath, sizeof(jrepath),
-                               jvmpath, sizeof(jvmpath),
-                               original_argv);
+                               jvmpath, sizeof(jvmpath));
 
     ifn.CreateJavaVM = 0;
     ifn.GetDefaultJavaVMInitArgs = 0;
@@ -301,22 +304,43 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argc */
     return ContinueInNewThread(&ifn, argc, argv, jarfile, classname, ret);
 
 }
+/*
+ * Always detach the main thread so that it appears to have ended when
+ * the application's main method exits.  This will invoke the
+ * uncaught exception handler machinery if main threw an
+ * exception.  An uncaught exception handler cannot change the
+ * launcher's return code except by calling System.exit.
+ *
+ * Wait for all non-daemon threads to end, then destroy the VM.
+ * This will actually create a trivial new Java waiter thread
+ * named "DestroyJavaVM", but this will be seen as a different
+ * thread from the one that executed main, even though they are
+ * the same C thread.  This allows mainThread.join() and
+ * mainThread.isAlive() to work as expected.
+ */
+#define LEAVE() \
+    if ((*vm)->DetachCurrentThread(vm) != 0) { \
+        JLI_ReportErrorMessage(JVM_ERROR2); \
+        ret = 1; \
+    } \
+    (*vm)->DestroyJavaVM(vm); \
+    return ret \
 
 #define CHECK_EXCEPTION_NULL_LEAVE(e) \
     if ((*env)->ExceptionOccurred(env)) { \
         JLI_ReportExceptionDescription(env); \
-        goto leave; \
+        LEAVE(); \
     } \
     if ((e) == NULL) { \
         JLI_ReportErrorMessage(JNI_ERROR); \
-        goto leave; \
+        LEAVE(); \
     }
 
 #define CHECK_EXCEPTION_LEAVE(rv) \
     if ((*env)->ExceptionOccurred(env)) { \
         JLI_ReportExceptionDescription(env); \
         ret = (rv); \
-        goto leave; \
+        LEAVE(); \
     }
 
 int JNICALL
@@ -349,8 +373,7 @@ JavaMain(void * _args)
         PrintJavaVersion(env, showVersion);
         CHECK_EXCEPTION_LEAVE(0);
         if (printVersion) {
-            ret = 0;
-            goto leave;
+            LEAVE();
         }
     }
 
@@ -358,7 +381,7 @@ JavaMain(void * _args)
     if (printXUsage || printUsage || (jarfile == 0 && classname == 0)) {
         PrintUsage(env, printXUsage);
         CHECK_EXCEPTION_LEAVE(1);
-        goto leave;
+        LEAVE();
     }
 
     FreeKnownVMs();  /* after last possible PrintUsage() */
@@ -430,30 +453,7 @@ JavaMain(void * _args)
      * System.exit) will be non-zero if main threw an exception.
      */
     ret = (*env)->ExceptionOccurred(env) == NULL ? 0 : 1;
-
-leave:
-    /*
-     * Always detach the main thread so that it appears to have ended when
-     * the application's main method exits.  This will invoke the
-     * uncaught exception handler machinery if main threw an
-     * exception.  An uncaught exception handler cannot change the
-     * launcher's return code except by calling System.exit.
-     */
-    if ((*vm)->DetachCurrentThread(vm) != 0) {
-        JLI_ReportErrorMessage(JVM_ERROR2);
-        ret = 1;
-    }
-    /*
-     * Wait for all non-daemon threads to end, then destroy the VM.
-     * This will actually create a trivial new Java waiter thread
-     * named "DestroyJavaVM", but this will be seen as a different
-     * thread from the one that executed main, even though they are
-     * the same C thread.  This allows mainThread.join() and
-     * mainThread.isAlive() to work as expected.
-     */
-    (*vm)->DestroyJavaVM(vm);
-
-    return ret;
+    LEAVE();
 }
 
 /*
@@ -1076,15 +1076,17 @@ ParseArguments(int *pargc, char ***pargv, char **pjarfile,
     if (--argc >= 0) {
         if (jarflag) {
             *pjarfile = *argv++;
-            *pclassname = 0;
+            *pclassname = NULL;
         } else {
-            *pjarfile = 0;
+            *pjarfile = NULL;
             *pclassname = *argv++;
         }
         *pargc = argc;
         *pargv = argv;
     }
-
+    if (*pjarfile == NULL && *pclassname == NULL) {
+        *pret = 1;
+    }
     return JNI_TRUE;
 }
 

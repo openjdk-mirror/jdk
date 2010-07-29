@@ -1,12 +1,12 @@
 /*
- * Copyright 2002-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.swing;
@@ -41,6 +41,13 @@ import javax.swing.text.JTextComponent;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.DefaultCaret;
 import javax.swing.table.TableCellRenderer;
+<<<<<<< local
+=======
+import javax.swing.table.TableColumnModel;
+
+import sun.swing.PrintColorUIResource;
+import sun.swing.ImageIconUIResource;
+>>>>>>> other
 import sun.print.ProxyPrintGraphics;
 import sun.awt.*;
 import java.io.*;
@@ -96,6 +103,12 @@ public class SwingUtilities2 {
      * the value of the property is set to null in JComponent.setUI
      */
     public static final Object AA_TEXT_PROPERTY_KEY = new Object(); // AATextInfoPropertyKey
+
+    /**
+     * Attribute key for the content elements.  If it is set on an element, the
+     * element is considered to be a line break.
+     */
+    public static final String IMPLIED_CR = "CR";
 
     /**
      * Used to tell a text component, being used as an editor for table
@@ -419,8 +432,12 @@ public class SwingUtilities2 {
         // c may be null here.
         String clipString = "...";
         availTextWidth -= SwingUtilities2.stringWidth(c, fm, clipString);
-        boolean needsTextLayout;
+        if (availTextWidth <= 0) {
+            //can not fit any characters
+            return clipString;
+        }
 
+        boolean needsTextLayout;
         synchronized (charsBufferLock) {
             int stringLength = syncCharsBuffer(string);
             needsTextLayout =
@@ -1795,5 +1812,55 @@ public class SwingUtilities2 {
     public static Section liesInVertical(Rectangle rect, Point p,
                                          boolean three) {
         return liesIn(rect, p, false, false, three);
+    }
+
+    /**
+     * Maps the index of the column in the view at
+     * {@code viewColumnIndex} to the index of the column
+     * in the table model.  Returns the index of the corresponding
+     * column in the model.  If {@code viewColumnIndex}
+     * is less than zero, returns {@code viewColumnIndex}.
+     *
+     * @param cm the table model
+     * @param   viewColumnIndex     the index of the column in the view
+     * @return  the index of the corresponding column in the model
+     *
+     * @see JTable#convertColumnIndexToModel(int)
+     * @see javax.swing.plaf.basic.BasicTableHeaderUI
+     */
+    public static int convertColumnIndexToModel(TableColumnModel cm,
+                                                int viewColumnIndex) {
+        if (viewColumnIndex < 0) {
+            return viewColumnIndex;
+        }
+        return cm.getColumn(viewColumnIndex).getModelIndex();
+    }
+
+    /**
+     * Maps the index of the column in the {@code cm} at
+     * {@code modelColumnIndex} to the index of the column
+     * in the view.  Returns the index of the
+     * corresponding column in the view; returns {@code -1} if this column
+     * is not being displayed. If {@code modelColumnIndex} is less than zero,
+     * returns {@code modelColumnIndex}.
+     *
+     * @param cm the table model
+     * @param modelColumnIndex the index of the column in the model
+     * @return the index of the corresponding column in the view
+     *
+     * @see JTable#convertColumnIndexToView(int)
+     * @see javax.swing.plaf.basic.BasicTableHeaderUI
+     */
+    public static int convertColumnIndexToView(TableColumnModel cm,
+                                        int modelColumnIndex) {
+        if (modelColumnIndex < 0) {
+            return modelColumnIndex;
+        }
+        for (int column = 0; column < cm.getColumnCount(); column++) {
+            if (cm.getColumn(column).getModelIndex() == modelColumnIndex) {
+                return column;
+            }
+        }
+        return -1;
     }
 }

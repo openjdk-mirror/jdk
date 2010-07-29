@@ -1,12 +1,12 @@
 /*
- * Copyright 1997-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 #include <windows.h>
@@ -80,26 +80,22 @@ GetArchPath(int nbits)
  *
  */
 void
-CreateExecutionEnvironment(int *_argc,
-                           char ***_argv,
-                           char jrepath[],
-                           jint so_jrepath,
-                           char jvmpath[],
-                           jint so_jvmpath,
-                           char **original_argv) {
+CreateExecutionEnvironment(int *pargc, char ***pargv,
+                           char *jrepath, jint so_jrepath,
+                           char *jvmpath, jint so_jvmpath) {
     char * jvmtype;
     int i = 0;
-    char** pargv = *_argv;
     int running = CURRENT_DATA_MODEL;
 
     int wanted = running;
 
-    for (i = 0; i < *_argc ; i++) {
-        if (JLI_StrCmp(pargv[i], "-J-d64") == 0 || JLI_StrCmp(pargv[i], "-d64") == 0) {
+    char** argv = *pargv;
+    for (i = 0; i < *pargc ; i++) {
+        if (JLI_StrCmp(argv[i], "-J-d64") == 0 || JLI_StrCmp(argv[i], "-d64") == 0) {
             wanted = 64;
             continue;
         }
-        if (JLI_StrCmp(pargv[i], "-J-d32") == 0 || JLI_StrCmp(pargv[i], "-d32") == 0) {
+        if (JLI_StrCmp(argv[i], "-J-d32") == 0 || JLI_StrCmp(argv[i], "-d32") == 0) {
             wanted = 32;
             continue;
         }
@@ -123,7 +119,12 @@ CreateExecutionEnvironment(int *_argc,
         JLI_ReportErrorMessage(CFG_ERROR7);
         exit(1);
     }
-    jvmtype = CheckJvmType(_argc, _argv, JNI_FALSE);
+
+    jvmtype = CheckJvmType(pargc, pargv, JNI_FALSE);
+    if (JLI_StrCmp(jvmtype, "ERROR") == 0) {
+        JLI_ReportErrorMessage(CFG_ERROR9);
+        exit(4);
+    }
 
     jvmpath[0] = '\0';
     if (!GetJVMPath(jrepath, jvmtype, jvmpath, so_jvmpath)) {
@@ -131,7 +132,6 @@ CreateExecutionEnvironment(int *_argc,
         exit(4);
     }
     /* If we got here, jvmpath has been correctly initialized. */
-
 }
 
 
@@ -148,10 +148,17 @@ LoadMSVCRT()
          * assumed to be present in the "JRE path" directory.  If it is not found
          * there (or "JRE path" fails to resolve), skip the explicit load and let
          * nature take its course, which is likely to be a failure to execute.
+         * This is clearly completely specific to the exact compiler version
+         * which isn't very nice, but its hardly the only place.
+         * No attempt to look for compiler versions in between 2003 and 2010
+         * as we aren't supporting building with those.
          */
 #ifdef _MSC_VER
 #if _MSC_VER < 1400
 #define CRT_DLL "msvcr71.dll"
+#endif
+#if _MSC_VER >= 1600
+#define CRT_DLL "msvcr100.dll"
 #endif
 #ifdef CRT_DLL
         if (GetJREPath(crtpath, MAXPATHLEN)) {
@@ -196,19 +203,21 @@ EnsureJreInstallation(const char* jrepath)
     PREJVMSTART PreJVMStart;
     struct stat s;
 
+    /* Make sure the jrepath contains something */
+    if (jrepath[0] == NULL) {
+        return;
+    }
     /* 32 bit windows only please */
-    if (strcmp(GetArch(), "i386") != 0 ) {
+    if (JLI_StrCmp(GetArch(), "i386") != 0 ) {
         return;
     }
     /* Does our bundle directory exist ? */
-    strcpy(tmpbuf, jrepath);
-    strcat(tmpbuf, "\\lib\\bundles");
+    JLI_Snprintf(tmpbuf, sizeof(tmpbuf), "%s\\lib\\bundles", jrepath);
     if (stat(tmpbuf, &s) != 0) {
         return;
     }
     /* Does our jkernel dll exist ? */
-    strcpy(tmpbuf, jrepath);
-    strcat(tmpbuf, "\\bin\\jkernel.dll");
+    JLI_Snprintf(tmpbuf, sizeof(tmpbuf), "%s\\bin\\jkernel.dll", jrepath);
     if (stat(tmpbuf, &s) != 0) {
         return;
     }
@@ -242,30 +251,30 @@ GetJREPath(char *path, jint pathsize)
 
     if (GetApplicationHome(path, pathsize)) {
         /* Is JRE co-located with the application? */
-        sprintf(javadll, "%s\\bin\\" JAVA_DLL, path);
+        JLI_Snprintf(javadll, sizeof(javadll), "%s\\bin\\" JAVA_DLL, path);
         if (stat(javadll, &s) == 0) {
-            goto found;
+            JLI_TraceLauncher("JRE path is %s\n", path);
+            return JNI_TRUE;
         }
 
         /* Does this app ship a private JRE in <apphome>\jre directory? */
-        sprintf(javadll, "%s\\jre\\bin\\" JAVA_DLL, path);
+        JLI_Snprintf(javadll, sizeof (javadll), "%s\\jre\\bin\\" JAVA_DLL, path);
         if (stat(javadll, &s) == 0) {
             JLI_StrCat(path, "\\jre");
-            goto found;
+            JLI_TraceLauncher("JRE path is %s\n", path);
+            return JNI_TRUE;
         }
     }
 
     /* Look for a public JRE on this machine. */
     if (GetPublicJREHome(path, pathsize)) {
-        goto found;
+        JLI_TraceLauncher("JRE path is %s\n", path);
+        return JNI_TRUE;
     }
 
     JLI_ReportErrorMessage(JRE_ERROR8 JAVA_DLL);
     return JNI_FALSE;
 
- found:
-    JLI_TraceLauncher("JRE path is %s\n", path);
-    return JNI_TRUE;
 }
 
 /*
@@ -279,9 +288,9 @@ GetJVMPath(const char *jrepath, const char *jvmtype,
 {
     struct stat s;
     if (JLI_StrChr(jvmtype, '/') || JLI_StrChr(jvmtype, '\\')) {
-        sprintf(jvmpath, "%s\\" JVM_DLL, jvmtype);
+        JLI_Snprintf(jvmpath, jvmpathsize, "%s\\" JVM_DLL, jvmtype);
     } else {
-        sprintf(jvmpath, "%s\\bin\\%s\\" JVM_DLL, jrepath, jvmtype);
+        JLI_Snprintf(jvmpath, jvmpathsize, "%s\\bin\\%s\\" JVM_DLL, jrepath, jvmtype);
     }
     if (stat(jvmpath, &s) == 0) {
         return JNI_TRUE;

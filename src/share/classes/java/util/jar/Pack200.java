@@ -1,12 +1,12 @@
 /*
- * Copyright 2003-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003,2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 package java.util.jar;
 
@@ -212,10 +212,18 @@ public abstract class Pack200 {
      * to produce a specific bytewise image for any given transmission
      * ordering of archive elements.)
      * <p>
-     * In order to maintain backward compatibility, if the input JAR-files are
-     * solely comprised of 1.5 (or  lesser) classfiles, a 1.5 compatible
-     * pack file is  produced.  Otherwise a 1.6 compatible pack200 file is
-     * produced.
+     * In order to maintain backward compatibility, the pack file's version is
+     * set to accommodate the class files present in the input JAR file. In
+     * other words, the pack file version will be the latest, if the class files
+     * are the latest and conversely the pack file version will be the oldest
+     * if the class file versions are also the oldest. For intermediate class
+     * file versions the corresponding pack file version will be used.
+     * For example:
+     *    If the input JAR-files are solely comprised of 1.5  (or  lesser)
+     * class files, a 1.5 compatible pack file is  produced. This will also be
+     * the case for archives that have no class files.
+     *    If the input JAR-files contains a 1.6 class file, then the pack file
+     * version will be set to 1.6.
      * <p>
      * @since 1.5
      */
@@ -236,9 +244,10 @@ public abstract class Pack200 {
          * input file to be transmitted in the segment, along with the size
          * of its name and other transmitted properties.
          * <p>
-         * The default is 1000000 (a million bytes).  This allows input JAR files
-         * of moderate size to be transmitted in one segment.  It also puts
-         * a limit on memory requirements for packers and unpackers.
+         * The default is -1, which means the packer will always create a single
+         * segment output file. In cases where extremely large output files are
+         * generated, users are strongly encouraged to use segmenting or break
+         * up the input file into smaller JARs.
          * <p>
          * A 10Mb JAR packed without this limit will
          * typically pack about 10% smaller, but the packer may require

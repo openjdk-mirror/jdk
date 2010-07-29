@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2007, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 /*
     @test
@@ -31,10 +31,6 @@
  *
  *
  * (C) Copyright IBM Corp. 1999 - All Rights Reserved
- *
- * Portions Copyright 2007 by Sun Microsystems, Inc.,
- * 901 San Antonio Road, Palo Alto, California, 94303, U.S.A.
- * All rights reserved.
  *
  * This software is the confidential and proprietary information
  * of Sun Microsystems, Inc. ("Confidential Information").  You
@@ -431,9 +427,11 @@ public class Bug4168625Test extends RBTestFmwk {
         private boolean network = false;
 
         public SimpleLoader() {
+            super(SimpleLoader.class.getClassLoader());
             this.network = false;
         }
         public SimpleLoader(boolean simulateNetworkLoad) {
+            super(SimpleLoader.class.getClassLoader());
             this.network = simulateNetworkLoad;
         }
         public Class loadClass(final String className, final boolean resolveIt)
@@ -448,7 +446,7 @@ public class Bug4168625Test extends RBTestFmwk {
                         } catch (java.lang.InterruptedException e) {
                         }
                     }
-                    result = super.findSystemClass(className);
+                    result = getParent().loadClass(className);
                     if ((result != null) && resolveIt) {
                         resolveClass(result);
                     }
@@ -464,11 +462,13 @@ public class Bug4168625Test extends RBTestFmwk {
         private String[] classesToWaitFor;
 
         public Loader() {
+            super(Loader.class.getClassLoader());
             classesToLoad = new String[0];
             classesToWaitFor = new String[0];
         }
 
         public Loader(final String[] classesToLoadIn, final String[] classesToWaitForIn) {
+            super(Loader.class.getClassLoader());
             classesToLoad = classesToLoadIn;
             classesToWaitFor = classesToWaitForIn;
         }
@@ -544,10 +544,12 @@ public class Bug4168625Test extends RBTestFmwk {
         }
 
         /**
-         * Delegate loading to the system loader
+         * Delegate loading to its parent class loader that loads the test classes.
+         * In othervm mode, the parent class loader is the system class loader;
+         * in samevm mode, the parent class loader is the jtreg URLClassLoader.
          */
         private Class loadFromSystem(String className) throws ClassNotFoundException {
-            return super.findSystemClass(className);
+            return getParent().loadClass(className);
         }
 
         public void logClasses(String title) {

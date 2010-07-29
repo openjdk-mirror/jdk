@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -47,13 +47,14 @@ public class CorruptedZipFiles {
     }
 
     public static void main(String[] args) throws Exception {
-        ZipOutputStream zos = new ZipOutputStream(
-            new FileOutputStream("x.zip"));
-        ZipEntry e = new ZipEntry("x");
-        zos.putNextEntry(e);
-        zos.write((int)'x');
-        zos.close();
-        zos = null;
+        ZipOutputStream zos = new ZipOutputStream(new FileOutputStream("x.zip"));
+        try {
+            ZipEntry e = new ZipEntry("x");
+            zos.putNextEntry(e);
+            zos.write((int)'x');
+        } finally {
+            zos.close();
+        }
 
         int len = (int)(new File("x.zip").length());
         byte[] good = new byte[len];
@@ -153,12 +154,15 @@ public class CorruptedZipFiles {
             fos.write(data);
             fos.close();
             ZipFile zf = new ZipFile(zipName);
-            if (getInputStream) {
-                InputStream is = zf.getInputStream(new ZipEntry("x"));
-                is.read();
+            try {
+                if (getInputStream) {
+                    InputStream is = zf.getInputStream(new ZipEntry("x"));
+                    is.read();
+                }
+            } finally {
+                zf.close();
             }
             fail("Failed to throw expected ZipException");
-            zf.close();
         } catch (ZipException e) {
             if (e.getMessage().matches(msgPattern))
                 passed++;

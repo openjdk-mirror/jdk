@@ -1,5 +1,5 @@
 /*
- * Copyright 2002 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -31,13 +31,20 @@ import java.nio.channels.*;
 
 public class Bind {
     public static void main(String[] args) throws Exception {
+        SocketChannel sc1 = SocketChannel.open();
         try {
-            SocketChannel channel1 = SocketChannel.open();
-            channel1.socket().bind(new InetSocketAddress(5555));
-            SocketChannel channel2 = SocketChannel.open();
-            channel2.socket().bind(new InetSocketAddress(5555));
+            sc1.bind(new InetSocketAddress(0));
+            int port = sc1.socket().getLocalPort();
+            SocketChannel sc2 = SocketChannel.open();
+            try {
+                sc2.bind(new InetSocketAddress(port));
+            } finally {
+               sc2.close();
+            }
         } catch (BindException be) {
             // Correct result
+        } finally {
+            sc1.close();
         }
     }
 }

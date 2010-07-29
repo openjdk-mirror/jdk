@@ -1,5 +1,5 @@
 /*
- * Copyright 2002 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -35,19 +35,11 @@ import java.nio.channels.*;
 
 public class LotsOfChannels {
 
-    private final static int PIPES_COUNT = 1900;
+    private final static int PIPES_COUNT = 256;
     private final static int BUF_SIZE = 8192;
     private final static int LOOPS = 10;
 
     public static void main(String[] argv) throws Exception {
-
-
-        String os = System.getProperty("os.name");
-        if (!(os.equals("Windows NT")
-           || os.equals("Windows 2000")
-           || os.equals("Windows XP")))
-            return;
-
         Pipe[] pipes = new Pipe[PIPES_COUNT];
         Pipe pipe = Pipe.open();
         Pipe.SinkChannel sink = pipe.sink();
@@ -72,6 +64,13 @@ public class LotsOfChannels {
             sel.selectedKeys().clear();
             source.read(ByteBuffer.allocate(BUF_SIZE));
         }
+
+        for (int i = 0; i < PIPES_COUNT; i++ ) {
+            pipes[i].sink().close();
+            pipes[i].source().close();
+        }
+        pipe.sink().close();
+        pipe.source().close();
         sel.close();
     }
 }

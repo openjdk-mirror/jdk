@@ -1,12 +1,12 @@
 /*
- * Portions Copyright 2000-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -228,37 +228,6 @@ public class KeyTab implements KeyTabConstants {
     }
 
     /**
-     * Reads the service key from the keytab file.
-     * @param service the PrincipalName of the requested service.
-     * @return the last service key in the keytab with the highest kvno
-     */
-    public EncryptionKey readServiceKey(PrincipalName service) {
-        KeyTabEntry entry = null;
-        EncryptionKey key = null;
-        if (entries != null) {
-            // Find latest entry for this service that has an etype
-            // that has been configured for use
-            for (int i = entries.size()-1; i >= 0; i--) {
-                entry = entries.elementAt(i);
-                if (entry.service.match(service)) {
-                    if (EType.isSupported(entry.keyType)) {
-                        if (key == null ||
-                                entry.keyVersion > key.getKeyVersionNumber()) {
-                            key = new EncryptionKey(entry.keyblock,
-                                             entry.keyType,
-                                             new Integer(entry.keyVersion));
-                        }
-                    } else if (DEBUG) {
-                        System.out.println("Found unsupported keytype (" +
-                            entry.keyType + ") for " + service);
-                    }
-                }
-            }
-        }
-        return key;
-    }
-
-    /**
      * Reads all keys for a service from the keytab file that have
      * etypes that have been configured for use. If there are multiple
      * keys with same etype, the one with the highest kvno is returned.
@@ -309,7 +278,7 @@ public class KeyTab implements KeyTabConstants {
         Arrays.sort(retVal, new Comparator<EncryptionKey>() {
             @Override
             public int compare(EncryptionKey o1, EncryptionKey o2) {
-                if (etypes != null && etypes != EType.getBuiltInDefaults()) {
+                if (etypes != null) {
                     int o1EType = o1.getEType();
                     int o2EType = o2.getEType();
                     if (o1EType != o2EType) {
@@ -320,6 +289,9 @@ public class KeyTab implements KeyTabConstants {
                                 return 1;
                             }
                         }
+                        // Neither o1EType nor o2EType in default_tkt_enctypes,
+                        // therefore won't be used in AS-REQ. We do not care
+                        // about their order, use kvno is OK.
                     }
                 }
                 return o2.getKeyVersionNumber().intValue()

@@ -1,12 +1,12 @@
 /*
- * Copyright 2005-2006 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 package sun.tools.attach;
 
@@ -37,6 +37,8 @@ import java.util.Properties;
  * Linux implementation of HotSpotVirtualMachine
  */
 public class LinuxVirtualMachine extends HotSpotVirtualMachine {
+    // temp directory for socket file
+    private static final String tmpdir = System.getProperty("java.io.tmpdir");
 
     // Indicates if this machine uses the old LinuxThreads
     static boolean isLinuxThreads;
@@ -260,7 +262,7 @@ public class LinuxVirtualMachine extends HotSpotVirtualMachine {
 
     // Return the socket file for the given process.
     // Checks working directory of process for .java_pid<pid>. If not
-    // found it looks in /tmp.
+    // found it looks in temp directory.
     private String findSocketFile(int pid) {
         // First check for a .java_pid<pid> file in the working directory
         // of the target process
@@ -268,20 +270,17 @@ public class LinuxVirtualMachine extends HotSpotVirtualMachine {
         String path = "/proc/" + pid + "/cwd/" + fn;
         File f = new File(path);
         if (!f.exists()) {
-            // Not found, so try /tmp
-            path = "/tmp/" + fn;
-            f = new File(path);
-            if (!f.exists()) {
-                return null;            // not found
-            }
+            // Not found, so try temp directory
+            f = new File(tmpdir, fn);
+            path = f.exists() ? f.getPath() : null;
         }
         return path;
     }
 
     // On Solaris/Linux a simple handshake is used to start the attach mechanism
     // if not already started. The client creates a .attach_pid<pid> file in the
-    // target VM's working directory (or /tmp), and the SIGQUIT handler checks
-    // for the file.
+    // target VM's working directory (or temp directory), and the SIGQUIT handler
+    // checks for the file.
     private File createAttachFile(int pid) throws IOException {
         String fn = ".attach_pid" + pid;
         String path = "/proc/" + pid + "/cwd/" + fn;
@@ -289,8 +288,7 @@ public class LinuxVirtualMachine extends HotSpotVirtualMachine {
         try {
             f.createNewFile();
         } catch (IOException x) {
-            path = "/tmp/" + fn;
-            f = new File(path);
+            f = new File(tmpdir, fn);
             f.createNewFile();
         }
         return f;

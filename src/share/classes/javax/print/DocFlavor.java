@@ -1,12 +1,12 @@
 /*
- * Copyright 2000-2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2000, 2005, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package javax.print;
@@ -83,7 +83,7 @@ import java.io.Serializable;
  * doc flavor's MIME type is one of the standard media types telling how to
  * interpret the sequence of characters or bytes. For a list of standard media
  * types, see the Internet Assigned Numbers Authority's (IANA's) <A
- * HREF="http://www.isi.edu/in-notes/iana/assignments/media-types/">Media Types
+ * HREF="http://www.iana.org/assignments/media-types/">Media Types
  * Directory</A>. Interface {@link Doc Doc} provides two utility operations,
  * {@link Doc#getReaderForText() getReaderForText} and
  * {@link Doc#getStreamForBytes() getStreamForBytes()}, to help a
@@ -450,7 +450,7 @@ public class DocFlavor implements Serializable, Cloneable {
     /**
      * A String representing the host operating system encoding.
      * This will follow the conventions documented in
-     * <a href="http://ietf.org/rfc/rfc2278.txt">
+     * <a href="http://www.ietf.org/rfc/rfc2278.txt">
      * <i>RFC&nbsp;2278:&nbsp;IANA Charset Registration Procedures</i></a>
      * except where historical names are returned for compatibility with
      * previous versions of the Java platform.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -55,52 +55,58 @@ public class ManyEntries {
         File zipFile = new File(++uniquifier + ".zip");
         try {
             zipFile.delete();
-            ZipOutputStream zos =
-                new ZipOutputStream(
-                    new BufferedOutputStream(
-                        new FileOutputStream(zipFile)));
-            for (int i = 0; i < N; i++) {
-                ZipEntry e = new ZipEntry("DIR/"+i);
-                e.setMethod(method);
-                e.setTime(time);
-                if (method == ZipEntry.STORED) {
-                    e.setSize(1);
-                    crc32.reset();
-                    crc32.update((byte)i);
-                    e.setCrc(crc32.getValue());
-                } else {
-                    e.setSize(0);
-                    e.setCrc(0);
+            ZipOutputStream zos = new ZipOutputStream(
+                new BufferedOutputStream(
+                    new FileOutputStream(zipFile)));
+            try {
+                for (int i = 0; i < N; i++) {
+                    ZipEntry e = new ZipEntry("DIR/"+i);
+                    e.setMethod(method);
+                    e.setTime(time);
+                    if (method == ZipEntry.STORED) {
+                        e.setSize(1);
+                        crc32.reset();
+                        crc32.update((byte)i);
+                        e.setCrc(crc32.getValue());
+                    } else {
+                        e.setSize(0);
+                        e.setCrc(0);
+                    }
+                    zos.putNextEntry(e);
+                    zos.write(i);
                 }
-                zos.putNextEntry(e);
-                zos.write(i);
+            } finally {
+                zos.close();
+                zos = null;
             }
-            zos.close();
-            zos = null;
 
-            ZipFile zip = new ZipFile(zipFile);
-            if (! (zip.size() == N))
-                throw new Exception("Bad ZipFile size: " + zip.size());
-            Enumeration entries = zip.entries();
+            ZipFile zip = zip = new ZipFile(zipFile);
+            try {
+                if (! (zip.size() == N))
+                    throw new Exception("Bad ZipFile size: " + zip.size());
+                Enumeration entries = zip.entries();
 
-            for (int i = 0; i < N; i++) {
-                if (i % 1000 == 0) {System.gc(); System.runFinalization();}
-                if (! (entries.hasMoreElements()))
-                    throw new Exception("only " + i + " elements");
-                ZipEntry e = (ZipEntry)entries.nextElement();
-                if (! (e.getSize() == 1))
-                    throw new Exception("bad size: " + e.getSize());
-                if (! (e.getName().equals("DIR/" + i)))
-                    throw new Exception("bad name: " + i);
-                if (! (e.getMethod() == method))
-                    throw new Exception("getMethod="+e.getMethod()+", method=" + method);
-                if (! (e.getTime() == time))
-                    throw new Exception("getTime="+e.getTime()+", time=" + time);
-                if (! (zip.getInputStream(e).read() == (i & 0xff)))
-                    throw new Exception("Bad file contents: " + i);
+                for (int i = 0; i < N; i++) {
+                    if (i % 1000 == 0) {System.gc(); System.runFinalization();}
+                    if (! (entries.hasMoreElements()))
+                        throw new Exception("only " + i + " elements");
+                    ZipEntry e = (ZipEntry)entries.nextElement();
+                    if (! (e.getSize() == 1))
+                        throw new Exception("bad size: " + e.getSize());
+                    if (! (e.getName().equals("DIR/" + i)))
+                        throw new Exception("bad name: " + i);
+                    if (! (e.getMethod() == method))
+                        throw new Exception("getMethod="+e.getMethod()+", method=" + method);
+                    if (! (e.getTime() == time))
+                        throw new Exception("getTime="+e.getTime()+", time=" + time);
+                    if (! (zip.getInputStream(e).read() == (i & 0xff)))
+                        throw new Exception("Bad file contents: " + i);
+                }
+                if (entries.hasMoreElements())
+                    throw new Exception("too many elements");
+            } finally {
+                zip.close();
             }
-            if (entries.hasMoreElements())
-                throw new Exception("too many elements");
         }
         finally {
             zipFile.delete();

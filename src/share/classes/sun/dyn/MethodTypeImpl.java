@@ -1,12 +1,12 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.dyn;
@@ -87,6 +87,11 @@ public class MethodTypeImpl {
         METHOD_TYPE_FRIEND = am;
     }
     static private MethodTypeFriend METHOD_TYPE_FRIEND;
+
+    static MethodType makeImpl(Access token, Class<?> rtype, Class<?>[] ptypes, boolean trusted) {
+        Access.check(token);
+        return METHOD_TYPE_FRIEND.makeImpl(rtype, ptypes, trusted);
+    }
 
     protected MethodTypeImpl(MethodType erasedType) {
         this.erasedType = erasedType;
@@ -233,8 +238,10 @@ public class MethodTypeImpl {
             return primsAtEnd = t;
 
         // known to have a mix of 2 or 3 of ref, int, long
-        return primsAtEnd = reorderParameters(t, primsAtEndOrder(t), null);
-
+        int[] reorder = primsAtEndOrder(t);
+        ct = reorderParameters(t, reorder, null);
+        //System.out.println("t="+t+" / reorder="+java.util.Arrays.toString(reorder)+" => "+ct);
+        return primsAtEnd = ct;
     }
 
     /** Compute a new ordering of parameters so that all references
@@ -273,7 +280,8 @@ public class MethodTypeImpl {
             else if (!hasTwoArgSlots(pt))      ord = ifill++;
             else                               ord = lfill++;
             if (ord != i)  changed = true;
-            paramOrder[i] = ord;
+            assert(paramOrder[ord] == 0);
+            paramOrder[ord] = i;
         }
         assert(rfill == argc - pac && ifill == argc - lac && lfill == argc);
         if (!changed) {
@@ -292,15 +300,15 @@ public class MethodTypeImpl {
         if (newParamOrder == null)  return mt;  // no-op reordering
         Class<?>[] ptypes = METHOD_TYPE_FRIEND.ptypes(mt);
         Class<?>[] ntypes = new Class<?>[newParamOrder.length];
-        int ordMax = ptypes.length + (moreParams == null ? 0 : moreParams.length);
+        int maxParam = ptypes.length + (moreParams == null ? 0 : moreParams.length);
         boolean changed = (ntypes.length != ptypes.length);
         for (int i = 0; i < newParamOrder.length; i++) {
-            int ord = newParamOrder[i];
-            if (ord != i)  changed = true;
+            int param = newParamOrder[i];
+            if (param != i)  changed = true;
             Class<?> nt;
-            if (ord < ptypes.length)   nt = ptypes[ord];
-            else if (ord == ordMax)    nt = mt.returnType();
-            else                       nt = moreParams[ord - ptypes.length];
+            if (param < ptypes.length)   nt = ptypes[param];
+            else if (param == maxParam)  nt = mt.returnType();
+            else                         nt = moreParams[param - ptypes.length];
             ntypes[i] = nt;
         }
         if (!changed)  return mt;

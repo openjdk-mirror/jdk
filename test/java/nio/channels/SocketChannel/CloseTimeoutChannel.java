@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -33,11 +33,12 @@ import java.nio.channels.*;
 import java.net.*;
 
 public class CloseTimeoutChannel {
-    final static int PORT=6347;
     public static void main(String args[]) throws Exception {
+        int port = -1;
         try {
             ServerSocketChannel listener=ServerSocketChannel.open();
-            listener.socket().bind(new InetSocketAddress(PORT));
+            listener.socket().bind(new InetSocketAddress(0));
+            port = listener.socket().getLocalPort();
             AcceptorThread thread=new AcceptorThread(listener);
             thread.start();
         } catch (IOException e) {
@@ -50,7 +51,7 @@ public class CloseTimeoutChannel {
         try {
             System.out.println("Establishing connection");
             Socket socket=SocketChannel.open(
-                new InetSocketAddress("127.0.0.1", PORT)).socket();
+                new InetSocketAddress("127.0.0.1", port)).socket();
             OutputStream out=socket.getOutputStream();
             InputStream in=socket.getInputStream();
 
@@ -98,7 +99,8 @@ public class CloseTimeoutChannel {
                     Thread.sleep(100);
                 } catch (InterruptedException e) { }
 
-                System.out.println(INDENT+"Listening on port "+ PORT);
+                System.out.println(INDENT+"Listening on port "+
+                    _listener.socket().getLocalPort());
                 ByteBuffer buf=ByteBuffer.allocate(5);
                 Socket client=_listener.accept().socket();;
                 System.out.println(INDENT+"Accepted client");
@@ -123,6 +125,8 @@ public class CloseTimeoutChannel {
                 client.close();
             } catch (IOException e) {
                 System.out.println(INDENT+"Error accepting!");
+            } finally {
+                try { _listener.close(); } catch (IOException ignore) { }
             }
         }
     }

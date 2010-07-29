@@ -1,12 +1,12 @@
 /*
- * Copyright 2003-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,16 +18,16 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.security.ssl.krb5;
 
 import java.io.*;
 import java.security.*;
-import java.security.interfaces.*;
+import java.util.Arrays;
 
 import javax.net.ssl.*;
 
@@ -128,8 +128,8 @@ final class KerberosPreMasterSecret {
                "are not supported for TLS Kerberos cipher suites");
         }
 
-         // Decrypt premaster secret
-         try {
+        // Decrypt premaster secret
+        try {
             EncryptedData data = new EncryptedData(sessionKey.getEType(),
                         null /* optional kvno */, encrypted);
 
@@ -141,8 +141,25 @@ final class KerberosPreMasterSecret {
                  }
             }
 
-            // Reset data stream after decryption, remove redundant bytes
-            preMaster =  data.reset(temp, false);
+            // Remove padding bytes after decryption. Only DES and DES3 have
+            // paddings and we don't support DES3 in TLS (see above)
+
+            if (temp.length == 52 &&
+                    data.getEType() == EncryptedData.ETYPE_DES_CBC_CRC) {
+                // For des-cbc-crc, 4 paddings. Value can be 0x04 or 0x00.
+                if (paddingByteIs(temp, 52, (byte)4) ||
+                        paddingByteIs(temp, 52, (byte)0)) {
+                    temp = Arrays.copyOf(temp, 48);
+                }
+            } else if (temp.length == 56 &&
+                    data.getEType() == EncryptedData.ETYPE_DES_CBC_MD5) {
+                // For des-cbc-md5, 8 paddings with 0x08, or no padding
+                if (paddingByteIs(temp, 56, (byte)8)) {
+                    temp = Arrays.copyOf(temp, 48);
+                }
+            }
+
+            preMaster = temp;
 
             protocolVersion = ProtocolVersion.valueOf(preMaster[0],
                  preMaster[1]);
@@ -189,6 +206,19 @@ final class KerberosPreMasterSecret {
             preMaster = generatePreMaster(generator, currentVersion);
             protocolVersion = currentVersion;
         }
+    }
+
+    /**
+     * Checks if all paddings of data are b
+     * @param data the block with padding
+     * @param len length of data, >= 48
+     * @param b expected padding byte
+     */
+    private static boolean paddingByteIs(byte[] data, int len, byte b) {
+        for (int i=48; i<len; i++) {
+            if (data[i] != b) return false;
+        }
+        return true;
     }
 
     /*

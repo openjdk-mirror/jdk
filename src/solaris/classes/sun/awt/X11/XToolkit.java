@@ -1,12 +1,12 @@
 /*
- * Copyright 2002-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2002, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 package sun.awt.X11;
 
@@ -307,22 +307,35 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
         } finally {
             awtUnlock();
         }
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                XSystemTrayPeer peer = XSystemTrayPeer.getPeerInstance();
-                if (peer != null) {
-                    peer.dispose();
+        PrivilegedAction<Void> a = new PrivilegedAction<Void>() {
+            public Void run() {
+                ThreadGroup mainTG = Thread.currentThread().getThreadGroup();
+                ThreadGroup parentTG = mainTG.getParent();
+                while (parentTG != null) {
+                    mainTG = parentTG;
+                    parentTG = mainTG.getParent();
                 }
-                if (xs != null) {
-                    ((XAWTXSettings)xs).dispose();
-                }
-                freeXKB();
-                if (log.isLoggable(PlatformLogger.FINE)) {
-                    dumpPeers();
-                }
+                Thread shutdownThread = new Thread(mainTG, "XToolkt-Shutdown-Thread") {
+                        public void run() {
+                            XSystemTrayPeer peer = XSystemTrayPeer.getPeerInstance();
+                            if (peer != null) {
+                                peer.dispose();
+                            }
+                            if (xs != null) {
+                                ((XAWTXSettings)xs).dispose();
+                            }
+                            freeXKB();
+                            if (log.isLoggable(PlatformLogger.FINE)) {
+                                dumpPeers();
+                            }
+                        }
+                    };
+                shutdownThread.setContextClassLoader(null);
+                Runtime.getRuntime().addShutdownHook(shutdownThread);
+                return null;
             }
-        });
+        };
+        AccessController.doPrivileged(a);
     }
 
     static String getCorrectXIDString(String val) {
@@ -836,7 +849,7 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
                     // if _NET_WM_STRUT_PARTIAL is present, we should use its values to detect
                     // if the struts area intersects with screenBounds, however some window
                     // managers don't set this hint correctly, so we just get intersection with windowBounds
-                    if (windowBounds.intersects(screenBounds))
+                    if (windowBounds != null && windowBounds.intersects(screenBounds))
                     {
                         insets.left = Math.max((int)Native.getLong(native_ptr, 0), insets.left);
                         insets.right = Math.max((int)Native.getLong(native_ptr, 1), insets.right);
@@ -1040,8 +1053,28 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
         return peer;
     }
 
+    private static Boolean sunAwtDisableGtkFileDialogs = null;
+
+    /**
+     * Returns the value of "sun.awt.disableGtkFileDialogs" property. Default
+     * value is {@code false}.
+     */
+    public synchronized static boolean getSunAwtDisableGtkFileDialogs() {
+        if (sunAwtDisableGtkFileDialogs == null) {
+            sunAwtDisableGtkFileDialogs =
+                getBooleanSystemProperty("sun.awt.disableGtkFileDialogs");
+        }
+        return sunAwtDisableGtkFileDialogs.booleanValue();
+    }
+
     public FileDialogPeer createFileDialog(FileDialog target) {
-        FileDialogPeer peer = new XFileDialogPeer(target);
+        FileDialogPeer peer = null;
+        // The current GtkFileChooser is available from GTK+ 2.4
+        if (!getSunAwtDisableGtkFileDialogs() && checkGtkVersion(2, 4, 0)) {
+            peer = new GtkFileDialogPeer(target);
+        } else {
+            peer = new XFileDialogPeer(target);
+        }
         targetCreatedPeer(target, peer);
         return peer;
     }
@@ -1184,14 +1217,6 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
         } finally {
             awtUnlock();
         }
-    }
-
-    static String getSystemProperty(final String name) {
-        return (String)AccessController.doPrivileged(new PrivilegedAction() {
-                public Object run() {
-                    return System.getProperty(name);
-                }
-            });
     }
 
     public PrintJob getPrintJob(final Frame frame, final String doctitle,
@@ -1949,7 +1974,7 @@ public final class XToolkit extends UNIXToolkit implements Runnable {
     }
 
     static long reset_time_utc;
-    static final long WRAP_TIME_MILLIS = Integer.MAX_VALUE;
+    static final long WRAP_TIME_MILLIS = 0x00000000FFFFFFFFL;
 
     /*
      * This function converts between the X server time (number of milliseconds

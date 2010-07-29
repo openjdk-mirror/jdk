@@ -1,12 +1,12 @@
 /*
- * Copyright 2001-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2001, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.nio.ch;
@@ -171,10 +171,9 @@ public class DatagramSocketAdaptor
 
     // Must hold dc.blockingLock()
     //
-    private void receive(ByteBuffer bb) throws IOException {
+    private SocketAddress receive(ByteBuffer bb) throws IOException {
         if (timeout == 0) {
-            dc.receive(bb);
-            return;
+            return dc.receive(bb);
         }
 
         // Implement timeout with a selector
@@ -183,8 +182,9 @@ public class DatagramSocketAdaptor
         dc.configureBlocking(false);
         try {
             int n;
-            if (dc.receive(bb) != null)
-                return;
+            SocketAddress sender;
+            if ((sender = dc.receive(bb)) != null)
+                return sender;
             sel = Util.getTemporarySelector(dc);
             sk = dc.register(sel, SelectionKey.OP_READ);
             long to = timeout;
@@ -194,8 +194,8 @@ public class DatagramSocketAdaptor
                 long st = System.currentTimeMillis();
                 int ns = sel.select(to);
                 if (ns > 0 && sk.isReadable()) {
-                    if (dc.receive(bb) != null)
-                        return;
+                    if ((sender = dc.receive(bb)) != null)
+                        return sender;
                 }
                 sel.selectedKeys().remove(sk);
                 to -= System.currentTimeMillis() - st;
@@ -222,7 +222,8 @@ public class DatagramSocketAdaptor
                     ByteBuffer bb = ByteBuffer.wrap(p.getData(),
                                                     p.getOffset(),
                                                     p.getLength());
-                    receive(bb);
+                    SocketAddress sender = receive(bb);
+                    p.setSocketAddress(sender);
                     p.setLength(bb.position() - p.getOffset());
                 }
             } catch (IOException x) {

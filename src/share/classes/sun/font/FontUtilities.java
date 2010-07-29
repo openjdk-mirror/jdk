@@ -1,12 +1,12 @@
 /*
- * Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package sun.font;
@@ -59,6 +59,10 @@ public final class FontUtilities {
     public static boolean isOpenJDK;
 
     static final String LUCIDA_FILE_NAME = "LucidaSansRegular.ttf";
+
+    private static boolean debugFonts = false;
+    private static PlatformLogger logger = null;
+    private static boolean logging;
 
     // This static initializer block figures out the OS constants.
     static {
@@ -115,6 +119,25 @@ public final class FontUtilities {
                 File lucidaFile = new File(jreFontDirName + File.separator
                                            + LUCIDA_FILE_NAME);
                 isOpenJDK = !lucidaFile.exists();
+
+                String debugLevel =
+                    System.getProperty("sun.java2d.debugfonts");
+
+                if (debugLevel != null && !debugLevel.equals("false")) {
+                    debugFonts = true;
+                    logger = PlatformLogger.getLogger("sun.java2d");
+                    if (debugLevel.equals("warning")) {
+                        logger.setLevel(PlatformLogger.WARNING);
+                    } else if (debugLevel.equals("severe")) {
+                        logger.setLevel(PlatformLogger.SEVERE);
+                    }
+                }
+
+                if (debugFonts) {
+                    logger = PlatformLogger.getLogger("sun.java2d");
+                    logging = logger.isEnabled();
+                }
+
                 return null;
             }
         });
@@ -139,32 +162,6 @@ public final class FontUtilities {
      * one 'char' (ie the java type char) does not map to one glyph
      */
     public static final int MAX_LAYOUT_CHARCODE = 0x206F;
-
-    private static boolean debugFonts = false;
-    private static PlatformLogger logger = null;
-    private static boolean logging;
-
-    static {
-
-        String debugLevel =
-            System.getProperty("sun.java2d.debugfonts");
-
-        if (debugLevel != null && !debugLevel.equals("false")) {
-            debugFonts = true;
-            logger = PlatformLogger.getLogger("sun.java2d");
-            if (debugLevel.equals("warning")) {
-                logger.setLevel(PlatformLogger.WARNING);
-            } else if (debugLevel.equals("severe")) {
-                logger.setLevel(PlatformLogger.SEVERE);
-            }
-        }
-
-        if (debugFonts) {
-            logger = PlatformLogger.getLogger("sun.java2d");
-            logging = logger.isEnabled();
-        }
-
-    }
 
     /**
      * Calls the private getFont2D() method in java.awt.Font objects.

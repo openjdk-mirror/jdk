@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -624,6 +624,11 @@ public class IPAddressDNSIdentities {
     volatile static boolean serverReady = false;
 
     /*
+     * Is the connection ready to close?
+     */
+    volatile static boolean closeReady = false;
+
+    /*
      * Turn on SSL debugging?
      */
     static boolean debug = false;
@@ -652,9 +657,6 @@ public class IPAddressDNSIdentities {
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
         sslSocket.setNeedClientAuth(true);
-        if (sslSocket instanceof SSLSocketImpl) {
-            ((SSLSocketImpl)sslSocket).trySetHostnameVerification("HTTPS");
-        }
 
         PrintStream out =
                 new PrintStream(sslSocket.getOutputStream());
@@ -670,11 +672,14 @@ public class IPAddressDNSIdentities {
             out.print("Testing\r\n");
             out.flush();
         } finally {
-             // close the socket
-             Thread.sleep(2000);
-             System.out.println("Server closing socket");
-             sslSocket.close();
-             serverReady = false;
+            // close the socket
+            while (!closeReady) {
+                Thread.sleep(50);
+            }
+
+            System.out.println("Server closing socket");
+            sslSocket.close();
+            serverReady = false;
         }
 
     }
@@ -716,7 +721,10 @@ public class IPAddressDNSIdentities {
             // no subject alternative names matching IP address 127.0.0.1 found
             // that's the expected exception, ignore it.
         } finally {
-            http.disconnect();
+            if (http != null) {
+                http.disconnect();
+            }
+            closeReady = true;
         }
     }
 

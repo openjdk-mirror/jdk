@@ -1,5 +1,5 @@
 /*
- * Copyright 2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -42,7 +42,7 @@ public class Test {
 
     // additional test cases may be added to both of these lists:
 
-    private static final Class[][] GOOD = {
+    private static final Class<?>[][] GOOD = {
         { Collection.class },
         { Iterable.class, Collection.class },
         { Iterable.class, Collection.class, List.class },
@@ -51,7 +51,7 @@ public class Test {
           GetArray.class }
     };
 
-    private static final Class[][] BAD = {
+    private static final Class<?>[][] BAD = {
         { Runnable.class, PrivilegedAction.class },
         { GetSerializable.class, GetCloneable.class },
         { GetObject.class, GetSerializable.class, GetCloneable.class }
@@ -60,12 +60,12 @@ public class Test {
     public static void main(String[] args) throws Exception {
         System.err.println("\nRegression test for bug 4838310\n");
 
-        ClassLoader loader = ClassLoader.getSystemClassLoader();
+        ClassLoader loader = Test.class.getClassLoader();
 
         System.err.println("Testing GOOD combinations:");
 
         for (int i = 0; i < GOOD.length; i++) {
-            Class[] interfaces = GOOD[i];
+            Class<?>[] interfaces = GOOD[i];
             System.err.println(Arrays.asList(interfaces));
             Proxy.getProxyClass(loader, interfaces);
             System.err.println("--- OK.");
@@ -74,7 +74,7 @@ public class Test {
         System.err.println("Testing BAD combinations:");
 
         for (int i = 0; i < BAD.length; i++) {
-            Class[] interfaces = BAD[i];
+            Class<?>[] interfaces = BAD[i];
             System.err.println(Arrays.asList(interfaces));
             try {
                 Proxy.getProxyClass(loader, interfaces);

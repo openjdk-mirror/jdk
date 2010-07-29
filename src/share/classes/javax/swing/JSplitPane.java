@@ -1,12 +1,12 @@
 /*
- * Copyright 1997-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1997, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 
@@ -242,19 +242,19 @@ public class JSplitPane extends JComponent implements Accessible
 
     /**
      * Creates a new <code>JSplitPane</code> configured to arrange the child
-     * components side-by-side horizontally with no continuous
-     * layout, using two buttons for the components.
+     * components side-by-side horizontally, using two buttons for the components.
      */
     public JSplitPane() {
-        this(JSplitPane.HORIZONTAL_SPLIT, false,
-            new JButton(UIManager.getString("SplitPane.leftButtonText")),
-            new JButton(UIManager.getString("SplitPane.rightButtonText")));
+        this(JSplitPane.HORIZONTAL_SPLIT,
+                UIManager.getBoolean("SplitPane.continuousLayout"),
+                new JButton(UIManager.getString("SplitPane.leftButtonText")),
+                new JButton(UIManager.getString("SplitPane.rightButtonText")));
     }
 
 
     /**
      * Creates a new <code>JSplitPane</code> configured with the
-     * specified orientation and no continuous layout.
+     * specified orientation.
      *
      * @param newOrientation  <code>JSplitPane.HORIZONTAL_SPLIT</code> or
      *                        <code>JSplitPane.VERTICAL_SPLIT</code>
@@ -263,7 +263,8 @@ public class JSplitPane extends JComponent implements Accessible
      */
     @ConstructorProperties({"orientation"})
     public JSplitPane(int newOrientation) {
-        this(newOrientation, false);
+        this(newOrientation,
+                UIManager.getBoolean("SplitPane.continuousLayout"));
     }
 
 
@@ -287,9 +288,7 @@ public class JSplitPane extends JComponent implements Accessible
 
     /**
      * Creates a new <code>JSplitPane</code> with the specified
-     * orientation and
-     * with the specified components that do not do continuous
-     * redrawing.
+     * orientation and the specified components.
      *
      * @param newOrientation  <code>JSplitPane.HORIZONTAL_SPLIT</code> or
      *                        <code>JSplitPane.VERTICAL_SPLIT</code>
@@ -307,7 +306,9 @@ public class JSplitPane extends JComponent implements Accessible
     public JSplitPane(int newOrientation,
                       Component newLeftComponent,
                       Component newRightComponent){
-        this(newOrientation, false, newLeftComponent, newRightComponent);
+        this(newOrientation,
+                UIManager.getBoolean("SplitPane.continuousLayout"),
+                newLeftComponent, newRightComponent);
     }
 
 

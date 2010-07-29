@@ -1,5 +1,5 @@
 /*
- * Copyright 1999 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1999, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -93,8 +93,12 @@ public class ClassDescHooks implements ObjectStreamConstants {
         bout = new ByteArrayOutputStream();
         foof = new File(System.getProperty("test.src", "."), "Foo.ser");
         fin = new FileInputStream(foof);
-        while (fin.available() > 0)
-            bout.write(fin.read());
+        try {
+            while (fin.available() > 0)
+                bout.write(fin.read());
+        } finally {
+            fin.close();
+        }
         byte[] buf1 = bout.toByteArray();
 
         bout = new ByteArrayOutputStream();
@@ -107,11 +111,16 @@ public class ClassDescHooks implements ObjectStreamConstants {
         if (! Arrays.equals(buf1, buf2))
             throw new Error("Incompatible stream format (write)");
 
+        Foo foocopy;
         fin = new FileInputStream(foof);
-        oin = new ObjectInputStream(fin);
-        Foo foocopy = (Foo) oin.readObject();
-        if (! foo.equals(foocopy))
-            throw new Error("Incompatible stream format (read)");
+        try {
+            oin = new ObjectInputStream(fin);
+            foocopy = (Foo) oin.readObject();
+            if (! foo.equals(foocopy))
+                throw new Error("Incompatible stream format (read)");
+        } finally {
+            fin.close();
+        }
 
         // make sure write hook not called when old protocol in use
         bout = new ByteArrayOutputStream();

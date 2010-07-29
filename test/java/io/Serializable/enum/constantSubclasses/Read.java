@@ -1,5 +1,5 @@
 /*
- * Copyright 2003 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -38,13 +38,17 @@ enum Foo {
 
 public class Read {
     public static void main(String[] args) throws Exception {
-        ObjectInputStream oin =
-            new ObjectInputStream(new FileInputStream("foo.ser"));
-        for (Foo f : Foo.values()) {
-            Object obj = oin.readObject();
-            if (obj != f) {
-                throw new Error("expected " + f + ", got " + obj);
+        FileInputStream in = new FileInputStream("foo.ser");
+        try {
+            ObjectInputStream oin = new ObjectInputStream(in);
+            for (Foo f : Foo.values()) {
+                Object obj = oin.readObject();
+                if (obj != f) {
+                    throw new Error("expected " + f + ", got " + obj);
+                }
             }
+        } finally {
+            in.close();
         }
     }
 }

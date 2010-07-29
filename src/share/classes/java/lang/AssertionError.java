@@ -1,12 +1,12 @@
 /*
- * Copyright 2000-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2000, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 package java.lang;
@@ -66,7 +66,7 @@ public class AssertionError extends Error {
      * defined in <i>The Java Language Specification, Second
      * Edition</i>, Section 15.18.1.1.
      *<p>
-     * If the specified object is an instance of <tt>Throwable</tt>, it
+     * If the specified object is an instance of {@code Throwable}, it
      * becomes the <i>cause</i> of the newly constructed assertion error.
      *
      * @param detailMessage value to be used in constructing detail message
@@ -148,5 +148,22 @@ public class AssertionError extends Error {
      */
     public AssertionError(double detailMessage) {
         this("" +  detailMessage);
+    }
+
+    /**
+     * Constructs a new {@code AssertionError} with the specified
+     * detail message and cause.
+     *
+     * <p>Note that the detail message associated with
+     * {@code cause} is <i>not</i> automatically incorporated in
+     * this error's detail message.
+     *
+     * @param  message the detail message, may be {@code null}
+     * @param  cause the cause, may be {@code null}
+     *
+     * @since 1.7
+     */
+    public AssertionError(String message, Throwable cause) {
+        super(message, cause);
     }
 }

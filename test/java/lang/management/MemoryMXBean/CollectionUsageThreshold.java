@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2003, 2004, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
@@ -41,9 +41,9 @@ import javax.management.openmbean.CompositeData;
 
 public class CollectionUsageThreshold {
     private static MemoryMXBean mm = ManagementFactory.getMemoryMXBean();
-    private static List pools = ManagementFactory.getMemoryPoolMXBeans();
-    private static List managers = ManagementFactory.getMemoryManagerMXBeans();
-    private static Map result = new HashMap();
+    private static List<MemoryPoolMXBean> pools = ManagementFactory.getMemoryPoolMXBeans();
+    private static List<MemoryManagerMXBean> managers = ManagementFactory.getMemoryManagerMXBeans();
+    private static Map<String, PoolRecord> result = new HashMap<>();
     private static boolean trace = false;
     private static boolean testFailed = false;
     private static final int EXPECTED_NUM_POOLS = 2;
@@ -119,8 +119,7 @@ public class CollectionUsageThreshold {
         }
 
         // Find the Old generation which supports low memory detection
-        for (ListIterator iter = pools.listIterator(); iter.hasNext(); ) {
-            MemoryPoolMXBean p = (MemoryPoolMXBean) iter.next();
+        for (MemoryPoolMXBean p : pools) {
             MemoryUsage u = p.getUsage();
             if (p.isUsageThresholdSupported() && p.isCollectionUsageThresholdSupported()) {
                 PoolRecord pr = new PoolRecord(p);
@@ -134,25 +133,30 @@ public class CollectionUsageThreshold {
             throw new RuntimeException("Unexpected number of selected pools");
         }
 
-        checker = new Checker("Checker thread");
-        checker.setDaemon(true);
-        checker.start();
+        try {
+            checker = new Checker("Checker thread");
+            checker.setDaemon(true);
+            checker.start();
 
-        for (Iterator iter = result.values().iterator(); iter.hasNext();) {
-            PoolRecord pr = (PoolRecord) iter.next();
-            pr.getPool().setCollectionUsageThreshold(THRESHOLD);
-            System.out.println("Collection usage threshold of " +
-                pr.getPool().getName() + " set to " + THRESHOLD);
-        }
+            for (PoolRecord pr : result.values()) {
+                pr.getPool().setCollectionUsageThreshold(THRESHOLD);
+                System.out.println("Collection usage threshold of " +
+                    pr.getPool().getName() + " set to " + THRESHOLD);
+            }
 
-        SensorListener listener = new SensorListener();
-        NotificationEmitter emitter = (NotificationEmitter) mm;
-        emitter.addNotificationListener(listener, null, null);
+            SensorListener listener = new SensorListener();
+            NotificationEmitter emitter = (NotificationEmitter) mm;
+            emitter.addNotificationListener(listener, null, null);
 
-        mm.setVerbose(true);
-        for (int i = 0; i < NUM_GCS; i++) {
-            invokeGC();
-            checker.waitForCheckResult();
+            for (int i = 0; i < NUM_GCS; i++) {
+                invokeGC();
+                checker.waitForCheckResult();
+            }
+        } finally {
+            // restore the default
+            for (PoolRecord pr : result.values()) {
+                pr.getPool().setCollectionUsageThreshold(0);
+            }
         }
 
         if (testFailed)
@@ -168,8 +172,7 @@ public class CollectionUsageThreshold {
         mm.gc();
 
         if (trace) {
-            for (Iterator iter = result.values().iterator(); iter.hasNext();) {
-                PoolRecord pr = (PoolRecord) iter.next();
+            for (PoolRecord pr : result.values()) {
                 System.out.println("Usage after GC for: " + pr.getPool().getName());
                 MemoryUtil.printMemoryUsage(pr.getPool().getUsage());
             }
@@ -200,8 +203,7 @@ public class CollectionUsageThreshold {
             }
         }
         private void checkResult() {
-            for (Iterator iter = result.values().iterator(); iter.hasNext();) {
-                PoolRecord pr = (PoolRecord) iter.next();
+            for (PoolRecord pr : result.values()) {
                 if (pr.getListenerInvokedCount() != numGCs) {
                     throw new RuntimeException("Listeners invoked count = " +
                          pr.getListenerInvokedCount() + " expected to be " +

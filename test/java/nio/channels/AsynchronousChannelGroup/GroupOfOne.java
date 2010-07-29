@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2009 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -16,9 +16,9 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /* @test
@@ -29,6 +29,7 @@
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.io.IOException;
 
@@ -44,8 +45,12 @@ public class GroupOfOne {
         final AsynchronousServerSocketChannel listener =
             AsynchronousServerSocketChannel.open()
                 .bind(new InetSocketAddress(0));
+        final List<AsynchronousSocketChannel> accepted = new ArrayList<AsynchronousSocketChannel>();
         listener.accept((Void)null, new CompletionHandler<AsynchronousSocketChannel,Void>() {
             public void completed(AsynchronousSocketChannel ch, Void att) {
+                synchronized (accepted) {
+                    accepted.add(ch);
+                }
                 listener.accept((Void)null, this);
             }
             public void failed(Throwable exc, Void att) {
@@ -58,6 +63,14 @@ public class GroupOfOne {
         test(sa, true, false);
         test(sa, false, true);
         test(sa, true, true);
+
+        // clean-up
+        listener.close();
+        synchronized (accepted) {
+            for (AsynchronousSocketChannel ch: accepted) {
+                ch.close();
+            }
+        }
     }
 
     static void test(SocketAddress sa,

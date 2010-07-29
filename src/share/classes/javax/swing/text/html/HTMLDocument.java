@@ -1,12 +1,12 @@
 /*
- * Copyright 1997-2008 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 1997, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Sun designates this
+ * published by the Free Software Foundation.  Oracle designates this
  * particular file as subject to the "Classpath" exception as provided
- * by Sun in the LICENSE file that accompanied this code.
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,26 +18,23 @@
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 package javax.swing.text.html;
 
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.font.TextAttribute;
 import java.util.*;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.net.MalformedURLException;
 import java.io.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
 import javax.swing.undo.*;
-import java.text.Bidi;
 import sun.swing.SwingUtilities2;
+import static sun.swing.SwingUtilities2.IMPLIED_CR;
 
 /**
  * A document that models HTML.  The purpose of this model is to
@@ -1819,7 +1816,6 @@ public class HTMLDocument extends DefaultStyledDocument {
     static String MAP_PROPERTY = "__MAP__";
 
     private static char[] NEWLINE;
-    private static final String IMPLIED_CR = "CR";
 
     /**
      * I18N property key.
