@@ -41,13 +41,10 @@ import javax.swing.text.JTextComponent;
 import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.DefaultCaret;
 import javax.swing.table.TableCellRenderer;
-<<<<<<< local
-=======
 import javax.swing.table.TableColumnModel;
 
 import sun.swing.PrintColorUIResource;
 import sun.swing.ImageIconUIResource;
->>>>>>> other
 import sun.print.ProxyPrintGraphics;
 import sun.awt.*;
 import java.io.*;
