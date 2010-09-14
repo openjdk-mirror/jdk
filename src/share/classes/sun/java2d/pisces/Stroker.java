@@ -605,7 +605,7 @@ public class Stroker implements LineSink {
             float dx = px0 - x0;
             float dy = py0 - y0;
             float len = (float)userSpaceLineLength(dx, dy);
-            float s = lineWidth2/len;
+            float s = (len == 0) ? 0 : lineWidth2/len;
 
             float capx = x0 - dx*s;
             float capy = y0 - dy*s;
@@ -627,7 +627,7 @@ public class Stroker implements LineSink {
             float dx = sx1 - sx0;
             float dy = sy1 - sy0;
             float len = (float)userSpaceLineLength(dx, dy);
-            float s = lineWidth2/len;
+            float s = (len == 0) ? 0 : lineWidth2/len;
 
             float capx = sx0 - dx*s;
             float capy = sy0 - dy*s;
