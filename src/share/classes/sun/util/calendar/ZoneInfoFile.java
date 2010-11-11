@@ -32,6 +32,7 @@ import  java.io.FileNotFoundException;
 import  java.io.IOException;
 import  java.io.InputStream;
 import  java.lang.ref.SoftReference;
+import  java.nio.file.FileSystems;
 import  java.security.AccessController;
 import  java.security.PrivilegedAction;
 import  java.security.PrivilegedActionException;
@@ -475,26 +476,22 @@ public class ZoneInfoFile {
 
     private static Map<String, ZoneInfo> zoneInfoObjects = null;
 
-    private static final String ziDir;
-
-    static {
-        final String homeDir =
-            AccessController.doPrivileged(
-             new sun.security.action.GetPropertyAction("java.home"));
-        if (homeDir == null) {
-            throw new Error("java.home is not set");
-        }
-        String zi = homeDir + File.separator + "lib" +
-            File.separator + "zi";
-        try {
-            String otherDir = getZoneInfoDir(homeDir);
-            if (otherDir != null)
-                zi = otherDir;
-            zi = new File(zi).getCanonicalPath();
-        } catch (Exception e) {
-        }
-        ziDir = zi;
-    }
+    private static final String ziDir = AccessController.doPrivileged(
+        new PrivilegedAction<String>() {
+            public String run() {
+                String homeDir = System.getProperty("java.home");
+                String zi = homeDir + File.separator + "lib" +
+                  File.separator + "zi";
+                try {
+                    String otherDir = getZoneInfoDir(homeDir);
+                    if (otherDir != null)
+                        zi = otherDir;
+                    zi = FileSystems.getDefault().getPath(zi).toRealPath(true).toString();
+                } catch(Exception e) {
+                }
+                return zi;
+            }
+        });
 
     private static String getZoneInfoDir(final String homeDir) {
         try {
