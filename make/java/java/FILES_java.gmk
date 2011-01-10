@@ -31,6 +31,7 @@
 JAVA_JAVA_java = \
     java/lang/Object.java \
     java/lang/AutoCloseable.java \
+    java/lang/VMObject.java \
     java/lang/Class.java \
     java/lang/Thread.java \
     java/lang/Character.java \
