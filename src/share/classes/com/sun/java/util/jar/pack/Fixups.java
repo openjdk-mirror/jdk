@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,11 @@
 
 package com.sun.java.util.jar.pack;
 
-import java.io.*;
-import java.util.*;
-import com.sun.java.util.jar.pack.ConstantPool.*;
+import com.sun.java.util.jar.pack.ConstantPool.Entry;
+import java.util.AbstractCollection;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Collection of relocatable constant pool references.

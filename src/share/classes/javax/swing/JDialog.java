@@ -153,8 +153,8 @@ public class JDialog extends Dialog implements WindowConstants,
     }
 
     /**
-     * Creates a modeless dialog without a title with the
-     * specified {@code Frame} as its owner.  If {@code owner}
+     * Creates a modeless dialog with the specified {@code Frame}
+     * as its owner and an empty title. If {@code owner}
      * is {@code null}, a shared, hidden frame will be set as the
      * owner of the dialog.
      * <p>
@@ -178,8 +178,8 @@ public class JDialog extends Dialog implements WindowConstants,
     }
 
     /**
-     * Creates a dialog with the specified owner {@code Frame}, modality
-     * and an empty title. If {@code owner} is {@code null},
+     * Creates a dialog with an empty title and the specified modality and
+     * {@code Frame} as its owner. If {@code owner} is {@code null},
      * a shared, hidden frame will be set as the owner of the dialog.
      * <p>
      * This constructor sets the component's locale property to the value
@@ -201,7 +201,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see JComponent#getDefaultLocale
      */
     public JDialog(Frame owner, boolean modal) {
-        this(owner, null, modal);
+        this(owner, "", modal);
     }
 
     /**
@@ -302,10 +302,9 @@ public class JDialog extends Dialog implements WindowConstants,
      * @param modal specifies whether dialog blocks user input to other top-level
      *     windows when shown. If {@code true}, the modality type property is set to
      *     {@code DEFAULT_MODALITY_TYPE}, otherwise the dialog is modeless.
-     * @param gc the {@code GraphicsConfiguration}
-     *     of the target screen device.  If {@code gc} is
-     *     {@code null}, the same
-     *     {@code GraphicsConfiguration} as the owning Frame is used.
+     * @param gc the {@code GraphicsConfiguration} of the target screen device;
+     *     if {@code null}, the default system {@code GraphicsConfiguration}
+     *     is assumed
      * @throws HeadlessException if {@code GraphicsEnvironment.isHeadless()}
      *     returns {@code true}.
      * @see java.awt.Dialog.ModalityType
@@ -330,8 +329,8 @@ public class JDialog extends Dialog implements WindowConstants,
     }
 
     /**
-     * Creates a modeless dialog without a title with the
-     * specified {@code Dialog} as its owner.
+     * Creates a modeless dialog with the specified {@code Dialog}
+     * as its owner and an empty title.
      * <p>
      * This constructor sets the component's locale property to the value
      * returned by {@code JComponent.getDefaultLocale}.
@@ -348,7 +347,8 @@ public class JDialog extends Dialog implements WindowConstants,
     }
 
     /**
-     * Creates a dialog with the specified owner {@code Dialog} and modality.
+     * Creates a dialog with an empty title and the specified modality and
+     * {@code Dialog} as its owner.
      * <p>
      * This constructor sets the component's locale property to the value
      * returned by {@code JComponent.getDefaultLocale}.
@@ -369,7 +369,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @see JComponent#getDefaultLocale
      */
     public JDialog(Dialog owner, boolean modal) {
-        this(owner, null, modal);
+        this(owner, "", modal);
     }
 
     /**
@@ -440,10 +440,9 @@ public class JDialog extends Dialog implements WindowConstants,
      * @param modal specifies whether dialog blocks user input to other top-level
      *     windows when shown. If {@code true}, the modality type property is set to
      *     {@code DEFAULT_MODALITY_TYPE}, otherwise the dialog is modeless
-     * @param gc the {@code GraphicsConfiguration}
-     *     of the target screen device.  If {@code gc} is
-     *     {@code null}, the same
-     *     {@code GraphicsConfiguration} as the owning Dialog is used.
+     * @param gc the {@code GraphicsConfiguration} of the target screen device;
+     *     if {@code null}, the default system {@code GraphicsConfiguration}
+     *     is assumed
      * @throws HeadlessException if {@code GraphicsEnvironment.isHeadless()}
      *     returns {@code true}.
      * @see java.awt.Dialog.ModalityType
@@ -462,8 +461,8 @@ public class JDialog extends Dialog implements WindowConstants,
     }
 
     /**
-     * Creates a modeless dialog with the specified owner {@code Window} and
-     * an empty title.
+     * Creates a modeless dialog with the specified {@code Window}
+     * as its owner and an empty title.
      * <p>
      * This constructor sets the component's locale property to the value
      * returned by {@code JComponent.getDefaultLocale}.
@@ -489,8 +488,8 @@ public class JDialog extends Dialog implements WindowConstants,
     }
 
     /**
-     * Creates a dialog with the specified owner {@code Window}, modality
-     * and an empty title.
+     * Creates a dialog with an empty title and the specified modality and
+     * {@code Window} as its owner.
      * <p>
      * This constructor sets the component's locale property to the value
      * returned by {@code JComponent.getDefaultLocale}.
@@ -521,7 +520,7 @@ public class JDialog extends Dialog implements WindowConstants,
      * @since 1.6
      */
     public JDialog(Window owner, ModalityType modalityType) {
-        this(owner, null, modalityType);
+        this(owner, "", modalityType);
     }
 
     /**
@@ -611,10 +610,8 @@ public class JDialog extends Dialog implements WindowConstants,
      *     windows when shown. {@code null} value and unsupported modality
      *     types are equivalent to {@code MODELESS}
      * @param gc the {@code GraphicsConfiguration} of the target screen device;
-     *     if {@code null}, the {@code GraphicsConfiguration} from the owning
-     *     window is used; if {@code owner} is also {@code null}, the
-     *     system default {@code GraphicsConfiguration} is assumed
-     *
+     *     if {@code null}, the default system {@code GraphicsConfiguration}
+     *     is assumed
      * @throws IllegalArgumentException
      *     if the {@code owner} is not an instance of {@link java.awt.Dialog Dialog}
      *     or {@link java.awt.Frame Frame}

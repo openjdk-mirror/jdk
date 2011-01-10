@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,6 +56,9 @@ public class DrawImageBilinear extends Canvas {
     private VolatileImage vimg;
     private static volatile BufferedImage capture;
     private static void doCapture(Component test) {
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException ex) {}
         // Grab the screen region
         try {
             Robot robot = new Robot();

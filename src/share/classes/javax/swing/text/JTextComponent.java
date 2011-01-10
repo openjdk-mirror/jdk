@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -4054,7 +4054,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
     }
 
     private static final Object KEYMAP_TABLE = new Object(); // JTextComponent_KeymapTable
-    private JTextComponent editor;
+
     //
     // member variables used for on-the-spot input method
     // editing style support
@@ -4743,14 +4743,14 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
                         processKeyEvent(ke);
                     }
                 } else {
-                    StringBuffer strBuf = new StringBuffer();
+                    StringBuilder strBuf = new StringBuilder();
                     for (char c = text.current(); commitCount > 0;
                          c = text.next(), commitCount--) {
                         strBuf.append(c);
                     }
 
                     // map it to an ActionEvent
-                    mapCommittedTextToAction(new String(strBuf));
+                    mapCommittedTextToAction(strBuf.toString());
                 }
 
                 // Remember latest committed text end index
@@ -4796,7 +4796,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
     private void createComposedTextAttribute(int composedIndex,
                                         AttributedCharacterIterator text) {
         Document doc = getDocument();
-        StringBuffer strBuf = new StringBuffer();
+        StringBuilder strBuf = new StringBuilder();
 
         // create attributed string with no attributes
         for (char c = text.setIndex(composedIndex);
@@ -4804,7 +4804,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
             strBuf.append(c);
         }
 
-        composedTextContent = new String(strBuf);
+        composedTextContent = strBuf.toString();
         composedTextAttribute = new SimpleAttributeSet();
         composedTextAttribute.addAttribute(StyleConstants.ComposedTextAttribute,
                 new AttributedString(text, composedIndex, text.getEndIndex()));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,30 @@
 
 package com.sun.java.util.jar.pack;
 
-import java.io.*;
-import java.util.*;
+import com.sun.java.util.jar.pack.ConstantPool.ClassEntry;
+import com.sun.java.util.jar.pack.ConstantPool.DescriptorEntry;
+import com.sun.java.util.jar.pack.ConstantPool.Entry;
+import com.sun.java.util.jar.pack.ConstantPool.Index;
+import com.sun.java.util.jar.pack.ConstantPool.IndexGroup;
+import com.sun.java.util.jar.pack.ConstantPool.MemberEntry;
+import com.sun.java.util.jar.pack.ConstantPool.NumberEntry;
+import com.sun.java.util.jar.pack.ConstantPool.SignatureEntry;
+import com.sun.java.util.jar.pack.ConstantPool.StringEntry;
 import com.sun.java.util.jar.pack.Package.Class;
 import com.sun.java.util.jar.pack.Package.File;
 import com.sun.java.util.jar.pack.Package.InnerClass;
-import com.sun.java.util.jar.pack.ConstantPool.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 
 /**
  * Writer for a package file.

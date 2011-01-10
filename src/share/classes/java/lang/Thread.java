@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -209,7 +209,7 @@ class Thread implements Runnable {
      * initialized to indicate thread 'not yet started'
      */
 
-    private int threadStatus = 0;
+    private volatile int threadStatus = 0;
 
 
     private static synchronized long nextThreadID() {
@@ -229,7 +229,7 @@ class Thread implements Runnable {
      * after setting this thread's interrupt status.
      */
     private volatile Interruptible blocker;
-    private Object blockerLock = new Object();
+    private final Object blockerLock = new Object();
 
     /* Set the blocker field; invoked via sun.misc.SharedSecrets from java.nio code
      */
@@ -688,16 +688,19 @@ class Thread implements Runnable {
             throw new IllegalThreadStateException();
 
         /* Notify the group that this thread is about to be started
-         * so that it can be added to the group's list of threads. */
+         * so that it can be added to the group's list of threads
+         * and the group's unstarted count can be decremented. */
         group.threadStarting(this);
 
-        boolean failed = true;
+        boolean started = false;
         try {
             start0();
-            failed = false;
+            started = true;
         } finally {
             try {
-                group.threadStarted(this, failed);
+                if (!started) {
+                    group.threadStartFailed(this);
+                }
             } catch (Throwable ignore) {
                 /* do nothing. If start0 threw a Throwable then
                   it will be passed up the call stack */
@@ -955,7 +958,7 @@ class Thread implements Runnable {
             Interruptible b = blocker;
             if (b != null) {
                 interrupt0();           // Just to set the interrupt flag
-                b.interrupt();
+                b.interrupt(this);
                 return;
             }
         }

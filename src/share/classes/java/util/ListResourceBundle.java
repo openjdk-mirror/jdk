@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2005, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,7 +72,7 @@ import sun.util.ResourceBundleEnumeration;
  *
  * public class MyResources extends ListResourceBundle {
  *     protected Object[][] getContents() {
- *         return new Object[][] = {
+ *         return new Object[][] {
  *         // LOCALIZE THIS
  *             {"s1", "The disk \"{1}\" contains {0}."},  // MessageFormat pattern
  *             {"s2", "1"},                               // location of {0} in pattern

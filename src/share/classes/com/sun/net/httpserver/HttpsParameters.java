@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,9 @@
 
 package com.sun.net.httpserver;
 import java.net.InetSocketAddress;
+//BEGIN_TIGER_EXCLUDE
 import javax.net.ssl.SSLParameters;
+//END_TIGER_EXCLUDE
 
 /**
  * Represents the set of parameters for each https
@@ -67,6 +69,7 @@ public abstract class HttpsParameters {
      */
     public abstract InetSocketAddress getClientAddress();
 
+//BEGIN_TIGER_EXCLUDE
     /**
      * Sets the SSLParameters to use for this HttpsParameters.
      * The parameters must be supported by the SSLContext contained
@@ -79,6 +82,7 @@ public abstract class HttpsParameters {
      *   invalid or unsupported.
      */
     public abstract void setSSLParameters (SSLParameters params);
+//END_TIGER_EXCLUDE
 
     /**
      * Returns a copy of the array of ciphersuites or null if none

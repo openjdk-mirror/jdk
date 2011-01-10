@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2003, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,19 @@
 
 package com.sun.java.util.jar.pack;
 
-import java.io.*;
-import java.util.*;
+
+import com.sun.java.util.jar.pack.ConstantPool.Entry;
+import com.sun.java.util.jar.pack.ConstantPool.Index;
+import com.sun.java.util.jar.pack.ConstantPool.NumberEntry;
 import com.sun.java.util.jar.pack.Package.Class;
 import com.sun.java.util.jar.pack.Package.InnerClass;
-import com.sun.java.util.jar.pack.ConstantPool.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Writer for a class file that is incorporated into a package.

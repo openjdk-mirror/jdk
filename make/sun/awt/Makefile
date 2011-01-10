@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2009, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -366,11 +366,12 @@ _FONTCONFIGS	= \
 	fontconfig.properties				\
 	fontconfig.RedHat.properties			\
 	fontconfig.RedHat.2.1.properties		\
-	fontconfig.RedHat.3.properties		\
+	fontconfig.RedHat.3.properties		        \
 	fontconfig.RedHat.4.properties			\
 	fontconfig.Sun.properties			\
 	fontconfig.Turbo.properties			\
-	fontconfig.SuSE.properties
+	fontconfig.SuSE.10.properties                   \
+	fontconfig.SuSE.11.properties
 endif
 
 FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
