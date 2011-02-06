@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2002, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,17 +23,28 @@
 
 /*
  * @test
- * @bug 4423074
- * @summary Need to rebase all the duplicated classes from Merlin.
- *          This test will check out http POST
+ * @bug 6668231
+ * @summary Presence of a critical subjectAltName causes JSSE's SunX509 to
+ *          fail trusted checks
+ * @author Xuelei Fan
+ *
+ * This test depends on binary keystore, crisubn.jks and trusted.jks. Because
+ * JAVA keytool cannot generate X509 certificate with SubjectAltName extension,
+ * the certificates are generated with openssl toolkits and then imported into
+ * JAVA keystore.
+ *
+ * The crisubn.jks holds a private key entry and the corresponding X509
+ * certificate issued with an empty Subject field, and a critical
+ * SubjectAltName extension.
+ *
+ * The trusted.jks holds the trusted certificate.
  */
-
 import java.io.*;
 import java.net.*;
 import javax.net.ssl.*;
+import java.security.cert.Certificate;
 
-public class HttpsPost {
-
+public class CriticalSubjectAltName implements HostnameVerifier {
     /*
      * =============================================================
      * Set the various variables needed for the tests, then
@@ -50,9 +61,9 @@ public class HttpsPost {
     /*
      * Where do we find the keystores?
      */
-    static String pathToStores = "../../../../../../etc";
-    static String keyStoreFile = "keystore";
-    static String trustStoreFile = "truststore";
+    static String pathToStores = "./";
+    static String keyStoreFile = "crisubn.jks";
+    static String trustStoreFile = "trusted.jks";
     static String passwd = "passphrase";
 
     /*
@@ -61,19 +72,9 @@ public class HttpsPost {
     volatile static boolean serverReady = false;
 
     /*
-     * Is the connection ready to close?
-     */
-    volatile static boolean closeReady = false;
-
-    /*
      * Turn on SSL debugging?
      */
     static boolean debug = false;
-
-    /*
-     * Message posted
-     */
-    static String postMsg = "Testing HTTP post on a https server";
 
     /*
      * If the client or server is doing some kind of object creation
@@ -103,34 +104,12 @@ public class HttpsPost {
         serverReady = true;
 
         SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
-        try {
-            InputStream sslIS = sslSocket.getInputStream();
-            OutputStream sslOS = sslSocket.getOutputStream();
-            BufferedReader br =
-                        new BufferedReader(new InputStreamReader(sslIS));
-            PrintStream ps = new PrintStream(sslOS);
-
-            // process HTTP POST request from client
-            System.out.println("status line: "+br.readLine());
-            String msg = null;
-            while ((msg = br.readLine()) != null && msg.length() > 0);
-
-            msg = br.readLine();
-            if (msg.equals(postMsg)) {
-                ps.println("HTTP/1.1 200 OK\n\n");
-            } else {
-                ps.println("HTTP/1.1 500 Not OK\n\n");
-            }
-            ps.flush();
-
-            // close the socket
-            while (!closeReady) {
-                Thread.sleep(50);
-            }
-        } finally {
-            sslSocket.close();
-            sslServerSocket.close();
-        }
+        OutputStream sslOS = sslSocket.getOutputStream();
+        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(sslOS));
+        bw.write("HTTP/1.1 200 OK\r\n\r\n\r\n");
+        bw.flush();
+        Thread.sleep(5000);
+        sslSocket.close();
     }
 
     /*
@@ -148,32 +127,13 @@ public class HttpsPost {
             Thread.sleep(50);
         }
 
-        // Send HTTP POST request to server
-        URL url = new URL("https://localhost:"+serverPort);
+        URL url = new URL("https://localhost:"+serverPort+"/index.html");
+        HttpsURLConnection urlc = (HttpsURLConnection)url.openConnection();
+        urlc.setHostnameVerifier(this);
+        urlc.getInputStream();
 
-        HttpsURLConnection.setDefaultHostnameVerifier(
-                                      new NameVerifier());
-        HttpsURLConnection http = (HttpsURLConnection)url.openConnection();
-        http.setDoOutput(true);
-
-        http.setRequestMethod("POST");
-        PrintStream ps = new PrintStream(http.getOutputStream());
-        try {
-            ps.println(postMsg);
-            ps.flush();
-            if (http.getResponseCode() != 200) {
-                throw new RuntimeException("test Failed");
-            }
-        } finally {
-            ps.close();
-            http.disconnect();
-            closeReady = true;
-        }
-    }
-
-    static class NameVerifier implements HostnameVerifier {
-        public boolean verify(String hostname, SSLSession session) {
-            return true;
+        if (urlc.getResponseCode() == -1) {
+            throw new RuntimeException("getResponseCode() returns -1");
         }
     }
 
@@ -207,7 +167,7 @@ public class HttpsPost {
         /*
          * Start the tests.
          */
-        new HttpsPost();
+        new CriticalSubjectAltName();
     }
 
     Thread clientThread = null;
@@ -218,7 +178,7 @@ public class HttpsPost {
      *
      * Fork off the other side, then do your work.
      */
-    HttpsPost() throws Exception {
+    CriticalSubjectAltName() throws Exception {
         if (separateServerThread) {
             startServer(true);
             startClient(false);
@@ -293,4 +253,10 @@ public class HttpsPost {
             doClientSide();
         }
     }
+
+    // Simple test method to blindly agree that hostname and certname match
+    public boolean verify(String hostname, SSLSession session) {
+        return true;
+    }
+
 }
