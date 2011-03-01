@@ -319,9 +319,6 @@ public final class OCSPResponse {
         // signatureAlgorithmId
         AlgorithmId sigAlgId = AlgorithmId.parse(seqTmp[1]);
 
-        // check that the signature algorithm is not disabled.
-        AlgorithmChecker.check(sigAlgId);
-
         // signature
         byte[] signature = seqTmp[2].getBitString();
         X509CertImpl[] x509Certs = null;
@@ -358,9 +355,6 @@ public final class OCSPResponse {
             // which was set locally.
             } else if (cert.getIssuerX500Principal().equals(
                 responderCert.getSubjectX500Principal())) {
-
-                // check the certificate algorithm
-                AlgorithmChecker.check(cert);
 
                 // Check for the OCSPSigning key purpose
                 try {
