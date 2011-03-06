@@ -299,10 +299,8 @@ class OCSPChecker extends PKIXCertPathChecker {
                 }
                 if (filter != null) {
                     List<CertStore> certStores = pkixParams.getCertStores();
-                    AlgorithmChecker algChecker=
-                        AlgorithmChecker.getInstance();
                     for (CertStore certStore : certStores) {
-                        Iterator<? extends Certificate> i = null;
+                        Iterator i = null;
                         try {
                             i = certStore.getCertificates(filter).iterator();
                         } catch (CertStoreException cse) {
@@ -313,25 +311,8 @@ class OCSPChecker extends PKIXCertPathChecker {
                             continue;
                         }
                         if (i.hasNext()) {
-                            try {
-                                // don't bother to trust algorithm disabled
-                                // certificate as responder
-                                Certificate selected = i.next();
-                                algChecker.check(selected);
-
-                                responderCert = (X509Certificate) selected;
-                                seekResponderCert = false; // done
-                                break;
-                            } catch (CertPathValidatorException cpve) {
-                                if (DEBUG != null) {
-                                    DEBUG.println(
-                                                  "OCSP responder certificate " +
-                                                  "algorithm check failed: " + cpve);
-                                }
-                            }
-                        }
-
-                        if (!seekResponderCert) {
+                            responderCert = (X509Certificate) i.next();
+                            seekResponderCert = false; // done
                             break;
                         }
                     }
