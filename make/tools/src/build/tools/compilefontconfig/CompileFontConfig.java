@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import sun.awt.FontConfiguration;
 
 public class CompileFontConfig {
     public static void main(String[] argv) {

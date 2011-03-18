@@ -144,7 +144,7 @@ class ComponentColor {
         return hash;
     }
 
-    public void write(StringBuilder sb) {
+    public void write(StringBuffer sb) {
         sb.append("                     getComponentColor(c, \"").
            append(propertyName).append("\", ").
            append(defaultColorVariableName).append(", ").

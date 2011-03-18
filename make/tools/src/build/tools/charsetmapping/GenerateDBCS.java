@@ -27,7 +27,6 @@ package build.tools.charsetmapping;
 import java.io.*;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;
@@ -72,9 +71,9 @@ public class GenerateDBCS {
 
     private static int toInteger(String s) {
         if (s.startsWith("0x") || s.startsWith("0X"))
-            return Integer.valueOf(s.substring(2), 16).intValue();
+            return new Integer(s.substring(2), 16).intValue();
         else
-            return Integer.valueOf(s).intValue();
+            return new Integer(s).intValue();
     }
 
     private static void outString(Formatter out,
@@ -105,7 +104,7 @@ public class GenerateDBCS {
                 case '\\':
                     out.format("\\\\", new Object[] { }); break;
                 default:
-                    out.format("\\u%04X", new Object[] { Integer.valueOf(c & 0xffff) });
+                    out.format("\\u%04X", new Object[] { new Integer(c & 0xffff) });
                 }
             }
             if (off == end)
@@ -141,9 +140,9 @@ public class GenerateDBCS {
         throws Exception
     {
 
-        StringBuilder b2cSB = new StringBuilder();
-        StringBuilder b2cNRSB = new StringBuilder();
-        StringBuilder c2bNRSB = new StringBuilder();
+        StringBuffer b2cSB = new StringBuffer();
+        StringBuffer b2cNRSB = new StringBuffer();
+        StringBuffer c2bNRSB = new StringBuffer();
 
         char[] db = new char[0x10000];
         char[] c2bIndex = new char[0x100];
@@ -191,7 +190,7 @@ public class GenerateDBCS {
         // (2)now parse the .nr file which includes "b->c" non-roundtrip entries
         File f = new File(srcDir, clzName + ".nr");
         if (f.exists()) {
-            StringBuilder sb = new StringBuilder();
+            StringBuffer sb = new StringBuffer();
             in = new FileInputStream(f);
             p = new CharsetMapping.Parser(in, mPattern);
             e = null;
@@ -212,7 +211,7 @@ public class GenerateDBCS {
         // (3)finally the .c2b file which includes c->b non-roundtrip entries
         f = new File(srcDir, clzName + ".c2b");
         if (f.exists()) {
-            StringBuilder sb = new StringBuilder();
+            StringBuffer sb = new StringBuffer();
             in = new FileInputStream(f);
             p = new CharsetMapping.Parser(in, mPattern);
             e = null;

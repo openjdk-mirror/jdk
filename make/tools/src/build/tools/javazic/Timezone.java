@@ -245,9 +245,9 @@ class Timezone {
             offsets = new ArrayList();
             dstOffsets = new ArrayList();
         }
-        transitions.add(Long.valueOf(time));
-        offsets.add(Integer.valueOf(offset));
-        dstOffsets.add(Integer.valueOf(dstOffset));
+        transitions.add(new Long(time));
+        offsets.add(new Integer(offset));
+        dstOffsets.add(new Integer(dstOffset));
     }
 
     /**
@@ -446,9 +446,9 @@ class Timezone {
             }
         }
         if (gmtOffsets.size() < index) {
-            gmtOffsets.add(Integer.valueOf(0));
+            gmtOffsets.add(new Integer(0));
         }
-        gmtOffsets.add(Integer.valueOf(offset));
+        gmtOffsets.add(new Integer(offset));
         return gmtOffsets.size() - 1;
     }
 }

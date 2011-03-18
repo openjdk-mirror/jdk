@@ -99,7 +99,9 @@ abstract class Node {
 
     String comment() {
         StringBuffer comment = new StringBuffer();
-        for (String st : commentList) {
+        Iterator iter = commentList.iterator();
+        while (iter.hasNext()) {
+        	String st = (String)iter.next();
             comment.append(st);
         }
         return comment.toString();

@@ -84,10 +84,10 @@ class Simple extends BackEnd {
         // Populate zonesByOffset. (Zones that will change their
         // GMT offsets are also added to zonesByOffset here.)
         int lastKnownOffset = tz.getRawOffset();
-        Set set = (Set)zonesByOffset.get(Integer.valueOf(lastKnownOffset));
+        Set set = (Set)zonesByOffset.get(new Integer(lastKnownOffset));
         if (set == null) {
             set = new TreeSet();
-            zonesByOffset.put(Integer.valueOf(lastKnownOffset), set);
+            zonesByOffset.put(new Integer(lastKnownOffset), set);
         }
         set.add(zonename);
 

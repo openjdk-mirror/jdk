@@ -201,8 +201,8 @@ public class Generator {
         }
         //next, populate the first set of ui defaults based on what is in the
         //various palettes of the synth model
-        StringBuilder defBuffer = new StringBuilder();
-        StringBuilder styleBuffer = new StringBuilder();
+        StringBuffer defBuffer = new StringBuffer();
+        StringBuffer styleBuffer = new StringBuffer();
         model.write(defBuffer, styleBuffer, packageNamePrefix);
 
         Map<String, String> vars = getVariables();

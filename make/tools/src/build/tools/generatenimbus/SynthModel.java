@@ -53,7 +53,7 @@ public class SynthModel {
         }
     }
 
-    public void write(StringBuilder defBuffer, StringBuilder styleBuffer, String packageName) {
+    public void write(StringBuffer defBuffer, StringBuffer styleBuffer, String packageName) {
         defBuffer.append("        //Color palette\n");
         for (UIColor c: colors) defBuffer.append(c.write());
         defBuffer.append('\n');

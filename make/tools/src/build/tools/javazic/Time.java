@@ -297,7 +297,7 @@ class Time {
         }
         return String.format((Locale)null, "%c%02d:%02d",
                    new Object[] { 
-                             (Object)("" + sign), (Object)Long.valueOf(sec/3600), (Object)Long.valueOf((sec%3600)/60)
+                             (Object)("" + sign), (Object)new Long(sec/3600), (Object)new Long((sec%3600)/60)
                              
                    });
     }
@@ -309,7 +309,7 @@ class Time {
      * @return the string in a human readable form
      */
     static String toFormedString(int ms) {
-        StringBuilder s = new StringBuilder();
+        StringBuffer s = new StringBuffer();
         boolean minus = false;
 
         if (ms < 0) {

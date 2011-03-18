@@ -37,7 +37,7 @@ public class Utils {
 
     public static String normalize(String s) {
         char[] src = s.toCharArray();
-        StringBuilder buf = new StringBuilder();
+        StringBuffer buf = new StringBuffer();
         List<String> parts = new ArrayList<String>();
         boolean capitalize = false;
 

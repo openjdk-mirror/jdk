@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
+import java.util.Iterator;
 
 /**
  * Reads a properties file from standard input and writes an equivalent
@@ -110,7 +111,9 @@ public class StripProperties {
 
     private static boolean stripFiles(List files) {
         boolean ok = true;
-        for ( String file : files ) {
+        Iterator iter = files.iterator();
+        while (iter.hasNext()) {
+        	String file = (String)iter.next();
 
             Properties prop = new Properties();
             InputStream in = null;

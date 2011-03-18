@@ -96,7 +96,7 @@ class UIStyle {
     }
 
     public String write(String prefix) {
-        StringBuilder sb = new StringBuilder();
+        StringBuffer sb = new StringBuffer();
         if (! textForegroundInherited) {
             sb.append(String.format("        addColor(d, \"%s%s\", %s);\n",
                     prefix, "textForeground", textForeground.getValue().write()));
@@ -185,7 +185,7 @@ class UIRegion {
         return false;
     }
 
-    public void write(StringBuilder sb, StringBuilder styleBuffer,
+    public void write(StringBuffer sb, StringBuffer styleBuffer,
                       UIComponent comp, String prefix, String pkg) {
         // write content margins
         sb.append(String.format("        d.put(\"%s.contentMargins\", %s);\n",
@@ -284,7 +284,7 @@ class UIRegion {
 class UIIconRegion extends UIRegion {
     @XmlAttribute private String basicKey;
 
-    @Override public void write(StringBuilder sb, StringBuilder styleBuffer, UIComponent comp, String prefix, String pkg) {
+    @Override public void write(StringBuffer sb, StringBuffer styleBuffer, UIComponent comp, String prefix, String pkg) {
         Dimension size = null;
         String fileNamePrefix = Utils.normalize(prefix) + "Painter";
         // write states ui defaults
@@ -353,7 +353,7 @@ class UIState {
 
     public String getName() {
         if (cachedName == null) {
-            StringBuilder buf = new StringBuilder();
+            StringBuffer buf = new StringBuffer();
             List<String> keys = stringToKeys(stateKeys);
             Collections.sort(keys);
             for (Iterator<String> iter = keys.iterator(); iter.hasNext();) {
@@ -367,7 +367,7 @@ class UIState {
         return cachedName;
     }
 
-    public void write(StringBuilder sb, String prefix, String pkg, String fileNamePrefix, String painterPrefix) {
+    public void write(StringBuffer sb, String prefix, String pkg, String fileNamePrefix, String painterPrefix) {
         String statePrefix = prefix + "[" + getName() + "]";
         // write state style
         sb.append(style.write(statePrefix + '.'));
@@ -377,7 +377,7 @@ class UIState {
         }
     }
 
-    private void writeLazyPainter(StringBuilder sb, String statePrefix, String packageNamePrefix, String fileNamePrefix, String painterPrefix) {
+    private void writeLazyPainter(StringBuffer sb, String statePrefix, String packageNamePrefix, String fileNamePrefix, String painterPrefix) {
         String cacheModeString = "AbstractRegionPainter.PaintContext.CacheMode." + style.getCacheMode();
         String stateConstant = Utils.statesToConstantName(painterPrefix + "_" + stateKeys);
         sb.append(String.format(

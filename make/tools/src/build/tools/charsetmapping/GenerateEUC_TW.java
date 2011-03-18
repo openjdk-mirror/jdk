@@ -27,7 +27,6 @@ package build.tools.charsetmapping;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;
@@ -42,7 +41,7 @@ public class GenerateEUC_TW {
 
     private static String getCopyright(File f) throws IOException {
         Scanner s = new Scanner(f, "ISO-8859-1");
-        StringBuilder sb = new StringBuilder();
+        StringBuffer sb = new StringBuffer();
         while (s.hasNextLine()) {
             String ln = s.nextLine();
             sb.append(ln + "\n");
@@ -87,7 +86,7 @@ public class GenerateEUC_TW {
         case '\\':
             out.format("\\\\", new Object[] { }); break;
         default:
-            out.format(fmt, new Object[] { Integer.valueOf(c & 0xffff) });
+            out.format(fmt, new Object[] { new Integer(c & 0xffff) });
         }
     }
 
@@ -188,7 +187,7 @@ public class GenerateEUC_TW {
                 }
             }
 
-            StringBuilder out = new StringBuilder();
+            StringBuffer out = new StringBuffer();
             Formatter fm = new Formatter(out);
 
             fm.format(copyright, new Object[] { });
@@ -197,15 +196,15 @@ public class GenerateEUC_TW {
             fm.format("class EUC_TWMapping {%n%n", new Object[] { });
 
             // boundaries
-            fm.format("    final static int b1Min = 0x%x;%n", new Object[] { Integer.valueOf(b1Min) });
-            fm.format("    final static int b1Max = 0x%x;%n", new Object[] { Integer.valueOf(b1Max) });
-            fm.format("    final static int b2Min = 0x%x;%n", new Object[] { Integer.valueOf(b2Min) });
-            fm.format("    final static int b2Max = 0x%x;%n", new Object[] { Integer.valueOf(b2Max) });
+            fm.format("    final static int b1Min = 0x%x;%n", new Object[] { new Integer(b1Min) });
+            fm.format("    final static int b1Max = 0x%x;%n", new Object[] { new Integer(b1Max) });
+            fm.format("    final static int b2Min = 0x%x;%n", new Object[] { new Integer(b2Min) });
+            fm.format("    final static int b2Max = 0x%x;%n", new Object[] { new Integer(b2Max) });
 
             // b2c tables
             fm.format("%n    final static String[] b2c = {%n", new Object[] { });
             for (int plane = 0; plane < 8; plane++) {
-                fm.format("        // Plane %d%n", new Object[] { Integer.valueOf(plane) });
+                fm.format("        // Plane %d%n", new Object[] { new Integer(plane) });
                 toString(fm, toCharArray(db[plane], b1Min, b1Max, b2Min, b2Max),
                          ",");
                 fm.format("%n", new Object[] { });
@@ -214,14 +213,14 @@ public class GenerateEUC_TW {
 
             // c2bIndex
             fm.format("%n    static final int C2BSIZE = 0x%x;%n",
-                      new Object[] { Integer.valueOf(initC2BIndex(indexC2B)) } );
+                      new Object[] { new Integer(initC2BIndex(indexC2B)) } );
             fm.format("%n    static char[] c2bIndex = new char[] {%n", new Object[] { });
             toCharArray(fm, indexC2B);
             fm.format("    };%n", new Object[] { });
 
             // c2bIndexSupp
             fm.format("%n    static final int C2BSUPPSIZE = 0x%x;%n",
-                      new Object[] { Integer.valueOf(initC2BIndex(indexC2BSupp)) });
+                      new Object[] { new Integer(initC2BIndex(indexC2BSupp)) });
             fm.format("%n    static char[] c2bSuppIndex = new char[] {%n", new Object[] { });
             toCharArray(fm, indexC2BSupp);
             fm.format("    };%n", new Object[] { });

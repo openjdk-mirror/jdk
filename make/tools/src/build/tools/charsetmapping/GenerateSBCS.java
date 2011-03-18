@@ -28,7 +28,6 @@ package build.tools.charsetmapping;
 import java.io.*;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;
@@ -87,16 +86,16 @@ public class GenerateSBCS {
                 case '\\':
                     out.format("\\\\", new Object[] { }); break;
                 default:
-                    out.format("\\u%04X", new Object[] { Integer.valueOf(c & 0xffff) });
+                    out.format("\\u%04X", new Object[] { new Integer(c & 0xffff) });
                 }
             }
             if (comment) {
                 if (off == end)
                     out.format("\" %s      // 0x%02x - 0x%02x%n",
-                               new Object[] { closure, Integer.valueOf(off-8), Integer.valueOf(off-1) });
+                               new Object[] { closure, new Integer(off-8), new Integer(off-1) });
                 else
                     out.format("\" +      // 0x%02x - 0x%02x%n",
-                               new Object[] { Integer.valueOf(off-8), Integer.valueOf(off-1) });
+                               new Object[] { new Integer(off-8), new Integer(off-1) });
             } else {
                 if (off == end)
                     out.format("\"%s%n", new Object[] { closure });
@@ -117,9 +116,9 @@ public class GenerateSBCS {
                                  boolean isASCII)
         throws Exception
     {
-        StringBuilder b2cSB = new StringBuilder();
-        StringBuilder b2cNRSB = new StringBuilder();
-        StringBuilder c2bNRSB = new StringBuilder();
+        StringBuffer b2cSB = new StringBuffer();
+        StringBuffer b2cNRSB = new StringBuffer();
+        StringBuffer c2bNRSB = new StringBuffer();
 
         char[] sb = new char[0x100];
         char[] c2bIndex = new char[0x100];
@@ -162,7 +161,7 @@ public class GenerateSBCS {
             fm.format("        b2cMap = b2cTable.toCharArray();%n", new Object[] { });
             while ((e = p.next()) != null) {
                 fm.format("        b2cMap[%d] = CharsetMapping.UNMAPPABLE_DECODING;%n",
-                          new Object[] { Integer.valueOf((e.bs>=0x80)?(e.bs-0x80):(e.bs+0x80)) });
+                          new Object[] { new Integer((e.bs>=0x80)?(e.bs-0x80):(e.bs+0x80)) });
             }
             fm.close();
         }
@@ -184,11 +183,11 @@ public class GenerateSBCS {
             }
             fm.format("// non-roundtrip c2b only entries%n", new Object[] { });
             if (es.size() < 100) {
-                fm.format("        c2bNR = new char[%d];%n", new Object[] { Integer.valueOf(es.size() * 2) });
+                fm.format("        c2bNR = new char[%d];%n", new Object[] { new Integer(es.size() * 2) });
                 int i = 0;
                 for (CharsetMapping.Entry entry: es) {
                     fm.format("        c2bNR[%d] = 0x%x; c2bNR[%d] = 0x%x;%n",
-                              new Object[] { Integer.valueOf(i++), Integer.valueOf(entry.bs), Integer.valueOf(i++), Integer.valueOf(entry.cp) });
+                              new Object[] { new Integer(i++), new Integer(entry.bs), new Integer(i++), new Integer(entry.cp) });
                 }
             } else {
                 char[] cc = new char[es.size() * 2];

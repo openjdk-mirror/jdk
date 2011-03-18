@@ -100,7 +100,7 @@ class Mappings {
                         break;
                     }
                 }
-                rawOffsetsIndex.add(i, Integer.valueOf(rawOffset));
+                rawOffsetsIndex.add(i, new Integer(rawOffset));
 
                 Set perRawOffset = new TreeSet();
                 if (!isExcluded) {

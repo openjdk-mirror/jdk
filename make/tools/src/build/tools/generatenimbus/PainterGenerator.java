@@ -81,27 +81,27 @@ public class PainterGenerator {
     /**
      * The source code in this variable will be used to define the various state types
      */
-    private StringBuilder stateTypeCode = new StringBuilder();
+    private StringBuffer stateTypeCode = new StringBuffer();
     /**
      * The source code in this variable will be used to define the switch statement for painting
      */
-    private StringBuilder switchCode = new StringBuilder();
+    private StringBuffer switchCode = new StringBuffer();
     /**
      * The source code in this variable will be used to define the methods for painting each state
      */
-    private StringBuilder paintingCode = new StringBuilder();
+    private StringBuffer paintingCode = new StringBuffer();
     /**
      * The source code in this variable will be used to add getExtendedCacheKeys
      * implementation if needed.
      */
-    private StringBuilder getExtendedCacheKeysCode = new StringBuilder();
+    private StringBuffer getExtendedCacheKeysCode = new StringBuffer();
     /**
      * The source code in this variable will be used to define the methods for decoding gradients
      * and shapes.
      */
-    private StringBuilder gradientsCode = new StringBuilder();
-    private StringBuilder colorCode = new StringBuilder();
-    private StringBuilder shapesCode = new StringBuilder();
+    private StringBuffer gradientsCode = new StringBuffer();
+    private StringBuffer colorCode = new StringBuffer();
+    private StringBuffer shapesCode = new StringBuffer();
     /**
      * Map of component colors keyed by state constant name
      */
@@ -266,7 +266,7 @@ public class PainterGenerator {
                     List<Point> controlPoints = pshape.getControlPoints();
                     Point first, last;
                     first = last = controlPoints.get(0);
-                    StringBuilder buffer = new StringBuilder();
+                    StringBuffer buffer = new StringBuffer();
                     buffer.append("        path.reset();\n");
                     buffer.append("        path.moveTo(" + writeDecodeX(encode((float)first.getX(), a, b, width)) + ", " + writeDecodeY(encode((float)first.getY(), c, d, height)) + ");\n");
                     for (int j=1; j<controlPoints.size(); j++) {
@@ -454,7 +454,7 @@ public class PainterGenerator {
     }
 
     private String encodeGradient(Shape ps, Gradient g) {
-        StringBuilder b = new StringBuilder();
+        StringBuffer b = new StringBuffer();
         float x1 = (float)ps.getPaintX1();
         float y1 = (float)ps.getPaintY1();
         float x2 = (float)ps.getPaintX2();
@@ -495,10 +495,10 @@ public class PainterGenerator {
      *
      * @param g The abstract gradient to get stops from
      * @param b Append code string of the form "new float[]{...},
-     *          new Color[]{...}" to this StringBuilder
+     *          new Color[]{...}" to this StringBuffer
      */
     private void encodeGradientColorsAndFractions(AbstractGradient g,
-                                                    StringBuilder b) {
+                                                    StringBuffer b) {
         List<GradientStop> stops = g.getStops();
         // there are stops.size() number of main stops. Between each is a
         // fractional stop. Thus, there are: stops.size() + stops.size() - 1
@@ -575,7 +575,7 @@ public class PainterGenerator {
         float x2 = (float)ps.getPaintX2();
         float y2 = (float)ps.getPaintY2();
         float radius = (float)Point2D.distance(centerX1, centerY1, x2, y2);
-        StringBuilder b = new StringBuilder();
+        StringBuffer b = new StringBuffer();
 
         b.append("        return decodeRadialGradient((");
         b.append(centerX1);
