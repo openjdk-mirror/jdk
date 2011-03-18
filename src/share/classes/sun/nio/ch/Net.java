@@ -293,11 +293,12 @@ class Net {                                             // package-private
 
     static native boolean isIPv6Available0();
 
-    static FileDescriptor socket(boolean stream) {
+    static FileDescriptor socket(boolean stream) throws IOException {
         return socket(UNSPEC, stream);
     }
 
-    static FileDescriptor socket(ProtocolFamily family, boolean stream) {
+    static FileDescriptor socket(ProtocolFamily family, boolean stream)
+        throws IOException {
         boolean preferIPv6 = isIPv6Available() &&
             (family != StandardProtocolFamily.INET);
         return IOUtil.newFD(socket0(preferIPv6, stream, false));
