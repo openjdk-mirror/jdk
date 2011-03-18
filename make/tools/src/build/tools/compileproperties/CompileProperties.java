@@ -223,7 +223,7 @@ public class CompileProperties {
         if ( ok ) {
             String packageName = inferPackageName(propertiesPath, outputPath);
             System.out.println("inferred package name: " + packageName);
-            List<String> sortedKeys = new ArrayList<String>();
+            List sortedKeys = new ArrayList();
             for ( Object key : p.keySet() ) {
                 sortedKeys.add((String)key);
             }

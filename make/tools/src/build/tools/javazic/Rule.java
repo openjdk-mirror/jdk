@@ -38,7 +38,7 @@ import java.util.StringTokenizer;
  */
 class Rule {
 
-    private List<RuleRec> list;
+    private List list;
     private String name;
 
     /**
@@ -48,7 +48,7 @@ class Rule {
      */
     Rule(String name) {
         this.name = name;
-        list = new ArrayList<RuleRec>();
+        list = new ArrayList();
     }
 
     /**
@@ -72,8 +72,8 @@ class Rule {
      * @return rules in List that are collated in time. If no rule is found, an empty
      * List is returned.
      */
-    List<RuleRec> getRules(int year) {
-        List<RuleRec> rules = new ArrayList<RuleRec>(3);
+    List getRules(int year) {
+        List rules = new ArrayList(3);
         for (RuleRec rec : list) {
             if (year >= rec.getFromYear() && year <= rec.getToYear()) {
                 if ((rec.isOdd() && year % 2 == 0) || (rec.isEven() && year % 2 == 1))
@@ -86,8 +86,8 @@ class Rule {
             return rules;
         }
         if (n == 2) {
-            RuleRec rec1 = rules.get(0);
-            RuleRec rec2 = rules.get(1);
+            RuleRec rec1 = (RuleRec)rules.get(0);
+            RuleRec rec2 = (RuleRec)rules.get(1);
             if (rec1.getMonthNum() > rec2.getMonthNum()) {
                 rules.set(0, rec2);
                 rules.set(1, rec1);
@@ -108,8 +108,10 @@ class Rule {
         final int y = year;
         RuleRec[] recs = new RuleRec[rules.size()];
         rules.toArray(recs);
-        Arrays.sort(recs, new Comparator<RuleRec>() {
-                public int compare(RuleRec r1, RuleRec r2) {
+        Arrays.sort(recs, new Comparator() {
+                public int compare(Object o1, Object o2) {
+                	RuleRec r1 = (RuleRec)o1;
+                	RuleRec r2 = (RuleRec)o2;
                     int n = r1.getMonthNum() - r2.getMonthNum();
                     if (n != 0) {
                         return n;
@@ -139,12 +141,12 @@ class Rule {
      * @return rules that contain last DST schedule. An empty
      * ArrayList is returned if no last rules are found.
      */
-    List<RuleRec> getLastRules() {
+    List getLastRules() {
         RuleRec start = null;
         RuleRec end = null;
 
         for (int i = 0; i < list.size(); i++) {
-            RuleRec rec = list.get(i);
+            RuleRec rec = (RuleRec)list.get(i);
             if (rec.isLastRule()) {
                 if (rec.getSave() > 0) {
                     start = rec;
@@ -156,7 +158,7 @@ class Rule {
         if (start == null || end == null) {
             int endYear = Zoneinfo.getEndYear();
             for (int i  = 0; i < list.size(); i++) {
-                RuleRec rec = list.get(i);
+                RuleRec rec = (RuleRec)list.get(i);
                 if (endYear >= rec.getFromYear() && endYear <= rec.getToYear()) {
                     if (start == null && rec.getSave() > 0) {
                         start = rec;
@@ -169,7 +171,7 @@ class Rule {
             }
         }
 
-        List<RuleRec> r = new ArrayList<RuleRec>(2);
+        List r = new ArrayList(2);
         if (start == null || end == null) {
             if (start != null || end != null) {
                 Main.warning("found last rules for "+name+" inconsistent.");

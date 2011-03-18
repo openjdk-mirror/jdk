@@ -31,7 +31,6 @@ import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;
-import static build.tools.charsetmapping.CharsetMapping.*;
 
 public class GenerateEUC_TW {
 
@@ -72,23 +71,23 @@ public class GenerateEUC_TW {
     private static void toChar(Formatter out, String fmt, char c) {
         switch (c) {
         case '\b':
-            out.format("\\b"); break;
+            out.format("\\b", new Object[] { }); break;
         case '\t':
-            out.format("\\t"); break;
+            out.format("\\t", new Object[] { }); break;
         case '\n':
-            out.format("\\n"); break;
+            out.format("\\n", new Object[] { }); break;
         case '\f':
-            out.format("\\f"); break;
+            out.format("\\f", new Object[] { }); break;
         case '\r':
-            out.format("\\r"); break;
+            out.format("\\r", new Object[] { }); break;
         case '\"':
-            out.format("\\\""); break;
+            out.format("\\\"", new Object[] { }); break;
         case '\'':
-            out.format("\\'"); break;
+            out.format("\\'", new Object[] { }); break;
         case '\\':
-            out.format("\\\\"); break;
+            out.format("\\\\", new Object[] { }); break;
         default:
-            out.format(fmt, c & 0xffff);
+            out.format(fmt, new Object[] { Integer.valueOf(c & 0xffff) });
         }
     }
 
@@ -97,14 +96,14 @@ public class GenerateEUC_TW {
         int off = 0;
         int end = date.length;
         while (off < end) {
-            out.format("        \"");
+            out.format("        \"", new Object[] { });
             for (int j = 0; j < 8 && off < end; j++) {
                 toChar(out, "\\u%04X", date[off++]);
             }
             if (off == end)
-               out.format("\"%s%n", endStr);
+               out.format("\"%s%n", new Object[] { endStr });
             else
-               out.format("\" +%n");
+               out.format("\" +%n", new Object[] { });
         }
     }
 
@@ -128,11 +127,11 @@ public class GenerateEUC_TW {
         int off = 0;
         int end = date.length;
         while (off < end) {
-            out.format("        ");
+            out.format("        ", new Object[] { });
             for (int j = 0; j < 8 && off < end; j++) {
                 toChar(out, "'\\u%04X',", date[off++]);
             }
-            out.format("%n");
+            out.format("%n", new Object[] { });
         }
     }
 
@@ -192,49 +191,48 @@ public class GenerateEUC_TW {
             StringBuilder out = new StringBuilder();
             Formatter fm = new Formatter(out);
 
-            fm.format(copyright);
-            fm.format("%n// -- This file was mechanically generated: Do not edit! -- //%n");
-            fm.format("package sun.nio.cs.ext;%n%n");
-            fm.format("class EUC_TWMapping {%n%n");
+            fm.format(copyright, new Object[] { });
+            fm.format("%n// -- This file was mechanically generated: Do not edit! -- //%n", new Object[] { });
+            fm.format("package sun.nio.cs.ext;%n%n", new Object[] { });
+            fm.format("class EUC_TWMapping {%n%n", new Object[] { });
 
             // boundaries
-            fm.format("    final static int b1Min = 0x%x;%n", b1Min);
-            fm.format("    final static int b1Max = 0x%x;%n", b1Max);
-            fm.format("    final static int b2Min = 0x%x;%n", b2Min);
-            fm.format("    final static int b2Max = 0x%x;%n", b2Max);
+            fm.format("    final static int b1Min = 0x%x;%n", new Object[] { Integer.valueOf(b1Min) });
+            fm.format("    final static int b1Max = 0x%x;%n", new Object[] { Integer.valueOf(b1Max) });
+            fm.format("    final static int b2Min = 0x%x;%n", new Object[] { Integer.valueOf(b2Min) });
+            fm.format("    final static int b2Max = 0x%x;%n", new Object[] { Integer.valueOf(b2Max) });
 
             // b2c tables
-            fm.format("%n    final static String[] b2c = {%n");
+            fm.format("%n    final static String[] b2c = {%n", new Object[] { });
             for (int plane = 0; plane < 8; plane++) {
-                fm.format("        // Plane %d%n", plane);
-                toString(fm, toCharArray(db[plane],
-                                         b1Min, b1Max, b2Min, b2Max),
+                fm.format("        // Plane %d%n", new Object[] { Integer.valueOf(plane) });
+                toString(fm, toCharArray(db[plane], b1Min, b1Max, b2Min, b2Max),
                          ",");
-                fm.format("%n");
+                fm.format("%n", new Object[] { });
             }
-            fm.format("    };%n");
+            fm.format("    };%n", new Object[] { });
 
             // c2bIndex
             fm.format("%n    static final int C2BSIZE = 0x%x;%n",
-                      initC2BIndex(indexC2B));
-            fm.format("%n    static char[] c2bIndex = new char[] {%n");
+                      new Object[] { Integer.valueOf(initC2BIndex(indexC2B)) } );
+            fm.format("%n    static char[] c2bIndex = new char[] {%n", new Object[] { });
             toCharArray(fm, indexC2B);
-            fm.format("    };%n");
+            fm.format("    };%n", new Object[] { });
 
             // c2bIndexSupp
             fm.format("%n    static final int C2BSUPPSIZE = 0x%x;%n",
-                      initC2BIndex(indexC2BSupp));
-            fm.format("%n    static char[] c2bSuppIndex = new char[] {%n");
+                      new Object[] { Integer.valueOf(initC2BIndex(indexC2BSupp)) });
+            fm.format("%n    static char[] c2bSuppIndex = new char[] {%n", new Object[] { });
             toCharArray(fm, indexC2BSupp);
-            fm.format("    };%n");
+            fm.format("    };%n", new Object[] { });
 
             // suppFlags
-            fm.format("%n    static String b2cIsSuppStr =%n");
+            fm.format("%n    static String b2cIsSuppStr =%n", new Object[] { });
             toString(fm, toCharArray(suppFlag,
                                      b1Min, b1Max, b2Min, b2Max),
                      ";");
 
-            fm.format("}");
+            fm.format("}", new Object[] { });
             fm.close();
 
             ps.println(out.toString());

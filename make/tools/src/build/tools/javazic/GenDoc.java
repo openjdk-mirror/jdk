@@ -83,7 +83,7 @@ class GenDoc extends BackEnd {
     //      key (String)       : value (String)
     //      "America/Denver"   : "America/Denver.html" (real time zone)
     //      "America/Shiprock" : "America/Denver"      (alias)
-    TreeMap<String,String> timezoneList = new TreeMap<String,String>();
+    TreeMap timezoneList = new TreeMap();
 
     // list of time zone's display name and time zone name
     //   e.g.
@@ -91,14 +91,14 @@ class GenDoc extends BackEnd {
     //      "Tokyo, Asia"               : "Asia/Tokyo"
     //      "Marengo, Indiana, America" : "America/Indiana/Marengo"
     //          (aliases included)
-    TreeMap<String,String> displayNameList = new TreeMap<String,String>();
+    TreeMap displayNameList = new TreeMap();
 
     // list of top level regions
     //   e.g.
     //      key (String) : value (String)
     //      "America"    : "America.html"
     //          (including entries in America/Indiana/, America/Kentucky/, ...)
-    TreeMap<String,String> regionList = new TreeMap<String,String>();
+    TreeMap regionList = new TreeMap();
 
     // mapping list from zone name to latitude & longitude
     //   This list is generated from zone.tab.
@@ -106,12 +106,12 @@ class GenDoc extends BackEnd {
     //      key (String) : value (LatitudeAndLongitude object)
     //      "Asia/Tokyo" : latitude=35.3916, longitude=13.9444
     //          (aliases not included)
-    HashMap<String,LatitudeAndLongitude> mapList = null;
+    HashMap mapList = null;
 
     // SortedMap of zone IDs sorted by their GMT offsets. If zone's GMT
     // offset will change in the future, its last known offset is
     // used.
-    SortedMap<Integer, Set<String>> zonesByOffset = new TreeMap<Integer, Set<String>>();
+    SortedMap zonesByOffset = new TreeMap();
 
     /**
      * Generates HTML document for each zone.
@@ -125,17 +125,17 @@ class GenDoc extends BackEnd {
             String outputDir = Main.getOutputDir();
             String zonename = tz.getName();
             String zonefile = ZoneInfoFile.getFileName(zonename) + ".html";
-            List<RuleRec> stz = tz.getLastRules();
+            List stz = tz.getLastRules();
             timezoneList.put(zonename, zonefile);
             displayNameList.put(transform(zonename), zonename);
 
             // Populate zonesByOffset. (Zones that will change their
             // GMT offsets are also added to zonesByOffset here.)
             int lastKnownOffset = tz.getRawOffset();
-            Set<String> set = zonesByOffset.get(lastKnownOffset);
+            Set set = (Set)zonesByOffset.get(Integer.valueOf(lastKnownOffset));
             if (set == null) {
-                set = new TreeSet<String>();
-                zonesByOffset.put(lastKnownOffset, set);
+                set = new TreeSet();
+                zonesByOffset.put(Integer.valueOf(lastKnownOffset), set);
             }
             set.add(zonename);
 
@@ -166,7 +166,7 @@ class GenDoc extends BackEnd {
             if ((mapList == null) && (Main.getMapFile() != null)) {
                 FileReader fr = new FileReader(Main.getMapFile());
                 BufferedReader in = new BufferedReader(fr);
-                mapList = new HashMap<String,LatitudeAndLongitude>();
+                mapList = new HashMap();
                 String line;
                 while ((line = in.readLine()) != null) {
                     // skip blank and comment lines
@@ -225,8 +225,8 @@ class GenDoc extends BackEnd {
             }
             out.write("\n<P>\n");
 
-            List<ZoneRec> zone = tz.getZones();
-            List<RuleRec> rule = tz.getRules();
+            List zone = tz.getZones();
+            List rule = tz.getRules();
             if (rule != null && zone != null) {
                 out.write("<TABLE BORDER=\"0\" WIDTH=\"100%\" CELLPADDING=\"1\" CELLSPACING=\"0\">\n" +
                           "<TR>\n" +
@@ -249,7 +249,7 @@ class GenDoc extends BackEnd {
                           "<TD>LETTER/S</TD><TD>NOTES</TD>\n</TR>\n");
                 for (int i = 0; i < size; i++) {
                     out.write("<TR BGCOLOR=\"#FFFFFF\">\n");
-                    StringTokenizer st = new StringTokenizer(rule.get(i).getLine());
+                    StringTokenizer st = new StringTokenizer(((RuleRec)rule.get(i)).getLine());
                     String s;
                     if (st.hasMoreTokens()) {   /* RULE - truncated */
                         st.nextToken();
@@ -312,7 +312,7 @@ class GenDoc extends BackEnd {
                           "<TD>NOTES</TD>\n</TR>\n");
                 for (int i = 0; i < size; i++) {
                     out.write("<TR>\n");
-                    StringTokenizer st = new StringTokenizer(zone.get(i).getLine());
+                    StringTokenizer st = new StringTokenizer(((ZoneRec)zone.get(i)).getLine());
                     String s = st.nextToken();
                     if (s.equals("Zone")) {     /* NAME */
                         s = st.nextToken();
@@ -397,7 +397,7 @@ class GenDoc extends BackEnd {
             BufferedWriter out1, out2;
 
             /* Whether alias list exists or not. */
-            Map<String,String> a = map.getAliases();
+            Map a = map.getAliases();
             if (a == null) {
                 Main.panic("Data not exist. (aliases)");
                 return 1;
@@ -521,16 +521,16 @@ class GenDoc extends BackEnd {
                        "<BR>\n\n" + "<TABLE BORDER=\"0\" WIDTH=\"100%\">\n" +
                        "<TR>\n<TD NOWRAP>\n");
 
-            List<Integer> roi = map.getRawOffsetsIndex();
-            List<Set<String>> roit = map.getRawOffsetsIndexTable();
+            List roi = map.getRawOffsetsIndex();
+            List roit = map.getRawOffsetsIndexTable();
 
             int index = 0;
             for (Integer offset : zonesByOffset.keySet()) {
-                int off = roi.get(index);
-                Set<String> perRO = zonesByOffset.get(offset);
-                if (offset == off) {
+                int off = ((Integer)roi.get(index)).intValue();
+                Set perRO = (Set)zonesByOffset.get(offset);
+                if (offset.intValue() == off) {
                     // Merge aliases into zonesByOffset
-                    perRO.addAll(roit.get(index));
+                    perRO.addAll((java.util.Collection)roit.get(index));
                 }
                 index++;
 

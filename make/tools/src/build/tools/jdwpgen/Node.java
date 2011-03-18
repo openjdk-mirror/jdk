@@ -32,9 +32,9 @@ import java.io.*;
 abstract class Node {
 
     String kind;
-    List<Node> components;
+    List components;
     int lineno;
-    List<String> commentList = new ArrayList<String>();
+    List commentList = new ArrayList();
     Node parent = null;
     Context context = null;
 
@@ -43,7 +43,7 @@ abstract class Node {
 
     abstract void document(PrintWriter writer);
 
-    void set(String kind, List<Node> components, int lineno) {
+    void set(String kind, List components, int lineno) {
         this.kind = kind;
         this.components = components;
         this.lineno = lineno;

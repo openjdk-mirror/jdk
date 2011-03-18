@@ -51,22 +51,22 @@ class Simple extends BackEnd {
     /**
      * Zone records which are applied for given year.
      */
-    private static Map<String,ZoneRec> lastZoneRecs
-        = new HashMap<String,ZoneRec>();
+    private static Map lastZoneRecs
+        = new HashMap();
 
     /**
      * Rule records which are applied for given year.
      */
-    private static Map<String,List<RuleRec>> lastRules
-        = new TreeMap<String,List<RuleRec>>();
+    private static Map lastRules
+        = new TreeMap();
 
     /**
      * zone IDs sorted by their GMT offsets. If zone's GMT
      * offset will change in the future, its last known offset is
      * used.
      */
-    private SortedMap<Integer, Set<String>> zonesByOffset
-        = new TreeMap<Integer,  Set<String>>();
+    private SortedMap zonesByOffset
+        = new TreeMap();
 
     /**
      * Sets last Rule records and Zone records for given timezone to
@@ -84,10 +84,10 @@ class Simple extends BackEnd {
         // Populate zonesByOffset. (Zones that will change their
         // GMT offsets are also added to zonesByOffset here.)
         int lastKnownOffset = tz.getRawOffset();
-        Set<String> set = zonesByOffset.get(lastKnownOffset);
+        Set set = (Set)zonesByOffset.get(Integer.valueOf(lastKnownOffset));
         if (set == null) {
-            set = new TreeSet<String>();
-            zonesByOffset.put(lastKnownOffset, set);
+            set = new TreeSet();
+            zonesByOffset.put(Integer.valueOf(lastKnownOffset), set);
         }
         set.add(zonename);
 
@@ -116,40 +116,40 @@ class Simple extends BackEnd {
             out.write("import java.util.SimpleTimeZone;\n\n");
             out.write("    static SimpleTimeZone zones[] = {\n");
 
-            Map<String,String> a = map.getAliases();
-            List<Integer> roi = map.getRawOffsetsIndex();
-            List<Set<String>> roit = map.getRawOffsetsIndexTable();
+            Map a = map.getAliases();
+            List roi = map.getRawOffsetsIndex();
+            List roit = map.getRawOffsetsIndexTable();
 
             int index = 0;
-            for (int offset : zonesByOffset.keySet()) {
-                int o = roi.get(index);
-                Set<String> set = zonesByOffset.get(offset);
-                if (offset == o) {
+            for (Integer offset : zonesByOffset.keySet()) {
+                int o = ((Integer)roi.get(index)).intValue();
+                Set set = (Set)zonesByOffset.get(offset);
+                if (offset.intValue() == o) {
                     // Merge aliases into zonesByOffset
-                    set.addAll(roit.get(index));
+                    set.addAll((java.util.Collection)roit.get(index));
                 }
                 index++;
 
                 for (String key : set) {
                     ZoneRec zrec;
                     String realname;
-                    List<RuleRec> stz;
-                    if ((realname = a.get(key)) != null) {
+                    List stz;
+                    if ((realname = (String)a.get(key)) != null) {
                         // if this alias is not targeted, ignore it.
                         if (!Zone.isTargetZone(key)) {
                             continue;
                         }
-                        stz = lastRules.get(realname);
-                        zrec = lastZoneRecs.get(realname);
+                        stz = (List)lastRules.get(realname);
+                        zrec = (ZoneRec)lastZoneRecs.get(realname);
                     } else {
-                        stz = lastRules.get(key);
-                        zrec = lastZoneRecs.get(key);
+                        stz = (List)lastRules.get(key);
+                        zrec = (ZoneRec)lastZoneRecs.get(key);
                     }
 
                     out.write("\t//--------------------------------------------------------------------\n");
-                    String s = Time.toFormedString(offset);
+                    String s = Time.toFormedString(offset.intValue());
                     out.write("\tnew SimpleTimeZone(" +
-                        Time.toFormedString(offset) + ", \"" + key + "\"");
+                        Time.toFormedString(offset.intValue()) + ", \"" + key + "\"");
                     if (realname != null) {
                         out.write(" /* " + realname + " */");
                     }
@@ -157,8 +157,8 @@ class Simple extends BackEnd {
                     if (stz == null) {
                         out.write("),\n");
                     } else {
-                        RuleRec rr0 = stz.get(0);
-                        RuleRec rr1 = stz.get(1);
+                        RuleRec rr0 = (RuleRec)stz.get(0);
+                        RuleRec rr1 = (RuleRec)stz.get(1);
 
                         out.write(",\n\t  " + Month.toString(rr0.getMonthNum()) +
                                   ", " + rr0.getDay().getDayForSimpleTimeZone() + ", " +

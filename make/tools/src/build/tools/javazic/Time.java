@@ -296,7 +296,10 @@ class Time {
             sign = '+';
         }
         return String.format((Locale)null, "%c%02d:%02d",
-                             sign, sec/3600, (sec%3600)/60);
+                   new Object[] { 
+                             (Object)("" + sign), (Object)Long.valueOf(sec/3600), (Object)Long.valueOf((sec%3600)/60)
+                             
+                   });
     }
 
     /**

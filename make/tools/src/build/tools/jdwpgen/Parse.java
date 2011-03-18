@@ -31,7 +31,7 @@ import java.io.*;
 class Parse {
 
     final StreamTokenizer izer;
-    final Map<String, Node> kindMap = new HashMap<String, Node>();
+    final Map kindMap = new HashMap();
 
     Parse(Reader reader) {
         izer = new StreamTokenizer(new BufferedReader(reader));
@@ -90,7 +90,7 @@ class Parse {
     }
 
     RootNode items() throws IOException {
-        List<Node> list = new ArrayList<Node>();
+        List list = new ArrayList();
 
         while (izer.nextToken() != StreamTokenizer.TT_EOF) {
             izer.pushBack();
@@ -131,13 +131,13 @@ class Parse {
             case '(': {
                 if (izer.nextToken() == StreamTokenizer.TT_WORD) {
                     String kind = izer.sval;
-                    List<Node> list = new ArrayList<Node>();
+                    List list = new ArrayList();
 
                     while (izer.nextToken() != ')') {
                         izer.pushBack();
                         list.add(item());
                     }
-                    Node proto = kindMap.get(kind);
+                    Node proto = (Node)kindMap.get(kind);
                     if (proto == null) {
                         error("Invalid kind: " + kind);
                         return null;

@@ -64,8 +64,8 @@ import java.util.regex.*;
 
 public class Spp {
     public static void main(String args[]) throws Exception {
-        Map<String, String> vars = new HashMap<String, String>();
-        Set<String> keys = new HashSet<String>();
+        Map vars = new HashMap();
+        Set keys = new HashSet();
         boolean be = false;
 
         for (String arg:args) {
@@ -108,12 +108,12 @@ public class Spp {
     Matcher  vardef2 = Pattern.compile("\\$" + VAR + "\\$").matcher("");
 
     void append(StringBuffer buf, String ln,
-                Set<String> keys, Map<String, String> vars) {
+                Set keys, Map vars) {
         vardef.reset(ln);
         while (vardef.find()) {
             String repl = "";
             if (vardef.group(GN_VAR) != null)
-                repl = vars.get(vardef.group(GN_VAR));
+                repl = (String)vars.get(vardef.group(GN_VAR));
             else {
                 boolean test = keys.contains(vardef.group(GN_KEY));
                 if (vardef.group(GN_NOT) != null)
@@ -123,7 +123,7 @@ public class Spp {
                     repl = "";
                 else {  // embedded $var$
                     while (vardef2.reset(repl).find()) {
-                        repl = vardef2.replaceFirst(vars.get(vardef2.group(1)));
+                        repl = vardef2.replaceFirst((String)vars.get(vardef2.group(1)));
                     }
                 }
             }
@@ -134,7 +134,7 @@ public class Spp {
 
     // return true if #end[key], #end or EOF reached
     boolean spp(Scanner in, StringBuffer buf, String key,
-                Set<String> keys, Map<String, String> vars,
+                Set keys, Map vars,
                 boolean be, boolean skip) {
         while (in.hasNextLine()) {
             String ln = in.nextLine();

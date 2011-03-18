@@ -38,7 +38,7 @@ import java.util.Map;
  * @since 1.4
  */
 class RuleDay {
-    private static final Map<String,DayOfWeek> abbreviations = new HashMap<String,DayOfWeek>(7);
+    private static final Map abbreviations = new HashMap(7);
     static {
         for (DayOfWeek day : DayOfWeek.values()) {
             abbreviations.put(day.getAbbr(), day);
@@ -174,7 +174,7 @@ class RuleDay {
     }
 
     private static DayOfWeek getDOW(String abbr) {
-        return abbreviations.get(abbr);
+        return (DayOfWeek)abbreviations.get(abbr);
     }
 
     /**
@@ -186,7 +186,7 @@ class RuleDay {
      */
     static String toString(int dow) {
         if (dow >= DayOfWeek.SUNDAY.value() && dow <= DayOfWeek.SATURDAY.value()) {
-            return "Calendar." + DayOfWeek.values()[dow - 1];
+            return "Calendar." + DayOfWeek.values().get(dow - 1);
         }
         throw new IllegalArgumentException("wrong Day_of_Week number: " + dow);
     }

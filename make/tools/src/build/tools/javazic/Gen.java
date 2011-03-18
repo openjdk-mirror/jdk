@@ -85,10 +85,10 @@ class Gen extends BackEnd {
             /* Output Version of ZoneInfoFile */
             dos.writeByte(ZoneInfoFile.JAVAZI_VERSION);
 
-            List<Long> transitions = tz.getTransitions();
+            List transitions = tz.getTransitions();
             if (transitions != null) {
-                List<Integer> dstOffsets = tz.getDstOffsets();
-                List<Integer> offsets = tz.getOffsets();
+                List dstOffsets = tz.getDstOffsets();
+                List offsets = tz.getOffsets();
 
                 if ((dstOffsets == null && offsets != null) ||
                     (dstOffsets != null && offsets == null)) {
@@ -117,23 +117,23 @@ class Gen extends BackEnd {
                 }
 
                 /* Output data for GMTOffset */
-                List<Integer> gmtoffset = tz.getGmtOffsets();
+                List gmtoffset = tz.getGmtOffsets();
                 dos.writeByte(ZoneInfoFile.TAG_Offset);
                 size = gmtoffset.size();
                 dos.writeShort((size * 4) & 0xFFFF);
                 for (int i = 0; i < size; i++) {
-                    dos.writeInt(gmtoffset.get(i));
+                    dos.writeInt(((Integer)gmtoffset.get(i)).intValue());
                 }
             }
 
             /* Output data for SimpleTimeZone */
-            List<RuleRec> stz = tz.getLastRules();
+            List stz = tz.getLastRules();
             if (stz != null) {
                 RuleRec[] rr = new RuleRec[2];
                 boolean wall = true;
 
-                rr[0] = stz.get(0);
-                rr[1] = stz.get(1);
+                rr[0] = (RuleRec)stz.get(0);
+                rr[1] = (RuleRec)stz.get(1);
 
                 dos.writeByte(ZoneInfoFile.TAG_SimpleTimeZone);
                 wall = rr[0].getTime().isWall() && rr[1].getTime().isWall();
@@ -214,7 +214,7 @@ class Gen extends BackEnd {
                 new RandomAccessFile(outputDir + ZoneInfoFile.JAVAZM_FILE_NAME, "rw");
 
             /* Whether rawOffsetIndex list exists or not. */
-            List<Integer> roi = map.getRawOffsetsIndex();
+            List roi = map.getRawOffsetsIndex();
             if (roi == null) {
                 Main.panic("Data not exist. (rawOffsetsIndex)");
                 return 1;
@@ -222,7 +222,7 @@ class Gen extends BackEnd {
             roi_size = roi.size();
 
             /* Whether rawOffsetIndexTable list exists or not. */
-            List<Set<String>> roit = map.getRawOffsetsIndexTable();
+            List roit = map.getRawOffsetsIndexTable();
             if (roit == null || roit.size() != roi_size) {
                 Main.panic("Data not exist. (rawOffsetsIndexTable) Otherwise, Invalid size");
                 return 1;
@@ -252,7 +252,7 @@ class Gen extends BackEnd {
             short nID = 0;
             raf.writeShort(nID & 0xFFFF);
             for (int i = 0; i < roi_size; i++) {
-                for (String key : roit.get(i)) {
+                for (String key : (java.lang.Iterable)roit.get(i)) {
                     byte size = (byte)key.getBytes("UTF-8").length;
                     raf.writeByte(size & 0xFF);
                     raf.write(key.getBytes("UTF-8"), 0, size);
@@ -282,7 +282,7 @@ class Gen extends BackEnd {
             raf.writeShort(block_size & 0xFFFF);
             int num;
             for (int i = 0; i < roi_size; i++) {
-                num = roit.get(i).size();
+                num = ((Set)roit.get(i)).size();
                 block_size += num;
                 for (int j = 0; j < num; j++) {
                     raf.writeByte(i);
@@ -294,7 +294,7 @@ class Gen extends BackEnd {
             raf.seek(fp);
 
             /* Whether alias list exists or not. */
-            Map<String,String> a = map.getAliases();
+            Map a = map.getAliases();
             if (a == null) {
                 Main.panic("Data not exist. (aliases)");
                 return 0;
@@ -307,7 +307,7 @@ class Gen extends BackEnd {
             raf.writeShort(block_size & 0xFFFF);
             raf.writeShort(a.size() & 0xFFFF);
             for (String key : a.keySet()) {
-                String alias = a.get(key);
+                String alias = (String)a.get(key);
                 byte key_size = (byte)key.length();
                 byte alias_size = (byte)alias.length();
                 raf.writeByte(key_size & 0xFF);
@@ -322,7 +322,7 @@ class Gen extends BackEnd {
             raf.seek(fp);
 
             /* Output the exclude list if it exists. */
-            List<String> excludedZones = map.getExcludeList();
+            List excludedZones = map.getExcludeList();
             if (excludedZones != null) {
                 raf.writeByte(ZoneInfoFile.TAG_ExcludedZones);
                 index += 3 + block_size;

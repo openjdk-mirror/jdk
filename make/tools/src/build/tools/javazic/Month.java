@@ -35,24 +35,42 @@ import java.util.Map;
  *
  * @since 1.4
  */
-enum Month {
-    JANUARY("Jan"),
-    FEBRUARY("Feb"),
-    MARCH("Mar"),
-    APRIL("Apr"),
-    MAY("May"),
-    JUNE("Jun"),
-    JULY("Jul"),
-    AUGUST("Aug"),
-    SEPTEMBER("Sep"),
-    OCTOBER("Oct"),
-    NOVEMBER("Nov"),
-    DECEMBER("Dec");
+public class Month {
+    public static final Month JANUARY = new Month("Jan", 0);
+    public static final Month FEBRUARY = new Month("Feb", 1);
+    public static final Month MARCH = new Month("Mar", 2);
+    public static final Month APRIL = new Month("Apr", 3);
+    public static final Month MAY = new Month("May", 4);
+    public static final Month JUNE = new Month("Jun", 5);
+    public static final Month JULY = new Month("Jul", 6);
+    public static final Month AUGUST = new Month("Aug", 7);
+    public static final Month SEPTEMBER = new Month("Sep", 8);
+    public static final Month OCTOBER = new Month("Oct", 9);
+    public static final Month NOVEMBER = new Month("Nov", 10);
+    public static final Month DECEMBER = new Month("Dec", 11);
+
+    public static final List values() {
+    	List result = new ArrayList();
+    	result.add(JANUARY);
+    	result.add(FEBRUARY);
+    	result.add(MARCH);
+    	result.add(APRIL);
+    	result.add(MAY);
+    	result.add(JUNE);
+    	result.add(JULY);
+    	result.add(AUGUST);
+    	result.add(SEPTEMBER);
+    	result.add(OCTOBER);
+    	result.add(NOVEMBER);
+    	result.add(DECEMBER);
+    	return result;    	
+    }
 
     private final String abbr;
+    private final int ordinal;
 
-    private static final Map<String,Month> abbreviations
-                                = new HashMap<String,Month>(12);
+    private static final Map abbreviations
+                                = new HashMap(12);
 
     static {
         for (Month m : Month.values()) {
@@ -60,12 +78,13 @@ enum Month {
         }
     }
 
-    private Month(String abbr) {
+    private Month(String abbr, int ordinal) {
         this.abbr = abbr;
+        this.ordinal = ordinal;
     }
 
     int value() {
-        return ordinal() + 1;
+        return ordinal + 1;
     }
 
     /**
@@ -74,7 +93,7 @@ enum Month {
      * @return the Month value
      */
     static Month parse(String name) {
-        Month m = abbreviations.get(name);
+        Month m = (Month)abbreviations.get(name);
         if (m != null) {
             return m;
         }
@@ -87,7 +106,7 @@ enum Month {
      */
     static String toString(int month) {
         if (month >= JANUARY.value() && month <= DECEMBER.value()) {
-            return "Calendar." + Month.values()[month - 1];
+            return "Calendar." + Month.values().get(month - 1);
         }
         throw new IllegalArgumentException("wrong month number: " + month);
     }

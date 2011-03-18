@@ -33,10 +33,10 @@ class ErrorNode extends AbstractCommandNode {
     protected static final String NAME_OF_ERROR_TABLE = "Error";
 
     ErrorNode() {
-        this(new ArrayList<Node>());
+        this(new ArrayList());
     }
 
-    ErrorNode(List<Node> components) {
+    ErrorNode(List components) {
         this.kind = "Error";
         this.components = components;
         this.lineno = 0;

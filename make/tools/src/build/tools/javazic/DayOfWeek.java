@@ -25,25 +25,42 @@
 
 package build.tools.javazic;
 
+import java.util.List;
+import java.util.ArrayList;
+
 /**
  * Day of week enum.
  *
  * @since 1.6
  */
 
-enum DayOfWeek {
-    SUNDAY("Sun"),
-    MONDAY("Mon"),
-    TUESDAY("Tue"),
-    WEDNESDAY("Wed"),
-    THURSDAY("Thu"),
-    FRIDAY("Fri"),
-    SATURDAY("Sat");
+public class DayOfWeek {
+    public static final DayOfWeek SUNDAY = new DayOfWeek("Sun", 0);
+    public static final DayOfWeek MONDAY = new DayOfWeek("Mon", 1);
+    public static final DayOfWeek TUESDAY = new DayOfWeek("Tue", 2);
+    public static final DayOfWeek WEDNESDAY = new DayOfWeek("Wed", 3);
+    public static final DayOfWeek THURSDAY = new DayOfWeek("Thu", 4);
+    public static final DayOfWeek FRIDAY = new DayOfWeek("Fri", 5);
+    public static final DayOfWeek SATURDAY = new DayOfWeek("Sat", 6);
+
+    public static List values() {
+    	List list = new ArrayList();
+    	list.add(SUNDAY);
+    	list.add(MONDAY);
+    	list.add(TUESDAY);
+    	list.add(WEDNESDAY);
+    	list.add(THURSDAY);
+    	list.add(FRIDAY);
+    	list.add(SATURDAY);
+    	return list;
+    }
 
     private final String abbr;
+    private final int ordinal;
 
-    private DayOfWeek(String abbr) {
+    private DayOfWeek(String abbr, int ordinal) {
         this.abbr = abbr;
+        this.ordinal = ordinal;
     }
 
     String getAbbr() {
@@ -51,6 +68,6 @@ enum DayOfWeek {
     }
 
     int value() {
-        return ordinal() + 1;
+        return ordinal + 1;
     }
 }

@@ -33,10 +33,10 @@ class ConstantSetNode extends AbstractNamedNode {
     /**
      * The mapping between a constant and its value.
      */
-    protected static final Map<String, String> constantMap = new HashMap<String, String>();
+    protected static final Map constantMap = new HashMap();
 
     void prune() {
-        List<Node> addons = new ArrayList<Node>();
+        List addons = new ArrayList();
 
         for (Iterator it = components.iterator(); it.hasNext(); ) {
             Node node = (Node)it.next();
@@ -89,7 +89,7 @@ class ConstantSetNode extends AbstractNamedNode {
     }
 
     public static String getConstant(String key){
-        String com = constantMap.get(key);
+        String com = (String)constantMap.get(key);
         if(com == null){
             return "";
         } else {

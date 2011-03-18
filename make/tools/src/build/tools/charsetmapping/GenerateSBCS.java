@@ -32,7 +32,6 @@ import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;
-import static build.tools.charsetmapping.CharsetMapping.*;
 
 public class GenerateSBCS {
 
@@ -51,9 +50,10 @@ public class GenerateSBCS {
             String clzName = fields[0];
             String csName  = fields[1];
             String hisName = fields[2];
-            boolean isASCII = Boolean.valueOf(fields[3]);
+            boolean isASCII = Boolean.valueOf(fields[3]).booleanValue();
             String pkgName  = fields[4];
-            System.out.printf("%s,%s,%s,%b,%s%n", clzName, csName, hisName, isASCII, pkgName);
+            System.out.printf("%s,%s,%s,%b,%s%n", 
+                              new Object[] { clzName, csName, hisName, Boolean.valueOf(isASCII), pkgName });
 
             genClass(args[0], args[1], "SingleByte-X.java",
                      clzName, csName, hisName, pkgName, isASCII);
@@ -64,44 +64,44 @@ public class GenerateSBCS {
                                  Formatter out, String closure,
                                  boolean comment) {
         while (off < end) {
-            out.format("        \"");
+            out.format("        \"", new Object[] { });
             for (int j = 0; j < 8; j++) {
                 if (off == end)
                     break;
                 char c = sb[off++];
                 switch (c) {
                 case '\b':
-                    out.format("\\b"); break;
+                    out.format("\\b", new Object[] { }); break;
                 case '\t':
-                    out.format("\\t"); break;
+                    out.format("\\t", new Object[] { }); break;
                 case '\n':
-                    out.format("\\n"); break;
+                    out.format("\\n", new Object[] { }); break;
                 case '\f':
-                    out.format("\\f"); break;
+                    out.format("\\f", new Object[] { }); break;
                 case '\r':
-                    out.format("\\r"); break;
+                    out.format("\\r", new Object[] { }); break;
                 case '\"':
-                    out.format("\\\""); break;
+                    out.format("\\\"", new Object[] { }); break;
                 case '\'':
-                    out.format("\\'"); break;
+                    out.format("\\'", new Object[] { }); break;
                 case '\\':
-                    out.format("\\\\"); break;
+                    out.format("\\\\", new Object[] { }); break;
                 default:
-                    out.format("\\u%04X", c & 0xffff);
+                    out.format("\\u%04X", new Object[] { Integer.valueOf(c & 0xffff) });
                 }
             }
             if (comment) {
                 if (off == end)
                     out.format("\" %s      // 0x%02x - 0x%02x%n",
-                               closure, off-8, off-1);
+                               new Object[] { closure, Integer.valueOf(off-8), Integer.valueOf(off-1) });
                 else
                     out.format("\" +      // 0x%02x - 0x%02x%n",
-                               off-8, off-1);
+                               new Object[] { Integer.valueOf(off-8), Integer.valueOf(off-1) });
             } else {
                 if (off == end)
-                    out.format("\"%s%n", closure);
+                    out.format("\"%s%n", new Object[] { closure });
                 else
-                    out.format("\" +%n");
+                    out.format("\" +%n", new Object[] { });
             }
         }
     }
@@ -124,25 +124,25 @@ public class GenerateSBCS {
         char[] sb = new char[0x100];
         char[] c2bIndex = new char[0x100];
         int    c2bOff = 0;
-        Arrays.fill(sb, UNMAPPABLE_DECODING);
-        Arrays.fill(c2bIndex, UNMAPPABLE_DECODING);
+        Arrays.fill(sb, CharsetMapping.UNMAPPABLE_DECODING);
+        Arrays.fill(c2bIndex, CharsetMapping.UNMAPPABLE_DECODING);
 
         // (1)read in .map to parse all b->c entries
         FileInputStream in = new FileInputStream(
                                  new File(srcDir, clzName + ".map"));
-        Parser p = new Parser(in, sbmap);
-        Entry  e = null;
+        CharsetMapping.Parser p = new CharsetMapping.Parser(in, sbmap);
+        CharsetMapping.Entry  e = null;
 
         while ((e = p.next()) != null) {
             sb[e.bs] = (char)e.cp;
-            if (c2bIndex[e.cp>>8] == UNMAPPABLE_DECODING) {
+            if (c2bIndex[e.cp>>8] == CharsetMapping.UNMAPPABLE_DECODING) {
                 c2bOff += 0x100;
                 c2bIndex[e.cp>>8] = 1;
             }
         }
 
         Formatter fm = new Formatter(b2cSB);
-        fm.format("%n");
+        fm.format("%n", new Object[] { });
 
         // vm -server shows cc[byte + 128] access is much faster than
         // cc[byte&0xff] so we output the upper segment first
@@ -155,14 +155,14 @@ public class GenerateSBCS {
         if (f.exists()) {
             in = new FileInputStream(f);
             fm = new Formatter(b2cNRSB);
-            p = new Parser(in, sbmap);
+            p = new CharsetMapping.Parser(in, sbmap);
             e = null;
 
-            fm.format("// remove non-roundtrip entries%n");
-            fm.format("        b2cMap = b2cTable.toCharArray();%n");
+            fm.format("// remove non-roundtrip entries%n", new Object[] { });
+            fm.format("        b2cMap = b2cTable.toCharArray();%n", new Object[] { });
             while ((e = p.next()) != null) {
-                fm.format("        b2cMap[%d] = UNMAPPABLE_DECODING;%n",
-                          (e.bs>=0x80)?(e.bs-0x80):(e.bs+0x80));
+                fm.format("        b2cMap[%d] = CharsetMapping.UNMAPPABLE_DECODING;%n",
+                          new Object[] { Integer.valueOf((e.bs>=0x80)?(e.bs-0x80):(e.bs+0x80)) });
             }
             fm.close();
         }
@@ -172,32 +172,32 @@ public class GenerateSBCS {
         if (f.exists()) {
             in = new FileInputStream(f);
             fm = new Formatter(c2bNRSB);
-            p = new Parser(in, sbmap);
+            p = new CharsetMapping.Parser(in, sbmap);
             e = null;
-            ArrayList<Entry> es = new ArrayList<Entry>();
+            ArrayList es = new ArrayList();
             while ((e = p.next()) != null) {
-                if (c2bIndex[e.cp>>8] == UNMAPPABLE_DECODING) {
+                if (c2bIndex[e.cp>>8] == CharsetMapping.UNMAPPABLE_DECODING) {
                     c2bOff += 0x100;
                     c2bIndex[e.cp>>8] = 1;
                 }
                 es.add(e);
             }
-            fm.format("// non-roundtrip c2b only entries%n");
+            fm.format("// non-roundtrip c2b only entries%n", new Object[] { });
             if (es.size() < 100) {
-                fm.format("        c2bNR = new char[%d];%n", es.size() * 2);
+                fm.format("        c2bNR = new char[%d];%n", new Object[] { Integer.valueOf(es.size() * 2) });
                 int i = 0;
-                for (Entry entry: es) {
+                for (CharsetMapping.Entry entry: es) {
                     fm.format("        c2bNR[%d] = 0x%x; c2bNR[%d] = 0x%x;%n",
-                              i++, entry.bs, i++, entry.cp);
+                              new Object[] { Integer.valueOf(i++), Integer.valueOf(entry.bs), Integer.valueOf(i++), Integer.valueOf(entry.cp) });
                 }
             } else {
                 char[] cc = new char[es.size() * 2];
                 int i = 0;
-                for (Entry entry: es) {
+                for (CharsetMapping.Entry entry: es) {
                     cc[i++] = (char)entry.bs;
                     cc[i++] = (char)entry.cp;
                 }
-                fm.format("        c2bNR = (%n");
+                fm.format("        c2bNR = (%n", new Object[] { });
                 toString(cc, 0, i,  fm, ").toCharArray();", false);
             }
             fm.close();

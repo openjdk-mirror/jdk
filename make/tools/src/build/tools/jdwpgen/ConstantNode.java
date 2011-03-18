@@ -31,10 +31,10 @@ import java.io.*;
 class ConstantNode extends AbstractCommandNode {
 
     ConstantNode() {
-        this(new ArrayList<Node>());
+        this(new ArrayList());
     }
 
-    ConstantNode(List<Node> components) {
+    ConstantNode(List components) {
         this.kind = "Constant";
         this.components = components;
         this.lineno = 0;

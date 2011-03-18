@@ -43,35 +43,35 @@ class Timezone {
     /**
      * transition time values in UTC (millisecond)
      */
-    private List<Long> transitions;
+    private List transitions;
 
     /**
      * All offset values in millisecond
      * @see sun.util.calendar.ZoneInfo
      */
-    private List<Integer> offsets;
+    private List offsets;
 
     /**
      * Indices of GMT offset values (both raw and raw+saving)
      * at transitions
      */
-    private List<Integer> gmtOffsets;
+    private List gmtOffsets;
 
     /**
      * Indices of regular or "direct" saving time values
      * at transitions
      */
-    private List<Integer> dstOffsets;
+    private List dstOffsets;
 
     /**
      * Zone records of this time zone
      */
-    private List<ZoneRec> usedZoneRecs;
+    private List usedZoneRecs;
 
     /**
      * Rule records referred to by this time zone
      */
-    private List<RuleRec> usedRuleRecs;
+    private List usedRuleRecs;
 
     /**
      * Type of DST rules in this time zone
@@ -102,7 +102,7 @@ class Timezone {
      * The last DST rules. lastRules[0] is the DST start
      * rule. lastRules[1] is the DST end rules.
      */
-    private List<RuleRec> lastRules;
+    private List lastRules;
 
     /**
      * The amount of DST saving value (millisecond) in the last DST
@@ -146,7 +146,7 @@ class Timezone {
      * by this time zone.
      * @return the rule records list
      */
-    List<RuleRec> getRules() {
+    List getRules() {
         return usedRuleRecs;
     }
 
@@ -155,35 +155,35 @@ class Timezone {
      * by this time zone.
      * @return the zone records list
      */
-    List<ZoneRec> getZones() {
+    List getZones() {
         return usedZoneRecs;
     }
 
     /**
      * @return the transition table (list)
      */
-    List<Long> getTransitions() {
+    List getTransitions() {
         return transitions;
     }
 
     /**
      * @return the offsets list
      */
-    List<Integer> getOffsets() {
+    List getOffsets() {
         return offsets;
     }
 
     /**
      * @return the DST saving offsets list
      */
-    List<Integer> getDstOffsets() {
+    List getDstOffsets() {
         return dstOffsets;
     }
 
     /**
      * @return the GMT offsets list
      */
-    List<Integer> getGmtOffsets() {
+    List getGmtOffsets() {
         return gmtOffsets;
     }
 
@@ -241,13 +241,13 @@ class Timezone {
      */
     void addTransition(long time, int offset, int dstOffset) {
         if (transitions == null) {
-            transitions = new ArrayList<Long>();
-            offsets = new ArrayList<Integer>();
-            dstOffsets = new ArrayList<Integer>();
+            transitions = new ArrayList();
+            offsets = new ArrayList();
+            dstOffsets = new ArrayList();
         }
-        transitions.add(time);
-        offsets.add(offset);
-        dstOffsets.add(dstOffset);
+        transitions.add(Long.valueOf(time));
+        offsets.add(Integer.valueOf(offset));
+        dstOffsets.add(Integer.valueOf(dstOffset));
     }
 
     /**
@@ -275,7 +275,7 @@ class Timezone {
      */
     void addUsedRec(ZoneRec rec) {
         if (usedZoneRecs == null) {
-            usedZoneRecs = new ArrayList<ZoneRec>();
+            usedZoneRecs = new ArrayList();
         }
         usedZoneRecs.add(rec);
     }
@@ -286,7 +286,7 @@ class Timezone {
      */
     void addUsedRec(RuleRec rec) {
         if (usedRuleRecs == null) {
-            usedRuleRecs = new ArrayList<RuleRec>();
+            usedRuleRecs = new ArrayList();
         }
         // if the last used rec is the same as the given rec, avoid
         // putting the same rule.
@@ -319,11 +319,11 @@ class Timezone {
      * for generating SimpleTimeZone parameters.
      * @param rules the last rule records
      */
-    void setLastRules(List<RuleRec> rules) {
+    void setLastRules(List rules) {
         int n = rules.size();
         if (n > 0) {
             lastRules = rules;
-            RuleRec rec = rules.get(0);
+            RuleRec rec = (RuleRec)rules.get(0);
             int offset = rec.getSave();
             if (offset > 0) {
                 setLastDSTSaving(offset);
@@ -336,7 +336,7 @@ class Timezone {
     /**
      * @return the last rule records for this time zone.
      */
-    List<RuleRec> getLastRules() {
+    List getLastRules() {
         return lastRules;
     }
 
@@ -366,11 +366,11 @@ class Timezone {
         }
         Checksum sum = new Checksum();
         for (int i = 0; i < transitions.size(); i++) {
-            int offset = offsets.get(i);
+            int offset = ((Integer)offsets.get(i)).intValue();
             // adjust back to make the transition in local time
-            sum.update(transitions.get(i) + offset);
+            sum.update(((Integer)transitions.get(i)).intValue() + offset);
             sum.update(offset);
-            sum.update(dstOffsets.get(i));
+            sum.update(((Integer)dstOffsets.get(i)).intValue());
         }
         crc32 = (int)sum.getValue();
     }
@@ -438,17 +438,17 @@ class Timezone {
 
     private int getOffsetIndex(int offset, int index) {
         if (gmtOffsets == null) {
-            gmtOffsets = new ArrayList<Integer>();
+            gmtOffsets = new ArrayList();
         }
         for (int i = index; i < gmtOffsets.size(); i++) {
-            if (offset == gmtOffsets.get(i)) {
+            if (offset == ((Integer)gmtOffsets.get(i)).intValue()) {
                 return i;
             }
         }
         if (gmtOffsets.size() < index) {
-            gmtOffsets.add(0);
+            gmtOffsets.add(Integer.valueOf(0));
         }
-        gmtOffsets.add(offset);
+        gmtOffsets.add(Integer.valueOf(offset));
         return gmtOffsets.size() - 1;
     }
 }

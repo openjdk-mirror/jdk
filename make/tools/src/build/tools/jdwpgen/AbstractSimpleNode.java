@@ -32,7 +32,7 @@ abstract class AbstractSimpleNode extends Node {
 
     AbstractSimpleNode() {
         kind = "-simple-";
-        components = new ArrayList<Node>();
+        components = new ArrayList();
     }
 
     void document(PrintWriter writer) {

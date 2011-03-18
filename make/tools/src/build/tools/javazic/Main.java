@@ -39,7 +39,7 @@ public class Main {
     private static boolean verbose = false;
     static boolean outputDoc = false;
 
-    private List<String> ziFiles = new ArrayList<String>();
+    private List ziFiles = new ArrayList();
     private static String zoneNamesFile = null;
     private static String versionName = "unknown";
     private static String outputDir = "zoneinfo";
@@ -111,7 +111,7 @@ public class Main {
         BackEnd backend = BackEnd.getBackEnd();
 
         for (int i = 0; i < nFiles; i++) {
-            Zoneinfo frontend = Zoneinfo.parse(ziFiles.get(i));
+            Zoneinfo frontend = Zoneinfo.parse((String)ziFiles.get(i));
 
             for (String key : frontend.getZones().keySet()) {
                 info(key);

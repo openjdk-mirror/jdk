@@ -45,23 +45,23 @@ import  java.util.TreeSet;
 class Mappings {
     // All aliases specified by Link statements. It's alias name to
     // real name mappings.
-    private Map<String,String> aliases;
+    private Map aliases;
 
-    private List<Integer> rawOffsetsIndex;
+    private List rawOffsetsIndex;
 
-    private List<Set<String>> rawOffsetsIndexTable;
+    private List rawOffsetsIndexTable;
 
     // Zone names to be excluded from rawOffset table. Those have GMT
     // offsets to change some future time.
-    private List<String> excludeList;
+    private List excludeList;
 
     /**
      * Constructor creates some necessary instances.
      */
     Mappings() {
-        aliases = new TreeMap<String,String>();
-        rawOffsetsIndex = new LinkedList<Integer>();
-        rawOffsetsIndexTable = new LinkedList<Set<String>>();
+        aliases = new TreeMap();
+        rawOffsetsIndex = new LinkedList();
+        rawOffsetsIndexTable = new LinkedList();
     }
 
     /**
@@ -69,11 +69,11 @@ class Mappings {
      * @param zi a Zoneinfo containing Zones
      */
     void add(Zoneinfo zi) {
-        Map<String,Zone> zones = zi.getZones();
+        Map zones = zi.getZones();
 
         for (String zoneName : zones.keySet()) {
-            Zone zone = zones.get(zoneName);
-            String zonename = zone.getName();
+            Zone zone = (Zone)zones.get(zoneName);
+            String zonename = (String)zone.getName();
             int rawOffset = zone.get(zone.size()-1).getGmtOffset();
 
             // If the GMT offset of this Zone will change in some
@@ -84,7 +84,7 @@ class Mappings {
                 if ((zrec.getGmtOffset() != rawOffset)
                     && (zrec.getUntilTime(0) > Time.getCurrentTime())) {
                     if (excludeList == null) {
-                        excludeList = new ArrayList<String>();
+                        excludeList = new ArrayList();
                     }
                     excludeList.add(zone.getName());
                     isExcluded = true;
@@ -96,30 +96,30 @@ class Mappings {
                 int n = rawOffsetsIndex.size();
                 int i;
                 for (i = 0; i < n; i++) {
-                    if (rawOffsetsIndex.get(i) > rawOffset) {
+                    if (((Integer)rawOffsetsIndex.get(i)).intValue() > rawOffset) {
                         break;
                     }
                 }
-                rawOffsetsIndex.add(i, rawOffset);
+                rawOffsetsIndex.add(i, Integer.valueOf(rawOffset));
 
-                Set<String> perRawOffset = new TreeSet<String>();
+                Set perRawOffset = new TreeSet();
                 if (!isExcluded) {
                     perRawOffset.add(zonename);
                 }
                 rawOffsetsIndexTable.add(i, perRawOffset);
             } else if (!isExcluded) {
                 int i = rawOffsetsIndex.indexOf(new Integer(rawOffset));
-                Set<String> perRawOffset = rawOffsetsIndexTable.get(i);
+                Set perRawOffset = (Set)rawOffsetsIndexTable.get(i);
                 perRawOffset.add(zonename);
             }
         }
 
-        Map<String,String> a = zi.getAliases();
+        Map a = zi.getAliases();
         // If there are time zone names which refer to any of the
         // excluded zones, add those names to the excluded list.
         if (excludeList != null) {
             for (String zoneName : a.keySet()) {
-                String realname = a.get(zoneName);
+                String realname = (String)a.get(zoneName);
                 if (excludeList.contains(realname)) {
                     excludeList.add(zoneName);
                 }
@@ -135,11 +135,11 @@ class Mappings {
      */
     void resolve() {
         int index = rawOffsetsIndexTable.size();
-        List<String> toBeRemoved = new ArrayList<String>();
+        List toBeRemoved = new ArrayList();
         for (String key : aliases.keySet()) {
             boolean validname = false;
             for (int j = 0; j < index; j++) {
-                Set<String> perRO = rawOffsetsIndexTable.get(j);
+                Set perRO = (Set)rawOffsetsIndexTable.get(j);
                 boolean isExcluded = (excludeList == null) ?
                                         false : excludeList.contains(key);
 
@@ -166,19 +166,19 @@ class Mappings {
         }
     }
 
-    Map<String,String> getAliases() {
+    Map getAliases() {
         return(aliases);
     }
 
-    List<Integer> getRawOffsetsIndex() {
+    List getRawOffsetsIndex() {
         return(rawOffsetsIndex);
     }
 
-    List<Set<String>> getRawOffsetsIndexTable() {
+    List getRawOffsetsIndexTable() {
         return(rawOffsetsIndexTable);
     }
 
-    List<String> getExcludeList() {
+    List getExcludeList() {
         return excludeList;
     }
 }

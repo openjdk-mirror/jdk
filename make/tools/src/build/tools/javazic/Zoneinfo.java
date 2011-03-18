@@ -57,25 +57,25 @@ class Zoneinfo {
     /**
      * Zone name to Zone mappings
      */
-    private Map<String,Zone> zones;
+    private Map zones;
 
     /**
      * Rule name to Rule mappings
      */
-    private Map<String,Rule> rules;
+    private Map rules;
 
     /**
      * Alias name to real name mappings
      */
-    private Map<String,String> aliases;
+    private Map aliases;
 
     /**
      * Constracts a Zoneinfo.
      */
     Zoneinfo() {
-        zones = new HashMap<String,Zone>();
-        rules = new HashMap<String,Rule>();
-        aliases = new HashMap<String,String>();
+        zones = new HashMap();
+        rules = new HashMap();
+        aliases = new HashMap();
     }
 
     /**
@@ -173,14 +173,14 @@ class Zoneinfo {
     /**
      * @return the alias table
      */
-    Map<String,String> getAliases() {
+    Map getAliases() {
         return aliases;
     }
 
     /**
      * @return the Zone list
      */
-    Map<String,Zone> getZones() {
+    Map getZones() {
         return zones;
     }
 
@@ -189,7 +189,7 @@ class Zoneinfo {
      * @param name a zone name
      */
     Zone getZone(String name) {
-        return zones.get(name);
+        return (Zone)zones.get(name);
     }
 
     /**
@@ -197,7 +197,7 @@ class Zoneinfo {
      * @param name a rule name
      */
     Rule getRule(String name) {
-        return rules.get(name);
+        return (Rule)rules.get(name);
     }
 
     private static String line;
@@ -340,13 +340,13 @@ class Zoneinfo {
                  * This part assumes that the specified year is covered by
                  * the rules referred to by the last zone record.
                  */
-                List<RuleRec> rrecs = zrec.getRuleRef().getRules(startYear);
+                List rrecs = zrec.getRuleRef().getRules(startYear);
 
                 if (rrecs.size() == 2) {
                     // make sure that one is a start rule and the other is
                     // an end rule.
-                    RuleRec r0 = rrecs.get(0);
-                    RuleRec r1 = rrecs.get(1);
+                    RuleRec r0 = (RuleRec)rrecs.get(0);
+                    RuleRec r1 = (RuleRec)rrecs.get(1);
                     if (r0.getSave() == 0 && r1.getSave() > 0) {
                         rrecs.set(0, r1);
                         rrecs.set(1, r0);
@@ -431,10 +431,10 @@ class Zoneinfo {
                     if (zrec.hasUntil() && year > zrec.getUntilYear()) {
                         break;
                     }
-                    List<RuleRec> rules = rule.getRules(year);
+                    List rules = rule.getRules(year);
                     if (rules.size() > 0) {
                         for (int i = 0; i < rules.size(); i++) {
-                            RuleRec rrec = rules.get(i);
+                            RuleRec rrec = (RuleRec)rules.get(i);
                             long transition = rrec.getTransitionTime(year,
                                                                      gmtOffset,
                                                                      currentSave);
@@ -460,12 +460,12 @@ class Zoneinfo {
                                         // Europe/Riga in 1989)
 
                                         if (i > 0) {
-                                            prevsave = rules.get(i-1).getSave();
+                                            prevsave = ((RuleRec)rules.get(i-1)).getSave();
                                         } else {
-                                            List<RuleRec> prevrules = rule.getRules(year-1);
+                                            List prevrules = rule.getRules(year-1);
 
                                             if (prevrules.size() > 0) {
-                                                prevsave = prevrules.get(prevrules.size()-1).getSave();
+                                                prevsave = ((RuleRec)prevrules.get(prevrules.size()-1)).getSave();
                                             } else {
                                                 prevsave = 0;
                                             }

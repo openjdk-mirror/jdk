@@ -31,7 +31,6 @@ import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;
-import static build.tools.charsetmapping.CharsetMapping.*;
 
 public class GenerateDBCS {
     // pattern used by this class to read in mapping table
@@ -57,12 +56,13 @@ public class GenerateDBCS {
             else
                 type = "_" + type;
             String pkgName  = fields[4];
-            boolean isASCII = Boolean.valueOf(fields[5]);
+            boolean isASCII = Boolean.valueOf(fields[5]).booleanValue();
             int    b1Min = toInteger(fields[6]);
             int    b1Max = toInteger(fields[7]);
             int    b2Min    = toInteger(fields[8]);
             int    b2Max    = toInteger(fields[9]);
-            System.out.printf("%s,%s,%s,%b,%s%n", clzName, csName, hisName, isASCII, pkgName);
+            System.out.printf("%s,%s,%s,%b,%s%n", 
+                    new Object[] { clzName, csName, hisName, Boolean.valueOf(isASCII), pkgName });
             genClass(args[0], args[1], "DoubleByte-X.java",
                     clzName, csName, hisName, pkgName,
                     isASCII, type,
@@ -72,9 +72,9 @@ public class GenerateDBCS {
 
     private static int toInteger(String s) {
         if (s.startsWith("0x") || s.startsWith("0X"))
-            return Integer.valueOf(s.substring(2), 16);
+            return Integer.valueOf(s.substring(2), 16).intValue();
         else
-            return Integer.valueOf(s);
+            return Integer.valueOf(s).intValue();
     }
 
     private static void outString(Formatter out,
@@ -82,36 +82,36 @@ public class GenerateDBCS {
                                   String closure)
     {
         while (off < end) {
-            out.format("        \"");
+            out.format("        \"", new Object[] { });
             for (int j = 0; j < 8; j++) {
                 if (off == end)
                     break;
                 char c = cc[off++];
                 switch (c) {
                 case '\b':
-                    out.format("\\b"); break;
+                    out.format("\\b", new Object[] { }); break;
                 case '\t':
-                    out.format("\\t"); break;
+                    out.format("\\t", new Object[] { }); break;
                 case '\n':
-                    out.format("\\n"); break;
+                    out.format("\\n", new Object[] { }); break;
                 case '\f':
-                    out.format("\\f"); break;
+                    out.format("\\f", new Object[] { }); break;
                 case '\r':
-                    out.format("\\r"); break;
+                    out.format("\\r", new Object[] { }); break;
                 case '\"':
-                    out.format("\\\""); break;
+                    out.format("\\\"", new Object[] { }); break;
                 case '\'':
-                    out.format("\\'"); break;
+                    out.format("\\'", new Object[] { }); break;
                 case '\\':
-                    out.format("\\\\"); break;
+                    out.format("\\\\", new Object[] { }); break;
                 default:
-                    out.format("\\u%04X", c & 0xffff);
+                    out.format("\\u%04X", new Object[] { Integer.valueOf(c & 0xffff) });
                 }
             }
             if (off == end)
-                out.format("\" %s%n", closure);
+                out.format("\" %s%n", new Object[] { closure });
             else
-                out.format("\" + %n");
+                out.format("\" + %n", new Object[] { } );
         }
     }
 
@@ -149,43 +149,43 @@ public class GenerateDBCS {
         char[] c2bIndex = new char[0x100];
         int c2bOff = 0x100;    // first 0x100 for unmappable segs
 
-        Arrays.fill(db, UNMAPPABLE_DECODING);
-        Arrays.fill(c2bIndex, UNMAPPABLE_DECODING);
+        Arrays.fill(db, CharsetMapping.UNMAPPABLE_DECODING);
+        Arrays.fill(c2bIndex, CharsetMapping.UNMAPPABLE_DECODING);
 
         char[] b2cIndex = new char[0x100];
-        Arrays.fill(b2cIndex, UNMAPPABLE_DECODING);
+        Arrays.fill(b2cIndex, CharsetMapping.UNMAPPABLE_DECODING);
 
         // (1)read in .map to parse all b->c entries
         FileInputStream in = new FileInputStream(new File(srcDir, clzName + ".map"));
-        Parser p = new Parser(in, mPattern);
-        Entry  e = null;
+        CharsetMapping.Parser p = new CharsetMapping.Parser(in, mPattern);
+        CharsetMapping.Entry  e = null;
         while ((e = p.next()) != null) {
             db[e.bs] = (char)e.cp;
 
             if (e.bs > 0x100 &&    // db
-                b2cIndex[e.bs>>8] == UNMAPPABLE_DECODING) {
+                b2cIndex[e.bs>>8] == CharsetMapping.UNMAPPABLE_DECODING) {
                 b2cIndex[e.bs>>8] = 1;
             }
 
-            if (c2bIndex[e.cp>>8] == UNMAPPABLE_DECODING) {
+            if (c2bIndex[e.cp>>8] == CharsetMapping.UNMAPPABLE_DECODING) {
                 c2bOff += 0x100;
                 c2bIndex[e.cp>>8] = 1;
             }
         }
         Formatter fm = new Formatter(b2cSB);
-        fm.format("%n    static final String b2cSBStr =%n");
+        fm.format("%n    static final String b2cSBStr =%n", new Object[] { });
         outString(fm, db, 0x00, 0x100,  ";");
 
-        fm.format("%n        static final String[] b2cStr = {%n");
+        fm.format("%n        static final String[] b2cStr = {%n", new Object[] { });
         for (int i = 0; i < 0x100; i++) {
-            if (b2cIndex[i] == UNMAPPABLE_DECODING) {
-                fm.format("            null,%n");  //unmappable segments
+            if (b2cIndex[i] == CharsetMapping.UNMAPPABLE_DECODING) {
+                fm.format("            null,%n", new Object[] { });  //unmappable segments
             } else {
                 outString(fm, db, i, b2Min, b2Max, ",");
             }
         }
 
-        fm.format("        };%n");
+        fm.format("        };%n", new Object[] { });
         fm.close();
 
         // (2)now parse the .nr file which includes "b->c" non-roundtrip entries
@@ -193,7 +193,7 @@ public class GenerateDBCS {
         if (f.exists()) {
             StringBuilder sb = new StringBuilder();
             in = new FileInputStream(f);
-            p = new Parser(in, mPattern);
+            p = new CharsetMapping.Parser(in, mPattern);
             e = null;
             while ((e = p.next()) != null) {
                 // A <b,c> pair
@@ -202,7 +202,7 @@ public class GenerateDBCS {
             }
             char[] nr = sb.toString().toCharArray();
             fm = new Formatter(b2cNRSB);
-            fm.format("String b2cNR =%n");
+            fm.format("String b2cNR =%n", new Object[] { });
             outString(fm, nr, 0, nr.length,  ";");
             fm.close();
         } else {
@@ -214,11 +214,11 @@ public class GenerateDBCS {
         if (f.exists()) {
             StringBuilder sb = new StringBuilder();
             in = new FileInputStream(f);
-            p = new Parser(in, mPattern);
+            p = new CharsetMapping.Parser(in, mPattern);
             e = null;
             while ((e = p.next()) != null) {
                 // A <b,c> pair
-                if (c2bIndex[e.cp>>8] == UNMAPPABLE_DECODING) {
+                if (c2bIndex[e.cp>>8] == CharsetMapping.UNMAPPABLE_DECODING) {
                     c2bOff += 0x100;
                     c2bIndex[e.cp>>8] = 1;
                 }
@@ -227,7 +227,7 @@ public class GenerateDBCS {
             }
             char[] nr = sb.toString().toCharArray();
             fm = new Formatter(c2bNRSB);
-            fm.format("String c2bNR =%n");
+            fm.format("String c2bNR =%n", new Object[] { });
             outString(fm, nr, 0, nr.length,  ";");
             fm.close();
         } else {

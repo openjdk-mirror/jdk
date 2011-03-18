@@ -51,9 +51,11 @@ public class CharsetMapping {
         }
     }
 
-    static Comparator<Entry> comparatorCP =
-        new Comparator<Entry>() {
-            public int compare(Entry m1, Entry m2) {
+    static Comparator comparatorCP =
+        new Comparator() {
+            public int compare(Object o1, Object o2) {
+            	Entry m1 = (Entry) o1;
+            	Entry m2 = (Entry) o2;
                 return m1.cp - m2.cp;
             }
             public boolean equals(Object obj) {

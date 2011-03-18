@@ -48,10 +48,10 @@ class Zone {
     private String name;
 
     // zone records
-    private List<ZoneRec> list;
+    private List list;
 
     // target zone names for this compilation
-    private static Set<String> targetZones;
+    private static Set targetZones;
 
     /**
      * Constructs a Zone with the specified zone name.
@@ -59,7 +59,7 @@ class Zone {
      */
     Zone(String name) {
         this.name = name;
-        list = new ArrayList<ZoneRec>();
+        list = new ArrayList();
     }
 
     /**
@@ -81,7 +81,7 @@ class Zone {
         } catch (FileNotFoundException e) {
             Main.panic("can't open file: " + fileName);
         }
-        targetZones = new HashSet<String>();
+        targetZones = new HashSet();
         String line;
 
         try {
@@ -144,7 +144,7 @@ class Zone {
      * @return the zone record specified by the index.
      */
     ZoneRec get(int index) {
-        return list.get(index);
+        return (ZoneRec)list.get(index);
     }
 
     /**
@@ -161,7 +161,7 @@ class Zone {
      */
     void resolve(Zoneinfo zi) {
         for (int i = 0; i < list.size(); i++) {
-            ZoneRec rec = list.get(i);
+            ZoneRec rec = (ZoneRec)list.get(i);
             rec.resolve(zi);
         }
     }

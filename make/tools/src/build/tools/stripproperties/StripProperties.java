@@ -53,8 +53,8 @@ public class StripProperties {
         }
     }
 
-    private static List<String> parseOptions(String args[]) {
-        List<String> files = new ArrayList<String>();
+    private static List parseOptions(String args[]) {
+        List files = new ArrayList();
         for ( int i = 0; i < args.length ; i++ ) {
             if ( "-optionsfile".equals(args[i]) && i+1 < args.length ) {
                 String filename = args[++i];
@@ -89,7 +89,7 @@ public class StripProperties {
                 if ( files != null && contents != null ) {
                     String tokens[] = (new String(contents)).split("\\s+");
                     if ( tokens.length > 0 ) {
-                        List<String> ofiles = parseOptions(tokens);
+                        List ofiles = parseOptions(tokens);
                         if ( ofiles != null ) {
                             files.addAll(ofiles);
                         } else {
@@ -108,7 +108,7 @@ public class StripProperties {
         return files;
     }
 
-    private static boolean stripFiles(List<String> files) {
+    private static boolean stripFiles(List files) {
         boolean ok = true;
         for ( String file : files ) {
 
@@ -166,7 +166,7 @@ public class StripProperties {
      * @param args Names of properties files to process and replace contents
      */
     public static void main(String args[]) {
-        List<String> files = parseOptions(args);
+        List files = parseOptions(args);
         if ( files == null || !stripFiles(files) ) {
             System.exit(1);
         }

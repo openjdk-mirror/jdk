@@ -94,7 +94,7 @@ public class BuildMetaIndex {
             for (int i = 2; i < args.length; i++) {
                 String filename = args[i];
                 JarMetaIndex jmi = new JarMetaIndex(filename);
-                HashSet<String> index = jmi.getMetaIndex();
+                HashSet index = jmi.getMetaIndex();
                 if (index == null) {
                     continue;
                 }
@@ -114,7 +114,7 @@ public class BuildMetaIndex {
                  */
 
                 out.println(jmi.getJarFileKind().getMarkerChar() + " " + filename);
-                for (Iterator<String> iter = index.iterator(); iter.hasNext(); ) {
+                for (Iterator iter = index.iterator(); iter.hasNext(); ) {
                     out.println(iter.next());
                 }
 
@@ -138,11 +138,11 @@ public class BuildMetaIndex {
     }
 }
 
-enum JarFileKind {
+class JarFileKind {
 
-    CLASSONLY ('!'),
-    RESOURCEONLY ('@'),
-    MIXED ('#');
+    public static final JarFileKind CLASSONLY = new JarFileKind('!');
+    public static final JarFileKind RESOURCEONLY = new JarFileKind('@');
+    public static final JarFileKind MIXED = new JarFileKind('#');
 
     private char markerChar;
 
@@ -165,14 +165,14 @@ enum JarFileKind {
  */
 class JarMetaIndex {
     private JarFile jar;
-    private volatile HashSet<String> indexSet;
+    private volatile HashSet indexSet;
 
     /*
      * A hashmap contains a mapping from the prefix string to
      * a hashset which contains a set of the second level of prefix string.
      */
-    private HashMap<String, HashSet<String>> knownPrefixMap = new
-        HashMap<String, HashSet<String>>();
+    private HashMap knownPrefixMap = new
+        HashMap();
 
     /*
      * We add maximum 5 second level entries to "sun", "java" and
@@ -185,17 +185,17 @@ class JarMetaIndex {
 
     JarMetaIndex(String fileName) throws IOException {
         jar = new JarFile(fileName);
-        knownPrefixMap.put("sun", new HashSet<String>());
-        knownPrefixMap.put("java", new HashSet<String>());
-        knownPrefixMap.put("javax", new HashSet<String>());
+        knownPrefixMap.put("sun", new HashSet());
+        knownPrefixMap.put("java", new HashSet());
+        knownPrefixMap.put("javax", new HashSet());
     }
 
     /* Returns a HashSet contains the meta index string. */
-    HashSet<String> getMetaIndex() {
+    HashSet getMetaIndex() {
         if (indexSet == null) {
             synchronized(this) {
                 if (indexSet == null) {
-                    indexSet = new HashSet<String>();
+                    indexSet = new HashSet();
                     Enumeration entries = jar.entries();
                     boolean containsOnlyClass = true;
                     boolean containsOnlyResource = true;
@@ -306,7 +306,7 @@ class JarMetaIndex {
         }
 
         String firstPkgElement = name.substring(0, firstSlashIndex);
-        HashSet<String> pkgSet = knownPrefixMap.get(firstPkgElement);
+        HashSet pkgSet = (HashSet)knownPrefixMap.get(firstPkgElement);
 
         /* The name does not starts with "sun", "java" or "javax". */
         if (pkgSet == null) {
@@ -338,10 +338,10 @@ class JarMetaIndex {
         /* Iterate through the hash map, add the second level package names
          * to the indexSet if has any.
          */
-        for (Iterator<String> keysIterator = knownPrefixMap.keySet().iterator();
+        for (Iterator keysIterator = knownPrefixMap.keySet().iterator();
              keysIterator.hasNext();) {
-            String key = keysIterator.next();
-            HashSet<String> pkgSetStartsWithKey = knownPrefixMap.get(key);
+            String key = (String)keysIterator.next();
+            HashSet pkgSetStartsWithKey = (HashSet)knownPrefixMap.get(key);
             int setSize = pkgSetStartsWithKey.size();
 
             if (setSize == 0) {
@@ -353,7 +353,7 @@ class JarMetaIndex {
                 /* If the set contains less than MAX_PKGS_WITH_KNOWN_PREFIX, add
                  * them to the indexSet of the MetaIndex object.
                  */
-                for (Iterator<String> secondPkgElements = pkgSetStartsWithKey.iterator();
+                for (Iterator secondPkgElements = pkgSetStartsWithKey.iterator();
                      secondPkgElements.hasNext();) {
                     indexSet.add(key + "/" + secondPkgElements.next());
                 }

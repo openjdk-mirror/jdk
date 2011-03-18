@@ -43,7 +43,7 @@ public class JarSplit {
     /* classlist[0] contains class file list
      * classlist[1] contains non-class file list
      */
-    private static Vector<String>[] classlist = (Vector<String>[])(new Vector[2]);
+    private static Vector[] classlist = (Vector[])(new Vector[2]);
 
     /* The 2 class list name passed as arguments. */
     private static String[] fileNamelist = new String[2];
@@ -70,7 +70,7 @@ public class JarSplit {
 
         for (int i = 0; i < 2; i++) {
             fileNamelist[i] = args[i + 2];
-            classlist[i] = new Vector<String>();
+            classlist[i] = new Vector();
         }
 
         if (generateClassLists(args[0]) == true) {

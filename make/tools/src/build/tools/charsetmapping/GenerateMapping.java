@@ -27,7 +27,6 @@ package build.tools.charsetmapping;
 
 import java.io.*;
 import java.util.regex.*;
-import static build.tools.charsetmapping.CharsetMapping.*;
 
 public class GenerateMapping {
 
@@ -43,8 +42,8 @@ public class GenerateMapping {
         int[] sb = new int[0x100];                         // singlebyte
         int[] db = new int[0x10000];                       // doublebyte
         int[] indexC2B = new int[256];
-        Entry[] supp = new Entry[0x10000];
-        Entry[] comp = new Entry[0x100];
+        CharsetMapping.Entry[] supp = new CharsetMapping.Entry[0x10000];
+        CharsetMapping.Entry[] comp = new CharsetMapping.Entry[0x100];
         int suppTotal = 0;
         int compTotal = 0;
 
@@ -57,11 +56,11 @@ public class GenerateMapping {
 
         //init
         for (int i = 0; i < 0x80; i++) sb[i] = i;
-        for (int i = 0x80; i < 0x100; i++) sb[i] = UNMAPPABLE_DECODING;
-        for (int i = 0; i < 0x10000; i++) db[i] = UNMAPPABLE_DECODING;
+        for (int i = 0x80; i < 0x100; i++) sb[i] = CharsetMapping.UNMAPPABLE_DECODING;
+        for (int i = 0; i < 0x10000; i++) db[i] = CharsetMapping.UNMAPPABLE_DECODING;
         try {
-            Parser p = new Parser(in, sjis0213);
-            Entry  e = null;
+            CharsetMapping.Parser p = new CharsetMapping.Parser(in, sjis0213);
+            CharsetMapping.Entry  e = null;
             while ((e = p.next()) != null) {
                 if (e.cp2 != 0) {
                     comp[compTotal++] = e;
@@ -79,13 +78,13 @@ public class GenerateMapping {
             }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             // c2b Index Table, always the first one
-            writeINDEXC2B(baos, indexC2B);
-            writeSINGLEBYTE(baos, sb);
-            writeDOUBLEBYTE1(baos, db, b1Min1, b1Max1, b2Min, b2Max);
-            writeDOUBLEBYTE2(baos, db, b1Min2, b1Max2, b2Min, b2Max);
-            writeSUPPLEMENT(baos, supp, suppTotal);
-            writeCOMPOSITE(baos, comp, compTotal);
-            writeSIZE(out, baos.size());
+            CharsetMapping.writeINDEXC2B(baos, indexC2B);
+            CharsetMapping.writeSINGLEBYTE(baos, sb);
+            CharsetMapping.writeDOUBLEBYTE1(baos, db, b1Min1, b1Max1, b2Min, b2Max);
+            CharsetMapping.writeDOUBLEBYTE2(baos, db, b1Min2, b1Max2, b2Min, b2Max);
+            CharsetMapping.writeSUPPLEMENT(baos, supp, suppTotal);
+            CharsetMapping.writeCOMPOSITE(baos, comp, compTotal);
+            CharsetMapping.writeSIZE(out, baos.size());
             baos.writeTo(out);
             out.close();
         } catch (Exception x) {

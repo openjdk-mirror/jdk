@@ -32,7 +32,7 @@ class OutNode extends AbstractTypeListNode {
 
     String cmdName;
 
-    void set(String kind, List<Node> components, int lineno) {
+    void set(String kind, List components, int lineno) {
         super.set(kind, components, lineno);
         components.add(0, new NameNode("Out"));
     }
