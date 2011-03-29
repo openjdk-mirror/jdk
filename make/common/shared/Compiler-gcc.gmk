@@ -57,7 +57,9 @@ ifeq ($(PLATFORM), linux)
   CC             = $(COMPILER_PATH)gcc
   CPP            = $(COMPILER_PATH)gcc -E
   # statically link libstdc++ before C++ ABI is stablized on Linux
-  STATIC_CXX     = true
+  ifneq ($(STATIC_CXX),false)
+    STATIC_CXX     = true
+  endif
   ifeq ($(STATIC_CXX),true)
     # g++ always dynamically links libstdc++, even we use "-Wl,-Bstatic -lstdc++"
     # We need to use gcc to statically link the C++ runtime. gcc and g++ use
