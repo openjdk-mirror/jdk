@@ -26,7 +26,6 @@
 package build.tools.spp;
 
 import java.util.*;
-import java.util.regex.*;
 
 /*
  * Spp: A simple regex-based stream preprocessor based on Mark Reinhold's
@@ -68,10 +67,14 @@ public class Spp {
         Set keys = new HashSet();
         boolean be = false;
 
-        for (String arg:args) {
+		for (int index = 0 ; index < args.length ; index++) {
+			String arg = args[index];
             if (arg.startsWith("-D")) {
                 int i = arg.indexOf('=');
-                vars.put(arg.substring(2, i),arg.substring(i+1));
+                String key = arg.substring(2, i);
+                String value = arg.substring(i+1);
+                System.err.println(key + " : " + value);
+                vars.put(key,value);
             } else if (arg.startsWith("-K")) {
                 keys.add(arg.substring(2));
             } else if ("-be".equals(arg)) {
@@ -82,7 +85,7 @@ public class Spp {
             }
         }
 
-        StringBuffer out = new StringBuffer();
+        StringBuilder out = new StringBuilder();
         new Spp().spp(new Scanner(System.in),
                       out, "",
                       keys, vars, be,
@@ -107,23 +110,47 @@ public class Spp {
     Matcher  vardef = Pattern.compile("\\{#if\\[(!)?" + KEY + "\\]\\?" + TEXT + "(:"+ TEXT + ")?\\}|\\$" + VAR + "\\$").matcher("");
     Matcher  vardef2 = Pattern.compile("\\$" + VAR + "\\$").matcher("");
 
-    void append(StringBuffer buf, String ln,
+    void append(StringBuilder buf, String ln,
                 Set keys, Map vars) {
         vardef.reset(ln);
         while (vardef.find()) {
+ 			System.err.println("...while...");
             String repl = "";
-            if (vardef.group(GN_VAR) != null)
-                repl = (String)vars.get(vardef.group(GN_VAR));
-            else {
+            if (vardef.group(GN_VAR) != null) {
+                String group = vardef.group(GN_VAR);
+                System.err.println("GN_VAR: " + group);
+				// repl = (String)vars.get(group);
+                Iterator iter = vars.entrySet().iterator();
+                while (iter.hasNext()) {
+                	Map.Entry entry = (Map.Entry)iter.next();
+                	String key = (String)entry.getKey();
+                	if (String.CASE_INSENSITIVE_ORDER.compare(key, group) == 0) {
+                		repl = (String)entry.getValue();
+                		break;
+                	}
+                }
+        	} else {
                 boolean test = keys.contains(vardef.group(GN_KEY));
-                if (vardef.group(GN_NOT) != null)
+                if (vardef.group(GN_NOT) != null) {
+                	System.err.println("GN_NO");
                     test = !test;
-                repl = test?vardef.group(GN_YES):vardef.group(GN_NO);
-                if (repl == null)
+	        	}
+                if (test) {
+ 					System.err.println("GN_YES");
+                	repl = vardef.group(GN_YES);
+                } else {
+ 					System.err.println("GN_NO");
+                	repl = vardef.group(GN_NO);
+                }
+                if (repl == null) {
+ 					System.err.println("null");
                     repl = "";
-                else {  // embedded $var$
+                } else {  // embedded $var$
                     while (vardef2.reset(repl).find()) {
-                        repl = vardef2.replaceFirst((String)vars.get(vardef2.group(1)));
+	 					System.err.println("...finding...");
+                    	Object group = vardef2.group(1);
+                    	String string = (String)vars.get(group);
+                        repl = vardef2.replaceFirst(string);
                     }
                 }
             }
@@ -133,7 +160,7 @@ public class Spp {
     }
 
     // return true if #end[key], #end or EOF reached
-    boolean spp(Scanner in, StringBuffer buf, String key,
+    boolean spp(Scanner in, StringBuilder buf, String key,
                 Set keys, Map vars,
                 boolean be, boolean skip) {
         while (in.hasNextLine()) {
