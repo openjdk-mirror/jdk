@@ -28,7 +28,7 @@ package build.tools.charsetmapping;
 import java.io.*;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Formatter;
+import java.util.Iterator;
 import java.util.regex.*;
 import java.nio.charset.*;
 
@@ -51,8 +51,7 @@ public class GenerateSBCS {
             String hisName = fields[2];
             boolean isASCII = Boolean.valueOf(fields[3]).booleanValue();
             String pkgName  = fields[4];
-            System.out.printf("%s,%s,%s,%b,%s%n", 
-                              new Object[] { clzName, csName, hisName, Boolean.valueOf(isASCII), pkgName });
+            System.out.println(clzName + "," + csName + "," + hisName + "," + isASCII + "," + pkgName);
 
             genClass(args[0], args[1], "SingleByte-X.java",
                      clzName, csName, hisName, pkgName, isASCII);
@@ -116,9 +115,9 @@ public class GenerateSBCS {
                                  boolean isASCII)
         throws Exception
     {
-        StringBuffer b2cSB = new StringBuffer();
-        StringBuffer b2cNRSB = new StringBuffer();
-        StringBuffer c2bNRSB = new StringBuffer();
+        StringBuilder b2cSB = new StringBuilder();
+        StringBuilder b2cNRSB = new StringBuilder();
+        StringBuilder c2bNRSB = new StringBuilder();
 
         char[] sb = new char[0x100];
         char[] c2bIndex = new char[0x100];
@@ -185,14 +184,18 @@ public class GenerateSBCS {
             if (es.size() < 100) {
                 fm.format("        c2bNR = new char[%d];%n", new Object[] { new Integer(es.size() * 2) });
                 int i = 0;
-                for (CharsetMapping.Entry entry: es) {
+                Iterator iter = es.iterator();
+                while (iter.hasNext()) {
+                	CharsetMapping.Entry entry = (CharsetMapping.Entry)iter.next();
                     fm.format("        c2bNR[%d] = 0x%x; c2bNR[%d] = 0x%x;%n",
                               new Object[] { new Integer(i++), new Integer(entry.bs), new Integer(i++), new Integer(entry.cp) });
                 }
             } else {
                 char[] cc = new char[es.size() * 2];
                 int i = 0;
-                for (CharsetMapping.Entry entry: es) {
+                Iterator iter = es.iterator();
+                while (iter.hasNext()) {
+                	CharsetMapping.Entry entry = (CharsetMapping.Entry)iter.next();
                     cc[i++] = (char)entry.bs;
                     cc[i++] = (char)entry.cp;
                 }
@@ -219,24 +222,24 @@ public class GenerateSBCS {
                 continue;
             }
             if (line.indexOf("$PACKAGE$", i) != -1) {
-                line = line.replace("$PACKAGE$", pkgName);
+                line = replace(line,"$PACKAGE$", pkgName);
             }
             if (line.indexOf("$NAME_CLZ$", i) != -1) {
-                line = line.replace("$NAME_CLZ$", clzName);
+                line = replace(line,"$NAME_CLZ$", clzName);
             }
             if (line.indexOf("$NAME_CS$", i) != -1) {
-                line = line.replace("$NAME_CS$", csName);
+                line = replace(line,"$NAME_CS$", csName);
             }
             if (line.indexOf("$NAME_ALIASES$", i) != -1) {
                 if ("sun.nio.cs".equals(pkgName))
-                    line = line.replace("$NAME_ALIASES$",
+                    line = replace(line,"$NAME_ALIASES$",
                                         "StandardCharsets.aliases_" + clzName);
                 else
-                    line = line.replace("$NAME_ALIASES$",
+                    line = replace(line,"$NAME_ALIASES$",
                                         "ExtendedCharsets.aliasesFor(\"" + csName + "\")");
             }
             if (line.indexOf("$NAME_HIS$", i) != -1) {
-                line = line.replace("$NAME_HIS$", hisName);
+                line = replace(line,"$NAME_HIS$", hisName);
             }
             if (line.indexOf("$CONTAINS$", i) != -1) {
                 if (isASCII)
@@ -245,24 +248,44 @@ public class GenerateSBCS {
                     line = "        return (cs instanceof " + clzName + ");";
             }
             if (line.indexOf("$B2CTABLE$") != -1) {
-                line = line.replace("$B2CTABLE$", b2c);
+                line = replace(line,"$B2CTABLE$", b2c);
             }
             if (line.indexOf("$C2BLENGTH$") != -1) {
-                line = line.replace("$C2BLENGTH$", "0x" + Integer.toString(c2bOff, 16));
+                line = replace(line,"$C2BLENGTH$", "0x" + Integer.toString(c2bOff, 16));
             }
             if (line.indexOf("$NONROUNDTRIP_B2C$") != -1) {
                 if (b2cNR.length() == 0)
                     continue;
-                line = line.replace("$NONROUNDTRIP_B2C$", b2cNR);
+                line = replace(line,"$NONROUNDTRIP_B2C$", b2cNR);
             }
 
             if (line.indexOf("$NONROUNDTRIP_C2B$") != -1) {
                 if (c2bNR.length() == 0)
                     continue;
-                line = line.replace("$NONROUNDTRIP_C2B$", c2bNR);
+                line = replace(line,"$NONROUNDTRIP_C2B$", c2bNR);
             }
             out.println(line);
         }
         out.close();
     }
+
+	/**
+     * Replaces each substring of this string that matches the literal target
+     * sequence with the specified literal replacement sequence. The
+     * replacement proceeds from the beginning of the string to the end, for
+     * example, replacing "aa" with "b" in the string "aaa" will result in
+     * "ba" rather than "ab".
+     *
+     * @param  target The sequence of char values to be replaced
+     * @param  replacement The replacement sequence of char values
+     * @return  The resulting string
+     * @throws NullPointerException if <code>target</code> or
+     *         <code>replacement</code> is <code>null</code>.
+     * @since 1.5
+     */
+    public static String replace(String source, CharSequence target, CharSequence replacement) {
+        return Pattern.compile(target.toString(), Pattern.LITERAL).matcher(
+            source).replaceAll(Matcher.quoteReplacement(replacement.toString()));
+    }
+
 }

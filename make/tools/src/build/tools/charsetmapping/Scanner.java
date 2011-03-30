@@ -25,7 +25,6 @@
 
 package build.tools.charsetmapping;
 
-import java.util.regex.*;
 import java.io.*;
 import java.math.*;
 import java.nio.*;
@@ -33,7 +32,6 @@ import java.nio.channels.*;
 import java.nio.charset.*;
 import java.text.*;
 import java.util.Locale;
-import sun.misc.LRUCache;
 import java.util.Iterator;
 
 /**
@@ -122,14 +120,14 @@ import java.util.Iterator;
  * space at a time.
  *
  * <p> A scanner can read text from any object which implements the {@link
- * java.lang.Readable} interface.  If an invocation of the underlying
- * readable's {@link java.lang.Readable#read} method throws an {@link
+ * java.lang.Reader} interface.  If an invocation of the underlying
+ * readable's {@link java.lang.Reader#read} method throws an {@link
  * java.io.IOException} then the scanner assumes that the end of the input
  * has been reached.  The most recent <tt>IOException</tt> thrown by the
  * underlying readable can be retrieved via the {@link #ioException} method.
  *
  * <p>When a <code>Scanner</code> is closed, it will close its input source
- * if the source implements the {@link java.io.Closeable} interface.
+ * if the source implements the {@link java.io.Reader} interface.
  *
  * <p>A <code>Scanner</code> is not safe for multithreaded use without
  * external synchronization.
@@ -370,7 +368,7 @@ public final class Scanner implements Iterator {
     private String hasNextResult;
 
     // The input source
-    private Readable source;
+    private Reader source;
 
     // Boolean is true if source is done
     private boolean sourceClosed = false;
@@ -405,12 +403,10 @@ public final class Scanner implements Iterator {
     // A cache of the last few recently used Patterns
     private LRUCache patternCache =
     new LRUCache(7) {
-        protected Object create(Object s) {
-            return Pattern.compile((String)s);
+        protected Pattern create(String s) {
+            return Pattern.compile(s);
         }
-        protected boolean hasName(Object o1, Object o2) {
-        	Pattern p = (Pattern)o1;
-        	String s = (String)o2;
+        protected boolean hasName(Pattern p, String s) {
             return p.pattern().equals(s);
         }
     };
@@ -568,11 +564,11 @@ public final class Scanner implements Iterator {
      * Constructs a <code>Scanner</code> that returns values scanned
      * from the specified source delimited by the specified pattern.
      *
-     * @param  source A character source implementing the Readable interface
+     * @param  source A character source implementing the Reader interface
      * @param pattern A delimiting pattern
      * @return A scanner with the specified source and pattern
      */
-    private Scanner(Readable source, Pattern pattern) {
+    private Scanner(Reader source, Pattern pattern) {
         if (source == null)
             throw new NullPointerException("source");
         if (pattern == null)
@@ -591,10 +587,10 @@ public final class Scanner implements Iterator {
      * Constructs a new <code>Scanner</code> that produces values scanned
      * from the specified source.
      *
-     * @param  source A character source implementing the {@link Readable}
+     * @param  source A character source implementing the {@link Reader}
      *         interface
      */
-    public Scanner(Readable source) {
+    public Scanner(Reader source) {
         this(source, WHITESPACE_PATTERN);
     }
 
@@ -622,10 +618,10 @@ public final class Scanner implements Iterator {
      *         does not exist
      */
     public Scanner(InputStream source, String charsetName) {
-        this(makeReadable(source, charsetName), WHITESPACE_PATTERN);
+        this(makeReader(source, charsetName), WHITESPACE_PATTERN);
     }
 
-    private static Readable makeReadable(InputStream source,
+    private static Reader makeReader(InputStream source,
                                          String charsetName)
     {
         if (source == null)
@@ -671,7 +667,7 @@ public final class Scanner implements Iterator {
     public Scanner(File source, String charsetName)
         throws FileNotFoundException
     {
-        this((ReadableByteChannel)(new FileInputStream(source).getChannel()),
+       this((ReadableByteChannel)(new FileInputStream(source).getChannel()),
              charsetName);
     }
 
@@ -709,6 +705,27 @@ public final class Scanner implements Iterator {
     /**
      * Constructs a new <code>Scanner</code> that produces values scanned
      * from the specified channel. Bytes from the source are converted into
+     * characters using the underlying platform's
+     * {@linkplain java.nio.charset.Charset#defaultCharset() default charset}.
+     *
+     * @param  source A channel to scan
+     */
+//    public Scanner(ReaderByteChannel source) {
+//        this(makeReader(source), WHITESPACE_PATTERN);
+//    }
+
+//    private static Reader makeReader(ReaderByteChannel source) {
+//        if (source == null)
+//            throw new NullPointerException("source");
+//        String defaultCharsetName =
+//            java.nio.charset.Charset.defaultCharset().name();
+//        return Channels.newReader(source,
+//                           java.nio.charset.Charset.defaultCharset().name());
+//    }
+
+    /**
+     * Constructs a new <code>Scanner</code> that produces values scanned
+     * from the specified channel. Bytes from the source are converted into
      * characters using the specified charset.
      *
      * @param  source A channel to scan
@@ -717,19 +734,19 @@ public final class Scanner implements Iterator {
      * @throws IllegalArgumentException if the specified character set
      *         does not exist
      */
-    public Scanner(ReadableByteChannel source, String charsetName) {
-        this(makeReadable(source, charsetName), WHITESPACE_PATTERN);
-    }
+//    public Scanner(ReaderByteChannel source, String charsetName) {
+//        this(makeReader(source, charsetName), WHITESPACE_PATTERN);
+//    }
 
-    private static Readable makeReadable(ReadableByteChannel source,
-                                  String charsetName)
-    {
-        if (source == null)
-            throw new NullPointerException("source");
-        if (!Charset.isSupported(charsetName))
-            throw new IllegalArgumentException(charsetName);
-        return Channels.newReader(source, charsetName);
-    }
+//    private static Reader makeReader(ReaderByteChannel source,
+//                                  String charsetName)
+//    {
+//        if (source == null)
+//            throw new NullPointerException("source");
+//        if (!Charset.isSupported(charsetName))
+//            throw new IllegalArgumentException(charsetName);
+//        return Channels.newReader(source, charsetName);
+//    }
 
     // Private primitives used to support scanning
 
@@ -797,7 +814,7 @@ public final class Scanner implements Iterator {
 
         int n = 0;
         try {
-            n = source.read(buf);
+            n = read(source, buf);
         } catch (IOException ioe) {
             lastException = ioe;
             n = -1;
@@ -815,6 +832,30 @@ public final class Scanner implements Iterator {
         buf.limit(buf.position());
         buf.position(p);
     }
+
+    /**
+     * Attempts to read characters into the specified character buffer.
+     * The buffer is used as a repository of characters as-is: the only
+     * changes made are the results of a put operation. No flipping or
+     * rewinding of the buffer is performed.
+     *
+     * @param target the buffer to read characters into
+     * @return The number of characters added to the buffer, or
+     *         -1 if this source of characters is at its end
+     * @throws IOException if an I/O error occurs
+     * @throws NullPointerException if target is null
+     * @throws ReadOnlyBufferException if target is a read only buffer
+     * @since 1.5
+     */
+    public static int read(java.io.Reader source, java.nio.CharBuffer target) throws IOException {
+        int len = target.remaining();
+        char[] cbuf = new char[len];
+        int n = source.read(cbuf, 0, len);
+        if (n > 0)
+            target.put(cbuf, 0, n);
+        return n;
+    }
+
 
     // After this method is called there will either be an exception
     // or else there will be space in the buffer
@@ -1072,8 +1113,8 @@ public final class Scanner implements Iterator {
      * Closes this scanner.
      *
      * <p> If this scanner has not yet been closed then if its underlying
-     * {@linkplain java.lang.Readable readable} also implements the {@link
-     * java.io.Closeable} interface then the readable's <tt>close</tt> method
+     * {@linkplain java.lang.Reader readable} also implements the {@link
+     * java.io.Reader} interface then the readable's <tt>close</tt> method
      * will be invoked.  If this scanner is already closed then invoking this
      * method will have no effect.
      *
@@ -1084,9 +1125,9 @@ public final class Scanner implements Iterator {
     public void close() {
         if (closed)
             return;
-        if (source instanceof Closeable) {
+        if (source instanceof Reader) {
             try {
-                ((Closeable)source).close();
+                ((Reader)source).close();
             } catch (IOException ioe) {
                 lastException = ioe;
             }
@@ -1098,7 +1139,7 @@ public final class Scanner implements Iterator {
 
     /**
      * Returns the <code>IOException</code> last thrown by this
-     * <code>Scanner</code>'s underlying <code>Readable</code>. This method
+     * <code>Scanner</code>'s underlying <code>Reader</code>. This method
      * returns <code>null</code> if no such exception exists.
      *
      * @return the last exception thrown by this scanner's readable
@@ -1773,7 +1814,7 @@ public final class Scanner implements Iterator {
      */
     public boolean nextBoolean()  {
         clearCaches();
-        return Boolean.parseBoolean(next(boolPattern()));
+        return new Boolean(next(boolPattern())).booleanValue();
     }
 
     /**
@@ -1807,12 +1848,41 @@ public final class Scanner implements Iterator {
                 String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ?
                     processIntegerToken(hasNextResult) :
                     hasNextResult;
-                typeCache = Byte.valueOf(Byte.parseByte(s, radix));
+                typeCache = valueOf(Byte.parseByte(s, radix));
             } catch (NumberFormatException nfe) {
                 result = false;
             }
         }
         return result;
+    }
+
+    private static class ByteCache {
+        private ByteCache(){}
+
+        static final Byte cache[] = new Byte[-(-128) + 127 + 1];
+
+        static {
+            for(int i = 0; i < cache.length; i++)
+                cache[i] = new Byte((byte)(i - 128));
+        }
+    }
+
+    /**
+     * Returns a {@code Byte} instance representing the specified
+     * {@code byte} value.
+     * If a new {@code Byte} instance is not required, this method
+     * should generally be used in preference to the constructor
+     * {@link #Byte(byte)}, as this method is likely to yield
+     * significantly better space and time performance since
+     * all byte values are cached.
+     *
+     * @param  b a byte value.
+     * @return a {@code Byte} instance representing {@code b}.
+     * @since  1.5
+     */
+    public static Byte valueOf(byte b) {
+        final int offset = 128;
+        return ByteCache.cache[(int)b + offset];
     }
 
     /**
@@ -1913,12 +1983,48 @@ public final class Scanner implements Iterator {
                 String s = (matcher.group(SIMPLE_GROUP_INDEX) == null) ?
                     processIntegerToken(hasNextResult) :
                     hasNextResult;
-                typeCache = Short.valueOf(Short.parseShort(s, radix));
+                typeCache = valueOf(Short.parseShort(s, radix));
             } catch (NumberFormatException nfe) {
                 result = false;
             }
         }
         return result;
+    }
+
+    private static class ShortCache {
+        private ShortCache(){}
+
+        static final Short cache[] = new Short[-(-128) + 127 + 1];
+
+        static {
+            for(int i = 0; i < cache.length; i++)
+                cache[i] = new Short((short)(i - 128));
+        }
+    }
+
+    /**
+     * Returns a {@code Short} instance representing the specified
+     * {@code short} value.
+     * If a new {@code Short} instance is not required, this method
+     * should generally be used in preference to the constructor
+     * {@link #Short(short)}, as this method is likely to yield
+     * significantly better space and time performance by caching
+     * frequently requested values.
+     *
+     * This method will always cache values in the range -128 to 127,
+     * inclusive, and may cache other values outside of this range.
+     *
+     * @param  s a short value.
+     * @return a {@code Short} instance representing {@code s}.
+     * @since  1.5
+     */
+    public static Short valueOf(short s) {
+        final int offset = 128;
+        int sAsInt = s;
+        if (sAsInt >= -128 && sAsInt <= 127) { // must cache
+            return ShortCache.cache[sAsInt + offset];
+        }
+        return new Short(s);
     }
 
     /**
@@ -2291,7 +2397,7 @@ public final class Scanner implements Iterator {
         if (result) { // Cache it
             try {
                 String s = processFloatToken(hasNextResult);
-                typeCache = Float.valueOf(Float.parseFloat(s));
+                typeCache = new Float(Float.parseFloat(s));
             } catch (NumberFormatException nfe) {
                 result = false;
             }
@@ -2358,7 +2464,7 @@ public final class Scanner implements Iterator {
         if (result) { // Cache it
             try {
                 String s = processFloatToken(hasNextResult);
-                typeCache = Double.valueOf(Double.parseDouble(s));
+                typeCache = new Double(Double.parseDouble(s));
             } catch (NumberFormatException nfe) {
                 result = false;
             }

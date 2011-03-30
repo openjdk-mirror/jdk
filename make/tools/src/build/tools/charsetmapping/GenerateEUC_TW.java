@@ -27,8 +27,6 @@ package build.tools.charsetmapping;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Formatter;
-import java.util.regex.*;
 import java.nio.charset.*;
 
 public class GenerateEUC_TW {
@@ -187,7 +185,7 @@ public class GenerateEUC_TW {
                 }
             }
 
-            StringBuffer out = new StringBuffer();
+            StringBuilder out = new StringBuilder();
             Formatter fm = new Formatter(out);
 
             fm.format(copyright, new Object[] { });
