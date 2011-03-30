@@ -693,13 +693,36 @@ public final class Scanner implements Iterator {
         this(makeReadable(source), WHITESPACE_PATTERN);
     }
 
-    private static Readable makeReadable(ReadableByteChannel source) {
+    private static Reader makeReadable(ReadableByteChannel source) {
         if (source == null)
             throw new NullPointerException("source");
-        String defaultCharsetName =
-            java.nio.charset.Charset.defaultCharset().name();
-        return Channels.newReader(source,
-                           java.nio.charset.Charset.defaultCharset().name());
+        String defaultCharsetName = "UTF-8";
+        return Channels.newReader(source, defaultCharsetName);
+    }
+
+    /**
+     * Constructs a new <code>Scanner</code> that produces values scanned
+     * from the specified channel. Bytes from the source are converted into
+     * characters using the specified charset.
+     *
+     * @param  source A channel to scan
+     * @param charsetName The encoding type used to convert bytes from the
+     *        channel into characters to be scanned
+     * @throws IllegalArgumentException if the specified character set
+     *         does not exist
+     */
+    public Scanner(ReadableByteChannel source, String charsetName) {
+        this(makeReadable(source, charsetName), WHITESPACE_PATTERN);
+    }
+
+    private static Reader makeReadable(ReadableByteChannel source,
+                                  String charsetName)
+    {
+        if (source == null)
+            throw new NullPointerException("source");
+        if (!Charset.isSupported(charsetName))
+            throw new IllegalArgumentException(charsetName);
+        return Channels.newReader(source, charsetName);
     }
 
     /**
