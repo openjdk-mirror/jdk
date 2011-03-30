@@ -247,37 +247,57 @@ public class GenerateDBCS {
                 out.println(line);
                 continue;
             }
-            line = line.replace("$PACKAGE$" , pkgName)
-                       .replace("$IMPLEMENTS$", (hisName == null)?
-                                "" : "implements HistoricallyNamedCharset")
-                       .replace("$NAME_CLZ$", clzName)
-                       .replace("$NAME_ALIASES$",
+            line = replace(line, "$PACKAGE$" , pkgName);
+            line = replace(line, "$IMPLEMENTS$", (hisName == null)?
+                                "" : "implements HistoricallyNamedCharset");
+            line = replace(line, "$NAME_CLZ$", clzName);
+            line = replace(line, "$NAME_ALIASES$",
                                 "sun.nio.cs".equals(pkgName) ?
                                 "StandardCharsets.aliases_" + clzName :
-                                "ExtendedCharsets.aliasesFor(\"" + csName + "\")")
-                       .replace("$NAME_CS$" , csName)
-                       .replace("$CONTAINS$",
+                                "ExtendedCharsets.aliasesFor(\"" + csName + "\")");
+            line = replace(line, "$NAME_CS$" , csName);
+            line = replace(line, "$CONTAINS$",
                                 "MS932".equals(clzName)?
                                 "return ((cs.name().equals(\"US-ASCII\")) || (cs instanceof JIS_X_0201) || (cs instanceof " + clzName + "));":
                                 (isASCII ?
                                  "return ((cs.name().equals(\"US-ASCII\")) || (cs instanceof " + clzName + "));":
-                                 "return (cs instanceof " + clzName + ");"))
-                       .replace("$HISTORICALNAME$",
+                                 "return (cs instanceof " + clzName + ");"));
+            line = replace(line, "$HISTORICALNAME$",
                                 (hisName == null)? "" :
-                                "    public String historicalName() { return \"" + hisName + "\"; }")
-                       .replace("$DECTYPE$", type)
-                       .replace("$ENCTYPE$", type)
-                       .replace("$B1MIN$"   , "0x" + Integer.toString(b1Min, 16))
-                       .replace("$B1MAX$"   , "0x" + Integer.toString(b1Max, 16))
-                       .replace("$B2MIN$"   , "0x" + Integer.toString(b2Min, 16))
-                       .replace("$B2MAX$"   , "0x" + Integer.toString(b2Max, 16))
-                       .replace("$B2C$", b2c)
-                       .replace("$C2BLENGTH$", "0x" + Integer.toString(c2bOff, 16))
-                       .replace("$NONROUNDTRIP_B2C$", b2cNR)
-                       .replace("$NONROUNDTRIP_C2B$", c2bNR);
+                                "    public String historicalName() { return \"" + hisName + "\"; }");
+            line = replace(line, "$DECTYPE$", type);
+            line = replace(line, "$ENCTYPE$", type);
+            line = replace(line, "$B1MIN$"   , "0x" + Integer.toString(b1Min, 16));
+            line = replace(line, "$B1MAX$"   , "0x" + Integer.toString(b1Max, 16));
+            line = replace(line, "$B2MIN$"   , "0x" + Integer.toString(b2Min, 16));
+            line = replace(line, "$B2MAX$"   , "0x" + Integer.toString(b2Max, 16));
+            line = replace(line, "$B2C$", b2c);
+            line = replace(line, "$C2BLENGTH$", "0x" + Integer.toString(c2bOff, 16));
+            line = replace(line, "$NONROUNDTRIP_B2C$", b2cNR);
+            line = replace(line, "$NONROUNDTRIP_C2B$", c2bNR);
 
             out.println(line);
         }
         out.close();
     }
+    
+    	/**
+     * Replaces each substring of this string that matches the literal target
+     * sequence with the specified literal replacement sequence. The
+     * replacement proceeds from the beginning of the string to the end, for
+     * example, replacing "aa" with "b" in the string "aaa" will result in
+     * "ba" rather than "ab".
+     *
+     * @param  target The sequence of char values to be replaced
+     * @param  replacement The replacement sequence of char values
+     * @return  The resulting string
+     * @throws NullPointerException if <code>target</code> or
+     *         <code>replacement</code> is <code>null</code>.
+     * @since 1.5
+     */
+    public static String replace(String source, CharSequence target, CharSequence replacement) {
+        return Pattern.compile(target.toString(), Pattern.LITERAL).matcher(
+            source).replaceAll(Matcher.quoteReplacement(replacement.toString()));
+    }
+
 }

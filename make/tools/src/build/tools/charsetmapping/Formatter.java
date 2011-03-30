@@ -3859,7 +3859,7 @@ public final class Formatter {
                 // Calendar.AM = 0, Calendar.PM = 1, LocaleElements defines upper
                 String[] ampm = { "AM", "PM" };
                 if (l != null && l != Locale.US) {
-                    DateFormatSymbols dfs = DateFormatSymbols.getInstance(l);
+                    java.text.DateFormatSymbols dfs = new java.text.DateFormatSymbols(l);
                     ampm = dfs.getAmPmStrings();
                 }
                 String s = ampm[t.get(Calendar.AM_PM)];
@@ -3893,9 +3893,9 @@ public final class Formatter {
                 break;
             }
             case DateTime.ZONE:        { // 'Z' (symbol)
-                TimeZone tz = t.getTimeZone();
+                java.util.TimeZone tz = t.getTimeZone();
                 sb.append(tz.getDisplayName((t.get(Calendar.DST_OFFSET) != 0),
-                                           TimeZone.SHORT,
+                                           java.util.TimeZone.SHORT,
                                             (l == null) ? Locale.US : l));
                 break;
             }
@@ -3905,7 +3905,7 @@ public final class Formatter {
             case DateTime.NAME_OF_DAY:          { // 'A'
                 int i = t.get(Calendar.DAY_OF_WEEK);
                 Locale lt = ((l == null) ? Locale.US : l);
-                DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
+                java.text.DateFormatSymbols dfs = new java.text.DateFormatSymbols(lt);
                 if (c == DateTime.NAME_OF_DAY)
                     sb.append(dfs.getWeekdays()[i]);
                 else
@@ -3917,7 +3917,7 @@ public final class Formatter {
             case DateTime.NAME_OF_MONTH:        { // 'B'
                 int i = t.get(Calendar.MONTH);
                 Locale lt = ((l == null) ? Locale.US : l);
-                DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
+                java.text.DateFormatSymbols dfs = new java.text.DateFormatSymbols(lt);
                 if (c == DateTime.NAME_OF_MONTH)
                     sb.append(dfs.getMonths()[i]);
                 else
@@ -4032,7 +4032,7 @@ public final class Formatter {
 
         private char getZero(Locale l) {
             if ((l != null) &&  !l.equals(locale())) {
-                DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
+                java.text.DecimalFormatSymbols dfs = new java.text.DecimalFormatSymbols(l);
                 return dfs.getZeroDigit();
             }
             return zero;
@@ -4074,7 +4074,7 @@ public final class Formatter {
                 if (l == null || l.equals(Locale.US)) {
                     decSep  = '.';
                 } else {
-                    DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
+	                java.text.DecimalFormatSymbols dfs = new java.text.DecimalFormatSymbols(l);
                     decSep  = dfs.getDecimalSeparator();
                 }
             }
@@ -4084,7 +4084,7 @@ public final class Formatter {
                     grpSep = ',';
                     grpSize = 3;
                 } else {
-                    DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
+	                java.text.DecimalFormatSymbols dfs = new java.text.DecimalFormatSymbols(l);
                     grpSep = dfs.getGroupingSeparator();
                     DecimalFormat df = (DecimalFormat) NumberFormat.getIntegerInstance(l);
                     grpSize = df.getGroupingSize();
