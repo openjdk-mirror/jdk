@@ -73,7 +73,7 @@ public class Spp {
                 int i = arg.indexOf('=');
                 String key = arg.substring(2, i);
                 String value = arg.substring(i+1);
-                System.err.println(key + " : " + value);
+//                System.err.println(key + " : " + value);
                 vars.put(key,value);
             } else if (arg.startsWith("-K")) {
                 keys.add(arg.substring(2));
@@ -114,40 +114,33 @@ public class Spp {
                 Set keys, Map vars) {
         vardef.reset(ln);
         while (vardef.find()) {
- 			System.err.println("...while...");
             String repl = "";
             if (vardef.group(GN_VAR) != null) {
                 String group = vardef.group(GN_VAR);
-                System.err.println("GN_VAR: " + group);
-				// repl = (String)vars.get(group);
-                Iterator iter = vars.entrySet().iterator();
-                while (iter.hasNext()) {
-                	Map.Entry entry = (Map.Entry)iter.next();
-                	String key = (String)entry.getKey();
-                	if (String.CASE_INSENSITIVE_ORDER.compare(key, group) == 0) {
-                		repl = (String)entry.getValue();
-                		break;
-                	}
-                }
+				repl = (String)vars.get(group);
+////                Iterator iter = vars.entrySet().iterator();
+////                while (iter.hasNext()) {
+////                	Map.Entry entry = (Map.Entry)iter.next();
+////                	String key = (String)entry.getKey();
+////                	if (String.CASE_INSENSITIVE_ORDER.compare(key, group) == 0) {
+////                		repl = (String)entry.getValue();
+////                		break;
+////                	}
+////                }
         	} else {
                 boolean test = keys.contains(vardef.group(GN_KEY));
                 if (vardef.group(GN_NOT) != null) {
-                	System.err.println("GN_NO");
                     test = !test;
 	        	}
                 if (test) {
- 					System.err.println("GN_YES");
                 	repl = vardef.group(GN_YES);
                 } else {
- 					System.err.println("GN_NO");
                 	repl = vardef.group(GN_NO);
                 }
                 if (repl == null) {
- 					System.err.println("null");
                     repl = "";
                 } else {  // embedded $var$
                     while (vardef2.reset(repl).find()) {
-	 					System.err.println("...finding...");
                     	Object group = vardef2.group(1);
                     	String string = (String)vars.get(group);
                         repl = vardef2.replaceFirst(string);
