@@ -33,7 +33,7 @@ public class GenerateEUC_TW {
 
     public static void genEUC_TW(String args[]) throws Exception {
         genClass(new FileInputStream(new File(args[0], "euc_tw.map")),
-                 new PrintStream(new File(args[1], "EUC_TWMapping.java"), "ISO-8859-1"),
+                 new PrintStream(new FileOutputStream(new File(args[1], "EUC_TWMapping.java")), false, "ISO-8859-1"),
                  getCopyright(new File(args[3])));
     }
 
