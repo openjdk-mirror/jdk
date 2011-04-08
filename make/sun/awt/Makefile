@@ -175,6 +175,10 @@ endif
 include $(BUILDDIR)/common/Mapfile-vers.gmk
 include $(BUILDDIR)/common/Library.gmk
 
+COMPILEFONTCONFIG_FLAGS =
+ifdef ALT_COMPILEFONTCONFIG_FLAGS
+  COMPILEFONTCONFIG_FLAGS += $(ALT_COMPILEFONTCONFIG_FLAGS)
+endif
 build: fontconfigs
 
 
@@ -365,10 +369,6 @@ FONTCONFIGS_SRC	= $(CLOSED_SRC)/solaris/classes/sun/awt/fontconfigs
 _FONTCONFIGS	= \
 	fontconfig.properties				\
 	fontconfig.RedHat.properties			\
-	fontconfig.RedHat.2.1.properties		\
-	fontconfig.RedHat.3.properties		        \
-	fontconfig.RedHat.4.properties			\
-	fontconfig.Sun.properties			\
 	fontconfig.Turbo.properties			\
 	fontconfig.SuSE.10.properties                   \
 	fontconfig.SuSE.11.properties
@@ -384,9 +384,7 @@ ifeq ($(PLATFORM), solaris)
 
 FONTCONFIGS_SRC	= $(PLATFORM_SRC)/classes/sun/awt/fontconfigs
 _FONTCONFIGS	= \
-	fontconfig.properties	\
-	fontconfig.5.9.properties	\
-	fontconfig.5.8.properties
+	fontconfig.properties
 
 FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
 
@@ -406,7 +404,7 @@ COMPILEFONTCONFIG_JARFILE = $(BUILDTOOLJARDIR)/compilefontconfig.jar
 $(LIBDIR)/%.bfc: $(FONTCONFIGS_SRC)/$(FONTCONFIGS_SRC_PREFIX)%.properties \
     $(COMPILEFONTCONFIG_JARFILE)
 	$(prep-target)
-	$(BOOT_JAVA_CMD) -jar $(COMPILEFONTCONFIG_JARFILE) $< $@
+	$(BOOT_JAVA_CMD) -jar $(COMPILEFONTCONFIG_JARFILE) $(COMPILEFONTCONFIG_FLAGS) $< $@
 	$(install-module-file)
 	$(call chmod-file, 444)
 	@$(java-vm-cleanup)

@@ -110,9 +110,9 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
             throw new ClassCastException(elementType + " not an enum");
 
         if (universe.length <= 64)
-            return new RegularEnumSet<E>(elementType, universe);
+            return new RegularEnumSet<>(elementType, universe);
         else
-            return new JumboEnumSet<E>(elementType, universe);
+            return new JumboEnumSet<>(elementType, universe);
     }
 
     /**
@@ -317,6 +317,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
      *     or if <tt>rest</tt> is null
      * @return an enum set initially containing the specified elements
      */
+    @SafeVarargs
     public static <E extends Enum<E>> EnumSet<E> of(E first, E... rest) {
         EnumSet<E> result = noneOf(first.getDeclaringClass());
         result.add(first);
@@ -430,7 +431,7 @@ public abstract class EnumSet<E extends Enum<E>> extends AbstractSet<E>
     }
 
     Object writeReplace() {
-        return new SerializationProxy<E>(this);
+        return new SerializationProxy<>(this);
     }
 
     // readObject method for the serialization proxy pattern

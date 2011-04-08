@@ -106,6 +106,9 @@ public class KeepAliveCache
                     keepAliveTimer = new Thread(grp, cache, "Keep-Alive-Timer");
                     keepAliveTimer.setDaemon(true);
                     keepAliveTimer.setPriority(Thread.MAX_PRIORITY - 2);
+                    // Set the context class loader to null in order to avoid
+                    // keeping a strong reference to an application classloader.
+                    keepAliveTimer.setContextClassLoader(null);
                     keepAliveTimer.start();
                     return null;
                 }
@@ -267,7 +270,7 @@ class ClientVector extends java.util.Stack<KeepAliveEntry> {
 
     /* return a still valid, unused HttpClient */
     synchronized void put(HttpClient h) {
-        if (size() > KeepAliveCache.getMaxConnections()) {
+        if (size() >= KeepAliveCache.getMaxConnections()) {
             h.closeServer(); // otherwise the connection remains in limbo
         } else {
             push(new KeepAliveEntry(h, System.currentTimeMillis()));

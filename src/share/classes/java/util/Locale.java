@@ -1265,7 +1265,9 @@ public final class Locale implements Cloneable, Serializable {
         StringBuilder buf = new StringBuilder();
 
         String subtag = tag.getLanguage();
-        buf.append(LanguageTag.canonicalizeLanguage(subtag));
+        if (subtag.length() > 0) {
+            buf.append(LanguageTag.canonicalizeLanguage(subtag));
+        }
 
         subtag = tag.getScript();
         if (subtag.length() > 0) {
@@ -1294,7 +1296,10 @@ public final class Locale implements Cloneable, Serializable {
 
         subtag = tag.getPrivateuse();
         if (subtag.length() > 0) {
-            buf.append(LanguageTag.SEP).append(LanguageTag.PRIVATEUSE).append(LanguageTag.SEP);
+            if (buf.length() > 0) {
+                buf.append(LanguageTag.SEP);
+            }
+            buf.append(LanguageTag.PRIVATEUSE).append(LanguageTag.SEP);
             // preserve casing
             buf.append(subtag);
         }
@@ -1449,10 +1454,15 @@ public final class Locale implements Cloneable, Serializable {
      * three-letter language abbreviation is not available for this locale.
      */
     public String getISO3Language() throws MissingResourceException {
-        String language3 = getISO3Code(_baseLocale.getLanguage(), LocaleISOData.isoLanguageTable);
+        String lang = _baseLocale.getLanguage();
+        if (lang.length() == 3) {
+            return lang;
+        }
+
+        String language3 = getISO3Code(lang, LocaleISOData.isoLanguageTable);
         if (language3 == null) {
             throw new MissingResourceException("Couldn't find 3-letter language code for "
-                    + _baseLocale.getLanguage(), "FormatData_" + toString(), "ShortLanguage");
+                    + lang, "FormatData_" + toString(), "ShortLanguage");
         }
         return language3;
     }

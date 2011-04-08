@@ -72,7 +72,7 @@ import sun.security.util.SecurityConstants;
  *    <DT> readlink
  *    <DD> read link permission. Allows the target of a
  *         <a href="../nio/file/package-summary.html#links">symbolic link</a>
- *         to be read by invoking the {@link java.nio.file.Path#readSymbolicLink
+ *         to be read by invoking the {@link java.nio.file.Files#readSymbolicLink
  *         readSymbolicLink } method.
  * </DL>
  * <P>
@@ -725,7 +725,7 @@ implements Serializable {
      */
 
     public FilePermissionCollection() {
-        perms = new ArrayList<Permission>();
+        perms = new ArrayList<>();
     }
 
     /**
@@ -830,7 +830,7 @@ implements Serializable {
         // Don't call out.defaultWriteObject()
 
         // Write out Vector
-        Vector<Permission> permissions = new Vector<Permission>(perms.size());
+        Vector<Permission> permissions = new Vector<>(perms.size());
         synchronized (this) {
             permissions.addAll(perms);
         }
@@ -853,7 +853,7 @@ implements Serializable {
 
         // Get the one we want
         Vector<Permission> permissions = (Vector<Permission>)gfields.get("permissions", null);
-        perms = new ArrayList<Permission>(permissions.size());
+        perms = new ArrayList<>(permissions.size());
         perms.addAll(permissions);
     }
 }

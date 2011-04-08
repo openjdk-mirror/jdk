@@ -42,6 +42,7 @@ import sun.nio.ch.FileChannelImpl;
  * @see     java.io.File
  * @see     java.io.FileDescriptor
  * @see     java.io.FileOutputStream
+ * @see     java.nio.file.Files#newInputStream
  * @since   JDK1.0
  */
 public
@@ -56,7 +57,7 @@ class FileInputStream extends InputStream
     private volatile boolean closed = false;
 
     private static final ThreadLocal<Boolean> runningFinalize =
-        new ThreadLocal<Boolean>();
+        new ThreadLocal<>();
 
     private static boolean isRunningFinalize() {
         Boolean val;

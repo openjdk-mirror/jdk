@@ -4820,6 +4820,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
      * @return  {@code true} if the composed text exists and is saved,
      *          {@code false} otherwise
      * @see #restoreComposedText
+     * @since 1.7
      */
     protected boolean saveComposedText(int pos) {
         if (composedTextExists()) {
@@ -4843,6 +4844,7 @@ public abstract class JTextComponent extends JComponent implements Scrollable, A
      * should be invoked only if {@code saveComposedText} returns {@code true}.
      *
      * @see #saveComposedText
+     * @since 1.7
      */
     protected void restoreComposedText() {
         Document doc = getDocument();

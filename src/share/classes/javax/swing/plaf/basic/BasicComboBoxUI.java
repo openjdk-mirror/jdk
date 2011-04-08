@@ -1719,6 +1719,7 @@ public class BasicComboBoxUI extends ComboBoxUI {
                         editor.setFont( comboBox.getFont() );
                     }
                     isMinimumSizeDirty = true;
+                    isDisplaySizeDirty = true;
                     comboBox.validate();
                 }
                 else if ( propertyName == JComponent.TOOL_TIP_TEXT_KEY ) {

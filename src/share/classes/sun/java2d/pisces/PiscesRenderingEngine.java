@@ -27,7 +27,6 @@ package sun.java2d.pisces;
 
 import java.awt.Shape;
 import java.awt.BasicStroke;
-import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Path2D;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.PathIterator;
@@ -250,7 +249,7 @@ public class PiscesRenderingEngine extends RenderingEngine {
                   float dashphase,
                   PathConsumer2D pc2d)
     {
-        // We use inat and outat so that in Stroker and Dasher we can work only
+        // We use strokerat and outat so that in Stroker and Dasher we can work only
         // with the pre-transformation coordinates. This will repeat a lot of
         // computations done in the path iterator, but the alternative is to
         // work with transformed paths and compute untransformed coordinates
@@ -265,7 +264,7 @@ public class PiscesRenderingEngine extends RenderingEngine {
         // transformation after the path processing has been done.
         // We can't do this if normalization is on, because it isn't a good
         // idea to normalize before the transformation is applied.
-        AffineTransform inat = null;
+        AffineTransform strokerat = null;
         AffineTransform outat = null;
 
         PathIterator pi = null;
@@ -284,9 +283,9 @@ public class PiscesRenderingEngine extends RenderingEngine {
                 // again so, nothing can be drawn.
 
                 // Every path needs an initial moveTo and a pathDone. If these
-                // aren't there this causes a SIGSEV in libawt.so (at the time
+                // are not there this causes a SIGSEGV in libawt.so (at the time
                 // of writing of this comment (September 16, 2010)). Actually,
-                // I'm not sure if the moveTo is necessary to avoid the SIGSEV
+                // I am not sure if the moveTo is necessary to avoid the SIGSEGV
                 // but the pathDone is definitely needed.
                 pc2d.moveTo(0, 0);
                 pc2d.pathDone();
@@ -313,25 +312,32 @@ public class PiscesRenderingEngine extends RenderingEngine {
                 if (normalize != NormMode.OFF) {
                     pi = new NormalizingPathIterator(pi, normalize);
                 }
-                // leave inat and outat null.
+                // by now strokerat == null && outat == null. Input paths to
+                // stroker (and maybe dasher) will have the full transform at
+                // applied to them and nothing will happen to the output paths.
             } else {
-                // We only need the inverse if normalization is on. Otherwise
-                // we just don't transform the input paths, do all the stroking
-                // and then transform out output (instead of making PathIterator
-                // apply the transformation, us applying the inverse, and then
-                // us applying the transform again to our output).
-                outat = at;
                 if (normalize != NormMode.OFF) {
-                    try {
-                        inat = outat.createInverse();
-                    } catch (NoninvertibleTransformException e) {
-                        // we made sure this can't happen
-                        e.printStackTrace();
-                    }
+                    strokerat = at;
                     pi = src.getPathIterator(at);
                     pi = new NormalizingPathIterator(pi, normalize);
+                    // by now strokerat == at && outat == null. Input paths to
+                    // stroker (and maybe dasher) will have the full transform at
+                    // applied to them, then they will be normalized, and then
+                    // the inverse of *only the non translation part of at* will
+                    // be applied to the normalized paths. This won't cause problems
+                    // in stroker, because, suppose at = T*A, where T is just the
+                    // translation part of at, and A is the rest. T*A has already
+                    // been applied to Stroker/Dasher's input. Then Ainv will be
+                    // applied. Ainv*T*A is not equal to T, but it is a translation,
+                    // which means that none of stroker's assumptions about its
+                    // input will be violated. After all this, A will be applied
+                    // to stroker's output.
                 } else {
+                    outat = at;
                     pi = src.getPathIterator(null);
+                    // outat == at && strokerat == null. This is because if no
+                    // normalization is done, we can just apply all our
+                    // transformations to stroker's output.
                 }
             }
         } else {
@@ -343,13 +349,17 @@ public class PiscesRenderingEngine extends RenderingEngine {
             }
         }
 
+        // by now, at least one of outat and strokerat will be null. Unless at is not
+        // a constant multiple of an orthogonal transformation, they will both be
+        // null. In other cases, outat == at if normalization is off, and if
+        // normalization is on, strokerat == at.
         pc2d = TransformingPathConsumer2D.transformConsumer(pc2d, outat);
+        pc2d = TransformingPathConsumer2D.deltaTransformConsumer(pc2d, strokerat);
         pc2d = new Stroker(pc2d, width, caps, join, miterlimit);
         if (dashes != null) {
             pc2d = new Dasher(pc2d, dashes, dashphase);
         }
-        pc2d = TransformingPathConsumer2D.transformConsumer(pc2d, inat);
-
+        pc2d = TransformingPathConsumer2D.inverseDeltaTransformConsumer(pc2d, strokerat);
         pathTo(pi, pc2d);
     }
 
@@ -551,6 +561,69 @@ public class PiscesRenderingEngine extends RenderingEngine {
                              PathIterator.WIND_NON_ZERO);
             strokeTo(s, at, bs, thin, norm, true, r);
         }
+        r.endRendering();
+        PiscesTileGenerator ptg = new PiscesTileGenerator(r, r.MAX_AA_ALPHA);
+        ptg.getBbox(bbox);
+        return ptg;
+    }
+
+    public AATileGenerator getAATileGenerator(double x, double y,
+                                              double dx1, double dy1,
+                                              double dx2, double dy2,
+                                              double lw1, double lw2,
+                                              Region clip,
+                                              int bbox[])
+    {
+        // REMIND: Deal with large coordinates!
+        double ldx1, ldy1, ldx2, ldy2;
+        boolean innerpgram = (lw1 > 0 && lw2 > 0);
+
+        if (innerpgram) {
+            ldx1 = dx1 * lw1;
+            ldy1 = dy1 * lw1;
+            ldx2 = dx2 * lw2;
+            ldy2 = dy2 * lw2;
+            x -= (ldx1 + ldx2) / 2.0;
+            y -= (ldy1 + ldy2) / 2.0;
+            dx1 += ldx1;
+            dy1 += ldy1;
+            dx2 += ldx2;
+            dy2 += ldy2;
+            if (lw1 > 1 && lw2 > 1) {
+                // Inner parallelogram was entirely consumed by stroke...
+                innerpgram = false;
+            }
+        } else {
+            ldx1 = ldy1 = ldx2 = ldy2 = 0;
+        }
+
+        Renderer r = new Renderer(3, 3,
+                clip.getLoX(), clip.getLoY(),
+                clip.getWidth(), clip.getHeight(),
+                PathIterator.WIND_EVEN_ODD);
+
+        r.moveTo((float) x, (float) y);
+        r.lineTo((float) (x+dx1), (float) (y+dy1));
+        r.lineTo((float) (x+dx1+dx2), (float) (y+dy1+dy2));
+        r.lineTo((float) (x+dx2), (float) (y+dy2));
+        r.closePath();
+
+        if (innerpgram) {
+            x += ldx1 + ldx2;
+            y += ldy1 + ldy2;
+            dx1 -= 2.0 * ldx1;
+            dy1 -= 2.0 * ldy1;
+            dx2 -= 2.0 * ldx2;
+            dy2 -= 2.0 * ldy2;
+            r.moveTo((float) x, (float) y);
+            r.lineTo((float) (x+dx1), (float) (y+dy1));
+            r.lineTo((float) (x+dx1+dx2), (float) (y+dy1+dy2));
+            r.lineTo((float) (x+dx2), (float) (y+dy2));
+            r.closePath();
+        }
+
+        r.pathDone();
+
         r.endRendering();
         PiscesTileGenerator ptg = new PiscesTileGenerator(r, r.MAX_AA_ALPHA);
         ptg.getBbox(bbox);

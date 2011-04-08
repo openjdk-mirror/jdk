@@ -46,6 +46,7 @@ import sun.nio.ch.FileChannelImpl;
  * @see     java.io.File
  * @see     java.io.FileDescriptor
  * @see     java.io.FileInputStream
+ * @see     java.nio.file.Files#newOutputStream
  * @since   JDK1.0
  */
 public
@@ -69,7 +70,7 @@ class FileOutputStream extends OutputStream
     private final Object closeLock = new Object();
     private volatile boolean closed = false;
     private static final ThreadLocal<Boolean> runningFinalize =
-        new ThreadLocal<Boolean>();
+        new ThreadLocal<>();
 
     private static boolean isRunningFinalize() {
         Boolean val;

@@ -42,7 +42,15 @@ ifneq ($(PLATFORM), windows)
   ifndef OPENJDK
     ifeq ($(PLATFORM), solaris)
       ifneq ($(ARCH), amd64)
-        DGA_SUBDIR = jdga
+        # Solaris 11 does not have support for new compilation of DGA code.
+        OS_VERSION = $(shell uname -r)
+        OS_MAJOR_VERSION := $(call MajorVersion,$(OS_VERSION))
+        OS_MINOR_VERSION := $(call MinorVersion,$(OS_VERSION))
+        ifeq ($(shell $(EXPR) $(OS_MAJOR_VERSION) == 5), 1)
+          ifeq ($(shell $(EXPR) $(OS_MINOR_VERSION) \<= 10), 1)
+            DGA_SUBDIR = jdga
+          endif
+        endif
       endif
     endif
   endif
@@ -66,8 +74,7 @@ SUBDIRS_desktop    = audio $(RENDER_SUBDIR) image \
                      $(HEADLESS_SUBDIR) $(DGA_SUBDIR) \
                      jawt font jpeg cmm applet beans
 SUBDIRS_management = management
-SUBDIRS_misc       = jkernel $(ORG_SUBDIR) \
-                     rmi $(JDBC_SUBDIR) tracing
+SUBDIRS_misc       = $(ORG_SUBDIR) rmi $(JDBC_SUBDIR) tracing
 SUBDIRS_tools      = native2ascii serialver tools jconsole
 include $(BUILDDIR)/common/Subdirs.gmk
 
