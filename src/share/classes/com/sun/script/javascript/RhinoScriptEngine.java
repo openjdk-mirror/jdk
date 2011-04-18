@@ -84,7 +84,7 @@ public final class RhinoScriptEngine extends AbstractScriptEngine
         if (tmp != null) {
             version = Integer.parseInt((String)tmp);
         } else {
-            version = Context.VERSION_1_8;
+            version = Context.VERSION_DEFAULT;
         }
         return version;
     }
