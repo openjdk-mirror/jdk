@@ -26,7 +26,6 @@
 package com.sun.script.javascript;
 import javax.script.*;
 import java.util.*;
-import sun.org.mozilla.javascript.Context;
 import sun.org.mozilla.javascript.internal.*;
 import com.sun.script.util.*;
 
