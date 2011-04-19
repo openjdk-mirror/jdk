@@ -33,6 +33,8 @@ import java.security.ProtectionDomain;
 
 import java.security.ProtectionDomain;
 
+import java.security.AccessController;
+
 /** A repository of "shared secrets", which are a mechanism for
     calling implementation-private methods in another package without
     using reflection. A package-private class implements a public
@@ -52,6 +54,7 @@ public class SharedSecrets {
     private static JavaIOFileDescriptorAccess javaIOFileDescriptorAccess;
     private static JavaSecurityProtectionDomainAccess javaSecurityProtectionDomainAccess;
     private static JavaSecurityCodeSignerAccess javaSecurityCodeSignerAccess;
+    private static JavaSecurityAccess javaSecurityAccess;
 
     public static JavaUtilJarAccess javaUtilJarAccess() {
         if (javaUtilJarAccess == null) {
@@ -141,5 +144,16 @@ public class SharedSecrets {
         if (javaSecurityCodeSignerAccess == null)
             unsafe.ensureClassInitialized(CodeSigner.class);
         return javaSecurityCodeSignerAccess;
+    }
+
+    public static void setJavaSecurityAccess(JavaSecurityAccess jsa) {
+        javaSecurityAccess = jsa;
+    }
+
+    public static JavaSecurityAccess getJavaSecurityAccess() {
+        if (javaSecurityAccess == null) {
+            unsafe.ensureClassInitialized(AccessController.class);
+        }
+        return javaSecurityAccess;
     }
 }
