@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -54,15 +54,13 @@ EXCLUDE_PROPWARN_PKGS = com.sun.java.swing.plaf.windows  \
                         com.sun.java.swing.plaf.motif    \
                         com.sun.java.swing.plaf.gtk
 
-# This is a stopgap until 6839872 is fixed.
-EXCLUDE_PROPWARN_PKGS += sun.dyn
-
 #
 # Include the exported private packages in ct.sym.
 # This is an interim solution until the ct.sym is replaced
-# with a new module system (being discussed for JDK 7).
+# with a new module system (being discussed for JDK 8).
 #
-EXPORTED_PRIVATE_PKGS = com.sun.servicetag
+EXPORTED_PRIVATE_PKGS = com.sun.servicetag \
+                        com.oracle.net
 
 # 64-bit solaris has a few special cases. We define the variable
 # SOLARIS64 for use in this Makefile to easily test those cases
@@ -85,9 +83,8 @@ ifdef OPENJDK
   IMAGE_DOCLIST_JDK = LICENSE ASSEMBLY_EXCEPTION THIRD_PARTY_README
   IMAGE_DOCLIST_JRE = LICENSE ASSEMBLY_EXCEPTION THIRD_PARTY_README
 else
-  # Where to find these files
-  SHARE_JDK_DOC_SRC = $(CLOSED_SHARE_SRC)/doc/jdk
-  SHARE_JRE_DOC_SRC = $(CLOSED_SHARE_SRC)/doc/jre
+  # make/closed/common/Defs.gmk for closed location of SHARE_JDK_DOC_SRC
+
   IMAGE_DOCLIST_JDK = COPYRIGHT README.html  THIRDPARTYLICENSEREADME.txt
   IMAGE_DOCLIST_JRE = COPYRIGHT Welcome.html THIRDPARTYLICENSEREADME.txt
   ifeq ($(PLATFORM), windows)
@@ -124,7 +121,7 @@ JRE_MAN_PAGES =         \
 	tnameserv.1     \
 	unpack200.1
 
-ifeq ($(ARCH_DATA_MODEL),32)
+ifndef OPENJDK
   JRE_MAN_PAGES += javaws.1
 endif
 
@@ -911,11 +908,6 @@ initial-image-jdk:: initial-image-jdk-setup \
     ifeq ($(COMPILER_VERSION), VS2010)
 	$(CP) $(BINDIR)/msvc*100.$(LIBRARY_SUFFIX) $(JDK_IMAGE_DIR)/bin
     endif
-    ifeq ($(ARCH_DATA_MODEL), 32)
-      ifeq ($(COMPILER_VERSION), VS2003)
-	$(CP) $(BINDIR)/msvc*71.$(LIBRARY_SUFFIX) $(JDK_IMAGE_DIR)/bin
-      endif
-    endif
   else # PLATFORM
 	@#
 	@# bin/
@@ -1098,7 +1090,7 @@ JRE_INFO_FILE = $(JRE_IMAGE_DIR)/release
 
 # Common way to emit a line into the release or info file
 define info-file-item # name value
-$(PRINTF) "%s=\"%s\"\n" $1 $2 >> $@
+$(PRINTF) '%s="%s"\n' $1 $2 >> $@
 endef
 
 # Values to emit

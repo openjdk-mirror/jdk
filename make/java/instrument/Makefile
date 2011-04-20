@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@
 # agent, supporting java.lang.instrument
 
 BUILDDIR = ../..
-MODULE  = instrument
 PACKAGE = sun.instrument
 LIBRARY = instrument
 PRODUCT = sun
@@ -110,7 +109,7 @@ else
     LDFLAGS += -R \$$ORIGIN/jli
   endif
   ifeq ($(PLATFORM), linux)
-    LDFLAGS += -Wl,-z -Wl,origin
+    LDFLAGS += $(LDFLAG_Z_ORIGIN)
     LDFLAGS += -Wl,--allow-shlib-undefined
     LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/jli
   endif

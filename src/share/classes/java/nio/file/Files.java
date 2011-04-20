@@ -129,17 +129,18 @@ public final class Files {
      * <pre>
      *     Path path = ...
      *
-     *     // replace an existing file or create the file if it doesn't initially exist
+     *     // truncate and overwrite an existing file, or create the file if
+     *     // it doesn't initially exist
      *     OutputStream out = Files.newOutputStream(path);
      *
      *     // append to an existing file, fail if the file does not exist
      *     out = Files.newOutputStream(path, APPEND);
      *
      *     // append to an existing file, create file if it doesn't initially exist
-     *     out = Files.newOutputStream(CREATE, APPEND);
+     *     out = Files.newOutputStream(path, CREATE, APPEND);
      *
      *     // always create new file, failing if it already exists
-     *     out = Files.newOutputStream(CREATE_NEW);
+     *     out = Files.newOutputStream(path, CREATE_NEW);
      * </pre>
      *
      * @param   path
@@ -793,7 +794,8 @@ public final class Files {
                                       FileAttribute<?>... attrs)
         throws IOException
     {
-        return TempFileHelper.createTempFile(dir, prefix, suffix, attrs);
+        return TempFileHelper.createTempFile(Objects.requireNonNull(dir),
+                                             prefix, suffix, attrs);
     }
 
     /**
@@ -890,13 +892,14 @@ public final class Files {
                                            FileAttribute<?>... attrs)
         throws IOException
     {
-        return TempFileHelper.createTempDirectory(dir, prefix, attrs);
+        return TempFileHelper.createTempDirectory(Objects.requireNonNull(dir),
+                                                  prefix, attrs);
     }
 
     /**
      * Creates a new directory in the default temporary-file directory, using
-     * the given prefix and suffix to generate its name. The resulting {@code
-     * Path} is associated with the default {@code FileSystem}.
+     * the given prefix to generate its name. The resulting {@code Path} is
+     * associated with the default {@code FileSystem}.
      *
      * <p> This method works in exactly the manner specified by {@link
      * #createTempDirectory(Path,String,FileAttribute[])} method for the case
@@ -1709,10 +1712,10 @@ public final class Files {
      * @return  the {@code path} parameter
      *
      * @throws  UnsupportedOperationException
-     *          if the attribute view is not available or it does not support
-     *          updating the attribute
+     *          if the attribute view is not available
      * @throws  IllegalArgumentException
-     *          if the attribute value is of the correct type but has an
+     *          if the attribute name is not specified, or is not recognized, or
+     *          the attribute value is of the correct type but has an
      *          inappropriate value
      * @throws  ClassCastException
      *          if the attribute value is not of the expected type or is a
@@ -1773,9 +1776,12 @@ public final class Files {
      * @param   options
      *          options indicating how symbolic links are handled
      *
-     * @return  the attribute value or {@code null} if the attribute view
-     *          is not available or it does not support reading the attribute
+     * @return  the attribute value
      *
+     * @throws  UnsupportedOperationException
+     *          if the attribute view is not available
+     * @throws  IllegalArgumentException
+     *          if the attribute name is not specified or is not recognized
      * @throws  IOException
      *          if an I/O error occurs
      * @throws  SecurityException
@@ -1791,8 +1797,9 @@ public final class Files {
     {
         // only one attribute should be read
         if (attribute.indexOf('*') >= 0 || attribute.indexOf(',') >= 0)
-            return null;
+            throw new IllegalArgumentException(attribute);
         Map<String,Object> map = readAttributes(path, attribute, options);
+        assert map.size() == 1;
         String name;
         int pos = attribute.indexOf(':');
         if (pos == -1) {
@@ -1865,9 +1872,14 @@ public final class Files {
      * @param   options
      *          options indicating how symbolic links are handled
      *
-     * @return  a map of the attributes returned; may be empty. The map's keys
-     *          are the attribute names, its values are the attribute values
+     * @return  a map of the attributes returned; The map's keys are the
+     *          attribute names, its values are the attribute values
      *
+     * @throws  UnsupportedOperationException
+     *          if the attribute view is not available
+     * @throws  IllegalArgumentException
+     *          if no attributes are specified or an unrecognized attributes is
+     *          specified
      * @throws  IOException
      *          if an I/O error occurs
      * @throws  SecurityException
@@ -2583,7 +2595,7 @@ public final class Files {
      * walkFileTree(start, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, visitor)
      * </pre></blockquote>
      * In other words, it does not follow symbolic links, and visits all levels
-     * of the file level.
+     * of the file tree.
      *
      * @param   start
      *          the starting file
@@ -3005,7 +3017,7 @@ public final class Files {
      * or after some bytes have been written to the file.
      *
      * <p> <b>Usage example</b>: By default the method creates a new file or
-     * overrides an existing file. Suppose you instead want to append bytes
+     * overwrites an existing file. Suppose you instead want to append bytes
      * to an existing file:
      * <pre>
      *     Path path = ...

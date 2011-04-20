@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,7 +51,6 @@ import java.util.Vector;
 import java.util.Hashtable;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import sun.misc.BootClassLoaderHook;
 import sun.misc.ClassFileTransformer;
 import sun.misc.CompoundEnumeration;
 import sun.misc.Resource;
@@ -1300,7 +1299,6 @@ public abstract class ClassLoader {
      * Find resources from the VM's built-in classloader.
      */
     private static URL getBootstrapResource(String name) {
-        BootClassLoaderHook.preLoadResource(name);
         URLClassPath ucp = getBootstrapClassPath();
         Resource res = ucp.getResource(name);
         return res != null ? res.getURL() : null;
@@ -1628,20 +1626,28 @@ public abstract class ClassLoader {
      * @since  1.2
      */
     protected Package getPackage(String name) {
+        Package pkg;
         synchronized (packages) {
-            Package pkg = packages.get(name);
-            if (pkg == null) {
-                if (parent != null) {
-                    pkg = parent.getPackage(name);
-                } else {
-                    pkg = Package.getSystemPackage(name);
-                }
-                if (pkg != null) {
-                    packages.put(name, pkg);
+            pkg = packages.get(name);
+        }
+        if (pkg == null) {
+            if (parent != null) {
+                pkg = parent.getPackage(name);
+            } else {
+                pkg = Package.getSystemPackage(name);
+            }
+            if (pkg != null) {
+                synchronized (packages) {
+                    Package pkg2 = packages.get(name);
+                    if (pkg2 == null) {
+                        packages.put(name, pkg);
+                    } else {
+                        pkg = pkg2;
+                    }
                 }
             }
-            return pkg;
         }
+        return pkg;
     }
 
     /**
@@ -1814,7 +1820,6 @@ public abstract class ClassLoader {
     // Invoked in the java.lang.Runtime class to implement load and loadLibrary.
     static void loadLibrary(Class fromClass, String name,
                             boolean isAbsolute) {
-        BootClassLoaderHook.preLoadLibrary(name);
         ClassLoader loader =
             (fromClass == null) ? null : fromClass.getClassLoader();
         if (sys_paths == null) {

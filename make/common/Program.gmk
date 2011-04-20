@@ -83,7 +83,7 @@ ifneq (,$(findstring $(PLATFORM), linux solaris))	# UNIX systems
 	endif
     endif
     ifeq ($(PLATFORM), linux)
-	LDFLAGS += -Wl,-z -Wl,origin
+	LDFLAGS += $(LDFLAG_Z_ORIGIN)
 	LDFLAGS += -Wl,--allow-shlib-undefined
 	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../lib/$(LIBARCH)/jli
 	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../jre/lib/$(LIBARCH)/jli
@@ -186,7 +186,6 @@ $(ACTUAL_PROGRAM):: $(FILES_o)
 	$(LINK_PRE_CMD) $(CC) $(CC_OBJECT_OUTPUT_FLAG)$@ $(LDFLAGS) \
 	    $(FILES_o) $(THREADLIBS) $(LDLIBS)
 	@$(call binary_file_verification,$@)
-	$(install-module-file)
 
 endif # PLATFORM
 

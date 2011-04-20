@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -116,6 +116,36 @@ endif
 include $(JDK_TOPDIR)/make/common/Defs-$(PLATFORM).gmk
 
 #
+# Cross-compilation Settings
+#
+ifdef CROSS_COMPILE_ARCH
+  # Can't run the tools we just built
+  USE_ONLY_BOOTDIR_TOOLS = true
+
+  # When cross-compiling CC generates code for the target, but
+  # some parts of the build generate C code that has to be compiled
+  # and executed on the build host - HOST_CC is the 'local' compiler.
+  # For linux the default is /usr/bin/gcc; other platforms need to
+  # set it explicitly
+  ifeq ($(PLATFORM), linux)
+    ifndef HOST_CC
+      HOST_CC = $(USRBIN_PATH)gcc
+    endif
+  endif
+else
+  # Must set HOST_CC if not already set
+  ifndef HOST_CC
+    HOST_CC = $(CC)
+  endif
+endif
+
+# Reset the VM name for client-only builds
+ifdef BUILD_CLIENT_ONLY
+  VM_NAME = client
+endif
+
+
+#
 # Freetype logic is applicable to OpenJDK only
 #
 ifdef OPENJDK
@@ -224,9 +254,6 @@ INCLUDEDIR          = $(OUTPUTDIR)/include
 # for generated class files
 CLASSBINDIR         = $(OUTPUTDIR)/classes
 DEMOCLASSDIR        = $(OUTPUTDIR)/democlasses
-# for modules
-MODULES_DIR         = $(OUTPUTDIR)/modules
-ABS_MODULES_DIR     = $(ABS_OUTPUTDIR)/modules
 # for generated tool class files
 BUILDTOOLCLASSDIR   = $(OUTPUTDIR)/btclasses
 # for build tool jar files
@@ -297,22 +324,6 @@ ifneq ($(LIBRARY),)
   endif
 endif
 
-#
-# Build units may or may not define MODULE.  Default to "other".
-#
-# MODULE variable defines the lowest-level module name that
-# might or might not be the name of the modules created in
-# the modules build (see make/modules/modules.config and
-# modules.group).
-#
-MODULES_TEMPDIR     = $(OUTPUTDIR)/tmp/modules
-ABS_MODULES_TEMPDIR = $(ABS_OUTPUTDIR)/tmp/modules
-
-ifndef MODULE
-  MODULE = other
-endif
-override MODULE_DEST_DIR = $(MODULES_TEMPDIR)/$(MODULE)
-
 # the use of += above makes a space separated list which we need to 
 # remove for filespecs.
 #
@@ -353,8 +364,7 @@ endif
 
 INCLUDES = -I. -I$(CLASSHDRDIR) \
 	$(patsubst %,-I%,$(subst $(CLASSPATH_SEPARATOR), ,$(VPATH.h))) $(OTHER_INCLUDES)
-OTHER_CPPFLAGS = $(INCLUDES)
-
+OTHER_CPPFLAGS += $(INCLUDES)
 
 #
 # vpaths.  These are the default locations searched for source files.
@@ -422,52 +432,13 @@ PKGDIR		= $(subst .,/,$(PACKAGE))
 #
 include $(JDK_MAKE_SHARED_DIR)/Defs-java.gmk
 
-#
-# Macros to find the module that $@ belongs to
-#
-
 UNIQUE_PATH_PATTERN = $(subst /,.,$(UNIQUE_PATH))
-MODULE_PATH_PATTERN = -e 's%.*\/classes\/%classes\/%' \
-		      -e 's%.*\/$(UNIQUE_PATH_PATTERN)\/%classes\/%' \
-		      -e 's%.*\/lib\/%lib\/%' \
-	              -e 's%.*\/bin\/%bin\/%' \
-	              -e 's%.*\/include\/%include\/%' \
-		      -e 's%.*\/demo\/%demo\/%' \
-		      -e 's%.*\/sample\/%sample\/%'
-
-# Install a file to its module
-define install-module-file
-dest=`echo $(@D)/ | $(SED) $(MODULE_PATH_PATTERN)` ; \
-$(MKDIR) -p $(MODULE_DEST_DIR)/$$dest; \
-$(CP) -f $@ $(MODULE_DEST_DIR)/$$dest
-endef
-
-# Install all files from the directory to its module
-define install-module-dir
-dest=`echo $(@D)/ | $(SED) $(MODULE_PATH_PATTERN)` ; \
-$(MKDIR) -p $(MODULE_DEST_DIR)/$$dest; \
-$(CP) -rf $(@D)/* $(MODULE_DEST_DIR)/$$dest
-endef
-
-# chmod the file in its module
-define chmod-module-file
-dest=`echo $@ | $(SED) $(MODULE_PATH_PATTERN)` ; \
-$(CHMOD) $1 $(MODULE_DEST_DIR)/$$dest
-endef
-
-# install a sym link in its module
-define install-module-sym-link
-dest=`echo $@ | $(SED) $(MODULE_PATH_PATTERN)` ; \
-$(LN) -sf $1 $(MODULE_DEST_DIR)/$$dest
-endef
-
 
 # Run MAKE $@ for a launcher:
 #   $(call make-launcher, name, mainclass, java-args, main-args)
 define make-launcher
 $(CD) $(BUILDDIR)/launchers && \
 $(MAKE) -f Makefile.launcher \
-        MODULE=$(MODULE) \
         PROGRAM=$(strip $1) \
         MAIN_CLASS=$(strip $2) \
         MAIN_JAVA_ARGS="$(strip $3)" \
@@ -488,28 +459,18 @@ endef
 define install-file
 $(prep-target)
 $(CP) $< $@
-@$(install-module-file)
 endef
 
 define chmod-file
 $(CHMOD) $1 $@
-@$(call chmod-module-file, $1)
 endef
 
 define install-sym-link
 $(LN) -s $1 $@
-@$(call install-module-sym-link, $1)
-endef
-
-#
-# Marcos for files not belonging to any module 
-define install-non-module-file
-$(prep-target)
-$(CP) $< $@
 endef
 
 define install-manifest-file
-$(install-non-module-file)
+$(install-file)
 endef
 
 # Cleanup rule for after debug java run (hotspot.log file is left around)
@@ -534,9 +495,11 @@ CXXFLAGS_$(VARIANT)/BYFILE  = $(CXXFLAGS_$(VARIANT)/$(@F)) \
 #
 # Tool flags
 #
+# EXTRA_CFLAGS are used to define cross-compilation options
+#
 ASFLAGS         = $(ASFLAGS_$(VARIANT)) $(ASFLAGS_COMMON) $(OTHER_ASFLAGS)
-CFLAGS          = $(CFLAGS_$(VARIANT)/BYFILE)   $(CFLAGS_COMMON) $(OTHER_CFLAGS)
-CXXFLAGS        = $(CXXFLAGS_$(VARIANT)/BYFILE) $(CXXFLAGS_COMMON) $(OTHER_CXXFLAGS)
+CFLAGS          = $(CFLAGS_$(VARIANT)/BYFILE)   $(CFLAGS_COMMON) $(OTHER_CFLAGS) $(EXTRA_CFLAGS)
+CXXFLAGS        = $(CXXFLAGS_$(VARIANT)/BYFILE) $(CXXFLAGS_COMMON) $(OTHER_CXXFLAGS) $(EXTRA_CFLAGS)
 CPPFLAGS        = $(CPPFLAGS_$(VARIANT)) $(CPPFLAGS_COMMON) $(OTHER_CPPFLAGS) \
 		  $(DEFINES) $(OPTIONS:%=-D%)
 LDFLAGS         = $(LDFLAGS_$(VARIANT)) $(LDFLAGS_COMMON) $(OTHER_LDFLAGS)
@@ -554,6 +517,10 @@ ifdef ALT_COPYRIGHT_YEAR
   COPYRIGHT_YEAR = $(ALT_COPYRIGHT_YEAR)
 else
   COPYRIGHT_YEAR := $(shell $(DATE) '+%Y')
+endif
+
+ifndef OPENJDK
+include $(JDK_TOPDIR)/make/closed/common/Defs.gmk
 endif
 
 # Install of imported file (JDK_IMPORT_PATH, or some other external location)
@@ -577,7 +544,6 @@ endef
 
 define install-import-file
 $(install-importonly-file)
-@$(install-module-file)
 endef
 
 .PHONY: all build clean clobber

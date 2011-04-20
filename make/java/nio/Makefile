@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@
 #
 
 BUILDDIR = ../..
-MODULE  = nio
 PACKAGE = java.nio
 LIBRARY = nio
 PRODUCT = java
@@ -304,11 +303,7 @@ endif # PLATFORM
 # Rules
 #
 
-SUBDIRS_management = mxbean
-include $(BUILDDIR)/common/Subdirs.gmk
-
 build: sources
-	$(SUBDIRS-loop)
 
 clean clobber::
 	$(RM) -r $(NIO_GEN) $(SNIO_GEN)
@@ -821,11 +816,11 @@ SOR_COPYRIGHT_YEARS = $(shell $(CAT) $(GENSOR_SRC) | \
 	$(NAWK) '/^.*Copyright.*Oracle/ { printf "%s %s",$$4,$$5 }') 
 
 $(TEMPDIR)/$(GENSOR_SRC) : $(GENSOR_SRC)
-	$(install-non-module-file)
+	$(install-file)
 
 $(GENSOR_EXE) : $(TEMPDIR)/$(GENSOR_SRC)
 	$(prep-target)
-	($(CD) $(TEMPDIR); $(CC) $(CPPFLAGS) $(LDDFLAGS) \
+	($(CD) $(TEMPDIR); $(HOST_CC) $(CPPFLAGS) $(LDDFLAGS) \
 	   -o genSocketOptionRegistry$(EXE_SUFFIX) $(GENSOR_SRC))
 
 $(SCH_GEN)/SocketOptionRegistry.java: $(GENSOR_EXE)
@@ -856,7 +851,7 @@ GENUC_COPYRIGHT_YEARS = $(shell $(CAT) $(GENUC_SRC) | \
 
 $(GENUC_EXE) : $(GENUC_SRC)
 	$(prep-target)
-	$(CC) $(CPPFLAGS) -o $@ $(GENUC_SRC)
+	$(HOST_CC) $(CPPFLAGS) -o $@ $(GENUC_SRC)
 
 $(SFS_GEN)/UnixConstants.java: $(GENUC_EXE)
 	$(prep-target)
@@ -872,7 +867,7 @@ GENSC_COPYRIGHT_YEARS = $(shell $(CAT) $(GENSC_SRC) | \
 
 $(GENSC_EXE) : $(GENSC_SRC)
 	$(prep-target)
-	$(CC) $(CPPFLAGS) -o $@ $(GENSC_SRC)
+	$(HOST_CC) $(CPPFLAGS) -o $@ $(GENSC_SRC)
 
 $(SFS_GEN)/SolarisConstants.java: $(GENSC_EXE)
 	$(prep-target)

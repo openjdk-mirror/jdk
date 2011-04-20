@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,7 +37,6 @@ import java.util.jar.*;
 import sun.security.pkcs.*;
 import sun.security.timestamp.TimestampToken;
 import sun.misc.BASE64Decoder;
-import sun.misc.SharedSecrets;
 
 import sun.security.jca.Providers;
 
@@ -181,7 +180,8 @@ public class SignatureFileVerifier {
      *
      *
      */
-    public void process(Hashtable<String, CodeSigner[]> signers)
+    public void process(Hashtable<String, CodeSigner[]> signers,
+            List manifestDigests)
         throws IOException, SignatureException, NoSuchAlgorithmException,
             JarException, CertificateException
     {
@@ -190,14 +190,15 @@ public class SignatureFileVerifier {
         Object obj = null;
         try {
             obj = Providers.startJarVerification();
-            processImpl(signers);
+            processImpl(signers, manifestDigests);
         } finally {
             Providers.stopJarVerification(obj);
         }
 
     }
 
-    private void processImpl(Hashtable<String, CodeSigner[]> signers)
+    private void processImpl(Hashtable<String, CodeSigner[]> signers,
+            List manifestDigests)
         throws IOException, SignatureException, NoSuchAlgorithmException,
             JarException, CertificateException
     {
@@ -232,7 +233,7 @@ public class SignatureFileVerifier {
                                 sf.getEntries().entrySet().iterator();
 
         // see if we can verify the whole manifest first
-        boolean manifestSigned = verifyManifestHash(sf, md, decoder);
+        boolean manifestSigned = verifyManifestHash(sf, md, decoder, manifestDigests);
 
         // verify manifest main attributes
         if (!manifestSigned && !verifyManifestMainAttrs(sf, md, decoder)) {
@@ -275,7 +276,8 @@ public class SignatureFileVerifier {
      */
     private boolean verifyManifestHash(Manifest sf,
                                        ManifestDigester md,
-                                       BASE64Decoder decoder)
+                                       BASE64Decoder decoder,
+                                       List manifestDigests)
          throws IOException
     {
         Attributes mattr = sf.getMainAttributes();
@@ -290,6 +292,8 @@ public class SignatureFileVerifier {
                 // 16 is length of "-Digest-Manifest"
                 String algorithm = key.substring(0, key.length()-16);
 
+                manifestDigests.add(key);
+                manifestDigests.add(se.getValue());
                 MessageDigest digest = getDigest(algorithm);
                 if (digest != null) {
                     byte[] computedHash = md.manifestDigest(digest);
@@ -481,12 +485,7 @@ public class SignatureFileVerifier {
                 signers = new ArrayList<CodeSigner>();
             }
             // Append the new code signer
-            CodeSigner signer = new CodeSigner(certChain, getTimestamp(info));
-            if (block.getCRLs() != null) {
-                SharedSecrets.getJavaSecurityCodeSignerAccess().setCRLs(
-                        signer, block.getCRLs());
-            }
-            signers.add(signer);
+            signers.add(new CodeSigner(certChain, getTimestamp(info)));
 
             if (debug != null) {
                 debug.println("Signature Block Certificate: " +
