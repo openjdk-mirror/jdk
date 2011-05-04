@@ -1,5 +1,6 @@
 #
 # Copyright (c) 2007, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright 2011 Red Hat, Inc.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -25,7 +26,7 @@
 
 BUILDDIR = ../../..
 PACKAGE = sun.java2d.cmm.lcms
-LIBRARY = lcms
+LIBRARY = javalcms
 PRODUCT = sun
 
 include $(BUILDDIR)/common/Defs.gmk
@@ -93,8 +94,9 @@ res.clean:
 	$(RM) $(OBJDIR)/cmm.h
 
 else
-OTHER_LDLIBS = $(LIBM) -lawt -L$(LIBDIR)/$(LIBARCH)/xawt 
+OTHER_LDLIBS = $(LIBM) -lawt -L$(LIBDIR)/$(LIBARCH)/xawt $(LCMS_LIBS)
 CPPFLAGS += -I$(SHARE_SRC)/native/sun/java2d \
-            -I$(SHARE_SRC)/native/sun/awt/debug
+            -I$(SHARE_SRC)/native/sun/awt/debug \
+	    $(LCMS_CFLAGS)
 endif
 
