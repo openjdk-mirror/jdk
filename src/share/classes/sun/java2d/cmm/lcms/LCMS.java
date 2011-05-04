@@ -93,7 +93,7 @@ public class LCMS implements PCMM {
                      * disposer frameworks
                      */
                     System.loadLibrary("awt");
-                    System.loadLibrary("lcms");
+                    System.loadLibrary("javalcms");
                     return null;
                 }
             }
