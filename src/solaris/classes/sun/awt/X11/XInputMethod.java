@@ -108,10 +108,8 @@ public class XInputMethod extends X11InputMethod {
             client = getParent(client);
             peer = (XComponentPeer)XToolkit.targetToPeer(client);
         }
-        if (log.isLoggable(PlatformLogger.FINE)) {
-            log.fine("Peer is {0}, client is {1}",
-                     String.valueOf(peer), String.valueOf(client));
-        }
+        log.fine("Peer is {0}, client is {1}", peer, client);
+
         if (peer != null)
             return peer;
 

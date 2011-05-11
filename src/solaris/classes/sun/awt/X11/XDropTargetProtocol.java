@@ -117,7 +117,7 @@ abstract class XDropTargetProtocol {
         EmbedderRegistryEntry entry = getEmbedderRegistryEntry(toplevel);
 
         if (logger.isLoggable(PlatformLogger.FINEST)) {
-            logger.finest("        entry={0}", String.valueOf(entry));
+            logger.finest("        entry={0}", entry);
         }
         // Window not registered as an embedder for this protocol.
         if (entry == null) {
@@ -138,8 +138,7 @@ abstract class XDropTargetProtocol {
         long proxy = entry.getProxy();
 
         if (logger.isLoggable(PlatformLogger.FINEST)) {
-            logger.finest("        proxy={0} toplevel={1}", String.valueOf(proxy),
-                          String.valueOf(toplevel));
+            logger.finest("        proxy={0} toplevel={1}", proxy, toplevel);
         }
         if (proxy == 0) {
             proxy = toplevel;
