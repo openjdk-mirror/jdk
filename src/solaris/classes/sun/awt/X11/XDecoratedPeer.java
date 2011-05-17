@@ -721,7 +721,7 @@ abstract class XDecoratedPeer extends XWindowPeer {
             // Location, Client size + insets
             newLocation = new Point(xe.get_x() - currentInsets.left, xe.get_y() - currentInsets.top);
         } else {
-            // CDE/MWM/Metacity/Sawfish bug: if shell is resized using
+            // CDE/MWM/Metacity/Sawfish/Mutter bug: if shell is resized using
             // top or left border, we don't receive synthetic
             // ConfigureNotify, only the one from X with zero
             // coordinates.  This is the workaround to get real
@@ -731,6 +731,7 @@ abstract class XDecoratedPeer extends XWindowPeer {
                 case XWM.MOTIF_WM:
                 case XWM.METACITY_WM:
                 case XWM.SAWFISH_WM:
+                case XWM.MUTTER_WM:
                 {
                     Point xlocation = queryXLocation();
                     if (log.isLoggable(PlatformLogger.FINE)) log.fine("New X location: {0}", xlocation);
