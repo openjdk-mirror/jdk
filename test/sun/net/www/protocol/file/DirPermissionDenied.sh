@@ -37,5 +37,6 @@ chmod 333 ${TESTDIR}
 
 $TESTJAVA/bin/java -classpath $TESTCLASSES DirPermissionDenied ${TESTDIR}
 result=$?
+chmod u+r ${TESTDIR}
 rm -rf ${TESTDIR}
 exit $result
