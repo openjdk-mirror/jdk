@@ -39,6 +39,15 @@ public class PrintAllXcheckJNI
         Frame frame = new Frame();
         frame.setVisible(true);
 
+        // wait until frame is really displayed
+        while (frame.getWidth() == 0 || frame.getHeight() == 0) {
+            System.out.println("Still not displayed...");
+            try {
+                Thread.currentThread().sleep(1);
+            }
+            catch (InterruptedException ie) {}
+        }
+
         BufferedImage img = new BufferedImage(frame.getWidth(),
                                               frame.getHeight(),
                                               BufferedImage.TYPE_INT_RGB);
