@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2010 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -120,9 +120,9 @@ public class CommandLineTests {
             // make a backup copy for re-use
             File bakFile = new File(f.getName() + ".bak");
             if (!bakFile.exists()) {  // backup
-                Utils.copyFile(f.getAbsoluteFile(), bakFile.getAbsoluteFile());
+                Utils.copyFile(f, bakFile);
             } else {  // restore
-                Utils.copyFile(bakFile.getAbsoluteFile(), f.getAbsoluteFile());
+                Utils.copyFile(bakFile, f);
             }
             cmdsList.clear();
             cmdsList.add(Utils.getPack200Cmd());

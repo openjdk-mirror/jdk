@@ -1,6 +1,6 @@
 ###########################################################################
 #
-# Copyright (c) 2009, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2009, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -195,6 +195,9 @@ java/beans/XMLEncoder/6329581/Test6329581.java		 	generic-all
 
 # jdk_lang
 
+# requires junit
+java/lang/invoke/InvokeDynamicPrintArgs.java                    generic-all
+
 # Times out on solaris 10 sparc
 java/lang/ClassLoader/Assert.java				generic-all
 
@@ -287,12 +290,6 @@ javax/management/monitor/AttributeArbitraryDataTypeTest.java	generic-all
 ############################################################################
 
 # jdk_math
-
-# Problems with rounding add failures on solaris-sparcv9 and -server
-java/math/BigDecimal/AddTests.java			 	solaris-sparcv9
-
-# Should be samevm? But seems problematic with samevm on windows
-java/math/BigInteger/ModPow65537.java			 	generic-all
 
 ############################################################################
 
@@ -689,6 +686,9 @@ sun/tools/jconsole/ResourceCheckTest.sh				generic-all
 ############################################################################
 
 # jdk_util
+
+# Filed 7027061
+java/util/Locale/Bug6989440.java				windows-all
 
 # Filed 6933803
 java/util/concurrent/ThreadPoolExecutor/CoreThreadTimeOut.java	generic-all

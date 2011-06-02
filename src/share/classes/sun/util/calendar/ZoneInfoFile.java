@@ -486,7 +486,7 @@ public class ZoneInfoFile {
                     String otherDir = getZoneInfoDir(homeDir);
                     if (otherDir != null)
                         zi = otherDir;
-                    zi = FileSystems.getDefault().getPath(zi).toRealPath(true).toString();
+                    zi = FileSystems.getDefault().getPath(zi).toRealPath().toString();
                 } catch(Exception e) {
                 }
                 return zi;

@@ -38,7 +38,7 @@ THIS_JDK_VERSION := $(JDK_MAJOR_VERSION).$(JDK_MINOR_VERSION).$(JDK_MICRO_VERSIO
 
 IMAGE_BINDIR = bin
 
-# The compiler should not issue a "Sun Propietary" warning when compiling
+# The compiler should not issue a "Proprietary" warning when compiling
 # classes in the com.sun.java.swing.plaf packages, since we've always
 # allowed, and even advocated, extending them (see bug 6476749).
 #
@@ -85,8 +85,8 @@ ifdef OPENJDK
 else
   # make/closed/common/Defs.gmk for closed location of SHARE_JDK_DOC_SRC
 
-  IMAGE_DOCLIST_JDK = COPYRIGHT README.html  THIRDPARTYLICENSEREADME.txt
-  IMAGE_DOCLIST_JRE = COPYRIGHT Welcome.html THIRDPARTYLICENSEREADME.txt
+  IMAGE_DOCLIST_JDK = COPYRIGHT README.html  LICENSE THIRDPARTYLICENSEREADME.txt
+  IMAGE_DOCLIST_JRE = COPYRIGHT Welcome.html LICENSE THIRDPARTYLICENSEREADME.txt
   ifeq ($(PLATFORM), windows)
     IMAGE_DOCLIST_JRE += README.txt
   else
@@ -164,7 +164,7 @@ endif # solaris
 ifeq ($(PLATFORM), linux)
   MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
   MAN1SUBDIR=man
-  JA_DIRNAME=ja_JP.$(JA_SOURCE_ENCODING)
+  JA_DIRNAME=ja_JP.UTF-8
 endif # linux
 
 define copy-man-pages
@@ -190,10 +190,19 @@ for manbase in $(MANBASEDIRS:%=%/$(MAN1SUBDIR)) ; do \
 done
 $(java-vm-cleanup)
 if [ "$(JA_DIRNAME)" != "" ] ; then \
-  $(MV) $1/man/ja $1/man/$(JA_DIRNAME); \
-  $(CD) $1/man && $(LN) -s $(JA_DIRNAME) ja; \
+  $(CD) $1/man && $(RM) ja && $(LN) -s $(JA_DIRNAME) ja; \
 fi
 endef
+
+
+# no compression unless requested
+ifndef COMPRESS_JARS
+  CREATE_JAR_OPTS = c0mf
+  CREATE_JAR_OPTS_NOMANIFEST = c0f
+else
+  CREATE_JAR_OPTS = cmf
+  CREATE_JAR_OPTS_NOMANIFEST = cf
+endif
 
 #
 # Targets.
@@ -222,7 +231,7 @@ images:: sanity-images post-sanity-images  \
 	 $(INITIAL_IMAGE_JRE) $(INITIAL_IMAGE_JDK) \
 	 trim-image-jre trim-image-jdk \
          identify-image-jre identify-image-jdk \
-	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files
+	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files 
 
 # Don't use these
 image-jre:: initial-image-jre trim-image-jre identify-image-jre process-image-jre
@@ -599,8 +608,8 @@ $(RT_JAR_FILELIST) + $(RES_JAR_FILELIST): \
 	@$(java-vm-cleanup)
 
 # Create the manifest file.
-JAR_MANIFEST_FILE=$(ABS_TEMPDIR)/manifest.tmp
-$(JAR_MANIFEST_FILE): $(MAINMANIFEST) $(BEANMANIFEST)
+RT_JAR_MANIFEST_FILE=$(ABS_TEMPDIR)/rt_manifest.tmp
+$(RT_JAR_MANIFEST_FILE): $(MAINMANIFEST) $(BEANMANIFEST)
 	$(prep-target)
 	$(SED) -e "s#@@RELEASE@@#$(RELEASE)#" 		\
 	       -e "s#@@COMPANY_NAME@@#$(COMPANY_NAME)#" \
@@ -608,21 +617,28 @@ $(JAR_MANIFEST_FILE): $(MAINMANIFEST) $(BEANMANIFEST)
 	$(ECHO) >> $@
 	$(CAT) $(BEANMANIFEST) >> $@
 
+OTHER_JAR_MANIFEST_FILE=$(ABS_TEMPDIR)/other_manifest.tmp
+$(OTHER_JAR_MANIFEST_FILE): $(MAINMANIFEST)
+	$(prep-target)
+	$(SED) -e "s#@@RELEASE@@#$(RELEASE)#" 		\
+	       -e "s#@@COMPANY_NAME@@#$(COMPANY_NAME)#" \
+	       $(MAINMANIFEST) >> $@
+
 # Create resources.jar containing non-class files
 RESOURCES_JAR=$(ABS_TEMPDIR)/resources-orig.jar
-$(RESOURCES_JAR): $(RES_JAR_FILELIST) $(JAR_MANIFEST_FILE)
+$(RESOURCES_JAR): $(RES_JAR_FILELIST) $(OTHER_JAR_MANIFEST_FILE)
 	$(prep-target)
 	$(CD) $(CLASSBINDIR) && \
-	    $(BOOT_JAR_CMD) c0mf $(JAR_MANIFEST_FILE) $@ \
+	    $(BOOT_JAR_CMD) $(CREATE_JAR_OPTS) $(OTHER_JAR_MANIFEST_FILE) $@ \
 	        @$(RES_JAR_FILELIST) $(BOOT_JAR_JFLAGS)
 	@$(CD) $(CLASSBINDIR) && $(java-vm-cleanup)
 
 # Create jsse.jar containing SunJSSE implementation classes
 JSSE_JAR=$(ABS_TEMPDIR)/jsse-orig.jar
-$(JSSE_JAR): $(JAR_MANIFEST_FILE)
+$(JSSE_JAR): $(OTHER_JAR_MANIFEST_FILE)
 	$(prep-target)
 	$(CD) $(CLASSBINDIR) && \
-	    $(BOOT_JAR_CMD) c0mf $(JAR_MANIFEST_FILE) $@ \
+	    $(BOOT_JAR_CMD) $(CREATE_JAR_OPTS) $(OTHER_JAR_MANIFEST_FILE) $@ \
 		$(JSSE_CLASSES_DIRS) $(BOOT_JAR_JFLAGS)
 	@$(CD) $(CLASSBINDIR) && $(java-vm-cleanup)
 
@@ -666,16 +682,20 @@ endif
 
 # Create rt.jar
 RT_JAR=$(ABS_TEMPDIR)/rt-orig.jar
-$(RT_JAR): $(RT_JAR_FILELIST) $(JAR_MANIFEST_FILE)
+$(RT_JAR): $(RT_JAR_FILELIST) $(RT_JAR_MANIFEST_FILE)
 	$(prep-target)
 	$(CD) $(CLASSBINDIR) && \
-	    $(BOOT_JAR_CMD) c0mf $(JAR_MANIFEST_FILE) $@ \
+	    $(BOOT_JAR_CMD) $(CREATE_JAR_OPTS) $(RT_JAR_MANIFEST_FILE) $@ \
 	        @$(RT_JAR_FILELIST) $(BOOT_JAR_JFLAGS)
 	@$(CD) $(CLASSBINDIR) && $(java-vm-cleanup)
 
 # Meta-index construction to make core class loaders lazier
 
 BUILDMETAINDEX_JARFILE = $(ABS_BUILDTOOLJARDIR)/buildmetaindex.jar
+
+# SE-Embedded targets if enabled
+include $(JDK_TOPDIR)/make/common/Release-embedded.gmk
+
 
 ######################################################
 # JRE Image
@@ -871,12 +891,18 @@ else
 ABS_DB_PATH  :=$(call FullPath,$(CLOSED_SHARE_SRC)/db)
 DB_ZIP_LIST = $(shell $(LS) $(ABS_DB_PATH)/*.zip 2>/dev/null)
 
+# Java DB image. Move the Java DB demo directory into the JDK's demo
+# dir and in the process, rename it to db.  Also remove index.html,
+# since it presumes docs are co-located. Also remove register.html (no
+# longer relevant).
 initial-image-jdk-db: $(DB_ZIP_LIST)
 	$(MKDIR) -p $(JDK_IMAGE_DIR)/db
 	for d in $(DB_ZIP_LIST); do \
           ($(CD) $(JDK_IMAGE_DIR)/db && $(UNZIP) -o $$d); \
 	done
-
+	$(RM) -rf $(DEMODIR)/db
+	$(MV) $(JDK_IMAGE_DIR)/db/demo $(DEMODIR)/db
+	$(RM) $(JDK_IMAGE_DIR)/db/index.html $(JDK_IMAGE_DIR)/db/register.html
 endif
 
 # Standard jdk image
@@ -924,7 +950,7 @@ initial-image-jdk:: initial-image-jdk-setup \
 	@# lib/tools.jar
 	@#
 	$(CD) $(CLASSBINDIR) && \
-	    $(BOOT_JAR_CMD) c0f $(ABS_LIBDIR)/tools.jar \
+	    $(BOOT_JAR_CMD) $(CREATE_JAR_OPTS_NOMANIFEST) $(ABS_LIBDIR)/tools.jar \
 	        $(TOOLS) $(BOOT_JAR_JFLAGS)
 	@$(CD) $(CLASSBINDIR) && $(java-vm-cleanup)
 	$(CP) $(LIBDIR)/tools.jar $(JDK_IMAGE_DIR)/lib/tools.jar
@@ -937,7 +963,7 @@ initial-image-jdk:: initial-image-jdk-setup \
 	    -Acom.sun.tools.javac.sym.Jar=$(RT_JAR) \
 	    -Acom.sun.tools.javac.sym.Dest=$(OUTPUTDIR)/symbols/META-INF/sym/rt.jar \
 	    $(CORE_PKGS) $(NON_CORE_PKGS) $(EXCLUDE_PROPWARN_PKGS) $(EXPORTED_PRIVATE_PKGS)
-	$(BOOT_JAR_CMD) c0f $(LIBDIR)/ct.sym \
+	$(BOOT_JAR_CMD) $(CREATE_JAR_OPTS_NOMANIFEST) $(LIBDIR)/ct.sym \
 	    -C $(OUTPUTDIR)/symbols META-INF $(BOOT_JAR_JFLAGS)
 	@$(java-vm-cleanup)
 	$(CP) $(LIBDIR)/ct.sym $(JDK_IMAGE_DIR)/lib/ct.sym
@@ -1097,6 +1123,10 @@ endef
 MINIMUM_OS_NAME    := $(REQUIRED_OS_NAME)
 MINIMUM_OS_VERSION := $(REQUIRED_OS_VERSION)
 MINIMUM_OS_ARCH    := $(ARCH)
+ALL_SOURCE_TIPS     = $(shell \
+  if [ -f $(SOURCE_TIPS) ] ; then \
+    $(CAT) $(SOURCE_TIPS) ; \
+  fi)
 
 $(JDK_INFO_FILE): FRC
 	$(prep-target)
@@ -1104,6 +1134,7 @@ $(JDK_INFO_FILE): FRC
 	$(call info-file-item, "OS_NAME",      "$(MINIMUM_OS_NAME)")
 	$(call info-file-item, "OS_VERSION",   "$(MINIMUM_OS_VERSION)")
 	$(call info-file-item, "OS_ARCH",      "$(MINIMUM_OS_ARCH)")
+	$(call info-file-item, "SOURCE",       "$(ALL_SOURCE_TIPS)")
 
 # Create release file to identify this image
 identify-image-jdk:: $(JDK_INFO_FILE)
@@ -1114,6 +1145,7 @@ $(JRE_INFO_FILE): FRC
 	$(call info-file-item, "OS_NAME",      "$(MINIMUM_OS_NAME)")
 	$(call info-file-item, "OS_VERSION",   "$(MINIMUM_OS_VERSION)")
 	$(call info-file-item, "OS_ARCH",      "$(MINIMUM_OS_ARCH)")
+	$(call info-file-item, "SOURCE",       "$(ALL_SOURCE_TIPS)")
 
 # Create release file to identify this image
 identify-image-jre:: $(JRE_INFO_FILE)

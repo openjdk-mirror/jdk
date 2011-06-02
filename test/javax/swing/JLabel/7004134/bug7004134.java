@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,7 +52,13 @@ public class bug7004134 {
                 frame.add(label);
                 frame.pack();
                 frame.setVisible(true);
+            }
+        });
 
+        ((SunToolkit) SunToolkit.getDefaultToolkit()).realSync();
+
+        SwingUtilities.invokeAndWait(new Runnable() {
+            public void run() {
                 ToolTipManager toolTipManager = ToolTipManager.sharedInstance();
 
                 toolTipManager.setInitialDelay(0);
@@ -83,7 +89,13 @@ public class bug7004134 {
                             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                             frame.pack();
                             frame.setVisible(true);
+                        }
+                    });
 
+                    ((SunToolkit) SunToolkit.getDefaultToolkit()).realSync();
+
+                    SwingUtilities.invokeAndWait(new Runnable() {
+                        public void run() {
                             ToolTipManager toolTipManager = ToolTipManager.sharedInstance();
 
                             toolTipManager.setInitialDelay(0);

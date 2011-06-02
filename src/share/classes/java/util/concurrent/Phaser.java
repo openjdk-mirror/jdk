@@ -30,7 +30,7 @@
  *
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
- * http://creativecommons.org/licenses/publicdomain
+ * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
 package java.util.concurrent;
@@ -159,7 +159,7 @@ import java.util.concurrent.locks.LockSupport;
  * void runTasks(List<Runnable> tasks) {
  *   final Phaser phaser = new Phaser(1); // "1" to register self
  *   // create and start threads
- *   for (Runnable task : tasks) {
+ *   for (final Runnable task : tasks) {
  *     phaser.register();
  *     new Thread() {
  *       public void run() {

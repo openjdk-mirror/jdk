@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 package java.io;
 
-import java.beans.ConstructorProperties;
 import java.net.URI;
 import java.net.URL;
 import java.net.MalformedURLException;
@@ -247,7 +246,6 @@ public class File
      * @throws  NullPointerException
      *          If the <code>pathname</code> argument is <code>null</code>
      */
-    @ConstructorProperties("path")
     public File(String pathname) {
         if (pathname == null) {
             throw new NullPointerException();

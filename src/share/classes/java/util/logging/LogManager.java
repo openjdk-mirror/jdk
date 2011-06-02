@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -342,12 +342,35 @@ public class LogManager {
     // already been created with the given name it is returned.
     // Otherwise a new logger instance is created and registered
     // in the LogManager global namespace.
+
+    // This method will always return a non-null Logger object.
+    // Synchronization is not required here. All synchronization for
+    // adding a new Logger object is handled by addLogger().
     Logger demandLogger(String name) {
         Logger result = getLogger(name);
         if (result == null) {
-            result = new Logger(name, null);
-            addLogger(result);
-            result = getLogger(name);
+            // only allocate the new logger once
+            Logger newLogger = new Logger(name, null);
+            do {
+                if (addLogger(newLogger)) {
+                    // We successfully added the new Logger that we
+                    // created above so return it without refetching.
+                    return newLogger;
+                }
+
+                // We didn't add the new Logger that we created above
+                // because another thread added a Logger with the same
+                // name after our null check above and before our call
+                // to addLogger(). We have to refetch the Logger because
+                // addLogger() returns a boolean instead of the Logger
+                // reference itself. However, if the thread that created
+                // the other Logger is not holding a strong reference to
+                // the other Logger, then it is possible for the other
+                // Logger to be GC'ed after we saw it in addLogger() and
+                // before we can refetch it. If it has been GC'ed then
+                // we'll just loop around and try again.
+                result = getLogger(name);
+            } while (result == null);
         }
         return result;
     }
@@ -1166,7 +1189,12 @@ public class LogManager {
     private static LoggingMXBean loggingMXBean = null;
     /**
      * String representation of the
-     * {@link javax.management.ObjectName} for {@link LoggingMXBean}.
+     * {@link javax.management.ObjectName} for the management interface
+     * for the logging facility.
+     *
+     * @see java.lang.management.PlatformLoggingMXBean
+     * @see java.util.logging.LoggingMXBean
+     *
      * @since 1.5
      */
     public final static String LOGGING_MXBEAN_NAME
@@ -1174,20 +1202,20 @@ public class LogManager {
 
     /**
      * Returns <tt>LoggingMXBean</tt> for managing loggers.
-     * An alternative way to manage loggers is using
-     * the {@link java.lang.management.ManagementFactory#getPlatformMXBeans(Class)
-     * ManagementFactory.getPlatformMXBeans} method as follows:
+     * An alternative way to manage loggers is through the
+     * {@link java.lang.management.PlatformLoggingMXBean} interface
+     * that can be obtained by calling:
      * <pre>
-     *     List&lt{@link PlatformLoggingMXBean}&gt result = ManagementFactory.getPlatformMXBeans(PlatformLoggingMXBean.class);
+     *     PlatformLoggingMXBean logging = {@link java.lang.management.ManagementFactory#getPlatformMXBean(Class)
+     *         ManagementFactory.getPlatformMXBean}(PlatformLoggingMXBean.class);
      * </pre>
      *
      * @return a {@link LoggingMXBean} object.
      *
-     * @see PlatformLoggingMXBean
-     * @see java.lang.management.ManagementFactory
+     * @see java.lang.management.PlatformLoggingMXBean
      * @since 1.5
      */
-    public static synchronized LoggingMXBean  getLoggingMXBean() {
+    public static synchronized LoggingMXBean getLoggingMXBean() {
         if (loggingMXBean == null) {
             loggingMXBean =  new Logging();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -443,6 +443,8 @@ void gtk2_file_chooser_load()
             "gtk_file_chooser_set_current_folder");
     fp_gtk_file_chooser_set_filename = dl_symbol(
             "gtk_file_chooser_set_filename");
+    fp_gtk_file_chooser_set_current_name = dl_symbol(
+            "gtk_file_chooser_set_current_name");
     fp_gtk_file_filter_add_custom = dl_symbol("gtk_file_filter_add_custom");
     fp_gtk_file_chooser_set_filter = dl_symbol("gtk_file_chooser_set_filter");
     fp_gtk_file_chooser_get_type = dl_symbol("gtk_file_chooser_get_type");

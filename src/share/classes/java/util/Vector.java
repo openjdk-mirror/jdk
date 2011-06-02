@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -893,10 +893,13 @@ public class Vector<E>
      * @return true if this Vector changed as a result of the call
      * @throws ClassCastException if the types of one or more elements
      *         in this vector are incompatible with the specified
-     *         collection (optional)
+     *         collection
+     * (<a href="Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if this vector contains one or more null
      *         elements and the specified collection does not support null
-     *         elements (optional), or if the specified collection is null
+     *         elements
+     * (<a href="Collection.html#optional-restrictions">optional</a>),
+     *         or if the specified collection is null
      * @since 1.2
      */
     public synchronized boolean removeAll(Collection<?> c) {
@@ -913,10 +916,13 @@ public class Vector<E>
      * @return true if this Vector changed as a result of the call
      * @throws ClassCastException if the types of one or more elements
      *         in this vector are incompatible with the specified
-     *         collection (optional)
+     *         collection
+     * (<a href="Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if this vector contains one or more null
      *         elements and the specified collection does not support null
-     *         elements (optional), or if the specified collection is null
+     *         elements
+     *         (<a href="Collection.html#optional-restrictions">optional</a>),
+     *         or if the specified collection is null
      * @since 1.2
      */
     public synchronized boolean retainAll(Collection<?> c) {

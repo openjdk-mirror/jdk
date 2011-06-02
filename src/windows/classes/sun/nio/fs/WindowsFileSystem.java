@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,8 +56,9 @@ class WindowsFileSystem
         // parse default directory and check it is absolute
         WindowsPathParser.Result result = WindowsPathParser.parse(dir);
 
-        if (result.type() != WindowsPathType.ABSOLUTE)
-            throw new AssertionError("Default directory must be absolute/non-UNC");
+        if ((result.type() != WindowsPathType.ABSOLUTE) &&
+            (result.type() != WindowsPathType.UNC))
+            throw new AssertionError("Default directory is not an absolute path");
         this.defaultDirectory = result.path();
         this.defaultRoot = result.root();
 

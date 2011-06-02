@@ -30,7 +30,7 @@
  *
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
- * http://creativecommons.org/licenses/publicdomain
+ * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
 package java.util.concurrent.locks;
@@ -275,10 +275,14 @@ public class LockSupport {
      * snapshot -- the thread may have since unblocked or blocked on a
      * different blocker object.
      *
+     * @param t the thread
      * @return the blocker
+     * @throws NullPointerException if argument is null
      * @since 1.6
      */
     public static Object getBlocker(Thread t) {
+        if (t == null)
+            throw new NullPointerException();
         return unsafe.getObjectVolatile(t, parkBlockerOffset);
     }
 

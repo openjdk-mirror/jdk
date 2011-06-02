@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -871,8 +871,9 @@ Java_sun_nio_fs_UnixNativeDispatcher_getpwuid(JNIEnv* env, jclass this, jint uid
 
         if (res != 0 || p == NULL || p->pw_name == NULL || *(p->pw_name) == '\0') {
             /* not found or error */
-            if (errno != 0 && errno != ENOENT)
-                throwUnixException(env, errno);
+            if (errno == 0)
+                errno = ENOENT;
+            throwUnixException(env, errno);
         } else {
             jsize len = strlen(p->pw_name);
             result = (*env)->NewByteArray(env, len);
@@ -920,14 +921,14 @@ Java_sun_nio_fs_UnixNativeDispatcher_getgrgid(JNIEnv* env, jclass this, jint gid
         retry = 0;
         if (res != 0 || g == NULL || g->gr_name == NULL || *(g->gr_name) == '\0') {
             /* not found or error */
-            if (errno != 0 && errno != ENOENT) {
-                if (errno == ERANGE) {
-                    /* insufficient buffer size so need larger buffer */
-                    buflen += ENT_BUF_SIZE;
-                    retry = 1;
-                } else {
-                    throwUnixException(env, errno);
-                }
+            if (errno == ERANGE) {
+                /* insufficient buffer size so need larger buffer */
+                buflen += ENT_BUF_SIZE;
+                retry = 1;
+            } else {
+                if (errno == 0)
+                    errno = ENOENT;
+                throwUnixException(env, errno);
             }
         } else {
             jsize len = strlen(g->gr_name);

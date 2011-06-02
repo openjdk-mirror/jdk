@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1998, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1998, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -85,15 +85,20 @@ REMOTE_impls = \
 	sun.rmi.registry.RegistryImpl \
 	sun.rmi.transport.DGCImpl
 
-ifeq ($(PLATFORM), windows)
-build: stubs
-else # PLATFORM
-ifneq ($(ARCH_DATA_MODEL), 32)
-build: stubs
-else # ARCH_DATA_MODEL
-build: stubs bin
+#
+# The java-rmi.cgi script in bin/ only gets delivered in certain situations
+#
+BUILD_TARGETS = stubs
+ifeq ($(PLATFORM), linux)
+  BUILD_TARGETS += bin
 endif
+ifeq ($(PLATFORM), solaris)
+  ifeq ($(ARCH_DATA_MODEL), 32)
+    BUILD_TARGETS += bin
+  endif
 endif
+
+build: $(BUILD_TARGETS)
 
 clean clobber:: bin.clean
 

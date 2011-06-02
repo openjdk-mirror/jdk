@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ package java.util.zip;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Vector;
 import java.util.HashSet;
 import static java.util.zip.ZipConstants64.*;
@@ -100,7 +101,7 @@ class ZipOutputStream extends DeflaterOutputStream implements ZipConstants {
      * @param out the actual output stream
      */
     public ZipOutputStream(OutputStream out) {
-        this(out, Charset.forName("UTF-8"));
+        this(out, StandardCharsets.UTF_8);
     }
 
     /**

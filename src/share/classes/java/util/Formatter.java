@@ -826,7 +826,7 @@ import sun.misc.FormattedFloatingDecimal;
  *
  * <li> <a href="#dndec"><b>Float and Double</b></a>
  *
- * <li> <a href="#dndec"><b>BigDecimal</b></a>
+ * <li> <a href="#dnbdec"><b>BigDecimal</b></a>
  *
  * </ol>
  *
@@ -1362,7 +1362,7 @@ import sun.misc.FormattedFloatingDecimal;
  * precision is not provided, then all of the digits as returned by {@link
  * Double#toHexString(double)} will be output.
  *
- * <p><a name="dndec"><b> BigDecimal </b></a>
+ * <p><a name="dnbdec"><b> BigDecimal </b></a>
  *
  * <p> The following conversions may be applied {@link java.math.BigDecimal
  * BigDecimal}.
@@ -1372,7 +1372,7 @@ import sun.misc.FormattedFloatingDecimal;
  * <tr><td valign="top"> {@code 'e'}
  *     <td valign="top"> <tt>'&#92;u0065'</tt>
  *     <td> Requires the output to be formatted using <a
- *     name="scientific">computerized scientific notation</a>.  The <a
+ *     name="bscientific">computerized scientific notation</a>.  The <a
  *     href="#l10n algorithm">localization algorithm</a> is applied.
  *
  *     <p> The formatting of the magnitude <i>m</i> depends upon its value.
@@ -1427,11 +1427,11 @@ import sun.misc.FormattedFloatingDecimal;
  *
  *     <p> If <i>m</i> is greater than or equal to 10<sup>-4</sup> but less
  *     than 10<sup>precision</sup> then it is represented in <i><a
- *     href="#decimal">decimal format</a></i>.
+ *     href="#bdecimal">decimal format</a></i>.
  *
  *     <p> If <i>m</i> is less than 10<sup>-4</sup> or greater than or equal to
  *     10<sup>precision</sup>, then it is represented in <i><a
- *     href="#scientific">computerized scientific notation</a></i>.
+ *     href="#bscientific">computerized scientific notation</a></i>.
  *
  *     <p> The total number of significant digits in <i>m</i> is equal to the
  *     precision.  If the precision is not specified, then the default value is
@@ -1447,7 +1447,7 @@ import sun.misc.FormattedFloatingDecimal;
  *
  * <tr><td valign="top"> {@code 'f'}
  *     <td valign="top"> <tt>'&#92;u0066'</tt>
- *     <td> Requires the output to be formatted using <a name="decimal">decimal
+ *     <td> Requires the output to be formatted using <a name="bdecimal">decimal
  *     format</a>.  The <a href="#l10n algorithm">localization algorithm</a> is
  *     applied.
  *
@@ -1818,9 +1818,9 @@ import sun.misc.FormattedFloatingDecimal;
  * </pre></blockquote>
  *
  * <p> The maximum number of arguments is limited by the maximum dimension of a
- * Java array as defined by the <a
- * href="http://java.sun.com/docs/books/vmspec/">Java Virtual Machine
- * Specification</a>.  If the argument index is does not correspond to an
+ * Java array as defined by
+ * <cite>The Java&trade; Virtual Machine Specification</cite>.
+ * If the argument index is does not correspond to an
  * available argument, then a {@link MissingFormatArgumentException} is thrown.
  *
  * <p> If there are more arguments than format specifiers, the extra arguments
@@ -2403,8 +2403,7 @@ public final class Formatter implements Closeable, Flushable {
      *         string.  If there are more arguments than format specifiers, the
      *         extra arguments are ignored.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         the <a href="http://java.sun.com/docs/books/vmspec/">Java
-     *         Virtual Machine Specification</a>.
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
      *
      * @throws  IllegalFormatException
      *          If a format string contains an illegal syntax, a format
@@ -2443,8 +2442,7 @@ public final class Formatter implements Closeable, Flushable {
      *         string.  If there are more arguments than format specifiers, the
      *         extra arguments are ignored.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         the <a href="http://java.sun.com/docs/books/vmspec/">Java
-     *         Virtual Machine Specification</a>
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
      *
      * @throws  IllegalFormatException
      *          If a format string contains an illegal syntax, a format

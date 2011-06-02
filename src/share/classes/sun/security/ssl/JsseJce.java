@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -62,7 +62,7 @@ final class JsseJce {
     // Flag indicating whether EC crypto is available.
     // If null, then we have not checked yet.
     // If yes, then all the EC based crypto we need is available.
-    private static volatile Boolean ecAvailable;
+    private static Boolean ecAvailable;
 
     // Flag indicating whether Kerberos crypto is available.
     // If true, then all the Kerberos-based crypto we need is available.
@@ -190,7 +190,7 @@ final class JsseJce {
         // no instantiation of this class
     }
 
-    static boolean isEcAvailable() {
+    synchronized static boolean isEcAvailable() {
         if (ecAvailable == null) {
             try {
                 JsseJce.getSignature(SIGNATURE_ECDSA);
@@ -206,7 +206,7 @@ final class JsseJce {
         return ecAvailable;
     }
 
-    static void clearEcAvailable() {
+    synchronized static void clearEcAvailable() {
         ecAvailable = null;
     }
 
@@ -247,9 +247,9 @@ final class JsseJce {
                 // the SunJSSE implementation does the actual crypto using
                 // a NONEwithRSA signature obtained from the cryptoProvider.
                 if (cryptoProvider.getService("Signature", algorithm) == null) {
-                    // Calling Signature.getInstance() and catching the exception
-                    // would be cleaner, but exceptions are a little expensive.
-                    // So we check directly via getService().
+                    // Calling Signature.getInstance() and catching the
+                    // exception would be cleaner, but exceptions are a little
+                    // expensive. So we check directly via getService().
                     try {
                         return Signature.getInstance(algorithm, "SunJSSE");
                     } catch (NoSuchProviderException e) {

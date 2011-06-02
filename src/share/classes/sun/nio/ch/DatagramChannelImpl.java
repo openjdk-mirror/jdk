@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -188,7 +188,7 @@ class DatagramChannelImpl
         synchronized (stateLock) {
             ensureOpen();
 
-            if (name == StandardSocketOption.IP_TOS) {
+            if (name == StandardSocketOptions.IP_TOS) {
                 // IPv4 only; no-op for IPv6
                 if (family == StandardProtocolFamily.INET) {
                     Net.setSocketOption(fd, family, name, value);
@@ -196,15 +196,15 @@ class DatagramChannelImpl
                 return this;
             }
 
-            if (name == StandardSocketOption.IP_MULTICAST_TTL ||
-                name == StandardSocketOption.IP_MULTICAST_LOOP)
+            if (name == StandardSocketOptions.IP_MULTICAST_TTL ||
+                name == StandardSocketOptions.IP_MULTICAST_LOOP)
             {
                 // options are protocol dependent
                 Net.setSocketOption(fd, family, name, value);
                 return this;
             }
 
-            if (name == StandardSocketOption.IP_MULTICAST_IF) {
+            if (name == StandardSocketOptions.IP_MULTICAST_IF) {
                 if (value == null)
                     throw new IllegalArgumentException("Cannot set IP_MULTICAST_IF to 'null'");
                 NetworkInterface interf = (NetworkInterface)value;
@@ -243,7 +243,7 @@ class DatagramChannelImpl
         synchronized (stateLock) {
             ensureOpen();
 
-            if (name == StandardSocketOption.IP_TOS) {
+            if (name == StandardSocketOptions.IP_TOS) {
                 // IPv4 only; always return 0 on IPv6
                 if (family == StandardProtocolFamily.INET) {
                     return (T) Net.getSocketOption(fd, family, name);
@@ -252,13 +252,13 @@ class DatagramChannelImpl
                 }
             }
 
-            if (name == StandardSocketOption.IP_MULTICAST_TTL ||
-                name == StandardSocketOption.IP_MULTICAST_LOOP)
+            if (name == StandardSocketOptions.IP_MULTICAST_TTL ||
+                name == StandardSocketOptions.IP_MULTICAST_LOOP)
             {
                 return (T) Net.getSocketOption(fd, family, name);
             }
 
-            if (name == StandardSocketOption.IP_MULTICAST_IF) {
+            if (name == StandardSocketOptions.IP_MULTICAST_IF) {
                 if (family == StandardProtocolFamily.INET) {
                     int address = Net.getInterface4(fd);
                     if (address == 0)
@@ -291,14 +291,14 @@ class DatagramChannelImpl
 
         private static Set<SocketOption<?>> defaultOptions() {
             HashSet<SocketOption<?>> set = new HashSet<SocketOption<?>>(8);
-            set.add(StandardSocketOption.SO_SNDBUF);
-            set.add(StandardSocketOption.SO_RCVBUF);
-            set.add(StandardSocketOption.SO_REUSEADDR);
-            set.add(StandardSocketOption.SO_BROADCAST);
-            set.add(StandardSocketOption.IP_TOS);
-            set.add(StandardSocketOption.IP_MULTICAST_IF);
-            set.add(StandardSocketOption.IP_MULTICAST_TTL);
-            set.add(StandardSocketOption.IP_MULTICAST_LOOP);
+            set.add(StandardSocketOptions.SO_SNDBUF);
+            set.add(StandardSocketOptions.SO_RCVBUF);
+            set.add(StandardSocketOptions.SO_REUSEADDR);
+            set.add(StandardSocketOptions.SO_BROADCAST);
+            set.add(StandardSocketOptions.IP_TOS);
+            set.add(StandardSocketOptions.IP_MULTICAST_IF);
+            set.add(StandardSocketOptions.IP_MULTICAST_TTL);
+            set.add(StandardSocketOptions.IP_MULTICAST_LOOP);
             return Collections.unmodifiableSet(set);
         }
     }
@@ -388,9 +388,8 @@ class DatagramChannelImpl
         // we must instead use a nonempty buffer, otherwise the call
         // will not block waiting for a datagram on some platforms.
         int newSize = Math.max(rem, 1);
-        ByteBuffer bb = null;
+        ByteBuffer bb = Util.getTemporaryDirectBuffer(newSize);
         try {
-            bb = Util.getTemporaryDirectBuffer(newSize);
             int n = receiveIntoNativeBuffer(fd, bb, newSize, 0);
             bb.flip();
             if (n > 0 && rem > 0)
@@ -482,9 +481,8 @@ class DatagramChannelImpl
         assert (pos <= lim);
         int rem = (pos <= lim ? lim - pos : 0);
 
-        ByteBuffer bb = null;
+        ByteBuffer bb = Util.getTemporaryDirectBuffer(rem);
         try {
-            bb = Util.getTemporaryDirectBuffer(rem);
             bb.put(src);
             bb.flip();
             // Do not update src until we see how many bytes were written
@@ -766,10 +764,10 @@ class DatagramChannelImpl
         // check multicast address is compatible with this socket
         if (group instanceof Inet4Address) {
             if (family == StandardProtocolFamily.INET6 && !Net.canIPv6SocketJoinIPv4Group())
-                throw new IllegalArgumentException("Group is not IPv4 multicast address");
+                throw new IllegalArgumentException("IPv6 socket cannot join IPv4 multicast group");
         } else if (group instanceof Inet6Address) {
             if (family != StandardProtocolFamily.INET6)
-                throw new IllegalArgumentException("Group is not IPv6 multicast address");
+                throw new IllegalArgumentException("Only IPv6 sockets can join IPv6 multicast group");
         } else {
             throw new IllegalArgumentException("Address type not supported");
         }

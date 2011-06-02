@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -926,8 +926,7 @@ Java_sun_awt_windows_WTrayIconPeer__1dispose(JNIEnv *env, jobject self)
 {
     TRY;
 
-    PDATA pData = JNI_GET_PDATA(self);
-    AwtObject::_Dispose(pData);
+    AwtObject::_Dispose(self);
 
     CATCH_BAD_ALLOC;
 }

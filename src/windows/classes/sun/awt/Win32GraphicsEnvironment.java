@@ -39,12 +39,8 @@ import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import sun.awt.DisplayChangedListener;
 import sun.awt.SunDisplayChanger;
-import sun.awt.windows.WFontConfiguration;
 import sun.awt.windows.WPrinterJob;
 import sun.awt.windows.WToolkit;
-import sun.font.FontManager;
-import sun.font.FontManagerFactory;
-import sun.font.SunFontManager;
 import sun.java2d.SunGraphicsEnvironment;
 import sun.java2d.SurfaceManagerFactory;
 import sun.java2d.WindowsSurfaceManagerFactory;
@@ -74,12 +70,6 @@ public class Win32GraphicsEnvironment
         // Install correct surface manager factory.
         SurfaceManagerFactory.setInstance(new WindowsSurfaceManagerFactory());
     }
-
-    /**
-     * Noop function that just acts as an entry point for someone to force
-     * a static initialization of this class.
-     */
-    public static void init() {}
 
     /**
      * Initializes native components of the graphics environment.  This
@@ -212,14 +202,6 @@ public class Win32GraphicsEnvironment
  * ----END DISPLAY CHANGE SUPPORT----
  */
 
-    /**
-     * Whether registerFontFile expects absolute or relative
-     * font file names.
-     */
-    protected boolean useAbsoluteFontFileNames() {
-        return false;
-    }
-
     protected GraphicsDevice makeScreenDevice(int screennum) {
         GraphicsDevice device = null;
         if (WindowsFlags.isD3DEnabled()) {
@@ -229,20 +211,6 @@ public class Win32GraphicsEnvironment
             device = new Win32GraphicsDevice(screennum);
         }
         return device;
-    }
-
-    // Implements SunGraphicsEnvironment.createFontConfiguration.
-    protected FontConfiguration createFontConfiguration() {
-       FontConfiguration fc = new WFontConfiguration(SunFontManager.getInstance());
-       fc.init();
-       return fc;
-    }
-
-    public FontConfiguration createFontConfiguration(boolean preferLocaleFonts,
-                                                     boolean preferPropFonts) {
-
-        return new WFontConfiguration(SunFontManager.getInstance(),
-                preferLocaleFonts,preferPropFonts);
     }
 
     public boolean isDisplayLocal() {

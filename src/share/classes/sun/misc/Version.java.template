@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2007, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -99,6 +99,14 @@ public class Version {
      * Give a stream, it will print version info on it.
      */
     public static void print(PrintStream ps) {
+        boolean isHeadless = false;
+
+        /* Report that we're running headless if the property is true */
+        String headless = System.getProperty("java.awt.headless");
+        if ( (headless != null) && (headless.equalsIgnoreCase("true")) ) {
+            isHeadless = true;
+        }
+
         /* First line: platform version. */
         ps.println(launcher_name + " version \"" + java_version + "\"");
 
@@ -123,6 +131,10 @@ public class Version {
             sb.append("build ").append(java_runtime_version);
             if (jdk_revid.length() > 0)
                 sb.append("+").append(jdk_revid);
+            if (java_runtime_name.indexOf("Embedded") != -1 && isHeadless) {
+              // embedded builds report headless state
+              sb.append(", headless");
+            }
             sb.append(")");
         }
         ps.println(sb.toString());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -62,8 +62,11 @@ public class Win32FontManager extends SunFontManager {
                     String eudcFile = getEUDCFontFile();
                     if (eudcFile != null) {
                         try {
+                            /* Must use Java rasteriser since GDI doesn't
+                             * enumerate (allow direct use) of EUDC fonts.
+                             */
                             eudcFont = new TrueTypeFont(eudcFile, null, 0,
-                                                        false);
+                                                        true);
                         } catch (FontFormatException e) {
                         }
                     }
@@ -98,6 +101,14 @@ public class Win32FontManager extends SunFontManager {
                     return null;
                 }
             });
+    }
+
+    /**
+     * Whether registerFontFile expects absolute or relative
+     * font file names.
+     */
+    protected boolean useAbsoluteFontFileNames() {
+        return false;
     }
 
     /* Unlike the shared code version, this expects a base file name -

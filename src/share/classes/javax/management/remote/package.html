@@ -2,7 +2,7 @@
 <head>
     <title>JMX<sup><font size="-2">TM</font></sup> Remote API.</title>
 <!--
-Copyright (c) 2002, 2006, Oracle and/or its affiliates. All rights reserved.
+Copyright (c) 2002, 2011, Oracle and/or its affiliates. All rights reserved.
 DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
 This code is free software; you can redistribute it and/or modify it
@@ -154,11 +154,8 @@ rmi://192.18.1.9 username 1
       </pre>
 
       <p>The formal grammar for connection ids that follow this
-	convention is as follows (using the <a
-	href="http://java.sun.com/docs/books/jls/second_edition/html/grammars.doc.html#90767">grammar
-	notation</a> from <em>The Java Language Specification, Second
-	Edition</em>):</p>
-
+         convention is as follows (using the grammar notation from section 2.4 of 
+         <em>The Java&trade; Language Specification</em>):</p>
       <pre>
 <em>ConnectionId:</em>
     <em>Protocol</em> : <em>ClientAddress<sub>opt</sub></em> Space <em>ClientId<sub>opt</sub></em> Space <em>ArbitraryText</em>
@@ -198,7 +195,7 @@ rmi://192.18.1.9 username 1
 
 
     @see <a href="{@docRoot}/../technotes/guides/jmx/">
-      Java SE 6 Platform documentation on JMX technology</a>,
+      Java Platform documentation on JMX technology</a>,
     in particular the 
     <a href="{@docRoot}/../technotes/guides/jmx/JMX_1_4_specification.pdf">
       JMX Specification, version 1.4</a>

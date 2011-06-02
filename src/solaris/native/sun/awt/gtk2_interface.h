@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -766,6 +766,8 @@ gboolean (*fp_gtk_file_chooser_set_current_folder)(GtkFileChooser *chooser,
     const gchar *filename);
 gboolean (*fp_gtk_file_chooser_set_filename)(GtkFileChooser *chooser,
     const char *filename);
+void (*fp_gtk_file_chooser_set_current_name)(GtkFileChooser *chooser,
+    const gchar *name);
 void (*fp_gtk_file_filter_add_custom)(GtkFileFilter *filter,
     GtkFileFilterFlags needed, GtkFileFilterFunc func, gpointer data,
     GDestroyNotify notify);

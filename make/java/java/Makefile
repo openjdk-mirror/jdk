@@ -1,5 +1,5 @@
 #
-# Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -198,10 +198,12 @@ INSTALL_DOT_LIB = true
 
 #
 # What to link?
+# On Windows, shell32 is not normally required and so it is delay loaded.
 #
 ifeq ($(PLATFORM),windows)
 OTHER_LDLIBS += $(JVMLIB) -libpath:$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) fdlibm.lib \
-		       -libpath:$(OBJDIR)/../../../verify/$(OBJDIRNAME) verify.lib
+		       -libpath:$(OBJDIR)/../../../verify/$(OBJDIRNAME) verify.lib \
+		       shell32.lib delayimp.lib /DELAYLOAD:shell32.dll
 else
 OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) $(LIBNSL) -ldl \
 		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH)
@@ -343,30 +345,35 @@ $(GENSRCDIR)/java/lang/CharacterDataLatin1.java \
 		-template $(CHARACTERDATA)/CharacterDataLatin1.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterDataLatin1.java -string \
 		-usecharforbyte -latin1 8
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 0 \
 		-template $(CHARACTERDATA)/CharacterData00.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData00.java -string \
 		-usecharforbyte 11 4 1
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 1 \
 		-template $(CHARACTERDATA)/CharacterData01.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData01.java -string \
 		-usecharforbyte  11 4 1
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 2 \
 		-template $(CHARACTERDATA)/CharacterData02.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData02.java -string \
 		-usecharforbyte 11 4 1
 	$(BOOT_JAVA_CMD) -jar $(GENERATECHARACTER_JARFILE) -plane 14 \
 		-template $(CHARACTERDATA)/CharacterData0E.java.template \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-specialcasing $(UNICODEDATA)/SpecialCasing.txt \
+		-proplist $(UNICODEDATA)/PropList.txt \
 		-o $(GENSRCDIR)/java/lang/CharacterData0E.java -string \
 		-usecharforbyte 11 4 1
 

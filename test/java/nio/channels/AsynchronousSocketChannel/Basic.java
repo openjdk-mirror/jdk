@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,7 @@
 
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import static java.net.StandardSocketOption.*;
+import static java.net.StandardSocketOptions.*;
 import java.net.*;
 import java.util.Random;
 import java.util.concurrent.*;
@@ -383,7 +383,7 @@ public class Basic {
         // write bytes and close connection
         SocketChannel sc = server.accept();
         ByteBuffer src = genBuffer();
-        sc.setOption(StandardSocketOption.SO_SNDBUF, src.remaining());
+        sc.setOption(StandardSocketOptions.SO_SNDBUF, src.remaining());
         while (src.hasRemaining())
             sc.write(src);
         sc.close();

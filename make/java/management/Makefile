@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -63,6 +63,20 @@ else # PLATFORM (i.e. solaris & linux)
 FILES_c     +=  UnixOperatingSystem_md.c
 
 FILES_export +=	com/sun/management/UnixOperatingSystem.java
+
+ifeq ($(PLATFORM),solaris)
+
+FILES_c     += SolarisOperatingSystem.c
+OTHER_LDLIBS += -lkstat
+
+endif # PLATFORM solaris
+
+ifeq ($(PLATFORM),linux)
+
+FILES_c     += LinuxOperatingSystem.c
+
+endif # PLATFORM linux
+
 endif # PLATFORM
 
 #
@@ -86,7 +100,8 @@ OTHER_INCLUDES += \
   -I$(SHARE_SRC)/native/sun/management 
 
 ifeq ($(PLATFORM),windows)
-  OTHER_LDLIBS += $(JVMLIB)
+  # Need process status helper API (psapi) on Windows
+  OTHER_LDLIBS += $(JVMLIB) psapi.lib
 endif
 
 #

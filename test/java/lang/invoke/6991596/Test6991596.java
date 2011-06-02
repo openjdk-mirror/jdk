@@ -27,7 +27,7 @@
  * @bug 6991596
  * @summary JSR 292 unimplemented adapter_opt_i2i and adapter_opt_l2i on SPARC
  *
- * @run main/othervm -ea -XX:+UnlockExperimentalVMOptions -XX:+EnableMethodHandles -XX:+EnableInvokeDynamic -XX:+UnlockDiagnosticVMOptions -XX:+VerifyMethodHandles Test6991596
+ * @run main/othervm -ea -XX:+UnlockDiagnosticVMOptions -XX:+VerifyMethodHandles Test6991596
  */
 
 import java.lang.invoke.*;
@@ -51,10 +51,10 @@ public class Test6991596 {
         return MethodHandles.lookup().findStatic(CLASS, NAME, MethodType.methodType(ret, arg));
     }
     static MethodHandle getmh2(MethodHandle mh1, Class ret, Class arg) {
-        return MethodHandles.convertArguments(mh1, MethodType.methodType(ret, arg));
+        return MethodHandles.explicitCastArguments(mh1, MethodType.methodType(ret, arg));
     }
     static MethodHandle getmh3(MethodHandle mh1, Class ret, Class arg) {
-        return MethodHandles.convertArguments(mh1, MethodType.methodType(ret, arg));
+        return MethodHandles.explicitCastArguments(mh1, MethodType.methodType(ret, arg));
     }
 
     // test adapter_opt_i2i

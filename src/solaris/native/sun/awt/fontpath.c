@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1107,7 +1107,8 @@ Java_sun_font_FontConfigManager_getFontConfig
     arrlen = (*env)->GetArrayLength(env, fcCompFontArray);
     for (i=0; i<arrlen; i++) {
         FcFontSet* fontset;
-        int fn, j, fontCount, nfonts, minGlyphs;
+        int fn, j, fontCount, nfonts;
+        unsigned int minGlyphs;
         FcChar8 **family, **styleStr, **fullname, **file;
         jarray fcFontArr;
 

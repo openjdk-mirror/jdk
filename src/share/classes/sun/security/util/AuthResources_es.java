@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -111,17 +111,15 @@ public class AuthResources_es extends java.util.ListResourceBundle {
 
         // com.sun.security.auth.PolicyParser
         {"expected.keystore.type", "se esperaba un tipo de almac\u00E9n de claves"},
-        {"can.not.specify.Principal.with.a.",
-                "no se puede especificar Principal con una "},
-        {"wildcard.class.without.a.wildcard.name",
-                "clase comod\u00EDn sin nombre de comod\u00EDn"},
+        {"can.not.specify.Principal.with.a.wildcard.class.without.a.wildcard.name",
+                "no se puede especificar Principal con una clase de comod\u00EDn sin un nombre de comod\u00EDn"},
         {"expected.codeBase.or.SignedBy", "se esperaba codeBase o SignedBy"},
         {"only.Principal.based.grant.entries.permitted",
                 "s\u00F3lo se permite otorgar entradas basadas en Principal"},
         {"expected.permission.entry", "se esperaba un permiso de entrada"},
         {"number.", "n\u00FAmero "},
-        {"expected.", "se esperaba "},
-        {".read.end.of.file", ", se ha le\u00EDdo el final de archivo"},
+        {"expected.expect.read.end.of.file.",
+                "se esperaba [{0}], se ha le\u00EDdo final de archivo"},
         {"expected.read.end.of.file", "se esperaba ';', se ha le\u00EDdo el final de archivo"},
         {"line.", "l\u00EDnea "},
         {".expected.", ": se esperaba '"},
@@ -136,6 +134,9 @@ public class AuthResources_es extends java.util.ListResourceBundle {
         {"SolarisNumericUserPrincipal.",
                 "SolarisNumericUserPrincipal: "},
         {"SolarisPrincipal.", "SolarisPrincipal: "},
+        // provided.null.name is the NullPointerException message when a
+        // developer incorrectly passes a null name to the constructor of
+        // subclasses of java.security.Principal
         {"provided.null.name", "se ha proporcionado un nombre nulo"}
 
     };
