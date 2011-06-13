@@ -33,7 +33,7 @@
 
 # The host that we try to resolve
 
-HOST=www-proxy.us.oracle.com
+HOST=developer.classpath.org
 
 # fail gracefully if DNS is not configured or there
 # isn't a CNAME record.

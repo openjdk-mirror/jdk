@@ -39,7 +39,7 @@ public class LocalAddress {
     static void test1() throws Exception {
         InetAddress bogus = InetAddress.getByName("0.0.0.0");
         InetSocketAddress saddr = new InetSocketAddress(
-            InetAddress.getByName(TestUtil.HOST), 23);
+            InetAddress.getByName(TestUtil.HOST), 7);
 
         //Test1: connect only
         SocketChannel sc = SocketChannel.open();
