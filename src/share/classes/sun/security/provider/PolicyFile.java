@@ -1790,36 +1790,30 @@ public class PolicyFile extends java.security.Policy {
 
         CodeSource canonCs = cs;
         URL u = cs.getLocation();
-        
-        // If this is a jar protocol url, collapse it to a 
-        // file protocol to process it as per the javadocs
-        if (u != null && u.getProtocol().equals("jar")) {
-            try {
-                String fileURL = "";
-            
-                // remove the initial jar:
-                fileURL = u.getPath();
-            
-                // remove the part after the !
-                fileURL = fileURL.substring(0, fileURL.indexOf('!'));
-                
-                u = new URL(fileURL);
-
-            } catch (Exception e) {
-                // Fail silently. In this case, url stays what it was above
+        if (u != null) {
+            if (u.getProtocol().equals("jar")) {
+                // unwrap url embedded inside jar url
+                String spec = u.getFile();
+                int separator = spec.indexOf("!/");
+                if (separator != -1) {
+                    try {
+                        u = new URL(spec.substring(0, separator));
+                    } catch (MalformedURLException e) {
+                        // Fail silently. In this case, url stays what
+                        // it was above
+                    }
+                }
             }
-            
-        }
-        
-        if (u != null && u.getProtocol().equals("file")) {
-            boolean isLocalFile = false;
-            String host = u.getHost();
-            isLocalFile = (host == null || host.equals("") ||
-                host.equals("~") || host.equalsIgnoreCase("localhost"));
+            if (u.getProtocol().equals("file")) {
+                boolean isLocalFile = false;
+                String host = u.getHost();
+                isLocalFile = (host == null || host.equals("") ||
+                    host.equals("~") || host.equalsIgnoreCase("localhost"));
 
-            if (isLocalFile) {
-                path = u.getFile().replace('/', File.separatorChar);
-                path = ParseUtil.decode(path);
+                if (isLocalFile) {
+                    path = u.getFile().replace('/', File.separatorChar);
+                    path = ParseUtil.decode(path);
+                }
             }
         }
 
