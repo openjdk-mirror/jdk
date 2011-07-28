@@ -240,8 +240,8 @@ class RuleBasedBreakIteratorBuilder {
         // set up a vector to contain the broken-up description (each entry in the
         // vector is a separate rule) and a stack for keeping track of opening
         // punctuation
-        Vector<String> tempRuleList = new Vector<>();
-        Stack<Character> parenStack = new Stack<>();
+        Vector<String> tempRuleList = new Vector<String>();
+        Stack<Character> parenStack = new Stack<Character>();
 
         int p = 0;
         int ruleStart = 0;
@@ -561,7 +561,7 @@ class RuleBasedBreakIteratorBuilder {
         // build hash table of every literal character or [] expression in the rule list
         // and use CharSet.parseString() to derive a CharSet object representing the
         // characters each refers to
-        expressions = new Hashtable<>();
+        expressions = new Hashtable<String,Object>();
         while (lineNum < tempRuleList.size()) {
             String line = tempRuleList.elementAt(lineNum);
             p = 0;
@@ -619,7 +619,7 @@ class RuleBasedBreakIteratorBuilder {
         CharSet.releaseExpressionCache();
 
         // create the temporary category table (which is a vector of CharSet objects)
-        categories = new Vector<>();
+        categories = new Vector<CharSet>();
         if (ignoreChars != null) {
             categories.addElement(ignoreChars);
         }
@@ -797,7 +797,7 @@ class RuleBasedBreakIteratorBuilder {
         // state 0 is a dummy state that allows state 1 to be the starting state
         // and 0 to represent "stop".  State 1 is added here to seed things
         // before we start parsing
-        tempStateTable = new Vector<>();
+        tempStateTable = new Vector<short[]>();
         tempStateTable.addElement(new short[numCategories + 1]);
         tempStateTable.addElement(new short[numCategories + 1]);
 
@@ -891,10 +891,10 @@ class RuleBasedBreakIteratorBuilder {
         int lastState = currentState;
         String pendingChars = "";
 
-        decisionPointStack = new Stack<>();
-        decisionPointList = new Vector<>();
-        loopingStates = new Vector<>();
-        statesToBackfill = new Vector<>();
+        decisionPointStack = new Stack<Vector<Integer>>();
+        decisionPointList = new Vector<Integer>();
+        loopingStates = new Vector<Integer>();
+        statesToBackfill = new Vector<Integer>();
 
         short[] state;
         boolean sawEarlyBreak = false;
@@ -1057,7 +1057,7 @@ class RuleBasedBreakIteratorBuilder {
                 // on the character categories that caused us to enter this state
                 if (c == '*') {
                     for (int i = lastState + 1; i < tempStateTable.size(); i++) {
-                        Vector<Integer> temp = new Vector<>();
+                        Vector<Integer> temp = new Vector<Integer>();
                         temp.addElement(new Integer(i));
                         updateStateTable(temp, pendingChars, (short)(lastState + 1));
                     }
@@ -1385,7 +1385,7 @@ class RuleBasedBreakIteratorBuilder {
                     // add this pair of row numbers to the merge list (create it first
                     // if we haven't created the merge list yet)
                     if (mergeList == null) {
-                        mergeList = new Vector<>();
+                        mergeList = new Vector<int[]>();
                     }
                     mergeList.addElement(new int[] { oldRowNum, newRowNum, combinedRowNum });
 
@@ -1607,7 +1607,7 @@ class RuleBasedBreakIteratorBuilder {
         backfillLoopingStates();
 
         int[] rowNumMap = new int[tempStateTable.size()];
-        Stack<Integer> rowsToFollow = new Stack<>();
+        Stack<Integer> rowsToFollow = new Stack<Integer>();
         rowsToFollow.push(new Integer(1));
         rowNumMap[1] = 1;
 
@@ -1787,7 +1787,7 @@ class RuleBasedBreakIteratorBuilder {
         // create the temporary state table and seed it with two rows (row 0
         // isn't used for anything, and we have to create row 1 (the initial
         // state) before we can do anything else
-        tempStateTable = new Vector<>();
+        tempStateTable = new Vector<short[]>();
         tempStateTable.addElement(new short[numCategories + 1]);
         tempStateTable.addElement(new short[numCategories + 1]);
 

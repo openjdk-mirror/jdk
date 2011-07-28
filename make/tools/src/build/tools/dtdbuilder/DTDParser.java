@@ -276,7 +276,7 @@ class DTDParser implements DTDConstants {
      * Parse a list of identifiers.
      */
     Vector<String> parseIdentifierList(boolean lower) throws IOException {
-        Vector<String> elems = new Vector<>();
+        Vector<String> elems = new Vector<String>();
         skipSpace();
         switch (ch) {
           case '(':

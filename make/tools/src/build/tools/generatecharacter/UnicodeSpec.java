@@ -391,7 +391,7 @@ public class UnicodeSpec {
     */
 
     public static UnicodeSpec[] readSpecFile(File file, int plane) throws FileNotFoundException {
-        ArrayList<UnicodeSpec> list = new ArrayList<>(3000);
+        ArrayList<UnicodeSpec> list = new ArrayList<UnicodeSpec>(3000);
         UnicodeSpec[] result = null;
         int count = 0;
         BufferedReader f = new BufferedReader(new FileReader(file));

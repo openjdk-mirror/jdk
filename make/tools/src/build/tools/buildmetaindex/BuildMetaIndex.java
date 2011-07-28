@@ -171,7 +171,7 @@ class JarMetaIndex {
      * A hashmap contains a mapping from the prefix string to
      * a hashset which contains a set of the second level of prefix string.
      */
-    private HashMap<String, HashSet<String>> knownPrefixMap = new HashMap<>();
+    private HashMap<String, HashSet<String>> knownPrefixMap = new HashMap<String, HashSet<String>>();
 
     /*
      * We add maximum 5 second level entries to "sun", "java" and
@@ -194,7 +194,7 @@ class JarMetaIndex {
         if (indexSet == null) {
             synchronized(this) {
                 if (indexSet == null) {
-                    indexSet = new HashSet<>();
+                    indexSet = new HashSet<String>();
                     Enumeration<JarEntry> entries = jar.entries();
                     boolean containsOnlyClass = true;
                     boolean containsOnlyResource = true;

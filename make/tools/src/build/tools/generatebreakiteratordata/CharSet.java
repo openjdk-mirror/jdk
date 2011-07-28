@@ -87,7 +87,7 @@ class CharSet {
         if (result == null) {
             result = doParseString(s);
             if (expressionCache == null) {
-                expressionCache = new Hashtable<>();
+                expressionCache = new Hashtable<String, CharSet>();
             }
             expressionCache.put(s, result);
         }

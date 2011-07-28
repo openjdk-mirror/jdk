@@ -250,7 +250,7 @@ public class GenerateCurrencyData {
         return Integer.parseInt(numericCode);
     }
 
-    static HashMap<String, Integer> specialCaseMap = new HashMap<>();
+    static HashMap<String, Integer> specialCaseMap = new HashMap<String, Integer>();
 
     private static int makeSpecialCaseEntry(String currencyInfo) throws Exception {
         Integer oldEntry = specialCaseMap.get(currencyInfo);

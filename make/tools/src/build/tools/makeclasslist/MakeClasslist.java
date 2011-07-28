@@ -38,7 +38,7 @@ import java.util.jar.*;
 
 public class MakeClasslist {
   public static void main(String[] args) throws IOException {
-    List<String> classes = new ArrayList<>();
+    List<String> classes = new ArrayList<String>();
     String origJavaHome = System.getProperty("java.home");
     String javaHome     = origJavaHome.toLowerCase();
     if (javaHome.endsWith("jre")) {
@@ -84,7 +84,7 @@ public class MakeClasslist {
       }
     }
 
-    Set<String> seenClasses = new HashSet<>();
+    Set<String> seenClasses = new HashSet<String>();
 
     for (String str : seenClasses) {
       if (seenClasses.add(str)) {

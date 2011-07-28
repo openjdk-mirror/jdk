@@ -55,7 +55,7 @@ public class SpecialCaseMap implements Comparable<SpecialCaseMap> {
      */
 
     public static SpecialCaseMap[] readSpecFile(File file, int plane) throws FileNotFoundException {
-        ArrayList<SpecialCaseMap> caseMaps = new ArrayList<>(150);
+        ArrayList<SpecialCaseMap> caseMaps = new ArrayList<SpecialCaseMap>(150);
         int count = 0;
         BufferedReader f = new BufferedReader(new FileReader(file));
                 String line = null;

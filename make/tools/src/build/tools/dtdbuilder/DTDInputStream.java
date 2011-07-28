@@ -48,7 +48,7 @@ import java.net.URL;
 public final
 class DTDInputStream extends FilterReader implements DTDConstants {
     public DTD dtd;
-    public Stack<Object> stack = new Stack<>();
+    public Stack<Object> stack = new Stack<Object>();
     public char str[] = new char[64];
     public int replace = 0;
     public int ln = 1;

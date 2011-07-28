@@ -51,8 +51,8 @@ public class Hasher {
 
     boolean verbose = false;
 
-    List<String> keys = new ArrayList<>();      // Key strings
-    List<String> values = new ArrayList<>();    // Value expressions
+    List<String> keys = new ArrayList<String>();      // Key strings
+    List<String> values = new ArrayList<String>();    // Value expressions
     String pkg = null;                          // Package prefix for generated class
     String cln = null;                          // Name of generated class
     String vtype = "String";                    // Value type

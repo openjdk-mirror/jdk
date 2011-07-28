@@ -48,19 +48,19 @@ class Simple extends BackEnd {
     /**
      * Zone records which are applied for given year.
      */
-    private static Map<String,ZoneRec> lastZoneRecs = new HashMap<>();
+    private static Map<String,ZoneRec> lastZoneRecs = new HashMap<String,ZoneRec>();
 
     /**
      * Rule records which are applied for given year.
      */
-    private static Map<String,List<RuleRec>> lastRules = new TreeMap<>();
+    private static Map<String,List<RuleRec>> lastRules = new TreeMap<String,List<RuleRec>>();
 
     /**
      * zone IDs sorted by their GMT offsets. If zone's GMT
      * offset will change in the future, its last known offset is
      * used.
      */
-    private SortedMap<Integer, Set<String>> zonesByOffset = new TreeMap<>();
+    private SortedMap<Integer, Set<String>> zonesByOffset = new TreeMap<Integer, Set<String>>();
 
     /**
      * Sets last Rule records and Zone records for given timezone to
@@ -80,7 +80,7 @@ class Simple extends BackEnd {
         int lastKnownOffset = tz.getRawOffset();
         Set<String> set = zonesByOffset.get(lastKnownOffset);
         if (set == null) {
-            set = new TreeSet<>();
+            set = new TreeSet<String>();
             zonesByOffset.put(lastKnownOffset, set);
         }
         set.add(zonename);

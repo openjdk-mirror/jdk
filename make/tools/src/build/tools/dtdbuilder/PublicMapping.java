@@ -44,7 +44,7 @@ import java.util.Hashtable;
 final class PublicMapping {
 
     String baseStr;
-    Hashtable<String, String> tab = new Hashtable<>();
+    Hashtable<String, String> tab = new Hashtable<String, String>();
 
     /**
      * Create a mapping.

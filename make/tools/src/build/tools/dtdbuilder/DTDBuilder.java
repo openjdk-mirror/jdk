@@ -63,9 +63,9 @@ class DTDBuilder extends DTD {
     static PublicMapping mapping = null;
 
     // Hash from name to Integer
-    private Hashtable<String, Integer> namesHash = new Hashtable<>();
+    private Hashtable<String, Integer> namesHash = new Hashtable<String, Integer>();
     // Vector of all names
-    private Vector<String> namesVector = new Vector<>();
+    private Vector<String> namesVector = new Vector<String>();
 
     /**
      * Create a new DTD.

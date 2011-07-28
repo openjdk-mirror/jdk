@@ -164,7 +164,7 @@ public class DirDiff implements Runnable {
       }
 
       File[] currentGoldenDirs = null;
-      TreeSet<String> goldDirSet = new TreeSet<>();
+      TreeSet<String> goldDirSet = new TreeSet<String>();
       if (goldenDir != null) {
           currentGoldenDirs = goldenDir.listFiles();
           for (int i=0; i<currentGoldenDirs.length; i++) {

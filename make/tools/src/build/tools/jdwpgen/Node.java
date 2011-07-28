@@ -34,7 +34,7 @@ abstract class Node {
     String kind;
     List<Node> components;
     int lineno;
-    List<String> commentList = new ArrayList<>();
+    List<String> commentList = new ArrayList<String>();
     Node parent = null;
     Context context = null;
 

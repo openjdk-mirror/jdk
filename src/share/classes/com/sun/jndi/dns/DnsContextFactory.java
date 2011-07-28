@@ -135,7 +135,7 @@ public class DnsContextFactory implements InitialContextFactory {
             throw new ConfigurationException("DNS pseudo-URL required");
         }
 
-        List<String> servers = new ArrayList<>();
+        List<String> servers = new ArrayList<String>();
 
         for (int i = 0; i < urls.length; i++) {
             String server = urls[i].getHost();
