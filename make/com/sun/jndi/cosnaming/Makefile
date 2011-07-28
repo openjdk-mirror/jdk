@@ -32,9 +32,6 @@ PACKAGE = com.sun.jndi.cosnaming
 PRODUCT = sun
 include $(BUILDDIR)/common/Defs.gmk
 
-LANGUAGE_VERSION = -source 6
-CLASS_VERSION = -target 6
-
 #
 # Resources
 #
