@@ -996,13 +996,9 @@ initial-image-jdk:: initial-image-jdk-setup \
 	for d in $(SOURCE_DIRS); do \
 	  $(RM) $(ABS_TEMPDIR)/src-files.list; \
 	  ($(CD) $$d &&  \
-	    for sd in $(SOURCES) ; do \
-              if [ -d $$sd ] ; then \
-	        $(FIND) $$sd $(SOURCE_FILES_filter) \
-		        -name '*.java' -print \
-		        >> $(ABS_TEMPDIR)/src-files.list ; \
-	      fi; \
-	    done ; \
+	    $(FIND) . $(SOURCE_FILES_filter) \
+	    -name '*.java' -print \
+	    >> $(ABS_TEMPDIR)/src-files.list ; \
 	  ) ; \
 	  if [ -f  $(ABS_TEMPDIR)/src-files.list ] ; then \
 	    ($(CD) $$d && $(TAR) cf - -T $(ABS_TEMPDIR)/src-files.list ) \
@@ -1013,13 +1009,9 @@ initial-image-jdk:: initial-image-jdk-setup \
 	for d in $(SOURCE_DIRS); do \
 	  $(RM) $(ABS_TEMPDIR)/src-files.list; \
 	  ($(CD) $$d && \
-	    for sd in $(SOURCES) ; do \
-              if [ -d $$sd ] ; then \
-	        $(FIND) $$sd $(SOURCE_FILES_filter) \
-		        -name '*.java' -print \
-		        >> $(ABS_TEMPDIR)/src-files.list ; \
-	      fi; \
-	    done ; \
+	    $(FIND) . $(SOURCE_FILES_filter) \
+	    -name '*.java' -print \
+	    >> $(ABS_TEMPDIR)/src-files.list ; \
 	  ) ; \
 	  if [ -f  $(ABS_TEMPDIR)/src-files.list ] ; then \
 	    ($(CD) $$d && $(TAR) cf - `$(CAT) $(ABS_TEMPDIR)/src-files.list`) \
