@@ -43,7 +43,7 @@
 
 # Source lists
 LIBNAME=waiters
-SOURCES=waiters.cpp Agent.cpp Thread.cpp Monitor.cpp ../agent_util/agent_util.c
+SOURCES=waiters.cpp Agent.cpp Thread.cpp Monitor.cpp
 
 # Solaris Sun C Compiler Version 5.5
 ifeq ($(OSNAME), solaris)
@@ -89,9 +89,10 @@ ifeq ($(OSNAME), linux)
     endif
     # Object files needed to create library
     OBJECTS=$(SOURCES:%.cpp=%.o)
+    OBJECTS+=../../agent_util/src/agent_util.o
     # Library name and options needed to build it
-    LIBRARY=lib$(LIBNAME).so
-    LDFLAGS=-Wl,-soname=$(LIBRARY) -static-libgcc -mimpure-text
+    LIBRARY=../lib/lib$(LIBNAME).so
+    LDFLAGS=-Wl,-soname=$(LIBRARY) -static-libgcc
     # Libraries we are dependent on
     LIBRARIES=
     # Building a shared library
@@ -123,9 +124,10 @@ endif
 
 # Common -I options
 CXXFLAGS += -I.
-CXXFLAGS += -I../agent_util
+CXXFLAGS += -I../../agent_util/src
 CXXFLAGS += -I$(JDK)/include -I$(JDK)/include/$(OSNAME)
 
+CFLAGS = $(CXXFLAGS)
 # Default rule
 all: $(LIBRARY)
 

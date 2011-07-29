@@ -73,7 +73,7 @@ SOURCES= \
 JAVA_SOURCES=Tracker.java
 
 # Name of jar file that needs to be created
-#JARFILE=hprof.jar
+JARFILE=../hprof.jar
 
 # Solaris Sun C Compiler Version 5.5
 ifeq ($(OSNAME), solaris)
@@ -110,7 +110,7 @@ endif
 # Linux GNU C Compiler
 ifeq ($(OSNAME), linux)
     # GNU Compiler options needed to build it
-    COMMON_FLAGS=-fno-strict-aliasing -fPIC -fno-omit-frame-pointer
+    COMMON_FLAGS=-fno-strict-aliasing -fPIC -fno-omit-frame-pointer -DSKIP_NPT
     # Options that help find errors
     COMMON_FLAGS+= -W -Wall  -Wno-unused -Wno-parentheses
     # To allow access to dladdr()
@@ -166,7 +166,7 @@ endif
 
 # Common -I options
 CFLAGS += -I.
-CFLAGS += -I../java_crw_demo
+CFLAGS += -I../../java_crw_demo/src
 CFLAGS += -I$(JDK)/include -I$(JDK)/include/$(OSNAME)
 
 # Default rule (build both native library and jar file)

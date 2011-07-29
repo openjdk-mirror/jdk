@@ -41,13 +41,15 @@
 #
 ########################################################################
 
+JAVA_CRW_DEMO=../../java_crw_demo/src/libjava_crw_demo.so
+
 # Source lists
 LIBNAME=heapTracker
-SOURCES=heapTracker.c ../agent_util/agent_util.c
+SOURCES=heapTracker.c ../../agent_util/src/agent_util.c
 JAVA_SOURCES=HeapTracker.java
 
 # Name of jar file that needs to be created
-JARFILE=heapTracker.jar
+JARFILE=../heapTracker.jar
 
 # Solaris Sun C Compiler Version 5.5
 ifeq ($(OSNAME), solaris)
@@ -93,10 +95,10 @@ ifeq ($(OSNAME), linux)
     # Object files needed to create library
     OBJECTS=$(SOURCES:%.c=%.o)
     # Library name and options needed to build it
-    LIBRARY=lib$(LIBNAME).so
+    LIBRARY=../lib/lib$(LIBNAME).so
     LDFLAGS=-Wl,-soname=$(LIBRARY) -static-libgcc -mimpure-text
     # Libraries we are dependent on
-    LIBRARIES=-L $(JDK)/jre/lib/$(LIBARCH) -ljava_crw_demo -lc
+    LIBRARIES=-L../../java_crw_demo/src/ -ljava_crw_demo -lc
     # Building a shared library
     LINK_SHARED=$(LINK.c) -shared -o $@
 endif
@@ -128,15 +130,18 @@ endif
 
 # Common -I options
 CFLAGS += -I.
-CFLAGS += -I../agent_util
-CFLAGS += -I../java_crw_demo
+CFLAGS += -I../../agent_util/src
+CFLAGS += -I../../java_crw_demo/src
 CFLAGS += -I$(JDK)/include -I$(JDK)/include/$(OSNAME)
 
 # Default rule (build both native library and jar file)
 all: $(LIBRARY) $(JARFILE)
 
+$(JAVA_CRW_DEMO):
+	make JDK=$(JDK) OSNAME=$(OSNAME) -C ../../java_crw_demo/src -f sample.makefile.txt
+
 # Build native library
-$(LIBRARY): $(OBJECTS)
+$(LIBRARY): $(OBJECTS) $(JAVA_CRW_DEMO)
 	$(LINK_SHARED) $(OBJECTS) $(LIBRARIES)
 
 # Build jar file

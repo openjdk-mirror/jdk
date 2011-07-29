@@ -43,7 +43,7 @@
 
 # Source lists
 LIBNAME=heapViewer
-SOURCES=heapViewer.c ../agent_util/agent_util.c
+SOURCES=heapViewer.c ../../agent_util/src/agent_util.c
 
 # Solaris Sun C Compiler Version 5.5
 ifeq ($(OSNAME), solaris)
@@ -89,7 +89,7 @@ ifeq ($(OSNAME), linux)
     # Object files needed to create library
     OBJECTS=$(SOURCES:%.c=%.o)
     # Library name and options needed to build it
-    LIBRARY=lib$(LIBNAME).so
+    LIBRARY=../lib/lib$(LIBNAME).so
     LDFLAGS=-Wl,-soname=$(LIBRARY) -static-libgcc -mimpure-text
     # Libraries we are dependent on
     LIBRARIES=-lc
@@ -123,6 +123,7 @@ endif
 # Common -I options
 CFLAGS += -I.
 CFLAGS += -I$(JDK)/include -I$(JDK)/include/$(OSNAME)
+CFLAGS += -I../../agent_util/src
 
 # Default rule
 all: $(LIBRARY)
