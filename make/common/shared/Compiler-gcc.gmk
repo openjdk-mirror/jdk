@@ -53,9 +53,17 @@ endif
 
 ifeq ($(PLATFORM), linux)
 
+  ifndef BUILD_GCC
+    BUILD_GCC=$(COMPILER_PATH)gcc
+  endif
+
+  ifndef BUILD_CPP
+    BUILD_CPP=$(COMPILER_PATH)g++
+  endif
+
   # Settings specific to Linux
-  CC             = $(COMPILER_PATH)gcc
-  CPP            = $(COMPILER_PATH)gcc -E
+  CC             = $(BUILD_GCC)
+  CPP            = $(BUILD_GCC) -E
   # statically link libstdc++ before C++ ABI is stablized on Linux
   ifneq ($(STATIC_CXX),false)
     STATIC_CXX     = true
@@ -64,9 +72,9 @@ ifeq ($(PLATFORM), linux)
     # g++ always dynamically links libstdc++, even we use "-Wl,-Bstatic -lstdc++"
     # We need to use gcc to statically link the C++ runtime. gcc and g++ use
     # the same subprocess to compile C++ files, so it is OK to build using gcc.
-    CXX            = $(COMPILER_PATH)gcc
+    CXX            = $(BUILD_GCC)
   else
-    CXX            = $(COMPILER_PATH)g++
+    CXX            = $(BUILD_CPP)
   endif
   # Option used to create a shared library
   SHARED_LIBRARY_FLAG = -shared -mimpure-text
