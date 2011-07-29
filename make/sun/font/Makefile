@@ -128,8 +128,8 @@ else
   ifeq ($(USING_SYSTEM_FT_LIB), false)
     FREETYPE_LIB = $(LIB_LOCATION)/$(LIB_PREFIX)freetype.$(LIBRARY_SUFFIX).6
   endif
-  OTHER_LDLIBS += -L$(FREETYPE_LIB_PATH) -lfreetype
-endif 
+  OTHER_LDLIBS += -L$(FREETYPE_LIB_PATH) $(FT2_LIBS)
+endif
 
 library:: $(FREETYPE_LIB)
 
@@ -161,7 +161,7 @@ CXXFLAGS     += -DHEADLESS
 ifndef OPENJDK
   CPPFLAGS += -I$(CLOSED_SRC)/share/native/$(PKGDIR)/t2k
 else
-  CPPFLAGS += -I$(FREETYPE_HEADERS_PATH) -I$(FREETYPE_HEADERS_PATH)/freetype2
+  CPPFLAGS += $(FT2_CFLAGS)
 endif
 
 ifeq ($(PLATFORM), windows)
