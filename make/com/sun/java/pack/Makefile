@@ -72,9 +72,14 @@ ifeq ($(STANDALONE),true)
 	     $(ZIPOBJDIR)/inftrees.$(OBJECT_SUFFIX) \
 	     $(ZIPOBJDIR)/inffast.$(OBJECT_SUFFIX)
 
-  ZINCLUDE=-I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
-  OTHER_CXXFLAGS += $(ZINCLUDE)
-  LDDFLAGS += $(ZIPOBJS)
+  ifdef USE_SYSTEM_ZLIB
+    OTHER_CXXFLAGS += $(ZLIB_CFLAGS) -DUSE_SYSTEM_ZLIB=1
+    LDDFLAGS += $(ZLIB_LIBS)
+  else
+    ZINCLUDE=-I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
+    OTHER_CXXFLAGS += $(ZINCLUDE)
+    LDDFLAGS += $(ZIPOBJS)
+  endif
 else
   OTHER_CXXFLAGS += -DNO_ZLIB -DUNPACK_JNI
   OTHER_LDLIBS += $(JVMLIB)

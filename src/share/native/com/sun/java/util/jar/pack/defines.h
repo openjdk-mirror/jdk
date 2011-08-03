@@ -89,10 +89,14 @@ extern int assert_failed(const char*);
 // bytes and byte arrays
 
 typedef unsigned int uint;
-#ifdef _LP64
-typedef unsigned int uLong; // Historical zlib, should be 32-bit.
+#ifdef USE_SYSTEM_ZLIB
+  #include <zlib.h>
 #else
-typedef unsigned long uLong;
+  #ifdef _LP64
+    typedef unsigned int uLong; // Historical zlib, should be 32-bit.
+  #else
+    typedef unsigned long uLong;
+  #endif
 #endif
 #ifdef _MSC_VER
 typedef LONGLONG        jlong;

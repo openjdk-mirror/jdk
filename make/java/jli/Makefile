@@ -44,7 +44,9 @@ MS_RUNTIME_STATIC = true
 
 include $(BUILDDIR)/common/Defs.gmk
 
-ZIP_SRC = $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
+ifndef USE_SYSTEM_ZLIB
+  ZIP_SRC = $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
+endif
 LAUNCHER_SHARE_SRC = $(SHARE_SRC)/bin
 LAUNCHER_PLATFORM_SRC = $(PLATFORM_SRC)/bin
 
@@ -69,13 +71,17 @@ FILES_c = \
 	parse_manifest.c \
 	version_comp.c \
 	wildcard.c \
-	jli_util.c \
+	jli_util.c
+
+ifndef USE_SYSTEM_ZLIB
+FILES_c += \
 	inflate.c \
 	inftrees.c \
 	inffast.c \
 	zadler32.c \
 	zcrc32.c \
 	zutil.c
+endif
 
 ifneq ($(PLATFORM), windows)
   FILES_c += ergo.c 
@@ -106,6 +112,9 @@ ifneq ($(PLATFORM), windows)	# UNIX systems
 	# last library otherwise it could cause compatibility issues
 	# by pulling in SUNW_private symbols from libc
 	LDLIBS = -ldl -lc
+ifdef USE_SYSTEM_ZLIB
+	LDLIBS += $(ZLIB_LIBS)
+endif
 ifeq ($(USE_PTHREADS),true)
 	LDLIBS += -lpthread
 endif # USE_PTHREADS 
@@ -129,7 +138,9 @@ endif
 
 OTHER_INCLUDES += -I$(LAUNCHER_SHARE_SRC)
 OTHER_INCLUDES += -I$(LAUNCHER_PLATFORM_SRC)
-OTHER_INCLUDES += -I$(ZIP_SRC)
+ifndef USE_SYSTEM_ZLIB
+  OTHER_INCLUDES += -I$(ZIP_SRC)
+endif
 
 #
 # Library to compile.

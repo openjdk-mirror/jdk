@@ -44,7 +44,7 @@
 #include "io_util.h"
 #include "io_util_md.h"
 #include "zip_util.h"
-#include "zlib.h"
+#include <zlib.h>
 
 /* USE_MMAP means mmap the CEN & ENDHDR part of the zip file. */
 #ifdef USE_MMAP
