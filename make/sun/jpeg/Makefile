@@ -25,7 +25,7 @@
 
 BUILDDIR = ../..
 PACKAGE = sun.awt
-LIBRARY = jpeg
+LIBRARY = javajpeg
 PRODUCT = sun
 
 # Use highest optimization level
@@ -56,6 +56,9 @@ OTHER_INCLUDES += -I$(CLOSED_SRC)/share/native/$(PKGDIR)/image/jpeg
 endif
 
 OTHER_INCLUDES += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+ifndef USE_SYSTEM_JPEG
+OTHER_INCLUDES += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
+endif
 
 # Rules
 #
@@ -90,6 +93,12 @@ include $(BUILDDIR)/common/Library.gmk
 # Add to ambient vpath to get files in a subdirectory
 #
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+ifndef USE_SYSTEM_JPEG
+vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
+endif
 
 CLASSES.export += java.io.InputStream
 
+ifdef USE_SYSTEM_JPEG
+  OTHER_LDLIBS += $(JPEG_LIBS)
+endif

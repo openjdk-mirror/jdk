@@ -68,6 +68,9 @@ ifneq ($(PLATFORM), windows)
   ifdef USE_SYSTEM_ZLIB
     OTHER_LDLIBS += $(ZLIB_LIBS)
   endif
+  ifdef USE_SYSTEM_JPEG
+    OTHER_LDLIBS += $(JPEG_LIBS)
+  endif
 else # PLATFORM
   CFLAGS += -DWITH_WIN32
   OTHER_LDLIBS += kernel32.lib user32.lib gdi32.lib delayimp.lib /DELAYLOAD:user32.dll
@@ -84,11 +87,17 @@ ifndef USE_SYSTEM_ZLIB
   vpath %.c   $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 endif
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/libpng
-vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+ifndef USE_SYSTEM_JPEG
+  vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+endif
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/splashscreen
 
 CPPFLAGS += -I$(PLATFORM_SRC)/native/$(PKGDIR)/splashscreen -I$(SHARE_SRC)/native/$(PKGDIR)/splashscreen
-CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+ifdef USE_SYSTEM_JPEG
+  CPPFLAGS += $(JPEG_CFLAGS)
+else
+  CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+endif
 ifndef USE_SYSTEM_ZLIB
   CPPFLAGS += -I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 endif

@@ -48,7 +48,26 @@ FILES_c = \
 	pngwutil.c \
 	dgif_lib.c \
 	gif_err.c \
-	gifalloc.c \
+	gifalloc.c
+
+ifndef USE_SYSTEM_ZLIB
+FILES_c += \
+	compress.c \
+	deflate.c \
+	gzio.c \
+	infback.c \
+	inffast.c \
+	inflate.c \
+	inftrees.c \
+	trees.c \
+	uncompr.c \
+	zadler32.c \
+	zcrc32.c \
+	zutil.c
+endif
+
+ifndef USE_SYSTEM_JPEG
+FILES_c += \
 	jcomapi.c \
 	jdapimin.c \
 	jdapistd.c \
@@ -93,19 +112,4 @@ FILES_c = \
 	jfdctflt.c \
 	jfdctfst.c \
 	jfdctint.c
-
-ifndef USE_SYSTEM_ZLIB
-FILES_c += \
-	compress.c \
-	deflate.c \
-	gzio.c \
-	infback.c \
-	inffast.c \
-	inflate.c \
-	inftrees.c \
-	trees.c \
-	uncompr.c \
-	zadler32.c \
-	zcrc32.c \
-	zutil.c
 endif

@@ -25,7 +25,10 @@
 
 FILES_c = \
 	imageioJPEG.c \
-	jpegdecoder.c \
+	jpegdecoder.c
+
+ifndef USE_SYSTEM_JPEG
+FILES_c = \
 	jcomapi.c \
 	jdapimin.c \
 	jdapistd.c \
@@ -70,6 +73,7 @@ FILES_c = \
 	jfdctflt.c \
 	jfdctfst.c \
 	jfdctint.c
+endif
 
 ifndef OPENJDK
 FILES_c += \

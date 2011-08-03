@@ -45,7 +45,7 @@
 #undef boolean
 #undef FAR
 #include <jpeglib.h>
-#include "jerror.h"
+#include <jerror.h>
 
 /* The method IDs we cache. Note that the last two belongs to the
  * java.io.InputStream class.

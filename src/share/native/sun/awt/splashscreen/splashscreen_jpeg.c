@@ -25,11 +25,12 @@
 
 #include "splashscreen_impl.h"
 
-#include "jinclude.h"
-#include "jpeglib.h"
-#include "jerror.h"
+#include <jpeglib.h>
+#include <jerror.h>
 
 #include <setjmp.h>
+
+#define SIZEOF(object)  ((size_t) sizeof(object))
 
 /* stream input handling */
 

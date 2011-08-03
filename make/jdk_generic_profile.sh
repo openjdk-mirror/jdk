@@ -416,6 +416,15 @@ fi
 export ZLIB_CFLAGS
 export ZLIB_LIBS
 
+# Export variables for system jpeg
+# JPEG_CFLAGS and JPEG_LIBS tell the compiler how to compile and
+# link against libjpeg
+if [ "${JPEG_LIBS}" = "" ] ; then
+    ZLIB_LIBS="-ljpeg"
+fi
+export JPEG_LIBS
+
 # IcedTea defaults; use system libraries
 export USE_SYSTEM_LCMS=true
 export USE_SYSTEM_ZLIB=true
+export USE_SYSTEM_JPEG=true
