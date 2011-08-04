@@ -108,7 +108,9 @@ ifdef USE_SYSTEM_JPEG
 else
   CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
 endif
-ifndef USE_SYSTEM_ZLIB
+ifdef USE_SYSTEM_ZLIB
+  CPPFLAGS += $(ZLIB_CFLAGS)
+else
   CPPFLAGS += -I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 endif
 ifdef USE_SYSTEM_PNG
