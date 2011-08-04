@@ -424,7 +424,26 @@ if [ "${JPEG_LIBS}" = "" ] ; then
 fi
 export JPEG_LIBS
 
+# Export variables for system libpng
+# PNG_CFLAGS and PNG_LIBS tell the compiler how to compile and
+# link against libpng
+pkgconfig=$(which pkg-config 2>/dev/null)
+if [ -x "${pkgconfig}" ] ; then
+  if [ "${PNG_CFLAGS}" = "" ] ; then
+    PNG_CFLAGS=$("${pkgconfig}" --cflags libpng)
+  fi
+  if [ "${PNG_LIBS}" = "" ] ; then
+    PNG_LIBS=$("${pkgconfig}" --libs libpng)
+  fi
+fi
+if [ "${PNG_LIBS}" = "" ] ; then
+    PNG_LIBS="-lpng"
+fi
+export PNG_CFLAGS
+export PNG_LIBS
+
 # IcedTea defaults; use system libraries
 export USE_SYSTEM_LCMS=true
 export USE_SYSTEM_ZLIB=true
 export USE_SYSTEM_JPEG=true
+export USE_SYSTEM_PNG=true

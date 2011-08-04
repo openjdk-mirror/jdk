@@ -31,21 +31,6 @@ FILES_c = \
 	splashscreen_jpeg.c \
 	splashscreen_png.c \
 	splashscreen_sys.c \
-	png.c \
-	pngerror.c \
-	pngget.c \
-	pngmem.c  \
-	pngpread.c \
-	pngread.c \
-	pngrio.c \
-	pngrtran.c \
-	pngrutil.c \
-	pngset.c \
-	pngtrans.c \
-	pngwio.c \
-	pngwrite.c \
-	pngwtran.c \
-	pngwutil.c \
 	dgif_lib.c \
 	gif_err.c \
 	gifalloc.c
@@ -112,4 +97,23 @@ FILES_c += \
 	jfdctflt.c \
 	jfdctfst.c \
 	jfdctint.c
+endif
+
+ifndef USE_SYSTEM_PNG
+FILES_c += \
+	png.c \
+	pngerror.c \
+	pngget.c \
+	pngmem.c  \
+	pngpread.c \
+	pngread.c \
+	pngrio.c \
+	pngrtran.c \
+	pngrutil.c \
+	pngset.c \
+	pngtrans.c \
+	pngwio.c \
+	pngwrite.c \
+	pngwtran.c \
+	pngwutil.c
 endif

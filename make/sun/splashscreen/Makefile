@@ -71,6 +71,9 @@ ifneq ($(PLATFORM), windows)
   ifdef USE_SYSTEM_JPEG
     OTHER_LDLIBS += $(JPEG_LIBS)
   endif
+  ifdef USE_SYSTEM_PNG
+    OTHER_LDLIBS += $(PNG_LIBS)
+  endif
 else # PLATFORM
   CFLAGS += -DWITH_WIN32
   OTHER_LDLIBS += kernel32.lib user32.lib gdi32.lib delayimp.lib /DELAYLOAD:user32.dll
@@ -86,7 +89,9 @@ vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/giflib
 ifndef USE_SYSTEM_ZLIB
   vpath %.c   $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 endif
-vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/libpng
+ifndef USE_SYSTEM_PNG
+  vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/libpng
+endif
 ifndef USE_SYSTEM_JPEG
   vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
 endif
@@ -100,6 +105,11 @@ else
 endif
 ifndef USE_SYSTEM_ZLIB
   CPPFLAGS += -I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
+endif
+ifdef USE_SYSTEM_PNG
+  CPPFLAGS += $(PNG_CFLAGS)
+else
+  CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/libpng
 endif
 
 # Shun the less than portable MMX assembly code in pnggccrd.c,
