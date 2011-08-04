@@ -442,8 +442,17 @@ fi
 export PNG_CFLAGS
 export PNG_LIBS
 
+# Export variables for system giflib
+# GIF_CFLAGS and GIF_LIBS tell the compiler how to compile and
+# link against giflib
+if [ "${GIF_LIBS}" = "" ] ; then
+    GIF_LIBS="-lgif"
+fi
+export GIF_LIBS
+
 # IcedTea defaults; use system libraries
 export USE_SYSTEM_LCMS=true
 export USE_SYSTEM_ZLIB=true
 export USE_SYSTEM_JPEG=true
 export USE_SYSTEM_PNG=true
+export USE_SYSTEM_GIF=true
