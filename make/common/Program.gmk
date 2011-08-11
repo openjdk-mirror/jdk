@@ -56,11 +56,13 @@ program_default_rule: all
 program: $(ACTUAL_PROGRAM)
 
 # Work-around for missing processor specific mapfiles
+ifneq (,$(filter $(ARCH), amd64 i586 sparc sparcv9))
 ifndef CROSS_COMPILE_ARCH
   # reuse the mapfiles in the launcher's directory, the same should
   # be applicable to the tool launchers as well.
   FILES_m = $(BUILDDIR)/java/main/java/mapfile-$(ARCH)
   include $(BUILDDIR)/common/Mapfile-vers.gmk
+endif
 endif
 
 include $(JDK_TOPDIR)/make/common/Rules.gmk
