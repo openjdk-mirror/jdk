@@ -83,3 +83,8 @@ FILES_c = \
 	sun_awt_X11_GtkFileDialogPeer.c \
 	XRSurfaceData.c \
 	XRBackendNative.c
+
+ifndef USE_SYSTEM_GTK
+FILES_c += \
+	gtk_fp.c
+endif

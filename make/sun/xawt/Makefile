@@ -92,8 +92,16 @@ vpath %.c   $(SHARE_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/x11
 
+ifndef USE_SYSTEM_GTK
+vpath %.c   $(PLATFORM_SRC)/native/sun/awt/gtk2
+endif
+
 OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -lXrender -ldl \
                    $(LDFLAGS_COMMON) $(AWT_RUNPATH) $(OTHER_LDFLAGS) -lXtst -lXi
+
+ifdef USE_SYSTEM_GTK
+  OTHER_LDLIBS += $(GTK_LIBS)
+endif
 
 ifeq  ($(PLATFORM), solaris)
 CPPFLAGS += -DFUNCPROTO=15
@@ -127,6 +135,12 @@ CPPFLAGS += -DXAWT -DXAWT_HACK \
         -I$(PLATFORM_SRC)/native/sun/font \
         -I$(SHARE_SRC)/native/sun/awt \
         -I$(PLATFORM_SRC)/native/sun/awt
+
+ifdef USE_SYSTEM_GTK
+  CPPFLAGS += $(GTK_CFLAGS) -DUSE_SYSTEM_GTK
+else
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/sun/awt/gtk2
+endif
 
 ifeq ($(PLATFORM), linux)
   ifndef CROSS_COMPILE_ARCH

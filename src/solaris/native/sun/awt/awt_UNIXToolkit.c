@@ -101,13 +101,13 @@ jboolean _icon_upcall(JNIEnv *env, jobject this, GdkPixbuf *pixbuf)
 
     if (pixbuf != NULL)
     {
-        guchar *pixbuf_data = (*fp_gdk_pixbuf_get_pixels)(pixbuf);
-        int row_stride = (*fp_gdk_pixbuf_get_rowstride)(pixbuf);
-        int width = (*fp_gdk_pixbuf_get_width)(pixbuf);
-        int height = (*fp_gdk_pixbuf_get_height)(pixbuf);
-        int bps = (*fp_gdk_pixbuf_get_bits_per_sample)(pixbuf);
-        int channels = (*fp_gdk_pixbuf_get_n_channels)(pixbuf);
-        gboolean alpha = (*fp_gdk_pixbuf_get_has_alpha)(pixbuf);
+        guchar *pixbuf_data = gdk_pixbuf_get_pixels (pixbuf);
+        int row_stride = gdk_pixbuf_get_rowstride (pixbuf);
+        int width = gdk_pixbuf_get_width (pixbuf);
+        int height = gdk_pixbuf_get_height (pixbuf);
+        int bps = gdk_pixbuf_get_bits_per_sample (pixbuf);
+        int channels = gdk_pixbuf_get_n_channels (pixbuf);
+        gboolean alpha = gdk_pixbuf_get_has_alpha (pixbuf);
 
         /* Copy the data array into a Java structure so we can pass it back. */
         jbyteArray data = (*env)->NewByteArray(env, (row_stride * height));
@@ -115,7 +115,7 @@ jboolean _icon_upcall(JNIEnv *env, jobject this, GdkPixbuf *pixbuf)
                                    (jbyte *)pixbuf_data);
 
         /* Release the pixbuf. */
-        (*fp_g_object_unref)(pixbuf);
+        g_object_unref (pixbuf);
 
         /* Call the callback method to create the image on the Java side. */
         (*env)->CallVoidMethod(env, this, icon_upcall_method, data,
@@ -154,7 +154,7 @@ Java_sun_awt_UNIXToolkit_load_1gtk_1icon(JNIEnv *env, jobject this,
         return JNI_FALSE;
     }
     (*env)->GetStringUTFRegion(env, filename, 0, len, filename_str);
-    pixbuf = (*fp_gdk_pixbuf_new_from_file)(filename_str, error);
+    pixbuf = gdk_pixbuf_new_from_file (filename_str, error);
 
     /* Release the strings we've allocated. */
     free(filename_str);
@@ -272,7 +272,7 @@ Java_sun_awt_UNIXToolkit_gtkCheckVersionImpl(JNIEnv *env, jobject this,
 {
     char *ret;
 
-    ret = fp_gtk_check_version(major, minor, micro);
+    ret = gtk_check_version(major, minor, micro);
     if (ret == NULL) {
         return TRUE;
     }
