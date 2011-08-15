@@ -53,3 +53,6 @@ else
     FILES_c += PlainDatagramSocketImpl.c
 endif
 
+ifndef USE_SYSTEM_GCONF
+   FILES_c += gconf_fp.c
+endif
