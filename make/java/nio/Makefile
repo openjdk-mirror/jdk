@@ -241,6 +241,11 @@ FILES_c += \
 	UnixCopyFile.c \
 	UnixNativeDispatcher.c
 
+ifndef USE_SYSTEM_GIO
+FILES_c += \
+	gio_fp.c
+endif
+
 FILES_export += \
 	sun/nio/ch/EPoll.java \
         sun/nio/ch/EPollArrayWrapper.java \
@@ -255,7 +260,7 @@ FILES_export += \
 	sun/nio/fs/LinuxWatchService.java \
 	sun/nio/fs/UnixCopyFile.java \
 	sun/nio/fs/UnixNativeDispatcher.java
-	
+
 FILES_gen += \
 	sun/nio/fs/UnixConstants.java
 endif # PLATFORM = linux
@@ -266,6 +271,10 @@ endif # PLATFORM = linux
 vpath %.c $(PLATFORM_SRC)/native/sun/nio/fs
 vpath %.c $(PLATFORM_SRC)/native/sun/nio/ch
 vpath %.c $(SHARE_SRC)/native/sun/nio/ch
+
+ifndef USE_SYSTEM_GIO
+  vpath %.c	$(PLATFORM_SRC)/native/sun/nio/fs/glib2
+endif
 
 #
 # Various variables
@@ -291,9 +300,17 @@ ifeq ($(PLATFORM),windows)
      $(OBJDIR)/../../../java.lang/java/$(OBJDIRNAME)/io_util.obj \
      $(OBJDIR)/../../../java.lang/java/$(OBJDIRNAME)/FileDescriptor_md.obj
 endif
+
 ifeq ($(PLATFORM), linux)
 OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -ljava -lnet -lpthread -ldl
+ifdef USE_SYSTEM_GIO
+  OTHER_LDLIBS += $(GIO_LIBS)
+  OTHER_INCLUDES += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
+else
+  OTHER_INCLUDES += -I$(PLATFORM_SRC)/native/sun/nio/fs/glib2
 endif
+endif
+
 ifeq ($(PLATFORM), solaris)
 OTHER_LDLIBS += $(JVMLIB) $(LIBSOCKET) -lposix4 -ldl -lsendfile \
 		-L$(LIBDIR)/$(LIBARCH) -ljava -lnet
