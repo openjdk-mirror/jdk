@@ -103,12 +103,20 @@ ifdef USE_SYSTEM_GTK
   OTHER_LDLIBS += $(GTK_LIBS)
 endif
 
+ifdef USE_SYSTEM_CUPS
+  OTHER_LDLIBS += $(CUPS_LIBS)
+endif
+
 ifeq  ($(PLATFORM), solaris)
 CPPFLAGS += -DFUNCPROTO=15
 dummy := $(shell $(MKDIR) -p $(LIB_LOCATION))
 endif
 
-CPPFLAGS += -I$(CUPS_HEADERS_PATH)
+ifdef CUPS_CFLAGS
+  CPPFLAGS += $(CUPS_CFLAGS)
+else
+  CPPFLAGS += -I$(CUPS_HEADERS_PATH)
+endif
 
 CPPFLAGS += -DXAWT -DXAWT_HACK \
         -I$(TEMPDIR)/../../sun.awt/awt/CClassHeaders \
@@ -140,6 +148,10 @@ ifdef USE_SYSTEM_GTK
   CPPFLAGS += $(GTK_CFLAGS) -DUSE_SYSTEM_GTK
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/sun/awt/gtk2
+endif
+
+ifdef USE_SYSTEM_CUPS
+  CPPFLAGS += -DUSE_SYSTEM_CUPS
 endif
 
 ifeq ($(PLATFORM), linux)

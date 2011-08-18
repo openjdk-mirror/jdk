@@ -229,3 +229,8 @@ FILES_NO_MOTIF_c = \
         GLXSurfaceData.c \
         AccelGlyphCache.c \
 	CUPSfuncs.c
+
+ifndef USE_SYSTEM_CUPS
+FILES_NO_MOTIF_c = \
+	cups_fp.c
+endif

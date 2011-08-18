@@ -193,7 +193,16 @@ endif
 #
 # Other extra flags needed for compiling.
 #
-CPPFLAGS += -I$(CUPS_HEADERS_PATH)
+ifdef CUPS_CFLAGS
+  CPPFLAGS += $(CUPS_CFLAGS)
+else
+  CPPFLAGS += -I$(CUPS_HEADERS_PATH)
+endif
+
+ifdef USE_SYSTEM_CUPS
+  CPPFLAGS += -DUSE_SYSTEM_CUPS
+  LDFLAGS += $(CUPS_LIBS)
+endif
 
 ifndef HEADLESS
 CPPFLAGS += -I$(OPENWIN_HOME)/include 
