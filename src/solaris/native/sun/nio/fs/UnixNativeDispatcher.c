@@ -62,6 +62,10 @@
 
 #include "sun_nio_fs_UnixNativeDispatcher.h"
 
+#ifndef COMPILE_AGAINST_SYSCALLS
+#include <syscalls_fp.h>
+#endif
+
 /**
  * Size of password or group entry when not available via sysconf
  */
@@ -103,23 +107,6 @@ static jfieldID entry_options;
 static jfieldID entry_dev;
 
 /**
- * System calls that may not be available at run time.
- */
-typedef int openat64_func(int, const char *, int, ...);
-typedef int fstatat64_func(int, const char *, struct stat64 *, int);
-typedef int unlinkat_func(int, const char*, int);
-typedef int renameat_func(int, const char*, int, const char*);
-typedef int futimesat_func(int, const char *, const struct timeval *);
-typedef DIR* fdopendir_func(int);
-
-static openat64_func* my_openat64_func = NULL;
-static fstatat64_func* my_fstatat64_func = NULL;
-static unlinkat_func* my_unlinkat_func = NULL;
-static renameat_func* my_renameat_func = NULL;
-static futimesat_func* my_futimesat_func = NULL;
-static fdopendir_func* my_fdopendir_func = NULL;
-
-/**
  * Call this to throw an internal UnixException when a system/library
  * call fails
  */
@@ -137,8 +124,9 @@ static void throwUnixException(JNIEnv* env, int errnum) {
 JNIEXPORT jint JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
 {
-    jint flags = 0;
     jclass clazz;
+    jint flags = 0;
+    int ret;
 
     clazz = (*env)->FindClass(env, "sun/nio/fs/UnixFileAttributes");
     if (clazz == NULL) {
@@ -175,33 +163,14 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
     entry_options = (*env)->GetFieldID(env, clazz, "opts", "[B");
     entry_dev = (*env)->GetFieldID(env, clazz, "dev", "J");
 
-    /* system calls that might not be available at run time */
-
-#if defined(__solaris__) && defined(_LP64)
-    /* Solaris 64-bit does not have openat64/fstatat64 */
-    my_openat64_func = (openat64_func*)dlsym(RTLD_DEFAULT, "openat");
-    my_fstatat64_func = (fstatat64_func*)dlsym(RTLD_DEFAULT, "fstatat");
+#ifdef COMPILE_AGAINST_SYSCALLS
+    ret = 0;
 #else
-    my_openat64_func = (openat64_func*) dlsym(RTLD_DEFAULT, "openat64");
-    my_fstatat64_func = (fstatat64_func*) dlsym(RTLD_DEFAULT, "fstatat64");
-#endif
-    my_unlinkat_func = (unlinkat_func*) dlsym(RTLD_DEFAULT, "unlinkat");
-    my_renameat_func = (renameat_func*) dlsym(RTLD_DEFAULT, "renameat");
-    my_futimesat_func = (futimesat_func*) dlsym(RTLD_DEFAULT, "futimesat");
-    my_fdopendir_func = (fdopendir_func*) dlsym(RTLD_DEFAULT, "fdopendir");
-
-#if defined(_ATFILE_SOURCE)
-    /* fstatat64 from glibc requires a define */
-    if (my_fstatat64_func == NULL)
-        my_fstatat64_func = (fstatat64_func*)&fstatat64;
+    ret = atsyscalls_init();
 #endif
 
-    if (my_openat64_func != NULL &&  my_fstatat64_func != NULL &&
-        my_unlinkat_func != NULL && my_renameat_func != NULL &&
-        my_futimesat_func != NULL && my_fdopendir_func != NULL)
-    {
+    if (ret == 0)
         flags |= sun_nio_fs_UnixNativeDispatcher_HAS_AT_SYSCALLS;
-    }
 
     return flags;
 }
@@ -307,12 +276,14 @@ Java_sun_nio_fs_UnixNativeDispatcher_openat0(JNIEnv* env, jclass this, jint dfd,
     jint fd;
     const char* path = (const char*)jlong_to_ptr(pathAddress);
 
+#ifndef COMPILE_AGAINST_SYSCALLS
     if (my_openat64_func == NULL) {
         JNU_ThrowInternalError(env, "should not reach here");
         return -1;
     }
+#endif
 
-    RESTARTABLE((*my_openat64_func)(dfd, path, (int)oflags, (mode_t)mode), fd);
+    RESTARTABLE(openat64 (dfd, path, (int)oflags, (mode_t)mode), fd);
     if (fd == -1) {
         throwUnixException(env, errno);
     }
@@ -424,11 +395,13 @@ Java_sun_nio_fs_UnixNativeDispatcher_fstatat0(JNIEnv* env, jclass this, jint dfd
     struct stat64 buf;
     const char* path = (const char*)jlong_to_ptr(pathAddress);
 
+#ifndef COMPILE_AGAINST_SYSCALLS
     if (my_fstatat64_func == NULL) {
         JNU_ThrowInternalError(env, "should not reach here");
         return;
     }
-    RESTARTABLE((*my_fstatat64_func)((int)dfd, path, &buf, (int)flag), err);
+#endif
+    RESTARTABLE(fstatat64 ((int)dfd, path, &buf, (int)flag), err);
     if (err == -1) {
         throwUnixException(env, errno);
     } else {
@@ -531,12 +504,11 @@ Java_sun_nio_fs_UnixNativeDispatcher_futimes(JNIEnv* env, jclass this, jint file
     times[1].tv_sec = modificationTime / 1000000;
     times[1].tv_usec = modificationTime % 1000000;
 
-    if (my_futimesat_func != NULL) {
-        RESTARTABLE((*my_futimesat_func)(filedes, NULL, &times[0]), err);
-        if (err == -1) {
-            throwUnixException(env, errno);
-        }
+    RESTARTABLE(futimesat (filedes, NULL, &times[0]), err);
+    if (err == -1) {
+        throwUnixException(env, errno);
     }
+
 }
 
 JNIEXPORT jlong JNICALL
@@ -558,13 +530,15 @@ JNIEXPORT jlong JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_fdopendir(JNIEnv* env, jclass this, int dfd) {
     DIR* dir;
 
+#ifndef COMPILE_AGAINST_SYSCALLS
     if (my_fdopendir_func == NULL) {
         JNU_ThrowInternalError(env, "should not reach here");
         return (jlong)-1;
     }
+#endif
 
     /* EINTR not listed as a possible error */
-    dir = (*my_fdopendir_func)((int)dfd);
+    dir = fdopendir ((int)dfd);
     if (dir == NULL) {
         throwUnixException(env, errno);
     }
@@ -667,13 +641,15 @@ Java_sun_nio_fs_UnixNativeDispatcher_unlinkat0(JNIEnv* env, jclass this, jint df
 {
     const char* path = (const char*)jlong_to_ptr(pathAddress);
 
+#ifndef COMPILE_AGAINST_SYSCALLS
     if (my_unlinkat_func == NULL) {
         JNU_ThrowInternalError(env, "should not reach here");
         return;
     }
+#endif
 
     /* EINTR not listed as a possible error */
-    if ((*my_unlinkat_func)((int)dfd, path, (int)flags) == -1) {
+    if (unlinkat ((int)dfd, path, (int)flags) == -1) {
         throwUnixException(env, errno);
     }
 }
@@ -698,13 +674,15 @@ Java_sun_nio_fs_UnixNativeDispatcher_renameat0(JNIEnv* env, jclass this,
     const char* from = (const char*)jlong_to_ptr(fromAddress);
     const char* to = (const char*)jlong_to_ptr(toAddress);
 
+#ifndef COMPILE_AGAINST_SYSCALLS
     if (my_renameat_func == NULL) {
         JNU_ThrowInternalError(env, "should not reach here");
         return;
     }
+#endif
 
     /* EINTR not listed as a possible error */
-    if ((*my_renameat_func)((int)fromfd, from, (int)tofd, to) == -1) {
+    if (renameat ((int)fromfd, from, (int)tofd, to) == -1) {
         throwUnixException(env, errno);
     }
 }

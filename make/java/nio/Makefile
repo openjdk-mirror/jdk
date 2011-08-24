@@ -246,6 +246,11 @@ FILES_c += \
 	gio_fp.c
 endif
 
+ifndef COMPILE_AGAINST_SYSCALLS
+FILES_c += \
+	syscalls_fp.c
+endif
+
 FILES_export += \
 	sun/nio/ch/EPoll.java \
         sun/nio/ch/EPollArrayWrapper.java \
@@ -274,6 +279,10 @@ vpath %.c $(SHARE_SRC)/native/sun/nio/ch
 
 ifndef USE_SYSTEM_GIO
   vpath %.c	$(PLATFORM_SRC)/native/common/deps/glib2
+endif
+
+ifndef COMPILE_AGAINST_SYSCALLS
+  vpath %.c	$(PLATFORM_SRC)/native/common/deps
 endif
 
 #
@@ -315,6 +324,12 @@ ifeq ($(PLATFORM), solaris)
 OTHER_LDLIBS += $(JVMLIB) $(LIBSOCKET) -lposix4 -ldl -lsendfile \
 		-L$(LIBDIR)/$(LIBARCH) -ljava -lnet
 endif # PLATFORM
+
+ifdef COMPILE_AGAINST_SYSCALLS
+  OTHER_INCLUDES += -DCOMPILE_AGAINST_SYSCALLS
+else
+  OTHER_INCLUDES += -I$(PLATFORM_SRC)/native/common/deps
+endif
 
 #
 # Rules

@@ -35,15 +35,12 @@
 
 #include "sun_nio_fs_LinuxNativeDispatcher.h"
 
-typedef size_t fgetxattr_func(int fd, const char* name, void* value, size_t size);
-typedef int fsetxattr_func(int fd, const char* name, void* value, size_t size, int flags);
-typedef int fremovexattr_func(int fd, const char* name);
-typedef int flistxattr_func(int fd, char* list, size_t size);
-
-fgetxattr_func* my_fgetxattr_func = NULL;
-fsetxattr_func* my_fsetxattr_func = NULL;
-fremovexattr_func* my_fremovexattr_func = NULL;
-flistxattr_func* my_flistxattr_func = NULL;
+#ifdef COMPILE_AGAINST_SYSCALLS
+#include <sys/types.h>
+#include <attr/xattr.h>
+#else
+#include <syscalls_fp.h>
+#endif
 
 static void throwUnixException(JNIEnv* env, int errnum) {
     jobject x = JNU_NewObjectByName(env, "sun/nio/fs/UnixException",
@@ -56,10 +53,9 @@ static void throwUnixException(JNIEnv* env, int errnum) {
 JNIEXPORT void JNICALL
 Java_sun_nio_fs_LinuxNativeDispatcher_init(JNIEnv *env, jclass clazz)
 {
-    my_fgetxattr_func = (fgetxattr_func*)dlsym(RTLD_DEFAULT, "fgetxattr");
-    my_fsetxattr_func = (fsetxattr_func*)dlsym(RTLD_DEFAULT, "fsetxattr");
-    my_fremovexattr_func = (fremovexattr_func*)dlsym(RTLD_DEFAULT, "fremovexattr");
-    my_flistxattr_func = (flistxattr_func*)dlsym(RTLD_DEFAULT, "flistxattr");
+#ifndef COMPILE_AGAINST_SYSCALLS
+    syscalls_init();
+#endif
 }
 
 JNIEXPORT jint JNICALL
@@ -70,12 +66,7 @@ Java_sun_nio_fs_LinuxNativeDispatcher_fgetxattr0(JNIEnv* env, jclass clazz,
     const char* name = jlong_to_ptr(nameAddress);
     void* value = jlong_to_ptr(valueAddress);
 
-    if (my_fgetxattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_fgetxattr_func)(fd, name, value, valueLen);
-    }
+    res = fgetxattr (fd, name, value, valueLen);
     if (res == (size_t)-1)
         throwUnixException(env, errno);
     return (jint)res;
@@ -89,12 +80,7 @@ Java_sun_nio_fs_LinuxNativeDispatcher_fsetxattr0(JNIEnv* env, jclass clazz,
     const char* name = jlong_to_ptr(nameAddress);
     void* value = jlong_to_ptr(valueAddress);
 
-    if (my_fsetxattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_fsetxattr_func)(fd, name, value, valueLen, 0);
-    }
+    res = fsetxattr (fd, name, value, valueLen, 0);
     if (res == -1)
         throwUnixException(env, errno);
 }
@@ -106,12 +92,7 @@ Java_sun_nio_fs_LinuxNativeDispatcher_fremovexattr0(JNIEnv* env, jclass clazz,
     int res = -1;
     const char* name = jlong_to_ptr(nameAddress);
 
-    if (my_fremovexattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_fremovexattr_func)(fd, name);
-    }
+    res = fremovexattr (fd, name);
     if (res == -1)
         throwUnixException(env, errno);
 }
@@ -123,12 +104,7 @@ Java_sun_nio_fs_LinuxNativeDispatcher_flistxattr(JNIEnv* env, jclass clazz,
     size_t res = -1;
     char* list = jlong_to_ptr(listAddress);
 
-    if (my_flistxattr_func == NULL) {
-        errno = ENOTSUP;
-    } else {
-        /* EINTR not documented */
-        res = (*my_flistxattr_func)(fd, list, (size_t)size);
-    }
+    res = flistxattr (fd, list, (size_t)size);
     if (res == (size_t)-1)
         throwUnixException(env, errno);
     return (jint)res;
