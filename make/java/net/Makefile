@@ -85,7 +85,7 @@ vpath %.c $(PLATFORM_SRC)/native/sun/net/dns $(PLATFORM_SRC)/native/sun/net/www/
     $(PLATFORM_SRC)/native/sun/net/sdp $(PLATFORM_SRC)/native/sun/net/spi
 
 ifndef USE_SYSTEM_GCONF
-  vpath %.c	$(PLATFORM_SRC)/native/sun/net/spi/gconf2
+  vpath %.c	$(PLATFORM_SRC)/native/common/deps/gconf2
 endif
 
 #
@@ -110,7 +110,7 @@ ifdef USE_SYSTEM_GCONF
   OTHER_LDLIBS += $(GCONF_LIBS) $(GOBJECT_LIBS)
   CPPFLAGS += $(GCONF_CFLAGS) $(GOBJECT_CFLAGS) -DUSE_SYSTEM_GCONF
 else
-  CPPFLAGS += -I$(PLATFORM_SRC)/native/sun/net/spi/gconf2
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gconf2
 endif
 
 CLASSES.export += java.lang.Integer java.io.FileDescriptor java.net.InetAddressImplFactory java.net.Inet4AddressImpl java.net.Inet6AddressImpl

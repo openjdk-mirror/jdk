@@ -104,7 +104,7 @@ vpath %.cpp $(SHARE_SRC)/native/$(PKGDIR)/image
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/robot_child
 
 ifndef USE_SYSTEM_FONTCONFIG
-vpath %.c   $(PLATFORM_SRC)/native/common/deps
+vpath %.c   $(PLATFORM_SRC)/native/common/deps/fontconfig2
 endif
 
 #
@@ -210,12 +210,14 @@ endif
 ifdef USE_SYSTEM_CUPS
   CPPFLAGS += -DUSE_SYSTEM_CUPS
   LDFLAGS += $(CUPS_LIBS)
+else
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps
 endif
 
 ifdef USE_SYSTEM_FONTCONFIG
   CPPFLAGS += $(FONTCONFIG_CFLAGS) -DUSE_SYSTEM_FONTCONFIG
 else
-  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/fontconfig2
 endif
 
 ifndef HEADLESS

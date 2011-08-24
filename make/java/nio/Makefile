@@ -273,7 +273,7 @@ vpath %.c $(PLATFORM_SRC)/native/sun/nio/ch
 vpath %.c $(SHARE_SRC)/native/sun/nio/ch
 
 ifndef USE_SYSTEM_GIO
-  vpath %.c	$(PLATFORM_SRC)/native/sun/nio/fs/glib2
+  vpath %.c	$(PLATFORM_SRC)/native/common/deps/glib2
 endif
 
 #
@@ -307,7 +307,7 @@ ifdef USE_SYSTEM_GIO
   OTHER_LDLIBS += $(GIO_LIBS)
   OTHER_INCLUDES += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
 else
-  OTHER_INCLUDES += -I$(PLATFORM_SRC)/native/sun/nio/fs/glib2
+  OTHER_INCLUDES += -I$(PLATFORM_SRC)/native/common/deps/glib2
 endif
 endif
 

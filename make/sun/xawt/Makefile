@@ -93,11 +93,15 @@ vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/x11
 
 ifndef USE_SYSTEM_GTK
-vpath %.c   $(PLATFORM_SRC)/native/sun/awt/gtk2
+vpath %.c   $(PLATFORM_SRC)/native/common/deps/gtk2
+endif
+
+ifndef USE_SYSTEM_CUPS
+vpath %.c   $(PLATFORM_SRC)/native/common/deps
 endif
 
 ifndef USE_SYSTEM_FONTCONFIG
-vpath %.c   $(PLATFORM_SRC)/native/common/deps
+vpath %.c   $(PLATFORM_SRC)/native/common/deps/fontconfig2
 endif
 
 OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -lXrender -ldl \
@@ -155,17 +159,19 @@ CPPFLAGS += -DXAWT -DXAWT_HACK \
 ifdef USE_SYSTEM_GTK
   CPPFLAGS += $(GTK_CFLAGS) -DUSE_SYSTEM_GTK
 else
-  CPPFLAGS += -I$(PLATFORM_SRC)/native/sun/awt/gtk2
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gtk2
 endif
 
 ifdef USE_SYSTEM_CUPS
   CPPFLAGS += -DUSE_SYSTEM_CUPS
+else
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps
 endif
 
 ifdef USE_SYSTEM_FONTCONFIG
   CPPFLAGS += $(FONTCONFIG_CFLAGS) -DUSE_SYSTEM_FONTCONFIG
 else
-  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/fontconfig2
 endif
 
 ifeq ($(PLATFORM), linux)
