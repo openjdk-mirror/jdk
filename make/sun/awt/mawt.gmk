@@ -103,6 +103,10 @@ vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/../java2d/pipe
 vpath %.cpp $(SHARE_SRC)/native/$(PKGDIR)/image
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/robot_child
 
+ifndef USE_SYSTEM_FONTCONFIG
+vpath %.c   $(PLATFORM_SRC)/native/common/deps
+endif
+
 #
 # Libraries to link in.
 #
@@ -182,6 +186,10 @@ endif
 OTHER_LDLIBS += $(JVMLIB) $(LIBCXX) \
                 -lawt $(LIBM) -ldl
 
+ifdef USE_SYSTEM_FONTCONFIG
+  OTHER_LDLIBS += $(FONTCONFIG_LIBS)
+endif
+
 #
 # Sun CC with -Xa misdefines __STDC__ to 0 (zero).
 # The following will force checking of X11 prototypes.
@@ -202,6 +210,12 @@ endif
 ifdef USE_SYSTEM_CUPS
   CPPFLAGS += -DUSE_SYSTEM_CUPS
   LDFLAGS += $(CUPS_LIBS)
+endif
+
+ifdef USE_SYSTEM_FONTCONFIG
+  CPPFLAGS += $(FONTCONFIG_CFLAGS) -DUSE_SYSTEM_FONTCONFIG
+else
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps
 endif
 
 ifndef HEADLESS

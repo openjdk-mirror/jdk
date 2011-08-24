@@ -234,3 +234,8 @@ ifndef USE_SYSTEM_CUPS
 FILES_NO_MOTIF_c = \
 	cups_fp.c
 endif
+
+ifndef USE_SYSTEM_FONTCONFIG
+FILES_NO_MOTIF_c = \
+	fontconfig_fp.c
+endif

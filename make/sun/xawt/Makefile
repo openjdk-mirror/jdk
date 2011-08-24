@@ -96,6 +96,10 @@ ifndef USE_SYSTEM_GTK
 vpath %.c   $(PLATFORM_SRC)/native/sun/awt/gtk2
 endif
 
+ifndef USE_SYSTEM_FONTCONFIG
+vpath %.c   $(PLATFORM_SRC)/native/common/deps
+endif
+
 OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -lXrender -ldl \
                    $(LDFLAGS_COMMON) $(AWT_RUNPATH) $(OTHER_LDFLAGS) -lXtst -lXi
 
@@ -105,6 +109,10 @@ endif
 
 ifdef USE_SYSTEM_CUPS
   OTHER_LDLIBS += $(CUPS_LIBS)
+endif
+
+ifdef USE_SYSTEM_FONTCONFIG
+  OTHER_LDLIBS += $(FONTCONFIG_LIBS)
 endif
 
 ifeq  ($(PLATFORM), solaris)
@@ -152,6 +160,12 @@ endif
 
 ifdef USE_SYSTEM_CUPS
   CPPFLAGS += -DUSE_SYSTEM_CUPS
+endif
+
+ifdef USE_SYSTEM_FONTCONFIG
+  CPPFLAGS += $(FONTCONFIG_CFLAGS) -DUSE_SYSTEM_FONTCONFIG
+else
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps
 endif
 
 ifeq ($(PLATFORM), linux)

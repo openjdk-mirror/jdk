@@ -58,6 +58,9 @@
 extern Display *awt_display;
 #endif /* !HEADLESS */
 
+#ifndef USE_SYSTEM_FONTCONFIG
+#include <fontconfig_fp.h>
+#endif
 
 #define MAXFDIRS 512    /* Max number of directories that contain fonts */
 
@@ -546,77 +549,15 @@ JNIEXPORT jstring JNICALL Java_sun_awt_X11FontManager_getFontPathNative
     return ret;
 }
 
-#include <dlfcn.h>
-#ifndef __linux__ /* i.e. is solaris */
-#include <link.h>
-#endif
-
-#include "fontconfig.h"
-
+#include <fontconfig/fontconfig.h>
 
 static void* openFontConfig() {
-
-    char *homeEnv;
-    static char *homeEnvStr = "HOME="; /* must be static */
-    void* libfontconfig = NULL;
-#ifdef __solaris__
-#define SYSINFOBUFSZ 8
-    char sysinfobuf[SYSINFOBUFSZ];
+#ifdef USE_SYSTEM_FONTCONFIG
+    return NULL;
+#else
+    return dlOpenFontConfig();
 #endif
-
-    /* Private workaround to not use fontconfig library.
-     * May be useful during testing/debugging
-     */
-    char *useFC = getenv("USE_J2D_FONTCONFIG");
-    if (useFC != NULL && !strcmp(useFC, "no")) {
-        return NULL;
-    }
-
-#ifdef __solaris__
-    /* fontconfig is likely not properly configured on S8/S9 - skip it,
-     * although allow user to override this behaviour with an env. variable
-     * ie if USE_J2D_FONTCONFIG=yes then we skip this test.
-     * NB "4" is the length of a string which matches our patterns.
-     */
-    if (useFC == NULL || strcmp(useFC, "yes")) {
-        if (sysinfo(SI_RELEASE, sysinfobuf, SYSINFOBUFSZ) == 4) {
-            if ((!strcmp(sysinfobuf, "5.8") || !strcmp(sysinfobuf, "5.9"))) {
-                return NULL;
-            }
-        }
-    }
-#endif
-    /* 64 bit sparc should pick up the right version from the lib path.
-     * New features may be added to libfontconfig, this is expected to
-     * be compatible with old features, but we may need to start
-     * distinguishing the library version, to know whether to expect
-     * certain symbols - and functionality - to be available.
-     * Also add explicit search for .so.1 in case .so symlink doesn't exist.
-     */
-    libfontconfig = dlopen("libfontconfig.so.1", RTLD_LOCAL|RTLD_LAZY);
-    if (libfontconfig == NULL) {
-        libfontconfig = dlopen("libfontconfig.so", RTLD_LOCAL|RTLD_LAZY);
-        if (libfontconfig == NULL) {
-            return NULL;
-        }
-    }
-
-    /* Version 1.0 of libfontconfig crashes if HOME isn't defined in
-     * the environment. This should generally never happen, but we can't
-     * control it, and can't control the version of fontconfig, so iff
-     * its not defined we set it to an empty value which is sufficient
-     * to prevent a crash. I considered unsetting it before exit, but
-     * it doesn't appear to work on Solaris, so I will leave it set.
-     */
-    homeEnv = getenv("HOME");
-    if (homeEnv == NULL) {
-        putenv(homeEnvStr);
-    }
-
-    return libfontconfig;
 }
-
-typedef void* (FcFiniFuncType)();
 
 static void closeFontConfig(void* libfontconfig, jboolean fcFini) {
 
@@ -629,83 +570,23 @@ static void closeFontConfig(void* libfontconfig, jboolean fcFini) {
    */
 #if 0
     if (fcFini) { /* release resources */
-        FcFiniFuncType FcFini = (FcFiniFuncType)dlsym(libfontconfig, "FcFini");
 
         if (FcFini != NULL) {
             (*FcFini)();
         }
     }
 #endif
-    dlclose(libfontconfig);
+
+#ifndef USE_SYSTEM_FONTCONFIG
+    dlCloseFontConfig (libfontconfig);
+#endif
 }
 
-typedef FcConfig* (*FcInitLoadConfigFuncType)();
-typedef FcPattern* (*FcPatternBuildFuncType)(FcPattern *orig, ...);
-typedef FcObjectSet* (*FcObjectSetFuncType)(const char *first, ...);
-typedef FcFontSet* (*FcFontListFuncType)(FcConfig *config,
-                                         FcPattern *p,
-                                         FcObjectSet *os);
-typedef FcResult (*FcPatternGetBoolFuncType)(const FcPattern *p,
-                                               const char *object,
-                                               int n,
-                                               FcBool *b);
-typedef FcResult (*FcPatternGetIntegerFuncType)(const FcPattern *p,
-                                                const char *object,
-                                                int n,
-                                                int *i);
-typedef FcResult (*FcPatternGetStringFuncType)(const FcPattern *p,
-                                               const char *object,
-                                               int n,
-                                               FcChar8 ** s);
-typedef FcChar8* (*FcStrDirnameFuncType)(const FcChar8 *file);
-typedef void (*FcPatternDestroyFuncType)(FcPattern *p);
-typedef void (*FcFontSetDestroyFuncType)(FcFontSet *s);
-typedef FcPattern* (*FcNameParseFuncType)(const FcChar8 *name);
-typedef FcBool (*FcPatternAddStringFuncType)(FcPattern *p,
-                                             const char *object,
-                                             const FcChar8 *s);
-typedef void (*FcDefaultSubstituteFuncType)(FcPattern *p);
-typedef FcBool (*FcConfigSubstituteFuncType)(FcConfig *config,
-                                             FcPattern *p,
-                                             FcMatchKind kind);
-typedef FcPattern* (*FcFontMatchFuncType)(FcConfig *config,
-                                          FcPattern *p,
-                                          FcResult *result);
-typedef FcFontSet* (*FcFontSetCreateFuncType)();
-typedef FcBool (*FcFontSetAddFuncType)(FcFontSet *s, FcPattern *font);
-
-typedef FcResult (*FcPatternGetCharSetFuncType)(FcPattern *p,
-                                                const char *object,
-                                                int n,
-                                                FcCharSet **c);
-typedef FcFontSet* (*FcFontSortFuncType)(FcConfig *config,
-                                         FcPattern *p,
-                                         FcBool trim,
-                                         FcCharSet **csp,
-                                         FcResult *result);
-typedef FcCharSet* (*FcCharSetUnionFuncType)(const FcCharSet *a,
-                                             const FcCharSet *b);
-typedef FcChar32 (*FcCharSetSubtractCountFuncType)(const FcCharSet *a,
-                                                   const FcCharSet *b);
-
-typedef int (*FcGetVersionFuncType)();
-
-typedef FcStrList* (*FcConfigGetCacheDirsFuncType)(FcConfig *config);
-typedef FcChar8* (*FcStrListNextFuncType)(FcStrList *list);
-typedef FcChar8* (*FcStrListDoneFuncType)(FcStrList *list);
 
 static char **getFontConfigLocations() {
 
     char **fontdirs;
     int numdirs = 0;
-    FcInitLoadConfigFuncType FcInitLoadConfig;
-    FcPatternBuildFuncType FcPatternBuild;
-    FcObjectSetFuncType FcObjectSetBuild;
-    FcFontListFuncType FcFontList;
-    FcPatternGetStringFuncType FcPatternGetString;
-    FcStrDirnameFuncType FcStrDirname;
-    FcPatternDestroyFuncType FcPatternDestroy;
-    FcFontSetDestroyFuncType FcFontSetDestroy;
 
     FcConfig *fontconfig;
     FcPattern *pattern;
@@ -717,36 +598,6 @@ static char **getFontConfigLocations() {
     char **fontPath;
 
     void* libfontconfig = openFontConfig();
-
-    if (libfontconfig == NULL) {
-        return NULL;
-    }
-
-    FcPatternBuild     =
-        (FcPatternBuildFuncType)dlsym(libfontconfig, "FcPatternBuild");
-    FcObjectSetBuild   =
-        (FcObjectSetFuncType)dlsym(libfontconfig, "FcObjectSetBuild");
-    FcFontList         =
-        (FcFontListFuncType)dlsym(libfontconfig, "FcFontList");
-    FcPatternGetString =
-        (FcPatternGetStringFuncType)dlsym(libfontconfig, "FcPatternGetString");
-    FcStrDirname       =
-        (FcStrDirnameFuncType)dlsym(libfontconfig, "FcStrDirname");
-    FcPatternDestroy   =
-        (FcPatternDestroyFuncType)dlsym(libfontconfig, "FcPatternDestroy");
-    FcFontSetDestroy   =
-        (FcFontSetDestroyFuncType)dlsym(libfontconfig, "FcFontSetDestroy");
-
-    if (FcPatternBuild     == NULL ||
-        FcObjectSetBuild   == NULL ||
-        FcPatternGetString == NULL ||
-        FcFontList         == NULL ||
-        FcStrDirname       == NULL ||
-        FcPatternDestroy   == NULL ||
-        FcFontSetDestroy   == NULL) { /* problem with the library: return. */
-        closeFontConfig(libfontconfig, JNI_FALSE);
-        return NULL;
-    }
 
     /* Make calls into the fontconfig library to build a search for
      * outline fonts, and to get the set of full file paths from the matches.
@@ -761,16 +612,16 @@ static char **getFontConfigLocations() {
      * Finally we clean up, freeing allocated resources, and return the
      * array of unique directories.
      */
-    pattern = (*FcPatternBuild)(NULL, FC_OUTLINE, FcTypeBool, FcTrue, NULL);
-    objset = (*FcObjectSetBuild)(FC_FILE, NULL);
-    fontSet = (*FcFontList)(NULL, pattern, objset);
+    pattern = FcPatternBuild (NULL, FC_OUTLINE, FcTypeBool, FcTrue, NULL);
+    objset = FcObjectSetBuild (FC_FILE, NULL);
+    fontSet = FcFontList (NULL, pattern, objset);
     fontdirs = (char**)calloc(fontSet->nfont+1, sizeof(char*));
     for (f=0; f < fontSet->nfont; f++) {
         FcChar8 *file;
         FcChar8 *dir;
-        if ((*FcPatternGetString)(fontSet->fonts[f], FC_FILE, 0, &file) ==
+        if (FcPatternGetString (fontSet->fonts[f], FC_FILE, 0, &file) ==
                                   FcResultMatch) {
-            dir = (*FcStrDirname)(file);
+            dir = FcStrDirname (file);
             found = 0;
             for (i=0;i<numdirs; i++) {
                 if (strcmp(fontdirs[i], (char*)dir) == 0) {
@@ -787,8 +638,8 @@ static char **getFontConfigLocations() {
     }
 
     /* Free memory and close the ".so" */
-    (*FcFontSetDestroy)(fontSet);
-    (*FcPatternDestroy)(pattern);
+    FcFontSetDestroy (fontSet);
+    FcPatternDestroy (pattern);
     closeFontConfig(libfontconfig, JNI_TRUE);
     return fontdirs;
 }
@@ -807,15 +658,6 @@ JNIEXPORT jint JNICALL
 Java_sun_font_FontConfigManager_getFontConfigAASettings
 (JNIEnv *env, jclass obj, jstring localeStr, jstring fcNameStr) {
 
-    FcNameParseFuncType FcNameParse;
-    FcPatternAddStringFuncType FcPatternAddString;
-    FcConfigSubstituteFuncType FcConfigSubstitute;
-    FcDefaultSubstituteFuncType  FcDefaultSubstitute;
-    FcFontMatchFuncType FcFontMatch;
-    FcPatternGetBoolFuncType FcPatternGetBool;
-    FcPatternGetIntegerFuncType FcPatternGetInteger;
-    FcPatternDestroyFuncType FcPatternDestroy;
-
     FcPattern *pattern, *matchPattern;
     FcResult result;
     FcBool antialias = FcFalse;
@@ -833,6 +675,7 @@ Java_sun_font_FontConfigManager_getFontConfigAASettings
     }
     locale = (*env)->GetStringUTFChars(env, localeStr, 0);
 
+#ifndef USE_SYSTEM_FONTCONFIG
     if ((libfontconfig = openFontConfig()) == NULL) {
         (*env)->ReleaseStringUTFChars (env, fcNameStr, (const char*)fcName);
         if (locale) {
@@ -840,57 +683,25 @@ Java_sun_font_FontConfigManager_getFontConfigAASettings
         }
         return -1;
     }
+#endif
 
-    FcNameParse = (FcNameParseFuncType)dlsym(libfontconfig, "FcNameParse");
-    FcPatternAddString =
-        (FcPatternAddStringFuncType)dlsym(libfontconfig, "FcPatternAddString");
-    FcConfigSubstitute =
-        (FcConfigSubstituteFuncType)dlsym(libfontconfig, "FcConfigSubstitute");
-    FcDefaultSubstitute = (FcDefaultSubstituteFuncType)
-        dlsym(libfontconfig, "FcDefaultSubstitute");
-    FcFontMatch = (FcFontMatchFuncType)dlsym(libfontconfig, "FcFontMatch");
-    FcPatternGetBool = (FcPatternGetBoolFuncType)
-        dlsym(libfontconfig, "FcPatternGetBool");
-    FcPatternGetInteger = (FcPatternGetIntegerFuncType)
-        dlsym(libfontconfig, "FcPatternGetInteger");
-    FcPatternDestroy =
-        (FcPatternDestroyFuncType)dlsym(libfontconfig, "FcPatternDestroy");
-
-    if (FcNameParse          == NULL ||
-        FcPatternAddString   == NULL ||
-        FcConfigSubstitute   == NULL ||
-        FcDefaultSubstitute  == NULL ||
-        FcFontMatch          == NULL ||
-        FcPatternGetBool     == NULL ||
-        FcPatternGetInteger  == NULL ||
-        FcPatternDestroy     == NULL) { /* problem with the library: return. */
-
-        (*env)->ReleaseStringUTFChars (env, fcNameStr, (const char*)fcName);
-        if (locale) {
-            (*env)->ReleaseStringUTFChars (env, localeStr,(const char*)locale);
-        }
-        closeFontConfig(libfontconfig, JNI_FALSE);
-        return -1;
-    }
-
-
-    pattern = (*FcNameParse)((FcChar8 *)fcName);
+    pattern = FcNameParse ((FcChar8 *)fcName);
     if (locale != NULL) {
-        (*FcPatternAddString)(pattern, FC_LANG, (unsigned char*)locale);
+        FcPatternAddString (pattern, FC_LANG, (unsigned char*)locale);
     }
-    (*FcConfigSubstitute)(NULL, pattern, FcMatchPattern);
-    (*FcDefaultSubstitute)(pattern);
-    matchPattern = (*FcFontMatch)(NULL, pattern, &result);
+    FcConfigSubstitute (NULL, pattern, FcMatchPattern);
+    FcDefaultSubstitute (pattern);
+    matchPattern = FcFontMatch (NULL, pattern, &result);
     /* Perhaps should call FcFontRenderPrepare() here as some pattern
      * elements might change as a result of that call, but I'm not seeing
      * any difference in testing.
      */
     if (matchPattern) {
-        (*FcPatternGetBool)(matchPattern, FC_ANTIALIAS, 0, &antialias);
-        (*FcPatternGetInteger)(matchPattern, FC_RGBA, 0, &rgba);
-        (*FcPatternDestroy)(matchPattern);
+        FcPatternGetBool (matchPattern, FC_ANTIALIAS, 0, &antialias);
+        FcPatternGetInteger (matchPattern, FC_RGBA, 0, &rgba);
+        FcPatternDestroy (matchPattern);
     }
-    (*FcPatternDestroy)(pattern);
+    FcPatternDestroy (pattern);
 
     (*env)->ReleaseStringUTFChars (env, fcNameStr, (const char*)fcName);
     if (locale) {
@@ -918,20 +729,15 @@ Java_sun_font_FontConfigManager_getFontConfigVersion
     (JNIEnv *env, jclass obj) {
 
     void* libfontconfig;
-    FcGetVersionFuncType FcGetVersion;
     int version = 0;
 
+#ifndef USE_SYSTEM_FONTCONFIG
     if ((libfontconfig = openFontConfig()) == NULL) {
         return 0;
     }
+#endif
 
-    FcGetVersion = (FcGetVersionFuncType)dlsym(libfontconfig, "FcGetVersion");
-
-    if (FcGetVersion == NULL) {
-        closeFontConfig(libfontconfig, JNI_FALSE);
-        return 0;
-    }
-    version = (*FcGetVersion)();
+    version = FcGetVersion ();
     closeFontConfig(libfontconfig, JNI_FALSE);
 
     return version;
@@ -942,23 +748,6 @@ JNIEXPORT void JNICALL
 Java_sun_font_FontConfigManager_getFontConfig
 (JNIEnv *env, jclass obj, jstring localeStr, jobject fcInfoObj,
  jobjectArray fcCompFontArray,  jboolean includeFallbacks) {
-
-    FcNameParseFuncType FcNameParse;
-    FcPatternAddStringFuncType FcPatternAddString;
-    FcConfigSubstituteFuncType FcConfigSubstitute;
-    FcDefaultSubstituteFuncType  FcDefaultSubstitute;
-    FcFontMatchFuncType FcFontMatch;
-    FcPatternGetStringFuncType FcPatternGetString;
-    FcPatternDestroyFuncType FcPatternDestroy;
-    FcPatternGetCharSetFuncType FcPatternGetCharSet;
-    FcFontSortFuncType FcFontSort;
-    FcFontSetDestroyFuncType FcFontSetDestroy;
-    FcCharSetUnionFuncType FcCharSetUnion;
-    FcCharSetSubtractCountFuncType FcCharSetSubtractCount;
-    FcGetVersionFuncType FcGetVersion;
-    FcConfigGetCacheDirsFuncType FcConfigGetCacheDirs;
-    FcStrListNextFuncType FcStrListNext;
-    FcStrListDoneFuncType FcStrListDone;
 
     int i, arrlen;
     jobject fcCompFontObj;
@@ -1017,73 +806,18 @@ Java_sun_font_FontConfigManager_getFontConfig
         return;
     }
 
+#ifndef USE_SYSTEM_FONTCONFIG
     if ((libfontconfig = openFontConfig()) == NULL) {
         return;
     }
+#endif
 
-    FcNameParse = (FcNameParseFuncType)dlsym(libfontconfig, "FcNameParse");
-    FcPatternAddString =
-        (FcPatternAddStringFuncType)dlsym(libfontconfig, "FcPatternAddString");
-    FcConfigSubstitute =
-        (FcConfigSubstituteFuncType)dlsym(libfontconfig, "FcConfigSubstitute");
-    FcDefaultSubstitute = (FcDefaultSubstituteFuncType)
-        dlsym(libfontconfig, "FcDefaultSubstitute");
-    FcFontMatch = (FcFontMatchFuncType)dlsym(libfontconfig, "FcFontMatch");
-    FcPatternGetString =
-        (FcPatternGetStringFuncType)dlsym(libfontconfig, "FcPatternGetString");
-    FcPatternDestroy =
-        (FcPatternDestroyFuncType)dlsym(libfontconfig, "FcPatternDestroy");
-    FcPatternGetCharSet =
-        (FcPatternGetCharSetFuncType)dlsym(libfontconfig,
-                                           "FcPatternGetCharSet");
-    FcFontSort =
-        (FcFontSortFuncType)dlsym(libfontconfig, "FcFontSort");
-    FcFontSetDestroy =
-        (FcFontSetDestroyFuncType)dlsym(libfontconfig, "FcFontSetDestroy");
-    FcCharSetUnion =
-        (FcCharSetUnionFuncType)dlsym(libfontconfig, "FcCharSetUnion");
-    FcCharSetSubtractCount =
-        (FcCharSetSubtractCountFuncType)dlsym(libfontconfig,
-                                              "FcCharSetSubtractCount");
-    FcGetVersion = (FcGetVersionFuncType)dlsym(libfontconfig, "FcGetVersion");
+    (*env)->SetIntField(env, fcInfoObj, fcVersionID, FcGetVersion ());
 
-    if (FcNameParse          == NULL ||
-        FcPatternAddString   == NULL ||
-        FcConfigSubstitute   == NULL ||
-        FcDefaultSubstitute  == NULL ||
-        FcFontMatch          == NULL ||
-        FcPatternGetString   == NULL ||
-        FcPatternDestroy     == NULL ||
-        FcPatternGetCharSet  == NULL ||
-        FcFontSetDestroy     == NULL ||
-        FcCharSetUnion       == NULL ||
-        FcGetVersion         == NULL ||
-        FcCharSetSubtractCount == NULL) {/* problem with the library: return.*/
-        closeFontConfig(libfontconfig, JNI_FALSE);
-        return;
-    }
-
-    (*env)->SetIntField(env, fcInfoObj, fcVersionID, (*FcGetVersion)());
-
-    /* Optionally get the cache dir locations. This isn't
-     * available until v 2.4.x, but this is OK since on those later versions
-     * we can check the time stamps on the cache dirs to see if we
-     * are out of date. There are a couple of assumptions here. First
-     * that the time stamp on the directory changes when the contents are
-     * updated. Secondly that the locations don't change. The latter is
-     * most likely if a new version of fontconfig is installed, but we also
-     * invalidate the cache if we detect that. Arguably even that is "rare",
-     * and most likely is tied to an OS upgrade which gets a new file anyway.
-     */
-    FcConfigGetCacheDirs =
-        (FcConfigGetCacheDirsFuncType)dlsym(libfontconfig,
-                                            "FcConfigGetCacheDirs");
-    FcStrListNext =
-        (FcStrListNextFuncType)dlsym(libfontconfig, "FcStrListNext");
-    FcStrListDone =
-        (FcStrListDoneFuncType)dlsym(libfontconfig, "FcStrListDone");
+#ifndef USE_SYSTEM_FONTCONFIG
     if (FcStrListNext != NULL && FcStrListDone != NULL &&
         FcConfigGetCacheDirs != NULL) {
+#endif
 
         FcStrList* cacheDirs;
         FcChar8* cacheDir;
@@ -1092,15 +826,18 @@ Java_sun_font_FontConfigManager_getFontConfig
             (*env)->GetObjectField(env, fcInfoObj, fcCacheDirsID);
         int max = (*env)->GetArrayLength(env, cacheDirArray);
 
-        cacheDirs = (*FcConfigGetCacheDirs)(NULL);
+        cacheDirs = FcConfigGetCacheDirs (NULL);
         if (cacheDirs != NULL) {
-            while ((cnt < max) && (cacheDir = (*FcStrListNext)(cacheDirs))) {
+            while ((cnt < max) && (cacheDir = FcStrListNext (cacheDirs))) {
                 jstr = (*env)->NewStringUTF(env, (const char*)cacheDir);
                 (*env)->SetObjectArrayElement(env, cacheDirArray, cnt++, jstr);
             }
-            (*FcStrListDone)(cacheDirs);
+            FcStrListDone (cacheDirs);
         }
+
+#ifndef USE_SYSTEM_FONTCONFIG
     }
+#endif
 
     locale = (*env)->GetStringUTFChars(env, localeStr, 0);
 
@@ -1119,7 +856,7 @@ Java_sun_font_FontConfigManager_getFontConfig
         if (fcName == NULL) {
             continue;
         }
-        pattern = (*FcNameParse)((FcChar8 *)fcName);
+        pattern = FcNameParse ((FcChar8 *)fcName);
         if (pattern == NULL) {
             (*env)->ReleaseStringUTFChars(env, fcNameStr, (const char*)fcName);
             closeFontConfig(libfontconfig, JNI_FALSE);
@@ -1132,13 +869,13 @@ Java_sun_font_FontConfigManager_getFontConfig
          * care of it.
          */
         if (locale != NULL) {
-            (*FcPatternAddString)(pattern, FC_LANG, (unsigned char*)locale);
+            FcPatternAddString (pattern, FC_LANG, (unsigned char*)locale);
         }
-        (*FcConfigSubstitute)(NULL, pattern, FcMatchPattern);
-        (*FcDefaultSubstitute)(pattern);
-        fontset = (*FcFontSort)(NULL, pattern, FcTrue, NULL, &result);
+        FcConfigSubstitute (NULL, pattern, FcMatchPattern);
+        FcDefaultSubstitute (pattern);
+        fontset = FcFontSort (NULL, pattern, FcTrue, NULL, &result);
         if (fontset == NULL) {
-            (*FcPatternDestroy)(pattern);
+            FcPatternDestroy (pattern);
             (*env)->ReleaseStringUTFChars(env, fcNameStr, (const char*)fcName);
             closeFontConfig(libfontconfig, JNI_FALSE);
             return;
@@ -1169,8 +906,8 @@ Java_sun_font_FontConfigManager_getFontConfig
             if (file != NULL) {
                 free(file);
             }
-            (*FcPatternDestroy)(pattern);
-            (*FcFontSetDestroy)(fontset);
+            FcPatternDestroy (pattern);
+            FcFontSetDestroy (fontset);
             (*env)->ReleaseStringUTFChars(env, fcNameStr, (const char*)fcName);
             closeFontConfig(libfontconfig, JNI_FALSE);
             return;
@@ -1190,20 +927,20 @@ Java_sun_font_FontConfigManager_getFontConfig
             FcCharSet *unionCharset = NULL, *charset;
 
             fontformat = NULL;
-            (*FcPatternGetString)(fontPattern, FC_FONTFORMAT, 0, &fontformat);
+            FcPatternGetString (fontPattern, FC_FONTFORMAT, 0, &fontformat);
             if (fontformat != NULL && strcmp((char*)fontformat, "TrueType")
                 != 0) {
                 continue;
             }
-            result = (*FcPatternGetCharSet)(fontPattern,
+            result = FcPatternGetCharSet (fontPattern,
                                             FC_CHARSET, 0, &charset);
             if (result != FcResultMatch) {
                 free(family);
                 free(family);
                 free(styleStr);
                 free(file);
-                (*FcPatternDestroy)(pattern);
-                (*FcFontSetDestroy)(fontset);
+                FcPatternDestroy (pattern);
+                FcFontSetDestroy (fontset);
                 (*env)->ReleaseStringUTFChars(env,
                                               fcNameStr, (const char*)fcName);
                 closeFontConfig(libfontconfig, JNI_FALSE);
@@ -1221,7 +958,7 @@ Java_sun_font_FontConfigManager_getFontConfig
             if (unionCharset == NULL) {
                 unionCharset = charset;
             } else {
-                if ((*FcCharSetSubtractCount)(charset, unionCharset)
+                if (FcCharSetSubtractCount (charset, unionCharset)
                     > minGlyphs) {
                     unionCharset = (* FcCharSetUnion)(unionCharset, charset);
                 } else {
@@ -1230,10 +967,10 @@ Java_sun_font_FontConfigManager_getFontConfig
             }
 
             fontCount++; // found a font we will use.
-            (*FcPatternGetString)(fontPattern, FC_FILE, 0, &file[j]);
-            (*FcPatternGetString)(fontPattern, FC_FAMILY, 0, &family[j]);
-            (*FcPatternGetString)(fontPattern, FC_STYLE, 0, &styleStr[j]);
-            (*FcPatternGetString)(fontPattern, FC_FULLNAME, 0, &fullname[j]);
+            FcPatternGetString (fontPattern, FC_FILE, 0, &file[j]);
+            FcPatternGetString (fontPattern, FC_FAMILY, 0, &family[j]);
+            FcPatternGetString (fontPattern, FC_STYLE, 0, &styleStr[j]);
+            FcPatternGetString (fontPattern, FC_FULLNAME, 0, &fullname[j]);
             if (!includeFallbacks) {
                 break;
             }
@@ -1284,8 +1021,8 @@ Java_sun_font_FontConfigManager_getFontConfig
             }
         }
         (*env)->ReleaseStringUTFChars (env, fcNameStr, (const char*)fcName);
-        (*FcFontSetDestroy)(fontset);
-        (*FcPatternDestroy)(pattern);
+        FcFontSetDestroy (fontset);
+        FcPatternDestroy (pattern);
         free(family);
         free(styleStr);
         free(fullname);
