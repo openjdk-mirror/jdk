@@ -100,7 +100,7 @@ ifeq ($(PLATFORM), windows)
                  secur32.lib iphlpapi.lib delayimp.lib \
                  /DELAYLOAD:secur32.dll /DELAYLOAD:iphlpapi.dll
 else
-  OTHER_LDLIBS = $(LIBSOCKET) $(LIBNSL) -ldl $(JVMLIB)
+  OTHER_LDLIBS = $(LIBSOCKET) $(LIBNSL) $(JVMLIB)
 endif
 ifeq ($(PLATFORM), linux)
   OTHER_LDLIBS += -lpthread
@@ -111,6 +111,7 @@ ifdef USE_SYSTEM_GCONF
   CPPFLAGS += $(GCONF_CFLAGS) $(GOBJECT_CFLAGS) -DUSE_SYSTEM_GCONF
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gconf2
+  OTHER_LDLIBS += -ldl
 endif
 
 CLASSES.export += java.lang.Integer java.io.FileDescriptor java.net.InetAddressImplFactory java.net.Inet4AddressImpl java.net.Inet6AddressImpl

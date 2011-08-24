@@ -136,7 +136,7 @@ ifeq ("$(PLATFORM)-$(ARCH_FAMILY)", "solaris-sparc")
   FILES_s += mlib_v_ImageCopy_blk.s
   INLINE_VIS = $(PLATFORM_SRC)/native/sun/awt/medialib/vis_$(ARCH_DATA_MODEL).il
   CFLAGS_sparcv9 = -DMLIB_OS64BIT
-  
+
   CFLAGS += $(CFLAGS_$(ARCH)) -DMLIB_ADD_SUFF $(INLINE_VIS) \
 	    -I$(SHARE_SRC)/native/sun/awt/medialib \
 	    -I$(PLATFORM_SRC)/native/sun/awt/medialib \

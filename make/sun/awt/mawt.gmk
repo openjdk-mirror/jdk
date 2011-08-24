@@ -184,10 +184,12 @@ endif
 # !HEADLESS
 
 OTHER_LDLIBS += $(JVMLIB) $(LIBCXX) \
-                -lawt $(LIBM) -ldl
+                -lawt $(LIBM)
 
 ifdef USE_SYSTEM_FONTCONFIG
   OTHER_LDLIBS += $(FONTCONFIG_LIBS)
+else
+  OTHER_LDLIBS += -ldl
 endif
 
 #
