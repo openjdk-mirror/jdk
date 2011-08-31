@@ -98,7 +98,7 @@ ifndef USE_SYSTEM_PNG
   vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/libpng
 endif
 ifndef USE_SYSTEM_JPEG
-  vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+  vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
 endif
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/splashscreen
 
@@ -106,7 +106,7 @@ CPPFLAGS += -I$(PLATFORM_SRC)/native/$(PKGDIR)/splashscreen -I$(SHARE_SRC)/nativ
 ifdef USE_SYSTEM_JPEG
   CPPFLAGS += $(JPEG_CFLAGS)
 else
-  CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
+  CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
 endif
 ifdef USE_SYSTEM_ZLIB
   CPPFLAGS += $(ZLIB_CFLAGS)
