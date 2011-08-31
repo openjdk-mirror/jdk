@@ -67,7 +67,7 @@ Java_sun_nio_fs_GnomeFileTypeDetector_initializeGio
 #ifdef USE_SYSTEM_GIO
     ret = JNI_TRUE;
 #else
-    ret = init();
+    ret = gio_init();
 #endif
 
     g_type_init ();

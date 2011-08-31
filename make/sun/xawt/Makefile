@@ -92,6 +92,10 @@ vpath %.c   $(SHARE_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/x11
 
+ifndef USE_SYSTEM_GIO
+vpath %.c   $(PLATFORM_SRC)/native/common/deps/glib2
+endif
+
 ifndef USE_SYSTEM_GTK
 vpath %.c   $(PLATFORM_SRC)/native/common/deps/gtk2
 endif
@@ -117,6 +121,10 @@ endif
 
 ifdef USE_SYSTEM_FONTCONFIG
   OTHER_LDLIBS += $(FONTCONFIG_LIBS)
+endif
+
+ifdef USE_SYSTEM_GIO
+  OTHER_LDLIBS += $(GIO_LIBS)
 endif
 
 ifeq  ($(PLATFORM), solaris)
@@ -172,6 +180,12 @@ ifdef USE_SYSTEM_FONTCONFIG
   CPPFLAGS += $(FONTCONFIG_CFLAGS) -DUSE_SYSTEM_FONTCONFIG
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/fontconfig2
+endif
+
+ifdef USE_SYSTEM_GIO
+  CPPFLAGS += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
+else
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/glib2
 endif
 
 ifeq ($(PLATFORM), linux)

@@ -26,57 +26,75 @@
 #include <jni.h>
 #include <dlfcn.h>
 
+#include <gio/gio.h>
+
+#ifndef USE_SYSTEM_GIO
+#include <gio_fp.h>
+#endif
+
 typedef int gboolean;
 
 typedef gboolean (GNOME_URL_SHOW_TYPE)(const char *, void **);
 typedef gboolean (GNOME_VFS_INIT_TYPE)(void);
-
+				      
 GNOME_URL_SHOW_TYPE *gnome_url_show;
 GNOME_VFS_INIT_TYPE *gnome_vfs_init;
+
+jboolean use_gio;
 
 int init(){
     void *vfs_handle;
     void *gnome_handle;
     const char *errmsg;
 
-    vfs_handle = dlopen("libgnomevfs-2.so.0", RTLD_LAZY);
-    if (vfs_handle == NULL) {
-#ifdef INTERNAL_BUILD
-        fprintf(stderr, "can not load libgnomevfs-2.so\n");
+#ifdef USE_SYSTEM_GIO
+    use_gio = JNI_TRUE;
+#else
+    use_gio = gio_init();
 #endif
-        return 0;
-    }
-    dlerror(); /* Clear errors */
-    gnome_vfs_init = (GNOME_VFS_INIT_TYPE*)dlsym(vfs_handle, "gnome_vfs_init");
-    if (gnome_vfs_init == NULL){
-#ifdef INTERNAL_BUILD
-        fprintf(stderr, "dlsym( gnome_vfs_init) returned NULL\n");
-#endif
-        return 0;
-    }
-    if ((errmsg = dlerror()) != NULL) {
-#ifdef INTERNAL_BUILD
-        fprintf(stderr, "can not find symbol gnome_vfs_init %s \n", errmsg);
-#endif
-        return 0;
-    }
-    // call gonme_vfs_init()
-    (*gnome_vfs_init)();
 
-    gnome_handle = dlopen("libgnome-2.so.0", RTLD_LAZY);
-    if (gnome_handle == NULL) {
+    if (use_gio == JNI_TRUE) {
+        g_type_init();
+    } else {
+	vfs_handle = dlopen("libgnomevfs-2.so.0", RTLD_LAZY);
+	if (vfs_handle == NULL) {
 #ifdef INTERNAL_BUILD
-        fprintf(stderr, "can not load libgnome-2.so\n");
+	    fprintf(stderr, "can not load libgnomevfs-2.so\n");
 #endif
-        return 0;
-    }
-    dlerror(); /* Clear errors */
-    gnome_url_show = (GNOME_URL_SHOW_TYPE*)dlsym(gnome_handle, "gnome_url_show");
-    if ((errmsg = dlerror()) != NULL) {
+	    return 0;
+	}
+	dlerror(); /* Clear errors */
+	gnome_vfs_init = (GNOME_VFS_INIT_TYPE*)dlsym(vfs_handle, "gnome_vfs_init");
+	if (gnome_vfs_init == NULL){
 #ifdef INTERNAL_BUILD
-        fprintf(stderr, "can not find symble gnome_url_show\n");
+	    fprintf(stderr, "dlsym( gnome_vfs_init) returned NULL\n");
 #endif
-        return 0;
+	    return 0;
+	}
+	if ((errmsg = dlerror()) != NULL) {
+#ifdef INTERNAL_BUILD
+	    fprintf(stderr, "can not find symbol gnome_vfs_init %s \n", errmsg);
+#endif
+	    return 0;
+	}
+	// call gonme_vfs_init()
+	(*gnome_vfs_init)();
+	
+	gnome_handle = dlopen("libgnome-2.so.0", RTLD_LAZY);
+	if (gnome_handle == NULL) {
+#ifdef INTERNAL_BUILD
+	    fprintf(stderr, "can not load libgnome-2.so\n");
+#endif
+	    return 0;
+	}
+	dlerror(); /* Clear errors */
+	gnome_url_show = (GNOME_URL_SHOW_TYPE*)dlsym(gnome_handle, "gnome_url_show");
+	if ((errmsg = dlerror()) != NULL) {
+#ifdef INTERNAL_BUILD
+	    fprintf(stderr, "can not find symbol gnome_url_show\n");
+#endif
+	    return 0;
+	}
     }
 
     return 1;
@@ -105,14 +123,17 @@ JNIEXPORT jboolean JNICALL Java_sun_awt_X11_XDesktopPeer_gnome_1url_1show
     gboolean success;
     const char* url_c;
 
-    if (gnome_url_show == NULL) {
-        return JNI_FALSE;
-    }
-
     url_c = (char*)(*env)->GetByteArrayElements(env, url_j, NULL);
-    // call gnome_url_show(const char* , GError**)
-    success = (*gnome_url_show)(url_c, NULL);
-    (*env)->ReleaseByteArrayElements(env, url_j, (signed char*)url_c, 0);
+    if (use_gio) {
+	success = g_app_info_launch_default_for_uri (url_c, NULL, NULL);
+    } else {
+	if (gnome_url_show == NULL) {
+	    return JNI_FALSE;
+	}
 
+	// call gnome_url_show(const char* , GError**)
+	success = (*gnome_url_show)(url_c, NULL);
+    }
+    (*env)->ReleaseByteArrayElements(env, url_j, (signed char*)url_c, 0);
     return success ? JNI_TRUE : JNI_FALSE;
 }

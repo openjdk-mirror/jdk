@@ -33,8 +33,9 @@ object_unref_func object_unref;
 file_new_for_path_func file_new_for_path;
 file_query_info_func file_query_info;
 file_info_get_content_type_func file_info_get_content_type;
+app_info_launch_default_for_uri_func app_info_launch_default_for_uri;
 
-jboolean init()
+jboolean gio_init()
 {
     void* gio_handle;
 
@@ -60,12 +61,15 @@ jboolean init()
     file_info_get_content_type = (file_info_get_content_type_func)
         dlsym(gio_handle, "g_file_info_get_content_type");
 
+    app_info_launch_default_for_uri = (app_info_launch_default_for_uri_func)
+	dlsym (gio_handle, "g_app_info_launch_default_for_uri");
 
-    if (g_type_init == NULL ||
-        g_object_unref == NULL ||
-        g_file_new_for_path == NULL ||
-        g_file_query_info == NULL ||
-        g_file_info_get_content_type == NULL)
+    if (type_init == NULL ||
+        object_unref == NULL ||
+        file_new_for_path == NULL ||
+        file_query_info == NULL ||
+        file_info_get_content_type == NULL ||
+	app_info_launch_default_for_uri == NULL)
     {
         dlclose(gio_handle);
         return JNI_FALSE;

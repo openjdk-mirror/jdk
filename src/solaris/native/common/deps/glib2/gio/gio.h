@@ -31,10 +31,13 @@
 #define G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE "standard::content-type"
 
 typedef void* gpointer;
+typedef int    gint;
+typedef gint   gboolean;
 typedef struct _GFile GFile;
 typedef struct _GFileInfo GFileInfo;
 typedef struct _GCancellable GCancellable;
 typedef struct _GError GError;
+typedef struct _GAppLaunchContext GAppLaunchContext;
 
 typedef enum {
   G_FILE_QUERY_INFO_NONE = 0
@@ -47,5 +50,8 @@ typedef GFileInfo* (*file_query_info_func)(GFile *file,
     const char *attributes, GFileQueryInfoFlags flags,
     GCancellable *cancellable, GError **error);
 typedef char* (*file_info_get_content_type_func)(GFileInfo *info);
+typedef gboolean  (*app_info_launch_default_for_uri_func)(const char              *uri,
+							  GAppLaunchContext       *launch_context,
+							  GError                 **error);
 
 #endif
