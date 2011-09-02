@@ -48,27 +48,8 @@ include FILES_java.gmk
 include FILES_c.gmk
 include Exportedfiles.gmk
 
+ifeq ($(PLATFORM), windows)
 FILES_java += \
-        sun/nio/ch/AbstractPollSelectorImpl.java \
-	sun/nio/ch/DevPollArrayWrapper.java \
-	sun/nio/ch/DevPollSelectorImpl.java \
-        sun/nio/ch/DevPollSelectorProvider.java \
-	sun/nio/ch/EPoll.java \
-	sun/nio/ch/EPollArrayWrapper.java \
-	sun/nio/ch/EPollPort.java \
-	sun/nio/ch/EPollSelectorProvider.java \
-	sun/nio/ch/EPollSelectorImpl.java \
-	sun/nio/ch/InheritedChannel.java \
-	sun/nio/ch/LinuxAsynchronousChannelProvider.java \
-        sun/nio/ch/PollSelectorProvider.java \
-        sun/nio/ch/PollSelectorImpl.java \
-	sun/nio/ch/Port.java \
-	sun/nio/ch/SimpleAsynchronousFileChannelImpl.java \
-	sun/nio/ch/SolarisAsynchronousChannelProvider.java \
-	sun/nio/ch/SolarisEventPort.java \
-	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \
-	sun/nio/ch/UnixAsynchronousSocketChannelImpl.java \
-	\
 	sun/nio/ch/Iocp.java \
 	sun/nio/ch/PendingIoCache.java \
 	sun/nio/ch/WindowsAsynchronousChannelProvider.java \
@@ -77,41 +58,6 @@ FILES_java += \
 	sun/nio/ch/WindowsAsynchronousSocketChannelImpl.java \
         sun/nio/ch/WindowsSelectorImpl.java \
         sun/nio/ch/WindowsSelectorProvider.java \
-	\
-	sun/nio/fs/GnomeFileTypeDetector.java \
-	sun/nio/fs/LinuxDosFileAttributeView.java \
-	sun/nio/fs/LinuxFileStore.java \
-	sun/nio/fs/LinuxFileSystem.java \
-	sun/nio/fs/LinuxFileSystemProvider.java \
-	sun/nio/fs/LinuxUserDefinedFileAttributeView.java \
-	sun/nio/fs/LinuxNativeDispatcher.java \
-	sun/nio/fs/LinuxWatchService.java \
-	sun/nio/fs/PollingWatchService.java \
-	sun/nio/fs/SolarisAclFileAttributeView.java \
-	sun/nio/fs/SolarisFileStore.java \
-	sun/nio/fs/SolarisFileSystem.java \
-	sun/nio/fs/SolarisFileSystemProvider.java \
-	sun/nio/fs/SolarisUserDefinedFileAttributeView.java \
-	sun/nio/fs/SolarisNativeDispatcher.java \
-	sun/nio/fs/SolarisWatchService.java \
-	sun/nio/fs/UnixChannelFactory.java \
-	sun/nio/fs/UnixCopyFile.java \
-	sun/nio/fs/UnixDirectoryStream.java \
-	sun/nio/fs/UnixException.java \
-	sun/nio/fs/UnixFileAttributeViews.java \
-	sun/nio/fs/UnixFileAttributes.java \
-	sun/nio/fs/UnixFileKey.java \
-	sun/nio/fs/UnixFileModeAttribute.java \
-	sun/nio/fs/UnixFileStore.java \
-	sun/nio/fs/UnixFileStoreAttributes.java \
-	sun/nio/fs/UnixFileSystem.java \
-	sun/nio/fs/UnixFileSystemProvider.java \
-	sun/nio/fs/UnixMountEntry.java \
-	sun/nio/fs/UnixNativeDispatcher.java \
-	sun/nio/fs/UnixPath.java \
-	sun/nio/fs/UnixSecureDirectoryStream.java \
-	sun/nio/fs/UnixUriUtils.java \
-	sun/nio/fs/UnixUserPrincipals.java
 	\
 	sun/nio/fs/RegistryFileTypeDetector.java \
 	sun/nio/fs/WindowsAclFileAttributeView.java \
@@ -138,6 +84,68 @@ FILES_java += \
 	sun/nio/fs/WindowsWatchService.java
 
 FILES_export += \
+	sun/nio/ch/Iocp.java \
+	sun/nio/ch/WindowsAsynchronousFileChannelImpl.java \
+	sun/nio/ch/WindowsAsynchronousServerSocketChannelImpl.java \
+	sun/nio/ch/WindowsAsynchronousSocketChannelImpl.java \
+	sun/nio/ch/WindowsSelectorImpl.java \
+	sun/nio/fs/WindowsNativeDispatcher.java \
+	sun/nio/fs/RegistryFileTypeDetector.java
+
+else
+
+FILES_java += \
+        sun/nio/ch/AbstractPollSelectorImpl.java \
+	sun/nio/ch/DevPollArrayWrapper.java \
+	sun/nio/ch/DevPollSelectorImpl.java \
+        sun/nio/ch/DevPollSelectorProvider.java \
+	sun/nio/ch/EPoll.java \
+	sun/nio/ch/EPollArrayWrapper.java \
+	sun/nio/ch/EPollPort.java \
+	sun/nio/ch/EPollSelectorProvider.java \
+	sun/nio/ch/EPollSelectorImpl.java \
+	sun/nio/ch/InheritedChannel.java \
+	sun/nio/ch/LinuxAsynchronousChannelProvider.java \
+        sun/nio/ch/PollSelectorProvider.java \
+        sun/nio/ch/PollSelectorImpl.java \
+	sun/nio/ch/Port.java \
+	sun/nio/ch/SimpleAsynchronousFileChannelImpl.java \
+	sun/nio/ch/SolarisAsynchronousChannelProvider.java \
+	sun/nio/ch/SolarisEventPort.java \
+	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \
+	sun/nio/ch/UnixAsynchronousSocketChannelImpl.java \
+	\
+	sun/nio/fs/GnomeFileTypeDetector.java \
+	sun/nio/fs/LinuxDosFileAttributeView.java \
+	sun/nio/fs/LinuxFileStore.java \
+	sun/nio/fs/LinuxFileSystem.java \
+	sun/nio/fs/LinuxFileSystemProvider.java \
+	sun/nio/fs/LinuxUserDefinedFileAttributeView.java \
+	sun/nio/fs/LinuxNativeDispatcher.java \
+	sun/nio/fs/LinuxWatchService.java \
+	sun/nio/fs/PollingWatchService.java \
+	sun/nio/fs/SolarisNativeDispatcher.java \
+	sun/nio/fs/SolarisWatchService.java \
+	sun/nio/fs/UnixChannelFactory.java \
+	sun/nio/fs/UnixCopyFile.java \
+	sun/nio/fs/UnixDirectoryStream.java \
+	sun/nio/fs/UnixException.java \
+	sun/nio/fs/UnixFileAttributeViews.java \
+	sun/nio/fs/UnixFileAttributes.java \
+	sun/nio/fs/UnixFileKey.java \
+	sun/nio/fs/UnixFileModeAttribute.java \
+	sun/nio/fs/UnixFileStore.java \
+	sun/nio/fs/UnixFileStoreAttributes.java \
+	sun/nio/fs/UnixFileSystem.java \
+	sun/nio/fs/UnixFileSystemProvider.java \
+	sun/nio/fs/UnixMountEntry.java \
+	sun/nio/fs/UnixNativeDispatcher.java \
+	sun/nio/fs/UnixPath.java \
+	sun/nio/fs/UnixSecureDirectoryStream.java \
+	sun/nio/fs/UnixUriUtils.java \
+	sun/nio/fs/UnixUserPrincipals.java
+
+FILES_export += \
 	sun/nio/ch/DevPollArrayWrapper.java \
 	sun/nio/ch/EPoll.java \
         sun/nio/ch/EPollArrayWrapper.java \
@@ -148,14 +156,6 @@ FILES_export += \
 	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \
 	sun/nio/ch/UnixAsynchronousSocketChannelImpl.java \
 	\
-	sun/nio/ch/Iocp.java \
-	sun/nio/ch/WindowsAsynchronousFileChannelImpl.java \
-	sun/nio/ch/WindowsAsynchronousServerSocketChannelImpl.java \
-	sun/nio/ch/WindowsAsynchronousSocketChannelImpl.java \
-	sun/nio/ch/WindowsSelectorImpl.java \
-	sun/nio/fs/WindowsNativeDispatcher.java \
-	sun/nio/fs/RegistryFileTypeDetector.java
-	\
 	sun/nio/fs/GnomeFileTypeDetector.java \
 	sun/nio/fs/LinuxNativeDispatcher.java \
 	sun/nio/fs/LinuxWatchService.java \
@@ -165,8 +165,9 @@ FILES_export += \
 	sun/nio/fs/UnixNativeDispatcher.java
 
 FILES_gen += \
-	sun/nio/fs/SolarisConstants.java \
 	sun/nio/fs/UnixConstants.java
+
+endif
 
 ifeq ($(PLATFORM), solaris)
 
@@ -184,6 +185,16 @@ FILES_c += \
 	SolarisWatchService.c \
 	UnixCopyFile.c \
 	UnixNativeDispatcher.c
+
+FILES_java += \
+	sun/nio/fs/SolarisAclFileAttributeView.java \
+	sun/nio/fs/SolarisFileStore.java \
+	sun/nio/fs/SolarisFileSystem.java \
+	sun/nio/fs/SolarisFileSystemProvider.java \
+	sun/nio/fs/SolarisUserDefinedFileAttributeView.java
+
+FILES_gen += \
+	sun/nio/fs/SolarisConstants.java
 
 endif # PLATFORM = solaris
 
