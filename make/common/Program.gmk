@@ -94,7 +94,7 @@ ifneq (,$(findstring $(PLATFORM), linux solaris))	# UNIX systems
     endif
     ifeq ($(PLATFORM), linux)
         ifdef USE_SYSTEM_ZLIB
-	  LDFLAGS += $(ZLIB_LIBS)
+	  OTHER_LDLIBS += $(ZLIB_LIBS)
 	endif
 	LDFLAGS += $(LDFLAG_Z_ORIGIN)
 	LDFLAGS += -Wl,--allow-shlib-undefined
