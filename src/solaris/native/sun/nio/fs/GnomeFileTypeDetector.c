@@ -47,8 +47,6 @@
 
 /* Definitions for GNOME VFS */
 
-typedef int gboolean;
-
 typedef gboolean (*gnome_vfs_init_function)(void);
 typedef const char* (*gnome_vfs_mime_type_from_name_function)
     (const char* filename);
