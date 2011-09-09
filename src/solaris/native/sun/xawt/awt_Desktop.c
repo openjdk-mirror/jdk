@@ -32,8 +32,6 @@
 #include <gio_fp.h>
 #endif
 
-typedef int gboolean;
-
 typedef gboolean (GNOME_URL_SHOW_TYPE)(const char *, void **);
 typedef gboolean (GNOME_VFS_INIT_TYPE)(void);
 				      
