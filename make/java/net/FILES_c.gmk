@@ -56,3 +56,7 @@ endif
 ifndef USE_SYSTEM_GCONF
    FILES_c += gconf_fp.c
 endif
+
+ifndef USE_SYSTEM_GIO
+   FILES_c += gio_fp.c
+endif

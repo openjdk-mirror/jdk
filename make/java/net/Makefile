@@ -88,6 +88,10 @@ ifndef USE_SYSTEM_GCONF
   vpath %.c	$(PLATFORM_SRC)/native/common/deps/gconf2
 endif
 
+ifndef USE_SYSTEM_GIO
+  vpath %.c     $(PLATFORM_SRC)/native/common/deps/glib2
+endif
+
 #
 # Include rules
 #
@@ -111,6 +115,14 @@ ifdef USE_SYSTEM_GCONF
   CPPFLAGS += $(GCONF_CFLAGS) $(GOBJECT_CFLAGS) -DUSE_SYSTEM_GCONF
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gconf2
+  OTHER_LDLIBS += -ldl
+endif
+
+ifdef USE_SYSTEM_GIO
+  OTHER_LDLIBS += $(GIO_LIBS)
+  CPPFLAGS += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
+else
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/glib2
   OTHER_LDLIBS += -ldl
 endif
 

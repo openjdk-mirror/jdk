@@ -42,7 +42,6 @@ extern fp_type_init_func* my_g_type_init_func;
 #define gconf_client_get_int (*my_get_int_func)
 #define gconf_client_get_bool (*my_get_bool_func)
 #define gconf_init (*my_gconf_init_func)
-#define g_type_init (*my_g_type_init_func)
 
 jboolean init_gconf(int* gconf_ver, void** gconf_client);
 

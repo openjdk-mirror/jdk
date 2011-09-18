@@ -34,6 +34,14 @@ file_new_for_path_func file_new_for_path;
 file_query_info_func file_query_info;
 file_info_get_content_type_func file_info_get_content_type;
 app_info_launch_default_for_uri_func app_info_launch_default_for_uri;
+settings_new_func settings_new;
+settings_get_boolean_func settings_get_boolean;
+settings_get_string_func settings_get_string;
+settings_get_strv_func settings_get_strv;
+settings_get_int_func settings_get_int;
+settings_get_child_func settings_get_child;
+strfreev_func gstrfreev;
+free_func gfree;
 
 jboolean gio_init()
 {
@@ -64,12 +72,34 @@ jboolean gio_init()
     app_info_launch_default_for_uri = (app_info_launch_default_for_uri_func)
 	dlsym (gio_handle, "g_app_info_launch_default_for_uri");
 
+    settings_new = (settings_new_func) dlsym (gio_handle, "g_settings_new");
+    settings_get_boolean = (settings_get_boolean_func)
+      dlsym (gio_handle, "g_settings_get_boolean");
+    settings_get_string = (settings_get_string_func)
+      dlsym (gio_handle, "g_settings_get_string");
+    settings_get_strv = (settings_get_strv_func)
+      dlsym (gio_handle, "g_settings_get_strv");
+    settings_get_int = (settings_get_int_func)
+      dlsym (gio_handle, "g_settings_get_int");
+    settings_get_child = (settings_get_child_func)
+      dlsym (gio_handle, "g_settings_get_child");
+    gstrfreev = (strfreev_func) dlsym (gio_handle, "g_strfreev");
+    gfree = (free_func) dlsym (gio_handle, "g_free");
+
     if (type_init == NULL ||
         object_unref == NULL ||
         file_new_for_path == NULL ||
         file_query_info == NULL ||
         file_info_get_content_type == NULL ||
-	app_info_launch_default_for_uri == NULL)
+	app_info_launch_default_for_uri == NULL ||
+	settings_new == NULL ||
+	settings_get_boolean == NULL ||
+	settings_get_string == NULL ||
+	settings_get_strv == NULL ||
+	settings_get_int == NULL ||
+	settings_get_child == NULL ||
+	gstrfreev == NULL ||
+	gfree == NULL)
     {
         dlclose(gio_handle);
         return JNI_FALSE;

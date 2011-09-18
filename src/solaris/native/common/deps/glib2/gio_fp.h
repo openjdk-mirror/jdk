@@ -34,6 +34,14 @@ extern file_new_for_path_func file_new_for_path;
 extern file_query_info_func file_query_info;
 extern file_info_get_content_type_func file_info_get_content_type;
 extern app_info_launch_default_for_uri_func app_info_launch_default_for_uri;
+extern settings_new_func settings_new;
+extern settings_get_boolean_func settings_get_boolean;
+extern settings_get_string_func settings_get_string;
+extern settings_get_strv_func settings_get_strv;
+extern settings_get_int_func settings_get_int;
+extern settings_get_child_func settings_get_child;
+extern strfreev_func gstrfreev;
+extern free_func gfree;
 
 #define g_type_init (*type_init)
 #define g_object_unref (*object_unref)
@@ -41,6 +49,14 @@ extern app_info_launch_default_for_uri_func app_info_launch_default_for_uri;
 #define g_file_query_info (*file_query_info)
 #define g_file_info_get_content_type (*file_info_get_content_type)
 #define g_app_info_launch_default_for_uri (*app_info_launch_default_for_uri)
+#define g_settings_new (*settings_new)
+#define g_settings_get_boolean (*settings_get_boolean)
+#define g_settings_get_string (*settings_get_string)
+#define g_settings_get_strv (*settings_get_strv)
+#define g_settings_get_int (*settings_get_int)
+#define g_settings_get_child (*settings_get_child)
+#define g_strfreev (*gstrfreev)
+#define g_free (*gfree)
 
 jboolean gio_init();
 

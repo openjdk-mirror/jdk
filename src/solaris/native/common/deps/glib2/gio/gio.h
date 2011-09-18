@@ -33,11 +33,13 @@
 typedef void* gpointer;
 typedef int    gint;
 typedef gint   gboolean;
+typedef char   gchar;
 typedef struct _GFile GFile;
 typedef struct _GFileInfo GFileInfo;
 typedef struct _GCancellable GCancellable;
 typedef struct _GError GError;
 typedef struct _GAppLaunchContext GAppLaunchContext;
+typedef struct _GSettings GSettings;
 
 typedef enum {
   G_FILE_QUERY_INFO_NONE = 0
@@ -53,5 +55,13 @@ typedef char* (*file_info_get_content_type_func)(GFileInfo *info);
 typedef gboolean  (*app_info_launch_default_for_uri_func)(const char              *uri,
 							  GAppLaunchContext       *launch_context,
 							  GError                 **error);
+typedef GSettings* (*settings_new_func) (const gchar *schema);
+typedef gboolean (*settings_get_boolean_func) (GSettings *settings, const gchar *key);
+typedef gchar* (*settings_get_string_func) (GSettings *settings, const gchar *key);
+typedef gchar** (*settings_get_strv_func) (GSettings *settings, const gchar *key);
+typedef gint (*settings_get_int_func) (GSettings *settings, const gchar *key);
+typedef GSettings* (*settings_get_child_func) (GSettings *settings, const gchar *name);
+typedef void (*strfreev_func) (gchar **str_array);
+typedef void (*free_func) (gpointer mem);
 
 #endif
