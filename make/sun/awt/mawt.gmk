@@ -103,6 +103,10 @@ vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/../java2d/pipe
 vpath %.cpp $(SHARE_SRC)/native/$(PKGDIR)/image
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/robot_child
 
+ifndef USE_SYSTEM_CUPS
+vpath %.c   $(PLATFORM_SRC)/native/common/deps
+endif
+
 ifndef USE_SYSTEM_FONTCONFIG
 vpath %.c   $(PLATFORM_SRC)/native/common/deps/fontconfig2
 endif
@@ -185,6 +189,10 @@ endif
 
 OTHER_LDLIBS += $(JVMLIB) $(LIBCXX) \
                 -lawt $(LIBM)
+
+ifdef USE_SYSTEM_CUPS
+  OTHER_LDLIBS += $(CUPS_LIBS)
+endif
 
 ifdef USE_SYSTEM_FONTCONFIG
   OTHER_LDLIBS += $(FONTCONFIG_LIBS)
