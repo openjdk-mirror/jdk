@@ -894,8 +894,14 @@ SelectVersion(int argc, char **argv, char **main_class)
      * "Valid" returns (other than unrecoverable errors) follow.  Set
      * main_class as a side-effect of this routine.
      */
-    if (info.main_class != NULL)
+    if (info.main_class != NULL) {
+      if (strlen(info.main_class) <= MAXNAMELEN) {
         *main_class = JLI_StringDup(info.main_class);
+      } else {
+        JLI_ReportErrorMessage("Error: main-class: attribute exceeds system limits\n", JNI_TRUE);
+	exit(1);
+      }
+    }
 
     /*
      * If no version selection information is found either on the command
