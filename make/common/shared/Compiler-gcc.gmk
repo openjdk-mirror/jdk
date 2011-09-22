@@ -112,6 +112,11 @@ ifeq ($(PLATFORM), linux)
     REQUIRED_CC_VER = 3.2
     REQUIRED_GCC_VER = 3.2.*
   endif
+  ifneq ("$(findstring parisc,$(ARCH))", "")
+    # mips
+    REQUIRED_CC_VER = 4.4
+    REQUIRED_GCC_VER = 4.4.*
+  endif
   ifneq ("$(findstring ppc,$(ARCH))", "")
     # ppc or ppc64
     REQUIRED_CC_VER = 3.2
