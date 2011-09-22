@@ -233,7 +233,11 @@ BOOT_JAVACFLAGS += -bootclasspath $(BOOT_LIB)
 
 BOOT_JAVA_CMD      = $(BOOTDIR)/bin/java $(JAVA_TOOLS_FLAGS)
 BOOT_JAVAC_CMD     = $(BOOTDIR)/bin/javac $(JAVAC_JVM_FLAGS) $(BOOT_JAVACFLAGS)
-BOOT_JAR_CMD       = $(BOOTDIR)/bin/jar
+ifdef ALT_JAR_CMD
+  BOOT_JAR_CMD       = $(ALT_JAR_CMD)
+else
+  BOOT_JAR_CMD       = $(BOOTDIR)/bin/jar
+endif
 BOOT_JARSIGNER_CMD = $(BOOTDIR)/bin/jarsigner
 
 # Various tools we need to run (FIXUP: Are these the right ones?)
