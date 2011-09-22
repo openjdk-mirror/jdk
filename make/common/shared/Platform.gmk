@@ -179,6 +179,9 @@ ifeq ($(SYSTEM_UNAME), Linux)
                 arm*) \
                     echo arm \
                     ;; \
+                sh*) \
+                    echo sh \
+                    ;; \
                 *) \
                     echo $(mach) \
                     ;; \
@@ -207,6 +210,9 @@ ifeq ($(SYSTEM_UNAME), Linux)
       endif
       ifeq ($(ARCH), ia64)
         ARCH_DATA_MODEL=64
+      endif
+      ifeq ($(ARCH), sh)
+        ARCH_DATA_MODEL=32
       endif
     endif
   endif

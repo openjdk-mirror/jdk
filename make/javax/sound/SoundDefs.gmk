@@ -126,6 +126,10 @@ else
     CPPFLAGS += -DX_ARCH=X_PPC
   endif # ARCH ppc
 
+  ifeq ($(ARCH), sh)
+    CPPFLAGS += -DX_ARCH=X_SH
+  endif # ARCH Renesas SuperH(sh)
+
 endif
 
 

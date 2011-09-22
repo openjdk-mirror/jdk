@@ -127,6 +127,11 @@ ifeq ($(PLATFORM), linux)
     REQUIRED_CC_VER = 3.2
     REQUIRED_GCC_VER = 3.2.*
   endif
+  ifneq ("$(findstring sh,$(ARCH))", "")
+    # sh4*, sh3*
+    REQUIRED_CC_VER = 4.0
+    REQUIRED_GCC_VER = 4.0.*
+  endif
   # Option used to create a shared library
   SHARED_LIBRARY_FLAG = -shared -mimpure-text
   SUN_COMP_VER := $(shell $(CC) --verbose 2>&1 )

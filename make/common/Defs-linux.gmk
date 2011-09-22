@@ -119,6 +119,7 @@ CFLAGS_REQUIRED_sparc   += -m32 -mcpu=v9
 LDFLAGS_COMMON_sparc    += -m32 -mcpu=v9
 CFLAGS_REQUIRED_arm     += -fsigned-char -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_ppc     += -fsigned-char -D_BIG_ENDIAN
+CFLAGS_REQUIRED_sh      += -mieee
 ifeq ($(ZERO_BUILD), true)
   CFLAGS_REQUIRED       =  $(ZERO_ARCHFLAG)
   ifeq ($(ZERO_ENDIANNESS), little)
@@ -197,11 +198,15 @@ endif
 
 CPP_ARCH_FLAGS = -DARCH='"$(ARCH)"'
 
-# Alpha arch does not like "alpha" defined (potential general arch cleanup issue here)
-ifneq ($(ARCH),alpha)
-  CPP_ARCH_FLAGS += -D$(ARCH)
-else
+# Alpha and sh archs do not like "alpha" or "sh" defined (potential general arch cleanup issue here)
+ifeq ($(ARCH),alpha)
   CPP_ARCH_FLAGS += -D_$(ARCH)_
+else
+ifeq ($(ARCH),sh)
+  CPP_ARCH_FLAGS += -D_$(ARCH)_
+else
+  CPP_ARCH_FLAGS += -D$(ARCH)
+endif
 endif
 
 CPPFLAGS_COMMON = $(CPP_ARCH_FLAGS) -DLINUX $(VERSION_DEFINES) \

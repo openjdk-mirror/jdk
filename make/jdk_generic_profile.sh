@@ -259,13 +259,14 @@ if [ "${ZERO_BUILD}" = true ] ; then
     i?86)    ZERO_LIBARCH=i386      ;;
     sparc64) ZERO_LIBARCH=sparcv9   ;;
     arm*)    ZERO_LIBARCH=arm       ;;
+    sh*)     ZERO_LIBARCH=sh        ;;
     *)       ZERO_LIBARCH="$(arch)"
   esac
   export ZERO_LIBARCH
 
   # ARCH_DATA_MODEL is the number of bits in a pointer
   case "${ZERO_LIBARCH}" in
-    i386|ppc|s390|sparc|arm)
+    i386|ppc|s390|sparc|arm|sh)
       ARCH_DATA_MODEL=32
       ;;
     amd64|ppc64|s390x|sparcv9|ia64|alpha)
