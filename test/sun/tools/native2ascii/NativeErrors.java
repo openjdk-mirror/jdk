@@ -104,8 +104,8 @@ public class NativeErrors {
         }
         //System.out.println("received: " + errorReceived);
         //System.out.println("expected: " + errorExpected);
-        if (!errorReceived.endsWith(errorExpected))
-            throw new RuntimeException("Native2ascii bad arg error broken.");
+        if (errorReceived == null || !errorReceived.endsWith(errorExpected))
+            throw new RuntimeException("Native2ascii " + errorExpected + " broken.");
     }
 
     private static String[] getComString(String arg2) {
