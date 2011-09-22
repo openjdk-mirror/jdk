@@ -1142,6 +1142,8 @@ class XWindowPeer extends XPanelPeer implements WindowPeer,
 
     boolean isOverrideRedirect() {
         return XWM.getWMID() == XWM.OPENLOOK_WM ||
+            (XWM.getWMID() == XWM.METACITY_WM ? true : false) ||
+            target.getName().equals("###overrideRedirect###") ||
             Window.Type.POPUP.equals(getWindowType());
     }
 
