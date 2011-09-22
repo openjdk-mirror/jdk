@@ -100,9 +100,19 @@ CC_OPT          = $(CC_OPT/$(OPTIMIZATION_LEVEL))
 #    We need this frame pointer to make it easy to walk the stacks.
 #    This should be the default on X86, but ia64 and amd64 may not have this
 #    as the default.
+CFLAGS_REQUIRED_alpha   += -mieee -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_amd64   += -fno-omit-frame-pointer -D_LITTLE_ENDIAN
+CFLAGS_REQUIRED_arm     += -D_LITTLE_ENDIAN
+CFLAGS_REQUIRED_hppa    +=
 CFLAGS_REQUIRED_i586    += -fno-omit-frame-pointer -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_ia64    += -fno-omit-frame-pointer -D_LITTLE_ENDIAN
+CFLAGS_REQUIRED_m68k    +=
+CFLAGS_REQUIRED_mips    +=
+CFLAGS_REQUIRED_mipsel  += -D_LITTLE_ENDIAN
+CFLAGS_REQUIRED_ppc     += -m32
+CFLAGS_REQUIRED_ppc64   += -m64
+CFLAGS_REQUIRED_s390    +=
+CFLAGS_REQUIRED_s390x   += -m64
 CFLAGS_REQUIRED_sparcv9 += -m64 -mcpu=v9
 LDFLAGS_COMMON_sparcv9  += -m64 -mcpu=v9
 CFLAGS_REQUIRED_sparc   += -m32 -mcpu=v9

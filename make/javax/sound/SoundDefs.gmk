@@ -58,9 +58,53 @@ endif # PLATFORM solaris
 ifeq ($(ZERO_BUILD), true)
   CPPFLAGS += -DX_ARCH=X_ZERO
 else
+  ifeq ($(ARCH), alpha)
+    CPPFLAGS += -DX_ARCH=X_ALPHA
+  endif # ARCH alpha
+ 
+  ifeq ($(ARCH), amd64)
+    CPPFLAGS += -DX_ARCH=X_AMD64
+  endif # ARCH amd64
+
+  ifeq ($(ARCH), arm)
+    CPPFLAGS += -DX_ARCH=X_ARM
+  endif # ARCH arm
+
   ifeq ($(ARCH), i586)
     CPPFLAGS += -DX_ARCH=X_I586
   endif # ARCH i586
+
+  ifeq ($(ARCH), ia64)
+    CPPFLAGS += -DX_ARCH=X_IA64
+  endif # ARCH ia64
+
+  ifeq ($(ARCH), m68k)
+    CPPFLAGS += -DX_ARCH=X_M68K
+  endif # ARCH m68k
+
+  ifeq ($(ARCH), mips)
+    CPPFLAGS += -DX_ARCH=X_MIPS
+  endif # ARCH mips
+
+  ifeq ($(ARCH), mipsel)
+    CPPFLAGS += -DX_ARCH=X_MIPSEL
+  endif # ARCH mipsel
+
+  ifeq ($(ARCH), ppc)
+    CPPFLAGS += -DX_ARCH=X_PPC
+  endif # ARCH ppc
+
+  ifeq ($(ARCH), ppc64)
+    CPPFLAGS += -DX_ARCH=X_PPC64
+  endif # ARCH ppc64
+
+  ifeq ($(ARCH), s390)
+    CPPFLAGS += -DX_ARCH=X_S390
+  endif # ARCH s390
+
+  ifeq ($(ARCH), s390x)
+    CPPFLAGS += -DX_ARCH=X_S390X
+  endif # ARCH s390x
 
   ifeq ($(ARCH), sparc)
     CPPFLAGS += -DX_ARCH=X_SPARC
