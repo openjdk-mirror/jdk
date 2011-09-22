@@ -198,12 +198,6 @@ public class Cipher {
     // The transformation
     private String transformation;
 
-    // Crypto permission representing the maximum allowable cryptographic
-    // strength that this Cipher object can be used for. (The cryptographic
-    // strength is a function of the keysize and algorithm parameters encoded
-    // in the crypto permission.)
-    private CryptoPermission cryptoPerm;
-
     // The exemption mechanism that needs to be enforced
     private ExemptionMechanism exmech;
 
@@ -244,16 +238,9 @@ public class Cipher {
     protected Cipher(CipherSpi cipherSpi,
                      Provider provider,
                      String transformation) {
-        // See bug 4341369 & 4334690 for more info.
-        // If the caller is trusted, then okey.
-        // Otherwise throw a NullPointerException.
-        if (!JceSecurityManager.INSTANCE.isCallerTrusted()) {
-            throw new NullPointerException();
-        }
         this.spi = cipherSpi;
         this.provider = provider;
         this.transformation = transformation;
-        this.cryptoPerm = CryptoAllPermission.INSTANCE;
         this.lock = null;
     }
 
@@ -266,7 +253,6 @@ public class Cipher {
     Cipher(CipherSpi cipherSpi, String transformation) {
         this.spi = cipherSpi;
         this.transformation = transformation;
-        this.cryptoPerm = CryptoAllPermission.INSTANCE;
         this.lock = null;
     }
 
@@ -495,9 +481,6 @@ public class Cipher {
         Exception failure = null;
         while (t.hasNext()) {
             Service s = (Service)t.next();
-            if (JceSecurity.canUseProvider(s.getProvider()) == false) {
-                continue;
-            }
             Transform tr = getTransform(s, transforms);
             if (tr == null) {
                 // should never happen
@@ -621,26 +604,12 @@ public class Cipher {
         }
         Exception failure = null;
         List transforms = getTransforms(transformation);
-        boolean providerChecked = false;
         String paddingError = null;
         for (Iterator t = transforms.iterator(); t.hasNext();) {
             Transform tr = (Transform)t.next();
             Service s = provider.getService("Cipher", tr.transform);
             if (s == null) {
                 continue;
-            }
-            if (providerChecked == false) {
-                // for compatibility, first do the lookup and then verify
-                // the provider. this makes the difference between a NSAE
-                // and a SecurityException if the
-                // provider does not support the algorithm.
-                Exception ve = JceSecurity.getVerificationResult(provider);
-                if (ve != null) {
-                    String msg = "JCE cannot authenticate the provider "
-                        + provider.getName();
-                    throw new SecurityException(msg, ve);
-                }
-                providerChecked = true;
             }
             if (tr.supportsMode(s) == S_NO) {
                 continue;
@@ -654,7 +623,6 @@ public class Cipher {
                 tr.setModePadding(spi);
                 Cipher cipher = new Cipher(spi, transformation);
                 cipher.provider = s.getProvider();
-                cipher.initCryptoPermission();
                 return cipher;
             } catch (Exception e) {
                 failure = e;
@@ -671,22 +639,6 @@ public class Cipher {
         }
         throw new NoSuchAlgorithmException
                 ("No such algorithm: " + transformation, failure);
-    }
-
-    // If the requested crypto service is export-controlled,
-    // determine the maximum allowable keysize.
-    private void initCryptoPermission() throws NoSuchAlgorithmException {
-        if (JceSecurity.isRestricted() == false) {
-            cryptoPerm = CryptoAllPermission.INSTANCE;
-            exmech = null;
-            return;
-        }
-        cryptoPerm = getConfiguredPermission(transformation);
-        // Instantiate the exemption mechanism (if required)
-        String exmechName = cryptoPerm.getExemptionMechanism();
-        if (exmechName != null) {
-            exmech = ExemptionMechanism.getInstance(exmechName);
-        }
     }
 
     // max number of debug warnings to print from chooseFirstProvider()
@@ -730,9 +682,6 @@ public class Cipher {
                     s = (Service)serviceIterator.next();
                     thisSpi = null;
                 }
-                if (JceSecurity.canUseProvider(s.getProvider()) == false) {
-                    continue;
-                }
                 Transform tr = getTransform(s, transforms);
                 if (tr == null) {
                     // should never happen
@@ -750,7 +699,6 @@ public class Cipher {
                         thisSpi = (CipherSpi)obj;
                     }
                     tr.setModePadding(thisSpi);
-                    initCryptoPermission();
                     spi = thisSpi;
                     provider = s.getProvider();
                     // not needed any more
@@ -782,19 +730,15 @@ public class Cipher {
             InvalidAlgorithmParameterException {
         switch (type) {
         case I_KEY:
-            checkCryptoPerm(thisSpi, key);
             thisSpi.engineInit(opmode, key, random);
             break;
         case I_PARAMSPEC:
-            checkCryptoPerm(thisSpi, key, paramSpec);
             thisSpi.engineInit(opmode, key, paramSpec, random);
             break;
         case I_PARAMS:
-            checkCryptoPerm(thisSpi, key, params);
             thisSpi.engineInit(opmode, key, params, random);
             break;
         case I_CERT:
-            checkCryptoPerm(thisSpi, key);
             thisSpi.engineInit(opmode, key, random);
             break;
         default:
@@ -828,9 +772,6 @@ public class Cipher {
                 if (s.supportsParameter(key) == false) {
                     continue;
                 }
-                if (JceSecurity.canUseProvider(s.getProvider()) == false) {
-                    continue;
-                }
                 Transform tr = getTransform(s, transforms);
                 if (tr == null) {
                     // should never happen
@@ -844,7 +785,6 @@ public class Cipher {
                         thisSpi = (CipherSpi)s.newInstance(null);
                     }
                     tr.setModePadding(thisSpi);
-                    initCryptoPermission();
                     implInit(thisSpi, initType, opmode, key, paramSpec,
                                                         params, random);
                     provider = s.getProvider();
@@ -990,107 +930,6 @@ public class Cipher {
         return exmech;
     }
 
-    //
-    // Crypto permission check code below
-    //
-    private void checkCryptoPerm(CipherSpi checkSpi, Key key)
-            throws InvalidKeyException {
-        if (cryptoPerm == CryptoAllPermission.INSTANCE) {
-            return;
-        }
-        // Check if key size and default parameters are within legal limits
-        AlgorithmParameterSpec params;
-        try {
-            params = getAlgorithmParameterSpec(checkSpi.engineGetParameters());
-        } catch (InvalidParameterSpecException ipse) {
-            throw new InvalidKeyException
-                ("Unsupported default algorithm parameters");
-        }
-        if (!passCryptoPermCheck(checkSpi, key, params)) {
-            throw new InvalidKeyException(
-                "Illegal key size or default parameters");
-        }
-    }
-
-    private void checkCryptoPerm(CipherSpi checkSpi, Key key,
-            AlgorithmParameterSpec params) throws InvalidKeyException,
-            InvalidAlgorithmParameterException {
-        if (cryptoPerm == CryptoAllPermission.INSTANCE) {
-            return;
-        }
-        // Determine keysize and check if it is within legal limits
-        if (!passCryptoPermCheck(checkSpi, key, null)) {
-            throw new InvalidKeyException("Illegal key size");
-        }
-        if ((params != null) && (!passCryptoPermCheck(checkSpi, key, params))) {
-            throw new InvalidAlgorithmParameterException("Illegal parameters");
-        }
-    }
-
-    private void checkCryptoPerm(CipherSpi checkSpi, Key key,
-            AlgorithmParameters params)
-            throws InvalidKeyException, InvalidAlgorithmParameterException {
-        if (cryptoPerm == CryptoAllPermission.INSTANCE) {
-            return;
-        }
-        // Convert the specified parameters into specs and then delegate.
-        AlgorithmParameterSpec pSpec;
-        try {
-            pSpec = getAlgorithmParameterSpec(params);
-        } catch (InvalidParameterSpecException ipse) {
-            throw new InvalidAlgorithmParameterException
-                ("Failed to retrieve algorithm parameter specification");
-        }
-        checkCryptoPerm(checkSpi, key, pSpec);
-    }
-
-    private boolean passCryptoPermCheck(CipherSpi checkSpi, Key key,
-                                        AlgorithmParameterSpec params)
-            throws InvalidKeyException {
-        String em = cryptoPerm.getExemptionMechanism();
-        int keySize = checkSpi.engineGetKeySize(key);
-        // Use the "algorithm" component of the cipher
-        // transformation so that the perm check would
-        // work when the key has the "aliased" algo.
-        String algComponent;
-        int index = transformation.indexOf('/');
-        if (index != -1) {
-            algComponent = transformation.substring(0, index);
-        } else {
-            algComponent = transformation;
-        }
-        CryptoPermission checkPerm =
-            new CryptoPermission(algComponent, keySize, params, em);
-
-        if (!cryptoPerm.implies(checkPerm)) {
-            if (debug != null) {
-                debug.println("Crypto Permission check failed");
-                debug.println("granted: " + cryptoPerm);
-                debug.println("requesting: " + checkPerm);
-            }
-            return false;
-        }
-        if (exmech == null) {
-            return true;
-        }
-        try {
-            if (!exmech.isCryptoAllowed(key)) {
-                if (debug != null) {
-                    debug.println(exmech.getName() + " isn't enforced");
-                }
-                return false;
-            }
-        } catch (ExemptionMechanismException eme) {
-            if (debug != null) {
-                debug.println("Cannot determine whether "+
-                              exmech.getName() + " has been enforced");
-                eme.printStackTrace();
-            }
-            return false;
-        }
-        return true;
-    }
-
     // check if opmode is one of the defined constants
     // throw InvalidParameterExeption if not
     private static void checkOpmode(int opmode) {
@@ -1205,7 +1044,6 @@ public class Cipher {
         checkOpmode(opmode);
 
         if (spi != null) {
-            checkCryptoPerm(spi, key);
             spi.engineInit(opmode, key, random);
         } else {
             try {
@@ -1341,7 +1179,6 @@ public class Cipher {
         checkOpmode(opmode);
 
         if (spi != null) {
-            checkCryptoPerm(spi, key, params);
             spi.engineInit(opmode, key, params, random);
         } else {
             chooseProvider(I_PARAMSPEC, opmode, key, params, null, random);
@@ -1472,7 +1309,6 @@ public class Cipher {
         checkOpmode(opmode);
 
         if (spi != null) {
-            checkCryptoPerm(spi, key, params);
             spi.engineInit(opmode, key, params, random);
         } else {
             chooseProvider(I_PARAMS, opmode, key, null, params, random);
@@ -1645,7 +1481,6 @@ public class Cipher {
             (certificate==null? null:certificate.getPublicKey());
 
         if (spi != null) {
-            checkCryptoPerm(spi, publicKey);
             spi.engineInit(opmode, publicKey, random);
         } else {
             try {
@@ -2494,12 +2329,15 @@ public class Cipher {
         return null;
     }
 
+    // Used by getMaxAllowedKeyLength and getMaxAllowedParameterSpec
+    // always returns CryptoAllPermission. Old stuff from bad old days.
     private static CryptoPermission getConfiguredPermission(
             String transformation) throws NullPointerException,
             NoSuchAlgorithmException {
         if (transformation == null) throw new NullPointerException();
-        String[] parts = tokenizeTransformation(transformation);
-        return JceSecurityManager.INSTANCE.getCryptoPermission(parts[0]);
+	// Called to make sure it is a valid transformation.
+        tokenizeTransformation(transformation);
+        return CryptoAllPermission.INSTANCE;
     }
 
     /**

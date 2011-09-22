@@ -44,18 +44,9 @@ public class TestUtil {
         }
     }
 
-    private static boolean isUnlimitedPolicy() throws IOException {
+    private static boolean isUnlimitedPolicy() {
         if (instance == null) {
-            String jreDir = System.getProperty("java.home");
-            String localPolicyPath = jreDir + File.separator + "lib" +
-                File.separator + "security" + File.separator +
-                "local_policy.jar";
-            JarFile localPolicy = new JarFile(localPolicyPath);
-            if (localPolicy.getEntry("exempt_local.policy") == null) {
-                return true;
-            } else {
-                return false;
-            }
+            return true;
         } else {
             return instance.isUnlimited;
         }

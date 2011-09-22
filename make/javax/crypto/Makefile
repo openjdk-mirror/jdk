@@ -156,7 +156,8 @@ include $(BUILDDIR)/common/Classes.gmk
 #
 
 ifdef OPENJDK
-all: build-jar install-jar build-policy install-limited
+# We don't need any policy files.
+all: build-jar install-jar
 else  # OPENJDK
 ifeq ($(strip $(FILES_java)),)
 all:
