@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package com.sun.script.javascript;
 
 import sun.org.mozilla.javascript.internal.*;
+import java.security.AccessControlContext;
 import javax.script.*;
 
 /**
@@ -38,7 +39,10 @@ import javax.script.*;
  */
 public final class RhinoTopLevel extends ImporterTopLevel {
     RhinoTopLevel(Context cx, RhinoScriptEngine engine) {
-        super(cx);
+        // second boolean parameter to super constructor tells whether
+        // to seal standard JavaScript objects or not. If security manager
+        // is present, we seal the standard objects.
+        super(cx, System.getSecurityManager() != null);
         this.engine = engine;
 
 
@@ -150,6 +154,10 @@ public final class RhinoTopLevel extends ImporterTopLevel {
 
     RhinoScriptEngine getScriptEngine() {
         return engine;
+    }
+
+    AccessControlContext getAccessContext() {
+        return engine.getAccessContext();
     }
 
     private RhinoScriptEngine engine;
