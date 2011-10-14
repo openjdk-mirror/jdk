@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -123,11 +123,17 @@ final class CipherBox {
     private static Hashtable<Integer, IvParameterSpec> masks;
 
     /**
+     * Is the cipher of CBC mode?
+     */
+     private final boolean isCBCMode;
+
+    /**
      * NULL cipherbox. Identity operation, no encryption.
      */
     private CipherBox() {
         this.protocolVersion = ProtocolVersion.DEFAULT;
         this.cipher = null;
+        this.isCBCMode = false;
     }
 
     /**
@@ -143,6 +149,7 @@ final class CipherBox {
             this.protocolVersion = protocolVersion;
             this.cipher = JsseJce.getCipher(bulkCipher.transformation);
             int mode = encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE;
+            this.isCBCMode = bulkCipher.isCBCMode;
 
             if (random == null) {
                 random = JsseJce.getSecureRandom();
@@ -581,7 +588,6 @@ final class CipherBox {
         return newlen;
     }
 
-
     /*
      * Typical TLS padding format for a 64 bit block cipher is as follows:
      *   xx xx xx xx xx xx xx 00
@@ -673,6 +679,15 @@ final class CipherBox {
         bb.limit(offset + newlen);
 
         return newlen;
+    }
+
+    /*
+     * Does the cipher use CBC mode?
+     *
+     * @return true if the cipher use CBC mode, false otherwise.
+     */
+    boolean isCBCMode() {
+        return isCBCMode;
     }
 
     /*
