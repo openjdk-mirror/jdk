@@ -29,6 +29,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.io.FilePermission;
 import java.io.IOException;
 import java.net.*;
 import java.rmi.*;
@@ -365,7 +366,7 @@ public class RegistryImpl extends java.rmi.server.RemoteServer
                         public RegistryImpl run() throws RemoteException {
                             return new RegistryImpl(regPort);
                         }
-                    }, getAccessControlContext(codebaseURLs));
+                    }, getAccessControlContext());
             } catch (PrivilegedActionException ex) {
                 throw (RemoteException) ex.getException();
             }
@@ -391,11 +392,11 @@ public class RegistryImpl extends java.rmi.server.RemoteServer
     }
 
     /**
-     * Generates an AccessControlContext from several URLs.
+     * Generates an AccessControlContext with minimal permissions.
      * The approach used here is taken from the similar method
      * getAccessControlContext() in the sun.applet.AppletPanel class.
      */
-    private static AccessControlContext getAccessControlContext(URL[] urls) {
+    private static AccessControlContext getAccessControlContext() {
         // begin with permissions granted to all code in current policy
         PermissionCollection perms = AccessController.doPrivileged(
             new java.security.PrivilegedAction<PermissionCollection>() {
@@ -418,17 +419,17 @@ public class RegistryImpl extends java.rmi.server.RemoteServer
          */
         perms.add(new SocketPermission("*", "connect,accept"));
 
-        // add permissions required to load from codebase URL path
-        LoaderHandler.addPermissionsForURLs(urls, perms, false);
+        perms.add(new RuntimePermission("accessClassInPackage.sun.*"));
+
+        perms.add(new FilePermission("<<ALL FILES>>", "read"));
 
         /*
          * Create an AccessControlContext that consists of a single
          * protection domain with only the permissions calculated above.
          */
         ProtectionDomain pd = new ProtectionDomain(
-            new CodeSource((urls.length > 0 ? urls[0] : null),
-                (java.security.cert.Certificate[]) null),
-            perms);
+            new CodeSource(null,
+                (java.security.cert.Certificate[]) null), perms);
         return new AccessControlContext(new ProtectionDomain[] { pd });
     }
 }

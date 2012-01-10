@@ -66,6 +66,7 @@ public final class RhinoScriptEngine extends AbstractScriptEngine
 
     private static final int languageVersion = getLanguageVersion();
     private static final int optimizationLevel = getOptimizationLevel();
+
     static {
         ContextFactory.initGlobal(new ContextFactory() {
             /**
@@ -144,6 +145,9 @@ public final class RhinoScriptEngine extends AbstractScriptEngine
      * Creates a new instance of RhinoScriptEngine
      */
     public RhinoScriptEngine() {
+        if (System.getSecurityManager() != null) {
+            accCtxt = AccessController.getContext();
+        }
 
         if (System.getSecurityManager() != null) {
             accCtxt = AccessController.getContext();

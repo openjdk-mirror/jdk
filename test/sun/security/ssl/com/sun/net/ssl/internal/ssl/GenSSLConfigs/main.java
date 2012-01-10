@@ -1,7 +1,7 @@
 /*
  * @test
  * @build TestThread Traffic Handler ServerHandler ServerThread ClientThread
- * @run main/othervm -Djsse.enableCBCProtection=false main
+ * @run main/othervm/timeout=140 -Djsse.enableCBCProtection=false main
  * @summary Make sure that different configurations of SSL sockets work
  */
 

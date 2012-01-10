@@ -78,6 +78,7 @@ interface Record {
                                   maxDataSize       // max data size
                                 - (                 // max one byte record size
                                       headerSize    // header
+                                    + maxIVLength   // iv
                                     + 1             // one byte data
                                     + maxPadding    // padding
                                     + trailerSize   // MAC

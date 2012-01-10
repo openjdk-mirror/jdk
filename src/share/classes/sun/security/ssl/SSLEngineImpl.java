@@ -625,6 +625,9 @@ final public class SSLEngineImpl extends SSLEngine {
 
         // See comment above.
         oldCipher.dispose();
+
+        // reset the flag of the first application record
+        isFirstAppOutputRecord = true;
     }
 
     /*
@@ -1309,6 +1312,14 @@ final public class SSLEngineImpl extends SSLEngine {
             if (checkSequenceNumber(writeMAC, eor.contentType())) {
                 hsStatus = getHSStatus(null);
             }
+        }
+
+        /*
+         * turn off the flag of the first application record if we really
+         * consumed at least byte.
+         */
+        if (isFirstAppOutputRecord && ea.deltaApp() > 0) {
+            isFirstAppOutputRecord = false;
         }
 
         return hsStatus;

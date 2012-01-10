@@ -1119,6 +1119,7 @@ void unpacker::read_Utf8_values(entry* cpMap, int len) {
     CHECK;
     for (int j = 0; j < suffix; j++) {
       unsigned short ch = cp_Utf8_big_chars.getInt();
+      CHECK;
       chp = store_Utf8_char(chp, ch);
     }
     chars.realloc(chp - chars.ptr);

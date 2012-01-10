@@ -1032,8 +1032,8 @@ public final class LoaderHandler {
      * it is not already implied by the collection.
      */
     public static void addPermissionsForURLs(URL[] urls,
-                                              PermissionCollection perms,
-                                              boolean forLoader)
+                                             PermissionCollection perms,
+                                             boolean forLoader)
     {
         for (int i = 0; i < urls.length; i++) {
             URL url = urls[i];

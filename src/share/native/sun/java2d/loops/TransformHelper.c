@@ -416,6 +416,16 @@ Java_sun_java2d_loops_TransformHelper_Transform
         return;
     }
 
+    if (pEdges == NULL) {
+        if (numedges > 0) {
+            JNU_ThrowInternalError(env, "Unable to allocate edge list");
+        }
+        SurfaceData_InvokeUnlock(env, dstOps, &dstInfo);
+        SurfaceData_InvokeUnlock(env, srcOps, &srcInfo);
+        /* edgeArray should already contain zeros for min/maxy */
+        return;
+    }
+
     Transform_GetInfo(env, itxform, &itxInfo);
 
     if (!Region_IsEmpty(&clipInfo)) {

@@ -927,9 +927,17 @@ Java_sun_font_FontConfigManager_getFontConfig
             FcCharSet *unionCharset = NULL, *charset;
 
             fontformat = NULL;
-            FcPatternGetString (fontPattern, FC_FONTFORMAT, 0, &fontformat);
-            if (fontformat != NULL && strcmp((char*)fontformat, "TrueType")
-                != 0) {
+            (*FcPatternGetString)(fontPattern, FC_FONTFORMAT, 0, &fontformat);
+            /* We only want TrueType fonts but some Linuxes still depend
+             * on Type 1 fonts for some Locale support, so we'll allow
+             * them there.
+             */
+            if (fontformat != NULL
+                && (strcmp((char*)fontformat, "TrueType") != 0)
+#ifdef __linux__
+                && (strcmp((char*)fontformat, "Type 1") != 0)
+#endif
+             ) {
                 continue;
             }
             result = FcPatternGetCharSet (fontPattern,

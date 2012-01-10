@@ -795,12 +795,6 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
         r.encrypt(writeCipher);
         r.write(sockOutput);
 
-        // turn off the flag of the first application record
-        if (isFirstAppOutputRecord &&
-                r.contentType() == Record.ct_application_data) {
-            isFirstAppOutputRecord = false;
-        }
-
         /*
          * Check the sequence number state
          *
@@ -815,8 +809,13 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
         if (connectionState < cs_ERROR) {
             checkSequenceNumber(writeMAC, r.contentType());
         }
-    }
 
+        // turn off the flag of the first application record
+        if (isFirstAppOutputRecord &&
+                r.contentType() == Record.ct_application_data) {
+            isFirstAppOutputRecord = false;
+        }
+    }
 
     /*
      * Need to split the payload except the following cases:
@@ -1945,9 +1944,6 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
             }
             fatal(Alerts.alert_unexpected_message, reason);
         }
-
-        // reset the flag of the first application record
-        isFirstAppOutputRecord = true;
     }
 
 
@@ -2070,6 +2066,9 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
 
         // See comment above.
         oldCipher.dispose();
+
+        // reset the flag of the first application record
+        isFirstAppOutputRecord = true;
     }
 
     /*
@@ -2479,11 +2478,12 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
             entrySet, HandshakeCompletedEvent e) {
 
             super("HandshakeCompletedNotify-Thread");
-            targets = entrySet;
+            targets = new HashSet<>(entrySet);          // clone the entry set
             event = e;
         }
 
         public void run() {
+            // Don't need to synchronize, as it only runs in one thread.
             for (Map.Entry<HandshakeCompletedListener,AccessControlContext>
                 entry : targets) {
 

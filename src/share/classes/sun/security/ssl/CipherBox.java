@@ -113,6 +113,11 @@ final class CipherBox {
     private SecureRandom random;
 
     /**
+     * Is the cipher of CBC mode?
+     */
+    private final boolean isCBCMode;
+
+    /**
      * Fixed masks of various block size, as the initial decryption IVs
      * for TLS 1.1 or later.
      *
@@ -121,11 +126,6 @@ final class CipherBox {
      * do not hurt cryptographic strength.
      */
     private static Hashtable<Integer, IvParameterSpec> masks;
-
-    /**
-     * Is the cipher of CBC mode?
-     */
-     private final boolean isCBCMode;
 
     /**
      * NULL cipherbox. Identity operation, no encryption.
@@ -149,12 +149,12 @@ final class CipherBox {
             this.protocolVersion = protocolVersion;
             this.cipher = JsseJce.getCipher(bulkCipher.transformation);
             int mode = encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE;
-            this.isCBCMode = bulkCipher.isCBCMode;
 
             if (random == null) {
                 random = JsseJce.getSecureRandom();
             }
             this.random = random;
+            this.isCBCMode = bulkCipher.isCBCMode;
 
             /*
              * RFC 4346 recommends two algorithms used to generated the
@@ -312,9 +312,11 @@ final class CipherBox {
                     byte[] buf = null;
                     int limit = bb.limit();
                     if (bb.hasArray()) {
+                        int arrayOffset = bb.arrayOffset();
                         buf = bb.array();
-                        System.arraycopy(buf, pos,
-                                buf, pos + prefix.length, limit - pos);
+                        System.arraycopy(buf, arrayOffset + pos,
+                            buf, arrayOffset + pos + prefix.length,
+                            limit - pos);
                         bb.limit(limit + prefix.length);
                     } else {
                         buf = new byte[limit - pos];
@@ -498,9 +500,10 @@ final class CipherBox {
                     byte[] buf = null;
                     int limit = bb.limit();
                     if (bb.hasArray()) {
+                        int arrayOffset = bb.arrayOffset();
                         buf = bb.array();
-                        System.arraycopy(buf, pos + blockSize,
-                                         buf, pos, limit - pos - blockSize);
+                        System.arraycopy(buf, arrayOffset + pos + blockSize,
+                            buf, arrayOffset + pos, limit - pos - blockSize);
                         bb.limit(limit - blockSize);
                     } else {
                         buf = new byte[limit - pos - blockSize];
@@ -587,6 +590,7 @@ final class CipherBox {
 
         return newlen;
     }
+
 
     /*
      * Typical TLS padding format for a 64 bit block cipher is as follows:
@@ -682,15 +686,6 @@ final class CipherBox {
     }
 
     /*
-     * Does the cipher use CBC mode?
-     *
-     * @return true if the cipher use CBC mode, false otherwise.
-     */
-    boolean isCBCMode() {
-        return isCBCMode;
-    }
-
-    /*
      * Dispose of any intermediate state in the underlying cipher.
      * For PKCS11 ciphers, this will release any attached sessions, and
      * thus make finalization faster.
@@ -706,4 +701,12 @@ final class CipherBox {
         }
     }
 
+    /*
+     * Does the cipher use CBC mode?
+     *
+     * @return true if the cipher use CBC mode, false otherwise.
+     */
+    boolean isCBCMode() {
+        return isCBCMode;
+    }
 }
