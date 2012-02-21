@@ -23,6 +23,7 @@
  * questions.
  */
 
+#include <jvm_md.h>
 #include <dlfcn.h>
 #include <jni.h>
 
@@ -33,10 +34,11 @@
 
 jboolean cups_init()
 {
-  void *handle = dlopen("libcups.so.2", RTLD_LAZY | RTLD_GLOBAL);
+  void *handle = dlopen(VERSIONED_JNI_LIB_NAME("cups", "2"),
+                        RTLD_LAZY | RTLD_GLOBAL);
 
   if (handle == NULL) {
-    handle = dlopen("libcups.so", RTLD_LAZY | RTLD_GLOBAL);
+    handle = dlopen(JNI_LIB_NAME("cups"), RTLD_LAZY | RTLD_GLOBAL);
     if (handle == NULL) {
       return JNI_FALSE;
     }

@@ -99,6 +99,12 @@ include $(BUILDDIR)/common/Mapfile-vers.gmk
 
 include $(BUILDDIR)/common/Library.gmk
 
+ifeq ($(PLATFORM), macosx)
+ifdef DONT_ENABLE_IPV6
+  OTHER_CFLAGS += -DDONT_ENABLE_IPV6
+endif
+  OTHER_LDLIBS = $(JVMLIB) -pthread
+else
 ifeq ($(PLATFORM), windows)
   OTHER_LDLIBS = ws2_32.lib $(JVMLIB) \
                  secur32.lib iphlpapi.lib delayimp.lib \
@@ -109,13 +115,14 @@ endif
 ifeq ($(PLATFORM), linux)
   OTHER_LDLIBS += -lpthread
 endif
+endif # PLATFORM
 
 ifdef USE_SYSTEM_GCONF
   OTHER_LDLIBS += $(GCONF_LIBS) $(GOBJECT_LIBS)
   CPPFLAGS += $(GCONF_CFLAGS) $(GOBJECT_CFLAGS) -DUSE_SYSTEM_GCONF
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gconf2
-  OTHER_LDLIBS += -ldl
+  OTHER_LDLIBS += $(LIBDL)
 endif
 
 ifdef USE_SYSTEM_GIO
@@ -123,7 +130,7 @@ ifdef USE_SYSTEM_GIO
   CPPFLAGS += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/glib2
-  OTHER_LDLIBS += -ldl
+  OTHER_LDLIBS += $(LIBDL)
 endif
 
 CLASSES.export += java.lang.Integer java.io.FileDescriptor java.net.InetAddressImplFactory java.net.Inet4AddressImpl java.net.Inet6AddressImpl

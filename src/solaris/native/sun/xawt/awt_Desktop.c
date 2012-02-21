@@ -24,6 +24,7 @@
  */
 
 #include <jni.h>
+#include <jvm_md.h>
 #include <dlfcn.h>
 
 #include <gio/gio.h>
@@ -54,12 +55,15 @@ int init(){
     if (use_gio == JNI_TRUE) {
         g_type_init();
     } else {
-	vfs_handle = dlopen("libgnomevfs-2.so.0", RTLD_LAZY);
+        vfs_handle = dlopen(VERSIONED_JNI_LIB_NAME("gnomevfs-2", "0"), RTLD_LAZY);
 	if (vfs_handle == NULL) {
+	    vfs_handle = dlopen(JNI_LIB_NAME("gnomevfs-2"), RTLD_LAZY);
+	    if (vfs_handle == NULL) {
 #ifdef INTERNAL_BUILD
-	    fprintf(stderr, "can not load libgnomevfs-2.so\n");
+	        fprintf(stderr, "can not load libgnomevfs-2.so\n");
 #endif
-	    return 0;
+		return 0;
+	    }
 	}
 	dlerror(); /* Clear errors */
 	gnome_vfs_init = (GNOME_VFS_INIT_TYPE*)dlsym(vfs_handle, "gnome_vfs_init");
@@ -78,12 +82,15 @@ int init(){
 	// call gonme_vfs_init()
 	(*gnome_vfs_init)();
 	
-	gnome_handle = dlopen("libgnome-2.so.0", RTLD_LAZY);
+	gnome_handle = dlopen(VERSIONED_JNI_LIB_NAME("gnome-2", "0"), RTLD_LAZY);
 	if (gnome_handle == NULL) {
+	  gnome_handle = dlopen(JNI_LIB_NAME("gnome-2"), RTLD_LAZY);
+	  if (gnome_handle == NULL) {
 #ifdef INTERNAL_BUILD
-	    fprintf(stderr, "can not load libgnome-2.so\n");
+            fprintf(stderr, "can not load libgnome-2.so\n");
 #endif
 	    return 0;
+	  }
 	}
 	dlerror(); /* Clear errors */
 	gnome_url_show = (GNOME_URL_SHOW_TYPE*)dlsym(gnome_handle, "gnome_url_show");

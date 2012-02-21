@@ -54,7 +54,7 @@ int atsyscalls_init()
 {
     /* system calls that might not be available at run time */
 
-#if defined(__solaris__) && defined(_LP64)
+#if (defined(__solaris__) && defined(_LP64)) || defined(_ALLBSD_SOURCE)
     /* Solaris 64-bit does not have openat64/fstatat64 */
     my_openat64_func = (openat64_func*)dlsym(RTLD_DEFAULT, "openat");
     my_fstatat64_func = (fstatat64_func*)dlsym(RTLD_DEFAULT, "fstatat");

@@ -25,6 +25,7 @@
 
 #include <gconf_fp.h>
 #include <dlfcn.h>
+#include "jvm_md.h"
 
 fp_client_get_default_func* my_get_default_func = NULL;
 fp_client_get_string_func* my_get_string_func = NULL;
@@ -38,8 +39,9 @@ jboolean init_gconf(int* gconf_ver, void** gconf_client)
   /**
    * Let's try to load le GConf-2 library
    */
-  if (dlopen("libgconf-2.so", RTLD_GLOBAL | RTLD_LAZY) != NULL ||
-      dlopen("libgconf-2.so.4", RTLD_GLOBAL | RTLD_LAZY) != NULL) {
+  if (dlopen(JNI_LIB_NAME("gconf-2"), RTLD_GLOBAL | RTLD_LAZY) != NULL ||
+      dlopen(VERSIONED_JNI_LIB_NAME("gconf-2", "4"),
+             RTLD_GLOBAL | RTLD_LAZY) != NULL) {
     *gconf_ver = 2;
   }
   if (*gconf_ver > 0) {

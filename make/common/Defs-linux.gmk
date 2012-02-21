@@ -390,6 +390,7 @@ override LIBSOCKET               =
 override LIBNSL                  =
 override LIBSCF                  =
 override LIBTHREAD               =
+override LIBDL                   = -ldl
 override MOOT_PRIORITIES         = true
 override NO_INTERRUPTIBLE_IO     = true
 ifeq ($(ARCH), amd64)

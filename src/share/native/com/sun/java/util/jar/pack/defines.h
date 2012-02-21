@@ -32,6 +32,10 @@
 #include <unistd.h>
 #endif
 
+#ifndef NO_ZLIB
+#include <zconf.h>
+#endif
+
 #ifndef FULL
 #define FULL 1 /* Adds <500 bytes to the zipped final product. */
 #endif
@@ -92,10 +96,12 @@ typedef unsigned int uint;
 #ifdef USE_SYSTEM_ZLIB
   #include <zlib.h>
 #else
-  #ifdef _LP64
-    typedef unsigned int uLong; // Historical zlib, should be 32-bit.
-  #else
-    typedef unsigned long uLong;
+  #if !defined(MACOSX) || (defined(MACOSX) && defined(NO_ZLIB))
+    #ifdef _LP64
+      typedef unsigned int uLong; // Historical zlib, should be 32-bit.
+    #else
+      typedef unsigned long uLong;
+    #endif
   #endif
 #endif
 #ifdef _MSC_VER

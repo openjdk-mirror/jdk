@@ -44,5 +44,5 @@ FILES_c += \
 	uncompr.c \
 	zadler32.c \
 	zcrc32.c \
-	zutil.c 
+	zutil.c
 endif

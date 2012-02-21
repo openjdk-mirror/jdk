@@ -25,11 +25,13 @@
 #include <dlfcn.h>
 #include <setjmp.h>
 #include <stddef.h>
-
+#include "jvm_md.h"
 #include "gtk_fp.h"
 
-#define GTK2_LIB "libgtk-x11-2.0.so.0"
-#define GTHREAD_LIB "libgthread-2.0.so.0"
+#define GTK2_LIB_VERSIONED VERSIONED_JNI_LIB_NAME("gtk-x11-2.0", "0")
+#define GTK2_LIB JNI_LIB_NAME("gtk-x11-2.0")
+#define GTHREAD_LIB_VERSIONED VERSIONED_JNI_LIB_NAME("gthread-2.0", "0")
+#define GTHREAD_LIB JNI_LIB_NAME("gthread-2.0")
 #define NO_SYMBOL_EXCEPTION 1
 
 static gboolean new_combo_used = TRUE;
@@ -70,9 +72,12 @@ gboolean gtk2_check_dlversion()
     void *lib = NULL;
     gboolean result = FALSE;
     
-    lib = dlopen(GTK2_LIB, RTLD_LAZY | RTLD_LOCAL);
+    lib = dlopen(GTK2_LIB_VERSIONED, RTLD_LAZY | RTLD_LOCAL);
     if (lib == NULL) {
-      return FALSE;
+      lib = dlopen(GTK2_LIB, RTLD_LAZY | RTLD_LOCAL);
+      if (lib == NULL) {
+	return FALSE;
+      }
     }
     
     fp_gtk_check_version = dlsym(lib, "gtk_check_version");
@@ -119,11 +124,19 @@ void gtk2_file_chooser_load()
 
 gboolean gtk2_dlload()
 {
-    gtk2_libhandle = dlopen(GTK2_LIB, RTLD_LAZY | RTLD_LOCAL);
-    gthread_libhandle = dlopen(GTHREAD_LIB, RTLD_LAZY | RTLD_LOCAL);
+    gtk2_libhandle = dlopen(GTK2_LIB_VERSIONED, RTLD_LAZY | RTLD_LOCAL);
+    if (gtk2_libhandle == NULL) {
+        gtk2_libhandle = dlopen(GTK2_LIB, RTLD_LAZY | RTLD_LOCAL);
+        if (gtk2_libhandle == NULL)
+            return FALSE;
+    }
 
-    if (gtk2_libhandle == NULL || gthread_libhandle == NULL)
-        return FALSE;
+    gthread_libhandle = dlopen(GTHREAD_LIB_VERSIONED, RTLD_LAZY | RTLD_LOCAL);
+    if (gthread_libhandle == NULL) {
+        gthread_libhandle = dlopen(GTHREAD_LIB, RTLD_LAZY | RTLD_LOCAL);
+        if (gthread_libhandle == NULL)
+            return FALSE;
+    }
 
     if (setjmp(j) == 0)
     {

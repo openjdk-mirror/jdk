@@ -27,11 +27,29 @@
 #define __FONTCONFIG_FP_H__
 
 #include <dlfcn.h>
-#ifndef __linux__ /* i.e. is solaris */
+#if !(defined(__linux__) || defined(MACOSX))
 #include <link.h>
 #endif
 
 #include <fontconfig/fontconfig.h>
+#include <jvm_md.h>
+
+#ifdef MACOSX
+
+//
+// XXXDARWIN: Hard-code the path to Apple's fontconfig, as it is
+// not included in the dyld search path by default, and 10.4
+// does not support -rpath.
+//
+// This ignores the build time setting of ALT_FREETYPE_LIB_PATH,
+// and should be replaced with -rpath/@rpath support on 10.5 or later,
+// or via support for a the FREETYPE_LIB_PATH define.
+#define FONTCONFIG_DLL_VERSIONED X11_PATH "/lib/" VERSIONED_JNI_LIB_NAME("fontconfig", "1")
+#define FONTCONFIG_DLL X11_PATH "/lib/" JNI_LIB_NAME("fontconfig")
+#else
+#define FONTCONFIG_DLL_VERSIONED VERSIONED_JNI_LIB_NAME("fontconfig", "1")
+#define FONTCONFIG_DLL JNI_LIB_NAME("fontconfig")
+#endif
 
 void* dlOpenFontConfig();
 void dlCloseFontConfig(void *libfontconfig);

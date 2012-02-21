@@ -29,6 +29,7 @@ import java.util.jar.JarFile;
 import java.io.Console;
 import java.io.FileDescriptor;
 import java.security.ProtectionDomain;
+import java.util.zip.Adler32;
 import javax.security.auth.kerberos.KeyTab;
 
 import java.security.AccessController;
@@ -48,11 +49,13 @@ public class SharedSecrets {
     private static JavaLangAccess javaLangAccess;
     private static JavaIOAccess javaIOAccess;
     private static JavaNetAccess javaNetAccess;
+    private static JavaNetHttpCookieAccess javaNetHttpCookieAccess;
     private static JavaNioAccess javaNioAccess;
     private static JavaIOFileDescriptorAccess javaIOFileDescriptorAccess;
     private static JavaSecurityProtectionDomainAccess javaSecurityProtectionDomainAccess;
     private static JavaSecurityAccess javaSecurityAccess;
     private static JavaxSecurityAuthKerberosAccess javaxSecurityAuthKerberosAccess;
+    private static JavaUtilZipAccess javaUtilZipAccess;
 
     public static JavaUtilJarAccess javaUtilJarAccess() {
         if (javaUtilJarAccess == null) {
@@ -81,6 +84,16 @@ public class SharedSecrets {
 
     public static JavaNetAccess getJavaNetAccess() {
         return javaNetAccess;
+    }
+
+    public static void setJavaNetHttpCookieAccess(JavaNetHttpCookieAccess a) {
+        javaNetHttpCookieAccess = a;
+    }
+
+    public static JavaNetHttpCookieAccess getJavaNetHttpCookieAccess() {
+        if (javaNetHttpCookieAccess == null)
+            unsafe.ensureClassInitialized(java.net.HttpCookie.class);
+        return javaNetHttpCookieAccess;
     }
 
     public static void setJavaNioAccess(JavaNioAccess jna) {
@@ -153,5 +166,16 @@ public class SharedSecrets {
         if (javaxSecurityAuthKerberosAccess == null)
             unsafe.ensureClassInitialized(KeyTab.class);
         return javaxSecurityAuthKerberosAccess;
+    }
+
+    public static void setJavaUtilZipAccess(JavaUtilZipAccess access) {
+        javaUtilZipAccess = access;
+    }
+
+    public static JavaUtilZipAccess getJavaUtilZipAccess() {
+        if (javaUtilZipAccess == null) {
+            unsafe.ensureClassInitialized(Adler32.class);
+        }
+        return javaUtilZipAccess;
     }
 }

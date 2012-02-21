@@ -102,7 +102,8 @@ final class XWM
         METACITY_WM = 11,
         COMPIZ_WM = 12,
         LG3D_WM = 13,
-        MUTTER_WM = 14;
+        CWM_WM = 14,
+        MUTTER_WM = 15;
     public String toString() {
         switch  (WMID) {
           case NO_WM:
@@ -129,6 +130,8 @@ final class XWM
               return "Compiz";
           case LG3D_WM:
               return "LookingGlass";
+          case CWM_WM:
+              return "CWM";
           case MUTTER_WM:
               return "Mutter";
           case UNDETERMINED_WM:
@@ -558,6 +561,10 @@ final class XWM
         return isNetWMName("LG3D");
     }
 
+    static boolean isCWM() {
+        return isNetWMName("CWM");
+    }
+
     /*
      * Is Metacity running?
      */
@@ -576,7 +583,7 @@ final class XWM
     // TODO: according to wikipedia, compiz is now reparenting. This should
     // probably be updated.
     static boolean isNonReparentingWM() {
-        return (XWM.getWMID() == XWM.COMPIZ_WM || XWM.getWMID() == XWM.LG3D_WM);
+        return (XWM.getWMID() == XWM.COMPIZ_WM || XWM.getWMID() == XWM.LG3D_WM || XWM.getWMID() == XWM.CWM_WM);
     }
 
     /*
@@ -754,6 +761,8 @@ final class XWM
                 awt_wmgr = XWM.COMPIZ_WM;
             } else if (isLookingGlass()) {
                 awt_wmgr = LG3D_WM;
+            } else if (isCWM()) {
+                awt_wmgr = CWM_WM;
             } else if (doIsIceWM && isIceWM()) {
                 awt_wmgr = XWM.ICE_WM;
             }

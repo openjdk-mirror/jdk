@@ -33,7 +33,7 @@ FILES_c = \
 	splashscreen_sys.c
 
 ifndef USE_SYSTEM_ZLIB
-FILES_c += \
+  FILES_c += \
 	compress.c \
 	deflate.c \
 	gzio.c \

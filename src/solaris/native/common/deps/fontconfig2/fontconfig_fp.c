@@ -67,9 +67,9 @@ void* dlOpenFontConfig() {
      * certain symbols - and functionality - to be available.
      * Also add explicit search for .so.1 in case .so symlink doesn't exist.
      */
-    libfontconfig = dlopen("libfontconfig.so.1", RTLD_LOCAL|RTLD_LAZY);
+    libfontconfig = dlopen(FONTCONFIG_DLL_VERSIONED, RTLD_LOCAL|RTLD_LAZY);
     if (libfontconfig == NULL) {
-        libfontconfig = dlopen("libfontconfig.so", RTLD_LOCAL|RTLD_LAZY);
+        libfontconfig = dlopen(FONTCONFIG_DLL, RTLD_LOCAL|RTLD_LAZY);
         if (libfontconfig == NULL) {
             return NULL;
         }
