@@ -421,7 +421,7 @@ export ZLIB_LIBS
 # JPEG_CFLAGS and JPEG_LIBS tell the compiler how to compile and
 # link against libjpeg
 if [ "${JPEG_LIBS}" = "" ] ; then
-    ZLIB_LIBS="-ljpeg"
+    JPEG_LIBS="-ljpeg"
 fi
 export JPEG_LIBS
 
