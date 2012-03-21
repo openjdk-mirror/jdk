@@ -26,7 +26,7 @@
 #ifndef __GIO_FP_H__
 #define __GIO_FP_H__
 
-#include <gio/gio.h>
+#include <gio/gio_typedefs.h>
 
 extern type_init_func type_init;
 extern object_unref_func object_unref;

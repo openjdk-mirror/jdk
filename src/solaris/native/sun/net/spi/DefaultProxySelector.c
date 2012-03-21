@@ -35,10 +35,11 @@
 #include <strings.h>
 #endif
 
-#include <gio/gio.h>
 #include <gconf/gconf-client.h>
 
-#ifndef USE_SYSTEM_GIO
+#ifdef USE_SYSTEM_GIO
+#include <gio/gio.h>
+#else
 #include <gio_fp.h>
 #endif
 

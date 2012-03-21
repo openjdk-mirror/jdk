@@ -42,9 +42,9 @@
 #include <string.h>
 #endif
 
+#ifdef USE_SYSTEM_GIO
 #include <gio/gio.h>
-
-#ifndef USE_SYSTEM_GIO
+#else
 #include <gio_fp.h>
 #endif
 
