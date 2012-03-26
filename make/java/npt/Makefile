@@ -67,6 +67,10 @@ ifeq ($(PLATFORM), windows)
   OTHER_LCF += -export:nptInitialize -export:nptTerminate
 endif
 
+ifeq ($(PLATFORM), haiku)
+  OTHER_LDLIBS += -ltextencoding
+endif
+
 #
 # Add to ambient vpath so we pick up the library files
 #

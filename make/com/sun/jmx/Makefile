@@ -114,11 +114,12 @@ $(CLASSDESTDIR)/%_Stub.class: $(CLASSDESTDIR)/%.class
                 -d $(CLASSDESTDIR)              \
                 -iiop -v1.2                     \
                 $(subst /,.,$(<:$(CLASSDESTDIR)/%.class=%))
-	$(RMIC) $(HOTSPOT_INTERPRETER_FLAG) -classpath "$(CLASSDESTDIR)"    \
-                -d $(CLASSDESTDIR)              \
-                -iiop -v1.2                     \
-                -standardPackage                \
-                $(subst /,.,$(<:$(CLASSDESTDIR)/%.class=%))
+# Bootstrap rmic cannot do this -- wont cause problem with OpenJDK's ORB
+#	$(RMIC) $(HOTSPOT_INTERPRETER_FLAG) -classpath "$(CLASSDESTDIR)"    \
+#                -d $(CLASSDESTDIR)              \
+#                -iiop -v1.2                     \
+#                -standardPackage                \
+#                $(subst /,.,$(<:$(CLASSDESTDIR)/%.class=%))
 	@$(java-vm-cleanup)
 
 stubs: $(FILES_stubs) 

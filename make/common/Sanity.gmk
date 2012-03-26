@@ -100,7 +100,7 @@ endif
 
 
 # Always check cups header paths on solaris & linux
-ifneq ($(PLATFORM), windows)
+ifeq (,$(findstring $(PLATFORM), windows haiku))
 sanity-all:: \
     sane-cups
 endif

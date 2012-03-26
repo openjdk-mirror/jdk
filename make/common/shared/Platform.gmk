@@ -392,6 +392,48 @@ ifeq ($(PLATFORM), windows)
   endif
 endif
 
+ifeq ($(SYSTEM_UNAME), Haiku)
+  PLATFORM = haiku
+  mach := $(shell uname -m)
+  archExpr = case "$(mach)" in \
+                BePC) \
+                    echo i586 \
+                    ;; \
+                *) \
+                    echo $(mach) \
+                    ;; \
+      esac
+  ARCH        := $(shell $(archExpr) )
+  ARCH_FAMILY := $(ARCH)
+
+  # Most archs are 32-bit
+  ifndef ARCH_DATA_MODEL
+    ARCH_DATA_MODEL=32
+    ifeq ($(ARCH), amd64)
+      ARCH_DATA_MODEL=64
+    endif
+    ifeq ($(ARCH), ia64)
+      ARCH_DATA_MODEL=64
+    endif
+  endif
+
+  # Need to maintain the jre/lib/i386 location for 32-bit Intel
+  ifeq ($(ARCH), i586)
+    LIBARCH = i386
+  else
+    LIBARCH = $(ARCH)
+  endif
+
+  # Value of Java os.arch property
+  ARCHPROP  = $(LIBARCH)
+
+  # Suffix for file bundles used in previous release
+  BUNDLE_FILE_SUFFIX=.tar.gz
+  # How much RAM does this machine have:
+  MAX_RAM_CMD := sysinfo -mem | fgrep max | awk '{print $$7;}' | cut -d')' -f1
+  MB_OF_MEMORY := $(shell expr `$(MAX_RAM_CMD)` '/' 1024 '/' 1024)
+endif
+
 # Unix type settings (same for all unix platforms)
 ifneq ($(PLATFORM), windows)
   # Temporary disk area

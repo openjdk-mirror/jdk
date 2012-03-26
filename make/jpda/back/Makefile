@@ -48,7 +48,7 @@ OTHER_INCLUDES = -I$(SHARE_SRC)/transport/export \
                  -I$(PLATFORM_SRC)/back \
                  -I$(GENNATIVESRCDIR)/jdwp
 
-ifneq ($(PLATFORM), windows)
+ifeq (,$(findstring $(PLATFORM), windows haiku))
   OTHER_LDLIBS += -ldl
 endif # PLATFORM
 

@@ -46,7 +46,7 @@ endif
 OTHER_CFLAGS += -DJDK_MAJOR_VERSION='"$(JDK_MAJOR_VERSION)"' \
                 -DJDK_MINOR_VERSION='"$(JDK_MINOR_VERSION)"' \
                 -DJDK_MICRO_VERSION='"$(JDK_MICRO_VERSION)"' \
-                -DJDK_BUILD_NUMBER='"$(JDK_BUILD_NUMBER)"' 
+                -DJDK_BUILD_NUMBER='"$(JDK_BUILD_NUMBER)"'
 
 ifdef JDK_UPDATE_VERSION
 OTHER_CFLAGS += -DJDK_UPDATE_VERSION='"$(JDK_UPDATE_VERSION)"'
@@ -87,8 +87,13 @@ FILES_c    +=   UNIXProcess_md.c \
 		UnixFileSystem_md.c \
 		canonicalize_md.c \
 		TimeZone.c \
-		TimeZone_md.c \
 		FileSystemPreferences.c
+
+ifeq ($(PLATFORM), haiku)
+FILES_cpp += TimeZone_md_haiku.cpp
+else
+FILES_c += TimeZone_md.c
+endif
 
 INIT += $(GENSRCDIR)/java/lang/UNIXProcess.java
 
@@ -144,6 +149,11 @@ vpath %.c $(PLATFORM_SRC)/native/common
 vpath %.c $(PLATFORM_SRC)/native/java/util
 vpath %.c $(PLATFORM_SRC)/native/sun/security/provider
 vpath %.c $(PLATFORM_SRC)/native/sun/io
+
+#
+# Add to the default C++ file search paths
+#
+vpath %.cpp $(PLATFORM_SRC)/native/java/util
 
 #
 # Includes the fdlibm header file.
@@ -205,8 +215,13 @@ OTHER_LDLIBS += $(JVMLIB) -libpath:$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) fdlib
 		       -libpath:$(OBJDIR)/../../../verify/$(OBJDIRNAME) verify.lib \
 		       shell32.lib delayimp.lib /DELAYLOAD:shell32.dll
 else
+ifeq ($(PLATFORM),haiku)
+OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) \
+		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH) -llocale
+else
 OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) $(LIBNSL) -ldl \
 		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH)
+endif
 endif
 
 #
@@ -247,7 +262,7 @@ $(GENSRCDIR)/java/lang/UNIXProcess.java: \
     $(PLATFORM_SRC)/classes/java/lang/UNIXProcess.java.$(PLATFORM)
 	$(install-file)
 
-clean:: 
+clean::
 	$(RM) $(GENSRCDIR)/java/lang/UNIXProcess.java
 
 endif
@@ -261,10 +276,10 @@ JAVALIB =
 #
 # Special rules.
 #
-clean:: 
+clean::
 	$(RM) -r $(CLASSHDRDIR)
 
-clobber:: 
+clobber::
 	$(RM) -r $(CLASSBINDIR)/java/io $(CLASSBINDIR)/java/lang \
 		$(CLASSBINDIR)/java/security $(CLASSBINDIR)/java/util \
 		$(CLASSBINDIR)/sun/misc
@@ -300,7 +315,7 @@ $(LIBDIR)/$(PROPS): $(PLATFORM_SRC)/lib/$(PROPS)
 $(LIBDIR)/$(CAL_PROPS): $(SHARE_SRC)/lib/$(CAL_PROPS)
 	$(install-file)
 
-clean:: 
+clean::
 	$(RM) -r $(LIBDIR)/$(PROPS) $(TZMAP)
 
 #
@@ -321,12 +336,12 @@ $(CURDATA): \
 	$(MV) $@.temp $@
 	$(call chmod-file, 444)
 
-clean:: 
+clean::
 	$(RM) $(CURDATA)
 
 
 #
-# Rules to create $(GENSRCDIR)/sun/lang/CharacterData*.java 
+# Rules to create $(GENSRCDIR)/sun/lang/CharacterData*.java
 #
 CHARACTERDATA = $(BUILDDIR)/tools/GenerateCharacter
 UNICODEDATA   = $(BUILDDIR)/tools/UnicodeData
@@ -381,12 +396,12 @@ $(GENSRCDIR)/java/lang/%.java : $(CHARACTERDATA)/%.java.template
 	$(install-file)
 
 clean::
-	$(RM) $(GENSRCDIR)/java/lang/CharacterDataLatin1.java 
+	$(RM) $(GENSRCDIR)/java/lang/CharacterDataLatin1.java
 	$(RM) $(GENSRCDIR)/java/lang/CharacterData00.java
-	$(RM) $(GENSRCDIR)/java/lang/CharacterData01.java 
+	$(RM) $(GENSRCDIR)/java/lang/CharacterData01.java
 	$(RM) $(GENSRCDIR)/java/lang/CharacterData02.java
 	$(RM) $(GENSRCDIR)/java/lang/CharacterData0E.java
-	$(RM) $(GENSRCDIR)/java/lang/CharacterDataUndefined.java 
+	$(RM) $(GENSRCDIR)/java/lang/CharacterDataUndefined.java
 	$(RM) $(GENSRCDIR)/java/lang/CharacterDataPrivateUse.java
 
 #
@@ -407,7 +422,7 @@ $(UNINAME): $(UNICODEDATA)/UnicodeData.txt \
 	build.tools.generatecharacter.CharacterName \
 		$(UNICODEDATA)/UnicodeData.txt $(UNINAME)
 
-clean:: 
+clean::
 	$(RM) $(UNINAME)
 
 #
@@ -415,15 +430,15 @@ clean::
 #
 
 #
-# Rule to precompile CoreResourceBundleControl.java 
+# Rule to precompile CoreResourceBundleControl.java
 #
 LOCALES_GEN_SH = localelist.sh
 
 $(GENSRCDIR)/sun/util/CoreResourceBundleControl.java: \
 	$(SHARE_SRC)/classes/sun/util/CoreResourceBundleControl-XLocales.java.template $(LOCALES_GEN_SH)
-	@$(prep-target) 
+	@$(prep-target)
 	NAWK="$(NAWK)" SED="$(SED)" $(SH) $(LOCALES_GEN_SH) "$(JRE_NONEXIST_LOCALES)" \
-		$< $@ 
+		$< $@
 clean::
 	$(RM) $(GENSRCDIR)/sun/util/CoreResourceBundleControl.java
 

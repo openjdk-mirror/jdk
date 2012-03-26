@@ -140,6 +140,12 @@ ifeq ($(PLATFORM), windows)
     $(EGREP) "\#define" | $(NAWK) '{print $$3}')
 endif
 
+ifeq ($(PLATFORM), haiku)
+  OS_VERSION := $(shell uname -r)
+  OS_VARIANT_NAME := $(shell uname -s)
+  OS_VARIANT_VERSION := $(shell uname -v | sed -e 's/^hrev\([0-9]\+\).*/\1/')
+endif
+
 # Get the version numbers of what we are using
 _MAKE_VER  :=$(shell $(MAKE) --version 2>&1 | $(HEAD) -n 1)
 _ZIP_VER   :=$(shell $(ZIPEXE) -help 2>&1 | $(HEAD) -n 4 | $(EGREP) '^Zip')
@@ -825,7 +831,7 @@ endif
 # CUPS_HEADERS_PATH must be valid
 ######################################################
 sane-cups:
-ifneq ($(PLATFORM), windows)
+ifeq (,$(findstring $(PLATFORM), windows haiku))
 	@if [ ! -r $(CUPS_HEADERS_PATH)/cups/cups.h ]; then \
 	  $(ECHO) "ERROR: You do not have access to valid Cups header files. \n" \
 	    "      Please check your access to \n" \

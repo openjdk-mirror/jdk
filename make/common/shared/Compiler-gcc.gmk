@@ -81,7 +81,19 @@ ifeq ($(PLATFORM), solaris)
 
   # Option used to create a shared library
   SHARED_LIBRARY_FLAG = -G
-  
+
+endif
+
+ifeq ($(PLATFORM), haiku)
+
+  # Settings specific to Haiku
+  CC             = $(COMPILER_PATH)gcc
+  CPP            = $(COMPILER_PATH)gcc -E
+  CXX            = $(COMPILER_PATH)g++
+
+  # Option used to create a shared library
+  SHARED_LIBRARY_FLAG = -shared # HAIKU_NOTE check me out
+
 endif
 
 # Get gcc version

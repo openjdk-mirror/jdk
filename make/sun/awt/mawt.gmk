@@ -179,8 +179,13 @@ endif
 endif
 # !HEADLESS
 
+ifeq ($(PLATFORM), haiku)
+OTHER_LDLIBS += $(JVMLIB) $(LIBCXX) -lawt
+#                -L$(LIBDIR)/$(LIBARCH) -lawt
+else
 OTHER_LDLIBS += $(JVMLIB) $(LIBCXX) \
                 -lawt $(LIBM) -ldl
+endif
 
 #
 # Sun CC with -Xa misdefines __STDC__ to 0 (zero).
@@ -193,7 +198,9 @@ endif
 #
 # Other extra flags needed for compiling.
 #
+ifneq ($(PLATFORM), haiku)
 CPPFLAGS += -I$(CUPS_HEADERS_PATH)
+endif
 
 ifndef HEADLESS
 CPPFLAGS += -I$(OPENWIN_HOME)/include 

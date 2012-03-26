@@ -44,7 +44,9 @@ endif
 ifeq ($(PLATFORM), linux)
   OTHER_LDLIBS += $(LIBSOCKET) $(LIBNSL) -ldl -lpthread
 endif
-
+ifeq ($(PLATFORM), haiku)
+  OTHER_LDLIBS += $(LIBSOCKET)
+endif
 #
 # Demo jar building rules.
 #

@@ -72,7 +72,7 @@ SUBDIRS            = jar security javazic misc net nio text launcher
 
 ifdef BUILD_HEADLESS_ONLY
   DISPLAY_LIBS = awt $(HEADLESS_SUBDIR)
-  DISPLAY_TOOLS = 
+  DISPLAY_TOOLS = applet
 else
   DISPLAY_LIBS = awt splashscreen $(XAWT_SUBDIR) $(HEADLESS_SUBDIR)
   DISPLAY_TOOLS = applet

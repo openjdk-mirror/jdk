@@ -123,6 +123,13 @@ OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
 OTHER_LDLIBS = $(JVMLIB) $(LIBM) -ldl
 endif
 
+ifeq  ($(PLATFORM), haiku)
+FILES_c = $(FILES_2D_c)
+FILES_c += awt_LoadLibrary.c
+OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
+OTHER_LDLIBS = $(JVMLIB)
+endif
+
 FILES_c += initIDs.c
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SOLARIS/LINUX

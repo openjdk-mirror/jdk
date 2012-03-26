@@ -78,7 +78,7 @@ endif
 # On Windows, this is done by using the same directory as the executable
 # itself, as with all the Windows libraries.
 #
-ifneq (,$(findstring $(PLATFORM), linux solaris))	# UNIX systems
+ifneq (,$(findstring $(PLATFORM), linux solaris haiku))	# UNIX systems
     LDFLAGS += -L $(LIBDIR)/$(LIBARCH)/jli
     OTHER_LDLIBS += -ljli
     ifeq ($(PLATFORM), solaris)
@@ -95,6 +95,12 @@ ifneq (,$(findstring $(PLATFORM), linux solaris))	# UNIX systems
 	LDFLAGS += -Wl,--allow-shlib-undefined
 	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../lib/$(LIBARCH)/jli
 	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../jre/lib/$(LIBARCH)/jli
+    endif
+    ifeq ($(PLATFORM), haiku)
+	LDFLAGS += $(LDFLAG_Z_ORIGIN)
+	LDFLAGS += -Wl,--allow-shlib-undefined
+	LDFLAGS += -Wl,-rpath -Wl,\%A/../lib/$(LIBARCH)/jli
+	LDFLAGS += -Wl,-rpath -Wl,\%A/../jre/lib/$(LIBARCH)/jli
     endif
 endif
 ifeq ($(PLATFORM), windows)
@@ -113,7 +119,7 @@ endif
 FILES_o = \
 	$(OBJDIR)/main.$(OBJECT_SUFFIX)
 
-$(ACTUAL_PROGRAM):: classes $(INIT) 
+$(ACTUAL_PROGRAM):: classes $(INIT)
 
 #
 # Windows only
@@ -133,12 +139,12 @@ endif
 
 $(OBJDIR)/$(PROGRAM).lcf: $(OBJDIR)/$(PROGRAM).res $(FILES_o)
 	@$(prep-target)
-	@$(ECHO) $(FILES_o) > $@ 
+	@$(ECHO) $(FILES_o) > $@
   ifndef LOCAL_RESOURCE_FILE
 	@$(ECHO) $(OBJDIR)/$(PROGRAM).res >> $@
   endif
 	@$(ECHO) setargv.obj >> $@
-	@$(ECHO) Created $@ 
+	@$(ECHO) Created $@
 
 $(ACTUAL_PROGRAM):: $(OBJDIR)/$(PROGRAM)$(EXE_SUFFIX)
 	@$(install-file)
@@ -176,28 +182,40 @@ else # PLATFORM
 # Note that we have to link -lthread even when USE_PTHREADS is true.
 # This is becuase checkForCorrectLibthread() croaks otherwise.
 #
-LIBTHREAD = -lthread
-ifeq ($(USE_PTHREADS),true)
-  THREADLIBS = -lpthread $(LIBTHREAD)
-else # USE_PTHREADS
-  THREADLIBS = $(LIBTHREAD)
-endif # USE_PTHREADS
+ifeq ($(PLATFORM), haiku)
+  LIBTHREAD =
+  THREADLIBS =
+else # PLATFORM
+  LIBTHREAD = -lthread
+  ifeq ($(USE_PTHREADS),true)
+    THREADLIBS = -lpthread $(LIBTHREAD)
+  else # USE_PTHREADS
+    THREADLIBS = $(LIBTHREAD)
+  endif # USE_PTHREADS
+endif # PLATFORM
 
 #
 # This rule only applies on unix.  It supports quantify and its ilk.
 #
+
+# The launchers should depend on libjli only, at least according to
+# the launchers on Arch's OpenJDK7. However for some reason they were
+# always linking to libjava and libjvm. So I've replaced $(LDLIBS) with
+# -ljli in the link command below. Hopefully find the cause of this and
+# put it back to normal.
+
 $(ACTUAL_PROGRAM):: $(FILES_o)
 	@$(prep-target)
 	@set -- $?; \
 	    $(ECHO) Rebuilding $@ because of $$1 $$2 $$3 $$4 $$5 $$6 $${7:+...};
 	@$(MKDIR) -p $(TEMPDIR)
 	$(LINK_PRE_CMD) $(CC) $(CC_OBJECT_OUTPUT_FLAG)$@ $(LDFLAGS) \
-	    $(FILES_o) $(THREADLIBS) $(LDLIBS)
+	    $(FILES_o) $(THREADLIBS) -ljli
 	@$(call binary_file_verification,$@)
 
 endif # PLATFORM
 
-clean:: 
+clean::
 ifeq ($(PLATFORM), windows)
 	$(RM) $(OBJDIR)/$(PROGRAM).rc
 	$(RM) $(OBJDIR)/$(PROGRAM).ico
@@ -211,7 +229,7 @@ ifeq ($(PLATFORM), windows)
 endif
 
 
-clobber:: 
+clobber::
 	$(RM) $(ACTUAL_PROGRAM)
 
 #

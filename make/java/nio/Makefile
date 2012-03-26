@@ -31,7 +31,8 @@ BUILDDIR = ../..
 PACKAGE = java.nio
 LIBRARY = nio
 PRODUCT = java
-OTHER_JAVACFLAGS += -Xmaxwarns 1000 -Xlint:serial -Werror
+#OTHER_JAVACFLAGS += -Xmaxwarns 1000 -Xlint:serial -Werror
+OTHER_JAVACFLAGS += -Xlint:serial -Werror
 include $(BUILDDIR)/common/Defs.gmk
 
 NIO_SRC = $(SHARE_SRC)/classes/java/nio
@@ -260,6 +261,70 @@ FILES_gen += \
 	sun/nio/fs/UnixConstants.java
 endif # PLATFORM = linux
 
+ifeq ($(PLATFORM), haiku)
+FILES_java += \
+    sun/nio/ch/AbstractPollSelectorImpl.java \
+	sun/nio/ch/InheritedChannel.java \
+    sun/nio/ch/PollSelectorProvider.java \
+    sun/nio/ch/PollSelectorImpl.java \
+	sun/nio/ch/Port.java \
+	sun/nio/ch/SimpleAsynchronousFileChannelImpl.java \
+	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \
+	sun/nio/ch/UnixAsynchronousSocketChannelImpl.java \
+	\
+	sun/nio/fs/GnomeFileTypeDetector.java \
+	sun/nio/fs/HaikuFileStore.java \
+	sun/nio/fs/HaikuFileSystem.java \
+	sun/nio/fs/HaikuFileSystemProvider.java \
+	sun/nio/fs/HaikuNativeDispatcher.java \
+	sun/nio/fs/HaikuUserDefinedFileAttributeView.java \
+	sun/nio/fs/PollingWatchService.java \
+	sun/nio/fs/UnixChannelFactory.java \
+	sun/nio/fs/UnixCopyFile.java \
+	sun/nio/fs/UnixDirectoryStream.java \
+	sun/nio/fs/UnixException.java \
+	sun/nio/fs/UnixFileAttributeViews.java \
+	sun/nio/fs/UnixFileAttributes.java \
+	sun/nio/fs/UnixFileKey.java \
+	sun/nio/fs/UnixFileModeAttribute.java \
+	sun/nio/fs/UnixFileStore.java \
+	sun/nio/fs/UnixFileStoreAttributes.java \
+	sun/nio/fs/UnixFileSystem.java \
+	sun/nio/fs/UnixFileSystemProvider.java \
+	sun/nio/fs/UnixMountEntry.java \
+	sun/nio/fs/UnixNativeDispatcher.java \
+	sun/nio/fs/UnixPath.java \
+	sun/nio/fs/UnixSecureDirectoryStream.java \
+	sun/nio/fs/UnixUriUtils.java \
+	sun/nio/fs/UnixUserPrincipals.java
+
+FILES_c += \
+	InheritedChannel.c \
+	NativeThread.c \
+    PollArrayWrapper.c \
+	UnixAsynchronousServerSocketChannelImpl.c \
+	UnixAsynchronousSocketChannelImpl.c \
+	\
+	GnomeFileTypeDetector.c \
+	HaikuNativeDispatcher.c \
+	UnixCopyFile.c \
+	UnixNativeDispatcher.c
+
+FILES_export += \
+	sun/nio/ch/InheritedChannel.java \
+	sun/nio/ch/NativeThread.java \
+	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \
+	sun/nio/ch/UnixAsynchronousSocketChannelImpl.java \
+	\
+	sun/nio/fs/GnomeFileTypeDetector.java \
+	sun/nio/fs/HaikuNativeDispatcher.java \
+	sun/nio/fs/UnixCopyFile.java \
+	sun/nio/fs/UnixNativeDispatcher.java
+
+FILES_gen += \
+	sun/nio/fs/UnixConstants.java
+endif # PLATFORM = haiku
+
 #
 # Find platform-specific C source files
 #
@@ -297,6 +362,9 @@ endif
 ifeq ($(PLATFORM), solaris)
 OTHER_LDLIBS += $(JVMLIB) $(LIBSOCKET) -lposix4 -ldl -lsendfile \
 		-L$(LIBDIR)/$(LIBARCH) -ljava -lnet
+endif
+ifeq ($(PLATFORM), haiku)
+OTHER_LDLIBS += $(LIBSOCKET) -lgnu -L$(LIBDIR)/$(LIBARCH) -ljava -lnet
 endif # PLATFORM
 
 #

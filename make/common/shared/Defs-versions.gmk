@@ -39,10 +39,11 @@ ifeq ($(PLATFORM), solaris)
   override CC_VERSION = sun
 endif
 
-# Linux uses GNU compilers by default
-ifeq ($(PLATFORM), linux)
+# Linux and Haiku use GNU compilers by default
+ifneq (,$(findstring $(PLATFORM), linux haiku))
   override CC_VERSION = gcc
 endif
+
 
 ##########################################################################
 #
@@ -189,9 +190,24 @@ ifeq ($(PLATFORM), windows)
   endif
 endif
 
+# Haiku specific
+ifeq ($(PLATFORM), haiku)
+  REQUIRED_OS_NAME            = Haiku
+  REQUIRED_OS_VERSION         = 1.0
+  REQUIRED_OS_VARIANT_NAME    = Haiku
+# Hamish (22/02/2012): working on slightly modified 43633
+  REQUIRED_OS_VARIANT_VERSION = 43633
+  REQUIRED_COMPILER_NAME      = GCC4
+  REQUIRED_COMPILER_VERSION   = GCC4
+  REQUIRED_GCC_VER            = 2.95
+  ifeq ($(CC_VERSION), gcc)
+    REQUIRED_CC_VER           = 4.5.3
+  endif
+endif
+
 # Generic
 REQUIRED_ANT_VER          = 1.7.1
-REQUIRED_BOOT_VER         = 1.6
+REQUIRED_BOOT_VER         = 1.5
 REQUIRED_FREETYPE_VERSION = 2.3.0
 REQUIRED_MAKE_VER         = 3.81
 REQUIRED_UNZIP_VER        = 5.12

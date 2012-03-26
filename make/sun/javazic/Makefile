@@ -62,7 +62,9 @@ $(BUILDTOOLJARDIR)/javazic.jar:
 $(WORKDIR)/$(MAPFILE): $(BUILDTOOLJARDIR)/javazic.jar $(TZFILES)
 	$(RM) -r $(@D)
 	$(prep-target)
-	$(BOOT_JAVA_CMD) -jar $(BUILDTOOLJARDIR)/javazic.jar -V "$(TZDATA_VER)" -d $(WORKDIR) $(TZFILES)
+#   $(BOOT_JAVA_CMD) -jar $(BUILDTOOLJARDIR)/javazic.jar -V "$(TZDATA_VER)" -d $(WORKDIR) $(TZFILES)
+	$(BOOT_JAVA_CMD) -cp $(ABS_OUTPUTDIR)/classes:$(BUILDTOOLJARDIR)/javazic.jar \
+		build.tools.javazic.Main -V "$(TZDATA_VER)" -d $(WORKDIR) $(TZFILES)
 	@$(java-vm-cleanup)
 
 $(INSTALLDIR)/$(MAPFILE): $(WORKDIR)/$(MAPFILE)

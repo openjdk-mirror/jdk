@@ -237,10 +237,14 @@ classes : $(CLASSES_INIT) .delete.classlist .compile.classlist
 	  $(ECHO) "# Java sources to be compiled: (listed in file $<)"; \
 	  $(CAT) $<.filtered; \
 	  $(ECHO) "# Running javac:"; \
-	  $(ECHO) $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
-	  $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
+	  $(ECHO) $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -bootclasspath "$(CLASSDESTDIR):$(ICEDTEA_RT)" \
+          -d $(CLASSDESTDIR) @$(JAVA_SOURCE_LIST); \
+          $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -bootclasspath "$(CLASSDESTDIR):$(ICEDTEA_RT)" -d $(CLASSDESTDIR) @$(JAVA_SOURCE_LIST); \
 	fi
 	@$(java-vm-cleanup)
+# The old javac command
+#	  $(ECHO) $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
+#	  $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
 
 clobber clean::
 	$(RM) $(JAVA_SOURCE_LIST)
@@ -302,7 +306,11 @@ $(CLASSHDR_DOTFILE): $(CLASSES_export)
 	$(prep-target)
 	@$(ECHO) "# Running javah:"
 	$(JAVAH_CMD) -d $(CLASSHDRDIR)/ \
-		$(CLASSES.export) $(subst $$,\$$,$(EXPORTED_inner))
+		$(CLASSES.export) 
+	$(foreach innerclass,$(subst $$,\$$,$(EXPORTED_inner)), \
+	  $(JAVAH_CMD) \
+	    -o $(CLASSHDRDIR)/$(subst .,_,$(subst \$$,_,$(innerclass))).h \
+	    $(innerclass))
 	@$(java-vm-cleanup)
 	@$(TOUCH) $@
 

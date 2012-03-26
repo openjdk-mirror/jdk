@@ -85,8 +85,9 @@ $(BIFILES): $(GENERATEBREAKITERATORDATA_JARFILE) $(BIRULES) $(BIINFO) \
 	$(BOOT_JAVAC_CMD) -d $(TEXT_CLASSES) \
 		-sourcepath $(TEXT_SRCDIR) \
 		$(BIRULES) $(BIINFO)
-	$(BOOT_JAVA_CMD) -Xbootclasspath/p:$(TEXT_CLASSES) \
-		-jar $(GENERATEBREAKITERATORDATA_JARFILE) \
+	$(BOOT_JAVA_CMD)  \
+		-cp $(TEXT_CLASSES):$(ABS_OUTPUTDIR)/classes:$(GENERATEBREAKITERATORDATA_JARFILE) \
+		build.tools.generatebreakiteratordata.GenerateBreakIteratorData \
 		-o $(CLASSDESTDIR)/sun/text/resources \
 		-spec $(UNICODEDATA)/UnicodeData.txt \
 		-language th

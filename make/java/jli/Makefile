@@ -102,6 +102,7 @@ OTHER_CPPFLAGS += $(LIBARCH_DEFINES)
 ifneq ($(PLATFORM), windows)	# UNIX systems
         LD_RUNPATH_EXTRAS += ..
 	LIB_LOCATION = $(LIBDIR)/$(LIBARCH)/jli
+ifneq ($(PLATFORM), haiku)
 	# Note: its important to keep this order meaning -lc is the
 	# last library otherwise it could cause compatibility issues
 	# by pulling in SUNW_private symbols from libc
@@ -109,6 +110,7 @@ ifneq ($(PLATFORM), windows)	# UNIX systems
 ifeq ($(USE_PTHREADS),true)
 	LDLIBS += -lpthread
 endif # USE_PTHREADS 
+endif # PLATFORM
 endif # PLATFORM
 
 ifeq ($(PLATFORM), windows)

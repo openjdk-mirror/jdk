@@ -80,8 +80,8 @@ $(BIFILES): $(GENERATEBREAKITERATORDATA_JARFILE) \
 		-sourcepath $(TEXT_SRCDIR) \
 		$(TEXT_SOURCES)
 	$(MKDIR) -p  $(TEXT_CLASSDIR)
-	$(BOOT_JAVA_CMD) -Xbootclasspath/p:$(TEXT_CLASSES) \
-		-jar $(GENERATEBREAKITERATORDATA_JARFILE) \
+	$(BOOT_JAVA_CMD) -cp $(TEXT_CLASSES):$(GENERATEBREAKITERATORDATA_JARFILE):$(ABS_OUTPUTDIR)/classes \
+		build.tools.generatebreakiteratordata.GenerateBreakIteratorData \
 		-o $(TEXT_CLASSDIR) \
 		-spec $(UNICODEDATA)/UnicodeData.txt
 	@$(java-vm-cleanup)

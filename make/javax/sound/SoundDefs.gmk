@@ -55,6 +55,10 @@ ifeq ($(PLATFORM), solaris)
 
 endif # PLATFORM solaris
 
+ifeq ($(PLATFORM), haiku)
+  CPPFLAGS += -DX_PLATFORM=X_HAIKU
+endif
+
 ifeq ($(ZERO_BUILD), true)
   CPPFLAGS += -DX_ARCH=X_ZERO
 else

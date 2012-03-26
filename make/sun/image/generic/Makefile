@@ -69,7 +69,7 @@ CPPFLAGS += \
 
 OTHER_CFLAGS += -D__USE_J2D_NAMES -D__MEDIALIB_OLD_NAMES
 
-ifneq ($(PLATFORM), windows)
+ifeq (,$(findstring $(PLATFORM), windows haiku))
 	OTHER_LDLIBS = $(LIBM) -ldl
 endif
 

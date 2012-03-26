@@ -28,7 +28,6 @@ package build.tools.charsetmapping;
 import java.io.*;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;

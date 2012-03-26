@@ -96,10 +96,14 @@ ifeq ($(PLATFORM), windows)
                  secur32.lib iphlpapi.lib delayimp.lib \
                  /DELAYLOAD:secur32.dll /DELAYLOAD:iphlpapi.dll
 else
+ifeq ($(PLATFORM), haiku)
+  OTHER_LDLIBS = $(LIBSOCKET) $(JVMLIB)
+else
   OTHER_LDLIBS = $(LIBSOCKET) $(LIBNSL) -ldl $(JVMLIB)
 endif
 ifeq ($(PLATFORM), linux)
   OTHER_LDLIBS += -lpthread
+endif
 endif
 
 CLASSES.export += java.lang.Integer java.io.FileDescriptor java.net.InetAddressImplFactory java.net.Inet4AddressImpl java.net.Inet6AddressImpl

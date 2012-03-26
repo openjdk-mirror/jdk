@@ -67,6 +67,13 @@ ifeq ($(PLATFORM),windows)
   UTILS_DEVTOOL_PATH=$(DEVTOOLS_PATH)
 endif
 
+ifeq ($(PLATFORM),haiku)
+  UTILS_COMMAND_PATH=$(UNIXCOMMAND_PATH)
+  UTILS_USR_BIN_PATH=$(UNIXCOMMAND_PATH)
+  UTILS_CCS_BIN_PATH=$(DEVTOOLS_PATH)
+  UTILS_DEVTOOL_PATH=$(UNIXCOMMAND_PATH)
+endif
+
 # Utilities
 ifdef CROSS_COMPILE_ARCH
   AR             = $(COMPILER_PATH)ar
@@ -220,3 +227,17 @@ ifeq ($(PLATFORM),solaris)
   ECHO           = /usr/bin/echo
 endif
 
+# Haiku specific
+ifeq ($(PLATFORM),haiku)
+  ADB = $(UNIXCOMMAND_PATH)gdb
+  CPIO = $(USRBIN_PATH)cpio
+  # Intrinsic unix command, with backslash-escaped character interpretation
+  ECHO = $(UNIXCOMMAND_PATH)echo -e
+  SED = $(USRBIN_PATH)sed
+  LEX = $(USRBIN_PATH)flex
+  M4 = $(USRBIN_PATH)m4
+  NAWK = $(UNIXCOMMAND_PATH)gawk
+  READELF = $(UTILS_CCS_BIN_PATH)readelf
+  TACC = $(USRBIN_PATH)yacc
+  TAR=$(USRBIN_PATH)tar
+endif

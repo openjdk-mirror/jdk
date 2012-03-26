@@ -94,7 +94,9 @@ ifeq ($(PLATFORM), windows)
   RES = $(OBJDIR)/$(PGRM).res
 else
   LDOUTPUT = -o #Have a space 
-  LDDFLAGS += -lc
+  ifneq ($(PLATFORM), haiku)
+    LDDFLAGS += -lc
+  endif
   OTHER_LDLIBS  += $(LIBCXX)
 # setup the list of libraries to link in...
 ifeq ($(PLATFORM), linux)
