@@ -33,7 +33,7 @@
 #include <strings.h>
 #endif
 
-#ifdef __linux__
+#if defined (__linux__) || (__HAIKU__)
 #include <string.h>
 #endif
 

@@ -39,6 +39,11 @@
 #include <sys/sendfile.h>
 #endif
 
+#ifdef __HAIKU__
+#define mmap64 mmap
+#define lseek64 lseek
+#endif
+
 static jfieldID chan_fd;        /* jobject 'fd' in sun.io.FileChannelImpl */
 
 JNIEXPORT jlong JNICALL

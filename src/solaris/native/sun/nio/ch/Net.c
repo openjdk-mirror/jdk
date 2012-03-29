@@ -39,6 +39,11 @@
 #include "nio_util.h"
 #include "nio.h"
 
+#ifdef __HAIKU__
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+#endif
+
 /**
  * Definitions for source-specific multicast to allow for building
  * with older header files.
@@ -86,7 +91,7 @@ struct my_group_source_req {
 #endif  /* __solaris__ */
 
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 
 #ifndef IP_BLOCK_SOURCE
 

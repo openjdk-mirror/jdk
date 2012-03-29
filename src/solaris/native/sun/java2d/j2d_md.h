@@ -30,9 +30,9 @@
 /*
  * Linux version of <sys/types.h> does not define intptr_t
  */
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 #include <stdint.h>
-#endif /* __linux__ */
+#endif /* __linux__ || __HAIKU__ */
 
 typedef unsigned char   jubyte;
 typedef unsigned short  jushort;

@@ -69,10 +69,21 @@ typedef int sctp_peeloff_func(int sock, sctp_assoc_t id);
 
 #else /* __linux__ */
 #include <stdint.h>
-#include <linux/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "jni.h"
+
+#ifndef __HAIKU__
+#include <linux/types.h>
+#else
+typedef uint8_t __u8;
+typedef uint16_t __u16;
+typedef uint32_t __u32;
+typedef int8_t __s8;
+typedef int16_t __s16;
+typedef int32_t __s32;
+#define MSG_FIN MSG_EOF
+#endif
 
 //Causes compiler error if not found, should make warning and uncomment
 /*#include <netinet/sctp.h>*/

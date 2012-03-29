@@ -36,6 +36,12 @@ JNIEXPORT jboolean JNICALL
 Java_java_nio_MappedByteBuffer_isLoaded0(JNIEnv *env, jobject obj, jlong address,
                                          jlong len, jint numPages)
 {
+#ifdef __HAIKU__
+    /* According to the MappedByteBuffer javadoc, this is only
+     * used as a hint, so just return false.
+     */
+    return JNI_FALSE;
+#else
     jboolean loaded = JNI_TRUE;
     int result = 0;
     int i = 0;
@@ -66,6 +72,7 @@ Java_java_nio_MappedByteBuffer_isLoaded0(JNIEnv *env, jobject obj, jlong address
     }
     free(vec);
     return loaded;
+#endif
 }
 
 
@@ -73,11 +80,18 @@ JNIEXPORT void JNICALL
 Java_java_nio_MappedByteBuffer_load0(JNIEnv *env, jobject obj, jlong address,
                                      jlong len)
 {
+#ifdef __HAIKU__
+    /* Perhaps lock_memory() and immediate unlock would
+     * accomplish this? The MappedByteBuffer class touches
+     * all the pages anyway, so just leave it for now.
+     */
+#else
     char *a = (char *)jlong_to_ptr(address);
     int result = madvise((caddr_t)a, (size_t)len, MADV_WILLNEED);
     if (result == -1) {
         JNU_ThrowIOExceptionWithLastError(env, "madvise failed");
     }
+#endif
 }
 
 

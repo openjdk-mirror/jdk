@@ -33,7 +33,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifndef LINUX
+#if !defined(LINUX) && !defined(HAIKU)
 #include <procfs.h>
 #endif
 
@@ -41,11 +41,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#ifndef HAIKU
 #include <sys/errno.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 #include <dlfcn.h>
 #include <sys/time.h>
+
+#ifdef HAIKU
+#include <kernel/OS.h>
+#endif
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -76,7 +82,7 @@ md_sleep(unsigned seconds)
 void
 md_init(void)
 {
-#ifdef LINUX
+#if defined(LINUX) || defined(HAIKU)
     /* No Hi-Res timer option? */
 #else
     if ( gdata->micro_state_accounting ) {
@@ -241,7 +247,11 @@ md_get_microsecs(void)
 #ifdef LINUX
     return (jlong)(md_timeofday() * (jlong)1000); /* Milli to micro */
 #else
+#ifdef HAIKU
+    return (jlong)system_time();
+#else
     return (jlong)(gethrtime()/(hrtime_t)1000); /* Nano seconds to micro seconds */
+#endif
 #endif
 }
 
@@ -256,7 +266,7 @@ md_get_timemillis(void)
 jlong
 md_get_thread_cpu_timemillis(void)
 {
-#ifdef LINUX
+#if defined(LINUX) || defined(HAIKU)
     return md_timeofday();
 #else
     return (jlong)(gethrvtime()/1000); /* Nano seconds to milli seconds */
@@ -271,7 +281,7 @@ md_get_prelude_path(char *path, int path_len, char *filename)
     Dl_info dlinfo;
 
     libdir[0] = 0;
-#ifdef LINUX
+#if defined(LINUX) || defined(HAIKU)
     addr = (void*)&Agent_OnLoad;
 #else
     /* Just using &Agent_OnLoad will get the first external symbol with

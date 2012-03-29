@@ -547,7 +547,7 @@ JNIEXPORT jstring JNICALL Java_sun_awt_X11FontManager_getFontPathNative
 }
 
 #include <dlfcn.h>
-#ifndef __linux__ /* i.e. is solaris */
+#ifdef __solaris__
 #include <link.h>
 #endif
 

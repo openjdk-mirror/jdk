@@ -58,7 +58,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#ifdef __HAIKU__
+#include <signal.h>
+#else
 #include <sys/signal.h>
+#endif
 
 /* O Flags */
 

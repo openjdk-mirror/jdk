@@ -30,13 +30,15 @@
 
 #include <stdlib.h>
 #include <dlfcn.h>
+#ifndef __HAIKU__
 #include <link.h>
+#endif
 
 #ifdef __solaris__
 #include <strings.h>
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 #include <string.h>
 #endif
 

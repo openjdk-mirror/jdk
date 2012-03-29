@@ -36,7 +36,7 @@
 #ifdef __solaris__
 #include <thread.h>
 #endif
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 #include <pthread.h>
 #include <sys/poll.h>
 #endif
@@ -283,7 +283,7 @@ dbgsysTlsGet(int index) {
 
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 int
 dbgsysTlsAlloc() {
     pthread_key_t key;

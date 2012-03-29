@@ -51,6 +51,11 @@
 #include <sys/mman.h>
 #endif
 
+#ifdef __HAIKU__
+#define off64_t off_t
+#define mmap64 mmap
+#endif
+
 #define MAXREFS 0xFFFF  /* max number of open zip file references */
 
 #define MCREATE()      JVM_RawMonitorCreate()

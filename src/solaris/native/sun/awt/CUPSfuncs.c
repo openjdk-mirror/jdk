@@ -26,8 +26,12 @@
 #include <jni.h>
 #include <jni_util.h>
 #include <dlfcn.h>
+#ifndef __HAIKU__
 #include <cups/cups.h>
 #include <cups/ppd.h>
+#endif
+
+// I've just hacked everything out for Haiku
 
 //#define CUPS_DEBUG
 
@@ -37,6 +41,7 @@
 #define DPRINTF(x, y)
 #endif
 
+#ifndef __HAIKU__
 typedef const char* (*fn_cupsServer)(void);
 typedef int (*fn_ippPort)(void);
 typedef http_t* (*fn_httpConnect)(const char *, int);
@@ -56,7 +61,7 @@ fn_ppdOpenFile j2d_ppdOpenFile;
 fn_ppdClose j2d_ppdClose;
 fn_ppdFindOption j2d_ppdFindOption;
 fn_ppdPageSize j2d_ppdPageSize;
-
+#endif
 
 /*
  * Initialize library functions.
@@ -65,6 +70,7 @@ fn_ppdPageSize j2d_ppdPageSize;
 JNIEXPORT jboolean JNICALL
 Java_sun_print_CUPSPrinter_initIDs(JNIEnv *env,
                                          jobject printObj) {
+#ifndef __HAIKU__
   void *handle = dlopen("libcups.so.2", RTLD_LAZY | RTLD_GLOBAL);
 
   if (handle == NULL) {
@@ -129,8 +135,10 @@ Java_sun_print_CUPSPrinter_initIDs(JNIEnv *env,
     dlclose(handle);
     return JNI_FALSE;
   }
-
   return JNI_TRUE;
+#else
+  return JNI_FALSE;
+#endif
 }
 
 /*
@@ -142,6 +150,7 @@ Java_sun_print_CUPSPrinter_getCupsServer(JNIEnv *env,
                                          jobject printObj)
 {
     jstring cServer = NULL;
+#ifndef __HAIKU__
     const char* server = j2d_cupsServer();
     if (server != NULL) {
         // Is this a local domain socket?
@@ -151,6 +160,7 @@ Java_sun_print_CUPSPrinter_getCupsServer(JNIEnv *env,
             cServer = JNU_NewStringPlatform(env, server);
         }
     }
+#endif
     return cServer;
 }
 
@@ -162,8 +172,12 @@ JNIEXPORT jint JNICALL
 Java_sun_print_CUPSPrinter_getCupsPort(JNIEnv *env,
                                          jobject printObj)
 {
+#ifndef __HAIKU__
     int port = j2d_ippPort();
     return (jint) port;
+#else
+    return -1;
+#endif
 }
 
 
@@ -177,6 +191,7 @@ Java_sun_print_CUPSPrinter_canConnect(JNIEnv *env,
                                       jstring server,
                                       jint port)
 {
+#ifndef __HAIKU__
     const char *serverName;
     serverName = (*env)->GetStringUTFChars(env, server, NULL);
     if (serverName != NULL) {
@@ -187,6 +202,7 @@ Java_sun_print_CUPSPrinter_canConnect(JNIEnv *env,
             return JNI_TRUE;
         }
     }
+#endif
     return JNI_FALSE;
 }
 
@@ -199,6 +215,7 @@ Java_sun_print_CUPSPrinter_getMedia(JNIEnv *env,
                                          jobject printObj,
                                          jstring printer)
 {
+#ifndef __HAIKU__
     ppd_file_t *ppd;
     ppd_option_t *optionTray, *optionPage;
     ppd_choice_t *choice;
@@ -304,6 +321,9 @@ Java_sun_print_CUPSPrinter_getMedia(JNIEnv *env,
     j2d_ppdClose(ppd);
     unlink(filename);
     return nameArray;
+#else
+    return NULL;
+#endif
 }
 
 
@@ -315,6 +335,7 @@ Java_sun_print_CUPSPrinter_getPageSizes(JNIEnv *env,
                                          jobject printObj,
                                          jstring printer)
 {
+#ifndef __HAIKU__
     ppd_file_t *ppd;
     ppd_option_t *option;
     ppd_choice_t *choice;
@@ -374,4 +395,7 @@ Java_sun_print_CUPSPrinter_getPageSizes(JNIEnv *env,
     j2d_ppdClose(ppd);
     unlink(filename);
     return sizeArray;
+#else
+    return NULL;
+#endif
 }

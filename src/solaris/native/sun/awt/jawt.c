@@ -33,7 +33,12 @@
  */
 JNIEXPORT jboolean JNICALL JAWT_GetAWT(JNIEnv* env, JAWT* awt)
 {
-#if defined(JAVASE_EMBEDDED) && defined(HEADLESS)
+/* I think this is a pre-HEADLESS_ONLY code that must have
+ * been forgotten because HEADLESS_ONLY is only used on
+ * embedded.
+ */
+/*#if defined(JAVASE_EMBEDDED) && defined(HEADLESS)*/
+#if (defined(JAVASE_EMBEDDED) || defined(__HAIKU__)) && defined(HEADLESS)
     /* there are no AWT libs available at all */
     return JNI_FALSE;
 #else

@@ -37,7 +37,7 @@
 #include "manifest_info.h"
 #include "version_comp.h"
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 #include <pthread.h>
 #else
 #include <thread.h>
@@ -45,6 +45,12 @@
 
 #define JVM_DLL "libjvm.so"
 #define JAVA_DLL "libjava.so"
+
+#ifdef __HAIKU__
+#define LD_LIBRARY_PATH "LIBRARY_PATH"
+#else
+#define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
+#endif
 
 /* help jettison the LD_LIBRARY_PATH settings in the future */
 #ifndef SETENV_REQUIRED
@@ -304,7 +310,7 @@ RequiresSetenv(int wanted, const char *jvmpath) {
     char *dmllp = NULL;
     char *p; /* a utility pointer */
 
-    llp = getenv("LD_LIBRARY_PATH");
+    llp = getenv(LD_LIBRARY_PATH);
 #ifdef __solaris__
     dmllp = (CURRENT_DATA_MODEL == 32)
             ? getenv("LD_LIBRARY_PATH_32")
@@ -610,7 +616,7 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
              * If not on Solaris, assume only a single LD_LIBRARY_PATH
              * variable.
              */
-            runpath = getenv("LD_LIBRARY_PATH");
+            runpath = getenv(LD_LIBRARY_PATH);
 #endif /* __solaris__ */
 
             /* runpath contains current effective LD_LIBRARY_PATH setting */
@@ -619,7 +625,7 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
             new_runpath = JLI_MemAlloc(((runpath != NULL) ? JLI_StrLen(runpath) : 0) +
                     2 * JLI_StrLen(jrepath) + 2 * JLI_StrLen(arch) +
                     JLI_StrLen(jvmpath) + 52);
-            newpath = new_runpath + JLI_StrLen("LD_LIBRARY_PATH=");
+            newpath = new_runpath + JLI_StrLen(LD_LIBRARY_PATH "=");
 
 
             /*
@@ -631,7 +637,7 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
                 if (lastslash)
                     *lastslash = '\0';
 
-                sprintf(new_runpath, "LD_LIBRARY_PATH="
+                sprintf(new_runpath, LD_LIBRARY_PATH "="
                         "%s:"
                         "%s/lib/%s:"
                         "%s/../lib/%s",
@@ -1028,7 +1034,7 @@ static const char*
 SetExecname(char **argv)
 {
     char* exec_path = NULL;
-#if defined(__solaris__)
+#if defined(__solaris__) || defined(__HAIKU__)
     {
         Dl_info dlinfo;
         int (*fptr)();
@@ -1059,7 +1065,7 @@ SetExecname(char **argv)
             exec_path = JLI_StringDup(buf);
         }
     }
-#else /* !__solaris__ && !__linux */
+#else /* !__solaris__ && !__linux__ && !__HAIKU__ */
     {
         /* Not implemented */
     }
@@ -1435,7 +1441,7 @@ jlong_format_specifier() {
 int
 ContinueInNewThread0(int (JNICALL *continuation)(void *), jlong stack_size, void * args) {
     int rslt;
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
     pthread_t tid;
     pthread_attr_t attr;
     pthread_attr_init(&attr);

@@ -25,10 +25,12 @@
 
 package sun.util.calendar;
 
+import  java.io.BufferedInputStream;
 import  java.io.File;
 import  java.io.FileInputStream;
 import  java.io.FileNotFoundException;
 import  java.io.IOException;
+import  java.io.InputStream;
 import  java.lang.ref.SoftReference;
 import  java.nio.file.FileSystems;
 import  java.security.AccessController;
@@ -39,6 +41,7 @@ import  java.util.ArrayList;
 import  java.util.HashMap;
 import  java.util.List;
 import  java.util.Map;
+import  java.util.Properties;
 
 /**
  * <code>ZoneInfoFile</code> reads Zone information files in the
@@ -476,15 +479,46 @@ public class ZoneInfoFile {
     private static final String ziDir = AccessController.doPrivileged(
         new PrivilegedAction<String>() {
             public String run() {
-                String zi = System.getProperty("java.home") +
-                    File.separator + "lib" + File.separator + "zi";
+                String homeDir = System.getProperty("java.home");
+                String zi = homeDir + File.separator + "lib" +
+                  File.separator + "zi";
                 try {
-                    zi = FileSystems.getDefault().getPath(zi).toRealPath().toString();
+                    String otherDir = getZoneInfoDir(homeDir);
+                    if (otherDir != null)
+                        zi = otherDir;
+                    //zi = FileSystems.getDefault().getPath(zi).toRealPath().toString();
+                    zi = new File(zi).getCanonicalPath();
                 } catch(Exception e) {
                 }
                 return zi;
             }
         });
+
+    private static String getZoneInfoDir(final String homeDir) {
+        try {
+            return AccessController.doPrivileged
+                (new PrivilegedExceptionAction<String>() {
+                    public String run() throws IOException {
+                        File f = new File(homeDir + File.separator + "lib" +
+                                          File.separator + "tz.properties");
+                        InputStream in = new FileInputStream(f);
+                        BufferedInputStream bin = new BufferedInputStream(in);
+                        Properties props = new Properties();
+                        props.load(bin);
+                        bin.close();
+                        String dir = props.getProperty("sun.zoneinfo.dir");
+                        if (dir == null)
+                            return null;
+                        File zim = new File(dir, "ZoneInfoMappings");
+                        if (zim.exists())
+                            return dir;
+                        return null;
+                    }
+                });
+        } catch (PrivilegedActionException e) {
+            return null;
+        }
+    }
 
     /**
      * Converts the given time zone ID to a platform dependent path
@@ -1034,8 +1068,8 @@ public class ZoneInfoFile {
         byte[] buffer = null;
 
         try {
-            buffer = (byte[]) AccessController.doPrivileged(new PrivilegedExceptionAction() {
-                public Object run() throws IOException {
+            buffer = AccessController.doPrivileged(new PrivilegedExceptionAction<byte[]>() {
+                public byte[] run() throws IOException {
                     File file = new File(ziDir, fileName);
                     if (!file.exists() || !file.isFile()) {
                         return null;

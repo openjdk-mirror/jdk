@@ -45,7 +45,7 @@
 #include "locale_str.h"
 #include "java_props.h"
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
   #ifndef CODESET
   #define CODESET _NL_CTYPE_CODESET_NAME
   #endif
@@ -119,7 +119,11 @@ setPathEnvironment(char *envstring)
 }
 
 #ifndef P_tmpdir
+#ifdef __HAIKU__
+#define P_tmpdir "/tmp"
+#else
 #define P_tmpdir "/var/tmp"
+#endif
 #endif
 
 static int ParseLocale(int cat, char ** std_language, char ** std_script,

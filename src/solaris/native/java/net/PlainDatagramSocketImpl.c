@@ -45,6 +45,11 @@
 #endif
 #endif
 
+#ifdef __HAIKU__
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+#endif
+
 #ifndef IPTOS_TOS_MASK
 #define IPTOS_TOS_MASK 0x1e
 #endif

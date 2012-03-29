@@ -27,7 +27,9 @@
 #define OGLFuncs_md_h_Included
 
 #include <stdlib.h>
+#ifndef __HAIKU__
 #include <link.h>
+#endif
 #include "J2D_GL/glx.h"
 #include "OGLFuncMacros.h"
 

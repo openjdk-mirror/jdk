@@ -28,11 +28,17 @@
 #include <string.h>
 
 #include <dlfcn.h>
+#ifndef __HAIKU__
 #include <link.h>
+#endif
 
 #include <jni_util.h>
 
 #include "j2secmod.h"
+
+#ifdef __HAIKU__
+static void *sHandle = NULL;
+#endif
 
 void *findFunction(JNIEnv *env, jlong jHandle, const char *functionName) {
     void *hModule = (void*)jHandle;
@@ -51,7 +57,11 @@ JNIEXPORT jlong JNICALL Java_sun_security_pkcs11_Secmod_nssGetLibraryHandle
 {
     const char *libName = (*env)->GetStringUTFChars(env, jLibName, NULL);
     // look up existing handle only, do not load
+#ifdef __HAIKU__
+    void *hModule = sHandle;
+#else
     void *hModule = dlopen(libName, RTLD_NOLOAD);
+#endif
     dprintf2("-handle for %s: %u\n", libName, hModule);
     (*env)->ReleaseStringUTFChars(env, jLibName, libName);
     return (jlong)hModule;
@@ -72,6 +82,9 @@ JNIEXPORT jlong JNICALL Java_sun_security_pkcs11_Secmod_nssLoadLibrary
         JNU_ThrowIOException(env, dlerror());
         return 0;
     }
+#ifdef __HAIKU__
+    sHandle = hModule;
+#endif
 
     return (jlong)hModule;
 }

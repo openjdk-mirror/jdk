@@ -33,7 +33,9 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#ifndef __HAIKU__
 #include <values.h>
+#endif
 
 #ifdef __solaris__
 #include <sys/sockio.h>
@@ -275,6 +277,16 @@ NET_GetFileDescriptorID(JNIEnv *env)
 jint  IPv6_supported()
 {
 #ifndef AF_INET6
+    return JNI_FALSE;
+#endif
+
+#ifdef __HAIKU__
+    /**
+     * When IPv6 is enabled, IPv6 sockets are used for everything
+     * and IPv4->IPv6 mapping (::ffff:xxx.xxx.xxx.xxx) is used for
+     * IPv4 addresses. Haiku doesn't support this at the moment, but
+     * it should. So I'm just going to disable IPv6 for the moment.
+     */
     return JNI_FALSE;
 #endif
 

@@ -106,7 +106,7 @@ ServerClassMachineImpl(void) {
 
 #endif /* __solaris__ */
 
-#ifdef __linux__
+#if defined (__linux__) || defined(__HAIKU__)
 
 /*
  * A utility method for asking the CPU about itself.
@@ -197,10 +197,10 @@ ServerClassMachineImpl(void) {
            (result == JNI_TRUE ? "true" : "false"));
   return result;
 }
-#endif /* __linux__ */
+#endif /* __linux__ || __HAIKU__ */
 
 /*
- * Routines shared by solaris-i586 and linux-i586.
+ * Routines shared by solaris-i586, linux-i586 and haiku-i586.
  */
 
 enum HyperThreadingSupport_enum {

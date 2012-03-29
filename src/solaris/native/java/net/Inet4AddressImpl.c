@@ -64,7 +64,7 @@ Java_java_net_Inet4AddressImpl_getLocalHostName(JNIEnv *env, jobject this) {
         /* Something went wrong, maybe networking is not setup? */
         strcpy(hostname, "localhost");
     } else {
-#ifdef __linux__
+#if defined(__linux__) || (__HAIKU__)
         /* On Linux gethostname() says "host.domain.sun.com".  On
          * Solaris gethostname() says "host", so extra work is needed.
          */

@@ -40,7 +40,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <ctype.h>
+#ifdef __HAIKU__
+#include <sys/wait.h>
+#define readdir64 readdir
+#define dirent64 dirent
+#else
 #include <wait.h>
+#endif
 #include <signal.h>
 #include <string.h>
 #include <errno.h>

@@ -26,7 +26,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+#ifdef __HAIKU__
+#include <fcntl.h>
+#else
 #include <sys/fcntl.h>
+#endif
 #include <sys/stat.h>
 
 /**

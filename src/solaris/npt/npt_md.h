@@ -32,7 +32,9 @@
 #include <string.h>
 #include <errno.h>
 #include <dlfcn.h>
+#ifndef __HAIKU__
 #include <link.h>
+#endif
 
 #define NPT_LIBNAME "libnpt.so"
 

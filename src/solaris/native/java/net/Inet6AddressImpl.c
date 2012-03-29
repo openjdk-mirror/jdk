@@ -70,7 +70,7 @@ Java_java_net_Inet6AddressImpl_getLocalHostName(JNIEnv *env, jobject this) {
     } else {
         // ensure null-terminated
         hostname[NI_MAXHOST] = '\0';
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
         /* On Linux gethostname() says "host.domain.sun.com".  On
          * Solaris gethostname() says "host", so extra work is needed.
          */

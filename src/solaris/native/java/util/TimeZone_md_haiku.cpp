@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,41 +23,49 @@
  * questions.
  */
 
-#include "jni.h"
-#include "jni_util.h"
-#include "jvm.h"
-#include "nio.h"
-#include "nio_util.h"
-#include "sun_nio_ch_FileKey.h"
+#include <LocaleRoster.h>
+#include <String.h>
+#include <TimeZone.h>
 
-#ifdef __HAIKU__
-#define fstat64 fstat
-#define stat64 stat
-#endif
+#include <stdio.h>
 
-static jfieldID key_st_dev;    /* id for FileKey.st_dev */
-static jfieldID key_st_ino;    /* id for FileKey.st_ino */
+extern "C" {
 
+bool getDefaultZone(BTimeZone* zone) {
+    BLocaleRoster* defRoster = BLocaleRoster::Default();
+    if (defRoster == NULL)
+        return false;
 
-JNIEXPORT void JNICALL
-Java_sun_nio_ch_FileKey_initIDs(JNIEnv *env, jclass clazz)
-{
-    key_st_dev = (*env)->GetFieldID(env, clazz, "st_dev", "J");
-    key_st_ino = (*env)->GetFieldID(env, clazz, "st_ino", "J");
+    if (defRoster->GetDefaultTimeZone(zone) != B_OK)
+        return false;
+
+    return true;
 }
 
+char *findJavaTZ_md(const char *java_home_dir, const char *region) {
+    BTimeZone zone;
+    if (!getDefaultZone(&zone))
+        return NULL;
 
-JNIEXPORT void JNICALL
-Java_sun_nio_ch_FileKey_init(JNIEnv *env, jobject this, jobject fdo)
-{
-    struct stat64 fbuf;
-    int res;
+    // this is released with free()
+    return strdup(zone.ID().String());
+}
 
-    RESTARTABLE(fstat64(fdval(env, fdo), &fbuf), res);
-    if (res < 0) {
-        JNU_ThrowIOExceptionWithLastError(env, "fstat64 failed");
-    } else {
-        (*env)->SetLongField(env, this, key_st_dev, (jlong)fbuf.st_dev);
-        (*env)->SetLongField(env, this, key_st_ino, (jlong)fbuf.st_ino);
-    }
+char *getGMTOffsetID() {
+    BTimeZone zone;
+    if (!getDefaultZone(&zone) != B_OK)
+        return NULL;
+
+    int offset = zone.OffsetFromGMT();
+
+    if (offset == 0)
+        return strdup("GMT");
+
+    char buf[16];
+    snprintf(buf, sizeof(buf), "GMT%+02d:%02d",
+        (int)(offset/3600), (int)((offset%3600)/60));
+    // this is released with free()
+    return strdup(buf);
+}
+
 }

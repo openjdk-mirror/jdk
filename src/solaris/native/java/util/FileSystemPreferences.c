@@ -35,6 +35,16 @@
 #include <utime.h>
 #include "jni_util.h"
 
+#ifdef __HAIKU__
+#define stat64 stat
+#define statvfs64 statvfs
+#define dirent64 dirent
+#define stat64 stat
+#define readdir64_r readdir_r
+#define flock64 flock
+#define F_SETLK64 F_SETLK
+#endif
+
 JNIEXPORT jint JNICALL
 Java_java_util_prefs_FileSystemPreferences_chmod(JNIEnv *env,
                        jclass thisclass, jstring java_fname, jint permission) {

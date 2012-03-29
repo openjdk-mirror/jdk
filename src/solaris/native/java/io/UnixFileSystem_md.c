@@ -41,6 +41,13 @@
 #include "java_io_FileSystem.h"
 #include "java_io_UnixFileSystem.h"
 
+#ifdef __HAIKU__
+#define stat64 stat
+#define statvfs64 statvfs
+#define dirent64 dirent
+#define stat64 stat
+#define readdir64_r readdir_r
+#endif
 
 /* -- Field IDs -- */
 

@@ -49,11 +49,23 @@
 #include <mntent.h>
 #endif
 
+#ifdef __HAIKU__
+#include <string.h>
+#define stat64 stat
+#define lstat64 lstat
+#define fstat64 fstat
+#define dirent64 dirent
+#define readdir64_r readdir_r
+#define statvfs64 statvfs
+#define open64 open
+#endif
+
 #include "jni.h"
 #include "jni_util.h"
 #include "jlong.h"
 
 #include "sun_nio_fs_UnixNativeDispatcher.h"
+
 
 /**
  * Size of password or group entry when not available via sysconf
@@ -198,7 +210,7 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
 
     /* system calls that might not be available at run time */
 
-#if defined(__solaris__) && defined(_LP64)
+#if (defined(__solaris__) && defined(_LP64)) || defined(__HAIKU__)
     /* Solaris 64-bit does not have openat64/fstatat64 */
     my_openat64_func = (openat64_func*)dlsym(RTLD_DEFAULT, "openat");
     my_fstatat64_func = (fstatat64_func*)dlsym(RTLD_DEFAULT, "fstatat");
@@ -1066,6 +1078,7 @@ JNIEXPORT jint JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_getextmntent(JNIEnv* env, jclass this,
     jlong value, jobject entry)
 {
+#ifndef __HAIKU__
 #ifdef __solaris__
     struct extmnttab ent;
 #else
@@ -1137,6 +1150,7 @@ Java_sun_nio_fs_UnixNativeDispatcher_getextmntent(JNIEnv* env, jclass this,
 
     if (dev != 0)
         (*env)->SetLongField(env, entry, entry_dev, (jlong)dev);
+#endif
 
     return 0;
 }

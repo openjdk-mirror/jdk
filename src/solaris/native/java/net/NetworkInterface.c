@@ -33,7 +33,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <net/if.h>
+#ifndef __HAIKU__
 #include <net/if_arp.h>
+#endif
 
 #ifdef __solaris__
 #include <sys/dlpi.h>
@@ -47,6 +49,14 @@
 #include <bits/ioctls.h>
 #include <sys/utsname.h>
 #include <stdio.h>
+#endif
+
+#ifdef __HAIKU__
+#include <sys/sockio.h>
+#include <net/if_dl.h>
+#include <net/if_types.h>
+#define ifr_ifindex ifr_index
+#define IFF_RUNNING IFF_UP
 #endif
 
 #ifdef __linux__
@@ -136,9 +146,11 @@ static int     getMTU(JNIEnv *env, int sock, const char *ifname);
 
 
 
-#ifdef __solaris__
+#if defined(__solaris__) || defined(__HAIKU__)
 static netif *enumIPvXInterfaces(JNIEnv *env, int sock, netif *ifs, int family);
+#ifdef __solaris__
 static int    getMacFromDevice(JNIEnv *env, const char* ifname, unsigned char* retbuf);
+#endif
 #endif
 
 
@@ -1003,7 +1015,7 @@ static int  openSocket(JNIEnv *env, int proto){
 
 
 /** Linux **/
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 /* Open socket for further ioct calls, try v4 socket first and
  * if it falls return v6 socket
  */
@@ -1038,6 +1050,7 @@ static int openSocketWithFallback(JNIEnv *env, const char *ifname){
 }
 #endif
 
+#ifndef __HAIKU__
 static netif *enumIPv4Interfaces(JNIEnv *env, int sock, netif *ifs) {
     struct ifconf ifc;
     struct ifreq *ifreqP;
@@ -1103,7 +1116,6 @@ static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
     char addr6p[8][5];
     int plen, scope, dad_status, if_idx;
     uint8_t ipv6addr[16];
-
     if ((f = fopen(_PATH_PROCNET_IFINET6, "r")) != NULL) {
         while (fscanf(f, "%4s%4s%4s%4s%4s%4s%4s%4s %02x %02x %02x %02x %20s\n",
                          addr6p[0], addr6p[1], addr6p[2], addr6p[3], addr6p[4], addr6p[5], addr6p[6], addr6p[7],
@@ -1138,6 +1150,7 @@ static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
     return ifs;
 }
 #endif
+#endif /* !__HAIKU__ */
 
 
 static int getIndex(int sock, const char *name){
@@ -1151,7 +1164,6 @@ static int getIndex(int sock, const char *name){
     if (ioctl(sock, SIOCGIFINDEX, (char *)&if2) < 0) {
         return -1;
     }
-
     return if2.ifr_ifindex;
 }
 
@@ -1218,6 +1230,7 @@ static short getSubnet(JNIEnv *env, int sock, const char *ifname) {
  * return puts the data in buf, and returns the length, in byte, of the
  * MAC address. Returns -1 if there is no hardware address on that interface.
  */
+#ifndef __HAIKU__
 static int getMacAddress(JNIEnv *env, int sock, const char* ifname, const struct in_addr* addr, unsigned char *buf) {
     static struct ifreq ifr;
     int i;
@@ -1241,6 +1254,7 @@ static int getMacAddress(JNIEnv *env, int sock, const char* ifname, const struct
 
     return -1;
 }
+#endif
 
 static int getMTU(JNIEnv *env, int sock,  const char *ifname) {
     struct ifreq if2;
@@ -1647,4 +1661,128 @@ static int getFlags(int sock, const char *ifname) {
 
 #endif
 
+// Haiku
+#ifdef __HAIKU__
 
+static netif *enumIPv4Interfaces(JNIEnv *env, int sock, netif *ifs) {
+     return enumIPvXInterfaces(env, sock, ifs, AF_INET);
+}
+
+#ifdef AF_INET6
+static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
+    return enumIPvXInterfaces(env, sock, ifs, AF_INET6);
+}
+#endif
+
+/*
+ * Haiku's SIOCGIFCONF enumerates both IPv4 and IPv6 interfaces
+ * so the Linux implementation was unsuitable -- this is based
+ * on the Solaris one.
+ */
+static netif *enumIPvXInterfaces(JNIEnv *env, int sock, netif *ifs, int family) {
+    struct ifconf ifc;
+    struct ifreq *ifr;
+    int n;
+    char *buf;
+    unsigned bufsize;
+    int ifcount;
+
+    /*
+     * Get the interface count
+     */
+    ifc.ifc_len = sizeof(ifc.ifc_value);
+    if (ioctl(sock, SIOCGIFCOUNT, (char *)&ifc) < 0) {
+        NET_ThrowByNameWithLastError(env , JNU_JAVANETPKG "SocketException", "ioctl SIOCGLIFNUM failed");
+        return ifs;
+    }
+
+    /*
+     *  Enumerate the interface configurations
+     */
+    ifcount = ifc.ifc_value;
+    bufsize = ifcount * sizeof (struct ifreq);
+    CHECKED_MALLOC3(buf, char *, bufsize);
+
+    ifc.ifc_len = bufsize;
+    ifc.ifc_buf = buf;
+    if (ioctl(sock, SIOCGIFCONF, (char *)&ifc) < 0) {
+        NET_ThrowByNameWithLastError(env , JNU_JAVANETPKG "SocketException", "ioctl SIOCGLIFCONF failed");
+        free(buf);
+        return ifs;
+    }
+
+    /*
+     * Iterate through each interface
+     */
+    ifr = ifc.ifc_req;
+    for (n=0; n<ifcount; n++, ifr++) {
+        short prefix = 0;
+        struct ifreq if2;
+
+        /*
+         * Ignore either IPv4 or IPv6 addresses
+         */
+        if (ifr->ifr_addr.sa_family != family) {
+            continue;
+        }
+
+        /*
+         * For some reason addif() doesn't handle the subnet mask
+         * in the case of IPv6 addresses, so we do it here instead.
+         */
+#ifdef AF_INET6
+        if (ifr->ifr_addr.sa_family == AF_INET6) {
+            struct sockaddr_in6 *s6= (struct sockaddr_in6 *)&(ifr->ifr_addr);
+            s6->sin6_scope_id = getIndex(sock, ifr->ifr_name);
+            if ((prefix = getSubnet(env, sock, ifr->ifr_name)) == -1)
+                prefix = 0;
+        }
+#endif
+
+        /* add to the list */
+        ifs = addif(env, sock, ifr->ifr_name, ifs, (struct sockaddr *)&(ifr->ifr_addr), family, prefix);
+
+        /*
+         * If an exception occurred we return immediately
+         */
+        if ((*env)->ExceptionOccurred(env)) {
+            free(buf);
+            return ifs;
+        }
+
+   }
+
+    free(buf);
+    return ifs;
+}
+
+static int getMacAddress(JNIEnv *env, int sock, const char* ifname, const struct in_addr* addr, unsigned char *buf) {
+    int linksock;
+    struct ifreq ifr;
+    strcpy(ifr.ifr_name, ifname);
+
+    /*
+     * The socket passed in is no good, we need a link
+     * level socket.
+     */
+    if ((linksock = openSocket(env, AF_LINK)) < 0)
+        return -1;
+
+    if (ioctl(linksock, SIOCGIFADDR, &ifr) < 0) {
+        NET_ThrowByNameWithLastError(env, JNU_JAVANETPKG "SocketException", "IOCTL SIOCGIFADDR failed");
+        return -1;
+    }
+
+    struct sockaddr_dl *linkaddr = (struct sockaddr_dl*)&ifr.ifr_addr;
+    if (linkaddr->sdl_type != IFT_ETHER || linkaddr->sdl_alen <= 0)
+        return -1;
+
+    /*
+     * The buf passed in by getMacAddr0 is 16 bytes
+     * long.
+     */
+    memcpy(buf, LLADDR(linkaddr), linkaddr->sdl_alen < 16 ? linkaddr->sdl_alen : 16);
+    return linkaddr->sdl_alen;
+}
+
+#endif

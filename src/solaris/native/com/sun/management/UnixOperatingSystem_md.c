@@ -32,10 +32,14 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef __HAIKU__
+#include <kernel/OS.h>
+#else
 #include <sys/swap.h>
+#include <sys/sysinfo.h>
+#endif
 #include <sys/resource.h>
 #include <sys/times.h>
-#include <sys/sysinfo.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -44,12 +48,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+
 static jlong page_size = 0;
 
+#ifndef __HAIKU__
 /* This gets us the new structured proc interfaces of 5.6 & later */
 /* - see comment in <sys/procfs.h> */
 #define _STRUCTURED_PROC 1
 #include <sys/procfs.h>
+#endif
 
 static struct dirent* read_dir(DIR* dirp, struct dirent* entry) {
 #ifdef __solaris__
@@ -68,7 +75,7 @@ static struct dirent* read_dir(DIR* dirp, struct dirent* entry) {
 // true = get available swap in bytes
 // false = get total swap in bytes
 static jlong get_total_or_available_swap_space_size(JNIEnv* env, jboolean available) {
-#ifdef __solaris__
+#if defined(__solaris__)
     long total, avail;
     int nswap, i, count;
     swaptbl_t *stbl;
@@ -124,7 +131,7 @@ static jlong get_total_or_available_swap_space_size(JNIEnv* env, jboolean availa
     free(strtab);
     return available ? ((jlong)avail * page_size) :
                        ((jlong)total * page_size);
-#else /* __linux__ */
+#elif defined(__linux__)
     int ret;
     FILE *fp;
     jlong total = 0, avail = 0;
@@ -138,6 +145,9 @@ static jlong get_total_or_available_swap_space_size(JNIEnv* env, jboolean availa
     avail = (jlong)si.freeswap * si.mem_unit;
 
     return available ? avail : total;
+#elif defined(__HAIKU__)
+    // there's a private function to do this
+    return -1;
 #endif
 }
 
@@ -152,7 +162,7 @@ JNIEXPORT jlong JNICALL
 Java_com_sun_management_UnixOperatingSystem_getCommittedVirtualMemorySize
   (JNIEnv *env, jobject mbean)
 {
-#ifdef __solaris__
+#if defined(__solaris__)
     psinfo_t psinfo;
     ssize_t result;
     size_t remaining;
@@ -179,7 +189,7 @@ Java_com_sun_management_UnixOperatingSystem_getCommittedVirtualMemorySize
 
     JVM_Close(fd);
     return (jlong) psinfo.pr_size * 1024;
-#else /* __linux__ */
+#elif defined(__linux__)
     FILE *fp;
     unsigned long vsize = 0;
 
@@ -197,6 +207,16 @@ Java_com_sun_management_UnixOperatingSystem_getCommittedVirtualMemorySize
 
     fclose(fp);
     return (jlong)vsize;
+#elif defined(__HAIKU__)
+    unsigned long usage = 0;
+
+    int32 cookie = 0;
+    area_info info;
+    while (get_next_area_info(0, &cookie, &info) == B_OK) {
+        usage += info.ram_size;
+    }
+
+    return usage;
 #endif
 }
 
@@ -222,7 +242,7 @@ Java_com_sun_management_UnixOperatingSystem_getProcessCpuTime
     jlong cpu_time_ns;
     struct tms time;
 
-#ifdef __solaris__
+#if defined(__solaris__) || defined(__HAIKU__)
     clk_tck = (jlong) sysconf(_SC_CLK_TCK);
 #else /* __linux__ */
     clk_tck = 100;
@@ -260,6 +280,22 @@ JNIEXPORT jlong JNICALL
 Java_com_sun_management_UnixOperatingSystem_getOpenFileDescriptorCount
   (JNIEnv *env, jobject mbean)
 {
+#ifdef __HAIKU__
+    // RLIMIT_NOFILE is soft so if this is reduced we could
+    // miss open fds.
+    long maxfds =
+        Java_com_sun_management_UnixOperatingSystem_getMaxFileDescriptorCount
+        (env, mbean);
+
+    long fds = 0, i = 0;
+    for (; i < maxfds; i++) {
+        if (!(fcntl(i, F_GETFD, 0) == -1 && errno == EBADF)) {
+            fds++;
+        }
+    }
+
+    return fds;
+#else
     DIR *dirp;
     struct dirent dbuf;
     struct dirent* dentp;
@@ -282,6 +318,7 @@ Java_com_sun_management_UnixOperatingSystem_getOpenFileDescriptorCount
     closedir(dirp);
     // subtract by 1 which was the fd open for this implementation
     return (fds - 1);
+#endif
 }
 
 JNIEXPORT jlong JNICALL
