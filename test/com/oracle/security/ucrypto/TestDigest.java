@@ -47,7 +47,7 @@ public class TestDigest extends UcryptoTest {
         main(new TestDigest(), null);
     }
 
-    public void doTest(Provider p) {
+    public boolean doTest(Provider p) {
         boolean testPassed = true;
         byte[] msg = new byte[200];
         (new SecureRandom()).nextBytes(msg);
@@ -59,7 +59,7 @@ public class TestDigest extends UcryptoTest {
                 try {
                     md = MessageDigest.getInstance(a, p);
                 } catch (NoSuchAlgorithmException nsae) {
-                    System.out.println("Skipping Unsupported MD algo: " + a);
+                    System.err.println("Skipping Unsupported MD algo: " + a);
                     continue;
                 }
                 md2 = MessageDigest.getInstance(a, interopProvName);
@@ -70,7 +70,7 @@ public class TestDigest extends UcryptoTest {
                     md2.update(msg);
                     byte[] digest2 = md2.digest();
                     if (!Arrays.equals(digest, digest2)) {
-                        System.out.println("DIFF1 FAILED for: " + a + " at iter " + i);
+                        System.err.println("DIFF1 FAILED for: " + a + " at iter " + i);
                         testPassed = false;
                     }
                 }
@@ -83,7 +83,7 @@ public class TestDigest extends UcryptoTest {
                     byte[] digest = md.digest();
                     byte[] digest2 = md2.digest();
                     if (!Arrays.equals(digest, digest2)) {
-                        System.out.println("DIFF2 FAILED for: " + a + " at iter " + i);
+                        System.err.println("DIFF2 FAILED for: " + a + " at iter " + i);
                         testPassed = false;
                     }
                 }
@@ -94,7 +94,7 @@ public class TestDigest extends UcryptoTest {
                 byte[] digest = md.digest();
                 byte[] digest2 = md2.digest();
                 if (!Arrays.equals(digest, digest2)) {
-                    System.out.println("DIFF-3.1 FAILED for: " + a);
+                    System.err.println("DIFF-3.1 FAILED for: " + a);
                     testPassed = false;
                 }
                 md.update(msg);
@@ -102,26 +102,28 @@ public class TestDigest extends UcryptoTest {
                 digest = md.digest();
                 digest2 = md2.digest();
                 if (!Arrays.equals(digest, digest2)) {
-                    System.out.println("DIFF-3.2 FAILED for: " + a);
+                    System.err.println("DIFF-3.2 FAILED for: " + a);
                     testPassed = false;
                 }
                 md2 = (MessageDigest) md.clone(); // clone after digest
                 digest = md.digest();
                 digest2 = md2.digest();
                 if (!Arrays.equals(digest, digest2)) {
-                    System.out.println("DIFF-3.3 FAILED for: " + a);
+                    System.err.println("DIFF-3.3 FAILED for: " + a);
                     testPassed = false;
                 }
             } catch(Exception ex) {
-                System.out.println("Unexpected Exception: " + a);
+                System.err.println("Unexpected Exception: " + a);
                 ex.printStackTrace();
                 testPassed = false;
             }
         }
-        if (!testPassed) {
-            throw new RuntimeException("One or more MD test failed!");
+        if (testPassed) {
+            System.err.println("MD Tests Passed");
         } else {
-            System.out.println("MD Tests Passed");
+            System.err.println("One or more MD test failed!");
         }
+
+	return testPassed;
     }
 }

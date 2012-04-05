@@ -55,21 +55,24 @@ public class TestAES extends UcryptoTest {
         main(new TestAES(), null);
     }
 
-    public void doTest(Provider prov) throws Exception {
+    public boolean doTest(Provider prov) 
+    throws NoSuchAlgorithmException {
         // Provider for testing Interoperability
         Provider sunJCEProv = Security.getProvider("SunJCE");
 
-        testCipherInterop(CIPHER_ALGOS, CIPHER_KEY, prov, sunJCEProv);
-        testCipherInterop(PADDEDCIPHER_ALGOS, CIPHER_KEY, prov, sunJCEProv);
+        boolean result1 = testCipherInterop(CIPHER_ALGOS, CIPHER_KEY, prov, sunJCEProv);
+        boolean result2 = testCipherInterop(PADDEDCIPHER_ALGOS, CIPHER_KEY, prov, sunJCEProv);
 
-        testCipherOffset(CIPHER_ALGOS, CIPHER_KEY, prov);
-        testCipherOffset(PADDEDCIPHER_ALGOS, CIPHER_KEY, prov);
+        boolean result3 = testCipherOffset(CIPHER_ALGOS, CIPHER_KEY, prov);
+        boolean result4 = testCipherOffset(PADDEDCIPHER_ALGOS, CIPHER_KEY, prov);
 
-        testCipherKeyWrapping(PADDEDCIPHER_ALGOS, CIPHER_KEY, prov, sunJCEProv);
-        testCipherGCM(CIPHER_KEY, prov);
+        boolean result5 = testCipherKeyWrapping(PADDEDCIPHER_ALGOS, CIPHER_KEY, prov, sunJCEProv);
+        boolean result6 = testCipherGCM(CIPHER_KEY, prov);
+
+	return result1 && result2 && result3 && result4 && result5 && result6;
     }
 
-    private static void testCipherInterop(String[] algos, SecretKey key,
+    private static boolean testCipherInterop(String[] algos, SecretKey key,
                                           Provider p,
                                           Provider interopP) {
         boolean testPassed = true;
@@ -83,7 +86,7 @@ public class TestAES extends UcryptoTest {
                 try {
                     c = Cipher.getInstance(algo, p);
                 } catch (NoSuchAlgorithmException nsae) {
-                    System.out.println("Skipping Unsupported CIP algo: " + algo);
+                    System.err.println("Skipping Unsupported CIP algo: " + algo);
                     continue;
                 }
                 c.init(Cipher.ENCRYPT_MODE, key, (AlgorithmParameters)null, null);
@@ -95,10 +98,10 @@ public class TestAES extends UcryptoTest {
                 byte[] eout2 = c2.doFinal(in, 0, in.length);
 
                 if (!Arrays.equals(eout, eout2)) {
-                    System.out.println(algo + ": DIFF FAILED");
+                    System.err.println(algo + ": DIFF FAILED");
                     testPassed = false;
                 } else {
-                    System.out.println(algo + ": ENC Passed");
+                    System.err.println(algo + ": ENC Passed");
                 }
 
                 // check DEC
@@ -108,34 +111,36 @@ public class TestAES extends UcryptoTest {
                 byte[] dout2 = c2.doFinal(eout2);
 
                 if (!Arrays.equals(dout, dout2)) {
-                    System.out.println(algo + ": DIFF FAILED");
+                    System.err.println(algo + ": DIFF FAILED");
                     testPassed = false;
                 } else {
-                    System.out.println(algo + ": DEC Passed");
+                    System.err.println(algo + ": DEC Passed");
                 }
             } catch(Exception ex) {
-                System.out.println("Unexpected Exception: " + algo);
+                System.err.println("Unexpected Exception: " + algo);
                 ex.printStackTrace();
                 testPassed = false;
             }
         }
 
-        if (!testPassed) {
-            throw new RuntimeException("One or more CIPHER test failed!");
+        if (testPassed) {
+            System.err.println("CIPHER Interop Tests Passed");
         } else {
-            System.out.println("CIPHER Interop Tests Passed");
+            System.err.println("One or more CIPHER Interop tests failed!");
         }
+	
+	return testPassed;
     }
 
-    private static void testCipherOffset(String[] algos, SecretKey key,
-                                         Provider p) {
+    private static boolean testCipherOffset(String[] algos, SecretKey key,
+					    Provider p) {
         boolean testPassed = true;
         byte[] in = new byte[16];
         (new SecureRandom()).nextBytes(in);
         int blockSize = 16;
 
         for (int j = 1; j < (in.length - 1); j++) {
-            System.out.println("Input offset size: " + j);
+            System.err.println("Input offset size: " + j);
             for (int i = 0; i < algos.length; i++) {
                 try {
                     // check ENC
@@ -143,13 +148,13 @@ public class TestAES extends UcryptoTest {
                     try {
                         c = Cipher.getInstance(algos[i], p);
                     } catch (NoSuchAlgorithmException nsae) {
-                        System.out.println("Skip Unsupported CIP algo: " + algos[i]);
+                        System.err.println("Skip Unsupported CIP algo: " + algos[i]);
                         continue;
                     }
                     c.init(Cipher.ENCRYPT_MODE, key, (AlgorithmParameters)null, null);
                     byte[] eout = new byte[c.getOutputSize(in.length)];
                     int firstPartLen = in.length - j - 1;
-                    //System.out.print("1st UPDATE: " + firstPartLen);
+                    //System.err.print("1st UPDATE: " + firstPartLen);
                     int k = c.update(in, 0, firstPartLen, eout, 0);
                     k += c.update(in, firstPartLen, 1, eout, k);
                     k += c.doFinal(in, firstPartLen+1, j, eout, k);
@@ -173,21 +178,23 @@ public class TestAES extends UcryptoTest {
                     k += c.doFinal(eout, firstPartLen+1, eout.length - firstPartLen - 1, dout, k);
                     if (!checkArrays(in, in.length, dout, k)) testPassed = false;
                 } catch(Exception ex) {
-                    System.out.println("Unexpected Exception: " + algos[i]);
+                    System.err.println("Unexpected Exception: " + algos[i]);
                     ex.printStackTrace();
                     testPassed = false;
                 }
             }
         }
-        if (!testPassed) {
-            throw new RuntimeException("One or more CIPHER test failed!");
+        if (testPassed) {
+            System.err.println("CIPHER Offset Tests Passed");
         } else {
-            System.out.println("CIPHER Offset Tests Passed");
+            System.err.println("One or more CIPHER offset tests failed!");
         }
+	
+	return testPassed;
     }
 
-    private static void testCipherKeyWrapping(String[] algos, SecretKey key,
-                                              Provider p, Provider interopP)
+    private static boolean testCipherKeyWrapping(String[] algos, SecretKey key,
+						 Provider p, Provider interopP)
         throws NoSuchAlgorithmException {
         boolean testPassed = true;
 
@@ -203,13 +210,13 @@ public class TestAES extends UcryptoTest {
 
         for (int i = 0; i < algos.length; i++) {
             try {
-                System.out.println(algos[i] + " - Native WRAP/Java UNWRAP");
+                System.err.println(algos[i] + " - Native WRAP/Java UNWRAP");
 
                 Cipher c1;
                 try {
                     c1 = Cipher.getInstance(algos[i], p);
                 } catch (NoSuchAlgorithmException nsae) {
-                    System.out.println("Skipping Unsupported CIP algo: " + algos[i]);
+                    System.err.println("Skipping Unsupported CIP algo: " + algos[i]);
                     continue;
                 }
                 c1.init(Cipher.WRAP_MODE, key, (AlgorithmParameters)null, null);
@@ -224,7 +231,7 @@ public class TestAES extends UcryptoTest {
                     if (!checkKeys(tbwKeys[j], recovered)) testPassed = false;
                 }
 
-                System.out.println(algos[i] + " - Java WRAP/Native UNWRAP");
+                System.err.println(algos[i] + " - Java WRAP/Native UNWRAP");
                 c1 = Cipher.getInstance(algos[i], interopP);
                 c1.init(Cipher.WRAP_MODE, key, (AlgorithmParameters)null, null);
                 params = c1.getParameters();
@@ -239,21 +246,23 @@ public class TestAES extends UcryptoTest {
                 }
 
             } catch(Exception ex) {
-                System.out.println("Unexpected Exception: " + algos[i]);
+                System.err.println("Unexpected Exception: " + algos[i]);
                 ex.printStackTrace();
                 testPassed = false;
             }
         }
-        if (!testPassed) {
-            throw new RuntimeException("One or more CIPHER test failed!");
+        if (testPassed) {
+            System.err.println("CIPHER KeyWrapping Tests Passed");
         } else {
-            System.out.println("CIPHER KeyWrapping Tests Passed");
+            System.err.println("One or more CIPHER keywrapping tests failed!");
         }
+
+	return testPassed;
     }
 
 
-    private static void testCipherGCM(SecretKey key,
-                                      Provider p) {
+    private static boolean testCipherGCM(SecretKey key,
+					 Provider p) {
         boolean testPassed = true;
         byte[] in = new byte[16];
         (new SecureRandom()).nextBytes(in);
@@ -270,8 +279,8 @@ public class TestAES extends UcryptoTest {
             try {
                 c = Cipher.getInstance(algo, p);
             } catch (NoSuchAlgorithmException nsae) {
-                System.out.println("Skipping Unsupported CIP algo: " + algo);
-                return;
+                System.err.println("Skipping Unsupported CIP algo: " + algo);
+                return true;
             }
             for (int i = 0; i < tagLen.length; i++) {
                 AlgorithmParameterSpec paramSpec = new GCMParameterSpec(tagLen[i], iv);
@@ -287,33 +296,35 @@ public class TestAES extends UcryptoTest {
                 byte[] dout = c.doFinal(eout, 0, eout.length);
 
                 if (!Arrays.equals(dout, in)) {
-                    System.out.println(algo + ": PT and RT DIFF FAILED");
+                    System.err.println(algo + ": PT and RT DIFF FAILED");
                     testPassed = false;
                 } else {
-                    System.out.println(algo + ": tagLen " + tagLen[i] + " done");
+                    System.err.println(algo + ": tagLen " + tagLen[i] + " done");
                 }
             }
         } catch(Exception ex) {
-            System.out.println("Unexpected Exception: " + algo);
+            System.err.println("Unexpected Exception: " + algo);
             ex.printStackTrace();
             testPassed = false;
         }
-        if (!testPassed) {
-            throw new RuntimeException("One or more CIPHER test failed!");
+        if (testPassed) {
+            System.err.println("CIPHER GCM Tests Passed");
         } else {
-            System.out.println("CIPHER GCM Tests Passed");
+            System.err.println("One or more CIPHER GCM tests failed!");
         }
+
+	return testPassed;
     }
 
     private static boolean checkArrays(byte[] a1, int a1Len, byte[] a2, int a2Len) {
         boolean equal = true;
         if (a1Len != a2Len) {
-            System.out.println("DIFFERENT OUT LENGTH");
+            System.err.println("DIFFERENT OUT LENGTH");
             equal = false;
         } else {
             for (int p = 0; p < a1Len; p++) {
                 if (a1[p] != a2[p]) {
-                    System.out.println("DIFF FAILED");
+                    System.err.println("DIFF FAILED");
                     equal = false;
                     break;
                 }
@@ -325,13 +336,13 @@ public class TestAES extends UcryptoTest {
     private static boolean checkKeys(Key k1, Key k2) {
         boolean equal = true;
         if (!k1.getAlgorithm().equalsIgnoreCase(k2.getAlgorithm())) {
-            System.out.println("DIFFERENT Key Algorithm");
+            System.err.println("DIFFERENT Key Algorithm");
             equal = false;
         } else if (!k1.getFormat().equalsIgnoreCase(k2.getFormat())) {
-            System.out.println("DIFFERENT Key Format");
+            System.err.println("DIFFERENT Key Format");
             equal = false;
         } else if (!Arrays.equals(k1.getEncoded(), k2.getEncoded())) {
-            System.out.println("DIFFERENT Key Encoding");
+            System.err.println("DIFFERENT Key Encoding");
             equal = false;
         }
         return equal;
