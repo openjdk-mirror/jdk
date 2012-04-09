@@ -197,20 +197,13 @@ endif # PLATFORM
 #
 # This rule only applies on unix.  It supports quantify and its ilk.
 #
-
-# The launchers should depend on libjli only, at least according to
-# the launchers on Arch's OpenJDK7. However for some reason they were
-# always linking to libjava and libjvm. So I've replaced $(LDLIBS) with
-# -ljli in the link command below. Hopefully find the cause of this and
-# put it back to normal.
-
 $(ACTUAL_PROGRAM):: $(FILES_o)
 	@$(prep-target)
 	@set -- $?; \
 	    $(ECHO) Rebuilding $@ because of $$1 $$2 $$3 $$4 $$5 $$6 $${7:+...};
 	@$(MKDIR) -p $(TEMPDIR)
 	$(LINK_PRE_CMD) $(CC) $(CC_OBJECT_OUTPUT_FLAG)$@ $(LDFLAGS) \
-	    $(FILES_o) $(THREADLIBS) -ljli
+	    $(FILES_o) $(THREADLIBS) $(LDLIBS)
 	@$(call binary_file_verification,$@)
 
 endif # PLATFORM
