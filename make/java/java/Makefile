@@ -217,7 +217,7 @@ OTHER_LDLIBS += $(JVMLIB) -libpath:$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) fdlib
 else
 ifeq ($(PLATFORM),haiku)
 OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) \
-		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH) -llocale
+		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH) -lbe
 else
 OTHER_LDLIBS += $(JVMLIB) -lverify $(LIBSOCKET) $(LIBNSL) -ldl \
 		-L$(OBJDIR)/../../../fdlibm/$(OBJDIRNAME) -lfdlibm.$(ARCH)

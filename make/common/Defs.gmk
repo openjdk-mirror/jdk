@@ -169,9 +169,9 @@ ifeq ($(PLATFORM), solaris)
   # naming conventions
   DEVTOOLS_FT_DIR=$(JDK_DEVTOOLS_DIR)/$(ARCH_FAMILY)/freetype-$(ARCH)
 endif
-ifeq ($PLATFORM), haiku)
-  ALT_FREETYPE_HEADERS_PATH = $(finddir B_SYSTEM_HEADERS_DIRECTORY)/3rdparty
-  ALT_FREETYPE_LIB_PATH = $(finddir B_SYSTEM_LIB_DIRECTORY)/x86
+ifeq ($(PLATFORM), haiku)
+  ALT_FREETYPE_HEADERS_PATH=$(shell finddir B_SYSTEM_HEADERS_DIRECTORY)/3rdparty/freetype2
+  ALT_FREETYPE_LIB_PATH=$(shell finddir B_SYSTEM_LIB_DIRECTORY)/gcc4
 endif
 
 DEVTOOLS_FT_DIR_EXISTS = $(shell \
