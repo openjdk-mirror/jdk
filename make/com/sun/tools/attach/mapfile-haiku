@@ -23,28 +23,19 @@
 # questions.
 #
 
-#
-# These are the names of Java classes for which we will make .h files.
-#
+# Define public interface.
 
-ifeq ($(PLATFORM), windows)
-FILES_export = \
-        sun/tools/attach/WindowsAttachProvider.java \
-	sun/tools/attach/WindowsVirtualMachine.java
-endif
-
-ifeq ($(PLATFORM), solaris)
-FILES_export = \
-	sun/tools/attach/SolarisVirtualMachine.java
-endif
-
-ifeq ($(PLATFORM), linux)
-FILES_export = \
-	sun/tools/attach/LinuxVirtualMachine.java
-endif
-
-ifeq ($(PLATFORM), haiku)
-FILES_export = \
-	sun/tools/attach/HaikuVirtualMachine.java
-endif
-
+SUNWprivate_1.1 {
+	global:
+	    Java_sun_tools_attach_HaikuVirtualMachine_checkPermissions;
+	    Java_sun_tools_attach_HaikuVirtualMachine_close;
+	    Java_sun_tools_attach_HaikuVirtualMachine_connect;
+	    Java_sun_tools_attach_HaikuVirtualMachine_open;
+	    Java_sun_tools_attach_HaikuVirtualMachine_sendQuitTo;
+	    Java_sun_tools_attach_HaikuVirtualMachine_socket;
+	    Java_sun_tools_attach_HaikuVirtualMachine_read;
+	    Java_sun_tools_attach_HaikuVirtualMachine_write;
+	    Java_sun_tools_attach_HaikuVirtualMachine_getTempDir;
+	local:
+		*;
+};

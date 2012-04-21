@@ -39,4 +39,8 @@ FILES_c = \
 	LinuxVirtualMachine.c
 endif
 
+ifeq ($(PLATFORM),haiku)
+FILES_c = \
+	HaikuVirtualMachine.c
+endif
 

@@ -43,6 +43,11 @@ FILES_java += \
 	sun/tools/attach/LinuxAttachProvider.java
 endif
 
+ifeq ($(PLATFORM), haiku)
+FILES_java += \
+	sun/tools/attach/HaikuAttachProvider.java
+endif
+
 #
 # Files that need to be copied
 #

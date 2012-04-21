@@ -36,6 +36,9 @@ endif
 ifeq ($(PLATFORM), linux)
 FILES_m = mapfile-linux
 endif
+ifeq ($(PLATFORM), haiku)
+FILES_m = mapfile-haiku
+endif
 include $(BUILDDIR)/common/Mapfile-vers.gmk
 
 #
@@ -50,6 +53,9 @@ OTHER_LDLIBS += -ldoor
 endif
 ifeq ($(PLATFORM), windows)
 EXTRA_LIBS += psapi.lib
+endif
+ifeq ($(PLATFORM), haiku)
+OTHER_LDLIBS += -lnetwork
 endif
 
 vpath %.c $(PLATFORM_SRC)/native/sun/tools/attach
