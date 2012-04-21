@@ -249,6 +249,7 @@ JNIEXPORT void JNICALL Java_sun_tools_attach_HaikuVirtualMachine_write
 JNIEXPORT jstring JNICALL Java_sun_tools_attach_HaikuVirtualMachine_getTempDir
   (JNIEnv *env, jclass cls)
 {
-	// The Hotspot side uses os::get_temp_directory() which is "/tmp"
+    // The Hotspot side uses os::get_temp_directory() which is "/tmp".
+    // This must stay in sync with that.
     return (*env)->NewStringUTF(env, "/tmp");
 }
