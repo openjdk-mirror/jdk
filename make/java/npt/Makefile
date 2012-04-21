@@ -68,7 +68,7 @@ ifeq ($(PLATFORM), windows)
 endif
 
 ifeq ($(PLATFORM), haiku)
-  OTHER_LDLIBS += -ltextencoding
+  OTHER_LDLIBS += -L/boot/common/lib -liconv
 endif
 
 #

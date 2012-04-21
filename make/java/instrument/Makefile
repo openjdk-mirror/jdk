@@ -105,7 +105,7 @@ else
   LDFLAGS += -L $(LIBDIR)/$(LIBARCH)/jli
   OTHER_LDLIBS += -ljli
   ifeq ($(PLATFORM), haiku)
-    OTHER_LDLIBS += -ltextencoding
+    OTHER_LDLIBS += -L/boot/common/lib -liconv
   else
     OTHER_LDLIBS += -ldl
   endif
