@@ -191,5 +191,3 @@ FILES_export2 = \
 	java/awt/dnd/DnDConstants.java \
 	sun/awt/CausedFocusEvent.java
 
-EXPORTED_inner = \
-    sun.java2d.opengl.OGLContext$$OGLContextCaps

@@ -306,11 +306,7 @@ $(CLASSHDR_DOTFILE): $(CLASSES_export)
 	$(prep-target)
 	@$(ECHO) "# Running javah:"
 	$(JAVAH_CMD) -d $(CLASSHDRDIR)/ \
-		$(CLASSES.export) 
-	$(foreach innerclass,$(subst $$,\$$,$(EXPORTED_inner)), \
-	  $(JAVAH_CMD) \
-	    -o $(CLASSHDRDIR)/$(subst .,_,$(subst \$$,_,$(innerclass))).h \
-	    $(innerclass))
+		$(CLASSES.export) $(subst $$,\$$,$(EXPORTED_inner))
 	@$(java-vm-cleanup)
 	@$(TOUCH) $@
 
