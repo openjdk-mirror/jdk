@@ -27,7 +27,6 @@
 #define OGLContext_h_Included
 
 #include "sun_java2d_pipe_BufferedContext.h"
-#include "sun_java2d_pipe_hw_ContextCapabilities.h"
 #include "sun_java2d_opengl_OGLContext.h"
 #include "sun_java2d_opengl_OGLContext_OGLContextCaps.h"
 
@@ -101,39 +100,39 @@ typedef struct {
  * See OGLContext.java for more on these flags.
  */
 #define CAPS_EMPTY           \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_EMPTY
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_EMPTY
 #define CAPS_RT_PLAIN_ALPHA  \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_RT_PLAIN_ALPHA
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_RT_PLAIN_ALPHA
 #define CAPS_RT_TEXTURE_ALPHA       \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_RT_TEXTURE_ALPHA
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_RT_TEXTURE_ALPHA
 #define CAPS_RT_TEXTURE_OPAQUE      \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_RT_TEXTURE_OPAQUE
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_RT_TEXTURE_OPAQUE
 #define CAPS_MULTITEXTURE    \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_MULTITEXTURE
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_MULTITEXTURE
 #define CAPS_TEXNONPOW2      \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_TEXNONPOW2
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_TEXNONPOW2
 #define CAPS_TEXNONSQUARE    \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_TEXNONSQUARE
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_TEXNONSQUARE
 #define CAPS_PS20            \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_PS20
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_PS20
 #define CAPS_PS30            \
-    sun_java2d_pipe_hw_ContextCapabilities_CAPS_PS30
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_PS30
 #define LAST_SHARED_CAP      \
     sun_java2d_opengl_OGLContext_OGLContextCaps_LAST_SHARED_CAP
 #define CAPS_EXT_FBOBJECT    \
-    sun_java2d_opengl_OGLContext_00024OGLContextCaps_CAPS_EXT_FBOBJECT
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_EXT_FBOBJECT
 #define CAPS_STORED_ALPHA    \
-    sun_java2d_opengl_OGLContext_00024OGLContextCaps_CAPS_STORED_ALPHA
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_STORED_ALPHA
 #define CAPS_DOUBLEBUFFERED  \
-    sun_java2d_opengl_OGLContext_00024OGLContextCaps_CAPS_DOUBLEBUFFERED
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_DOUBLEBUFFERED
 #define CAPS_EXT_LCD_SHADER  \
-    sun_java2d_opengl_OGLContext_00024OGLContextCaps_CAPS_EXT_LCD_SHADER
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_EXT_LCD_SHADER
 #define CAPS_EXT_BIOP_SHADER \
-    sun_java2d_opengl_OGLContext_00024OGLContextCaps_CAPS_EXT_BIOP_SHADER
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_EXT_BIOP_SHADER
 #define CAPS_EXT_GRAD_SHADER \
-    sun_java2d_opengl_OGLContext_00024OGLContextCaps_CAPS_EXT_GRAD_SHADER
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_EXT_GRAD_SHADER
 #define CAPS_EXT_TEXRECT     \
-    sun_java2d_opengl_OGLContext_00024OGLContextCaps_CAPS_EXT_TEXRECT
+    sun_java2d_opengl_OGLContext_OGLContextCaps_CAPS_EXT_TEXRECT
 
 /**
  * Evaluates to true if the given capability bitmask is present for the
