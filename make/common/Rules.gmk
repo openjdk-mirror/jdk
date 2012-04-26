@@ -237,14 +237,10 @@ classes : $(CLASSES_INIT) .delete.classlist .compile.classlist
 	  $(ECHO) "# Java sources to be compiled: (listed in file $<)"; \
 	  $(CAT) $<.filtered; \
 	  $(ECHO) "# Running javac:"; \
-	  $(ECHO) $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -bootclasspath "$(CLASSDESTDIR):$(ICEDTEA_RT)" \
-          -d $(CLASSDESTDIR) @$(JAVA_SOURCE_LIST); \
-          $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -bootclasspath "$(CLASSDESTDIR):$(ICEDTEA_RT)" -d $(CLASSDESTDIR) @$(JAVA_SOURCE_LIST); \
+	  $(ECHO) $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
+	  $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
 	fi
 	@$(java-vm-cleanup)
-# The old javac command
-#	  $(ECHO) $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
-#	  $(JAVAC_CMD) -sourcepath "$(SOURCEPATH)" -d $(CLASSDESTDIR) @$<.filtered; \
 
 clobber clean::
 	$(RM) $(JAVA_SOURCE_LIST)
