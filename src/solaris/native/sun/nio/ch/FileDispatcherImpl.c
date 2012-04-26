@@ -47,17 +47,6 @@
 #define F_SETLKW64 F_SETLKW
 #define F_SETLK64 F_SETLK
 #define fdatasync fsync
-
-// TEMP!
-#undef sun_nio_ch_FileDispatcherImpl_NO_LOCK
-#define sun_nio_ch_FileDispatcherImpl_NO_LOCK -1L
-#undef sun_nio_ch_FileDispatcherImpl_LOCKED
-#define sun_nio_ch_FileDispatcherImpl_LOCKED 0L
-#undef sun_nio_ch_FileDispatcherImpl_RET_EX_LOCK
-#define sun_nio_ch_FileDispatcherImpl_RET_EX_LOCK 1L
-#undef sun_nio_ch_FileDispatcherImpl_INTERRUPTED
-#define sun_nio_ch_FileDispatcherImpl_INTERRUPTED 2L
-
 #endif
 
 static int preCloseFD = -1;     /* File descriptor to which we dup other fd's
