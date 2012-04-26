@@ -26,7 +26,6 @@
 package build.tools.charsetmapping;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -34,6 +33,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Scanner;
 import java.util.Formatter;
 
 public class Utils {
@@ -206,11 +206,10 @@ public class Utils {
     }
 
     public static String getCopyright(File f) throws IOException {
-        InputStreamReader r = new InputStreamReader(new FileInputStream(f),
-                                                    "ISO-8859-1");
-        BufferedReader s = new BufferedReader(r);
+        Scanner s = new Scanner(f, "ISO-8859-1");
         StringBuilder sb = new StringBuilder();
-        for (String ln = s.readLine(); ln != null; ln = s.readLine()) {
+        while (s.hasNextLine()) {
+            String ln = s.nextLine();
             sb.append(ln + "\n");
             // assume we have the copyright as the first comment
             if (ln.matches("^\\s\\*\\/$"))

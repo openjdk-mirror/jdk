@@ -27,6 +27,7 @@ package build.tools.charsetmapping;
 import java.io.*;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.Formatter;
 import java.util.regex.*;
 import java.nio.charset.*;
@@ -38,8 +39,9 @@ public class DBCS {
 
     public static void genClass(String args[]) throws Exception {
 
-        BufferedReader s = new BufferedReader(new FileReader(new File(args[0], args[2])));
-        for (String line = s.readLine(); line != null; line = s.readLine()) {
+        Scanner s = new Scanner(new File(args[0], args[2]));
+        while (s.hasNextLine()) {
+            String line = s.nextLine();
             if (line.startsWith("#") || line.length() == 0)
                 continue;
             String[] fields = line.split("\\s+");
@@ -186,13 +188,14 @@ public class DBCS {
         String b2cNR = b2cNRSB.toString();
         String c2bNR = c2bNRSB.toString();
 
-        BufferedReader s = new BufferedReader(new FileReader(new File(srcDir, template)));
+        Scanner s = new Scanner(new File(srcDir, template));
         PrintStream ops = new PrintStream(new FileOutputStream(
                              new File(dstDir, clzName + ".java")));
         if (hisName == null)
             hisName = "";
 
-        for (String line = s.readLine(); line != null; line = s.readLine()) {
+        while (s.hasNextLine()) {
+            String line = s.nextLine();
             if (line.indexOf("$") == -1) {
                 ops.println(line);
                 continue;

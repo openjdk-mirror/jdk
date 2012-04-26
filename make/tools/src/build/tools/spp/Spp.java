@@ -25,10 +25,6 @@
 
 package build.tools.spp;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.IOException;
-
 import java.util.*;
 import java.util.regex.*;
 
@@ -87,7 +83,7 @@ public class Spp {
         }
 
         StringBuffer out = new StringBuffer();
-        new Spp().spp(new BufferedReader(new InputStreamReader(System.in)),
+        new Spp().spp(new Scanner(System.in),
                       out, "",
                       keys, vars, be,
                       false);
@@ -108,12 +104,12 @@ public class Spp {
     Matcher ifkey = Pattern.compile("^#if\\[(!)?" + KEY + "\\]").matcher("");
     Matcher elsekey = Pattern.compile("^#else\\[(!)?" + KEY + "\\]").matcher("");
     Matcher endkey = Pattern.compile("^#end\\[(!)?" + KEY + "\\]").matcher("");
-    Pattern  pvardef = Pattern.compile("\\{#if\\[(!)?" + KEY + "\\]\\?" + TEXT + "(:"+ TEXT + ")?\\}|\\$" + VAR + "\\$");
+    Matcher  vardef = Pattern.compile("\\{#if\\[(!)?" + KEY + "\\]\\?" + TEXT + "(:"+ TEXT + ")?\\}|\\$" + VAR + "\\$").matcher("");
     Matcher  vardef2 = Pattern.compile("\\$" + VAR + "\\$").matcher("");
 
     void append(StringBuffer buf, String ln,
                 Set<String> keys, Map<String, String> vars) {
-        Matcher vardef = pvardef.matcher(ln);
+        vardef.reset(ln);
         while (vardef.find()) {
             String repl = "";
             if (vardef.group(GN_VAR) != null)
@@ -137,20 +133,19 @@ public class Spp {
     }
 
     // return true if #end[key], #end or EOF reached
-    boolean spp(BufferedReader in, StringBuffer buf, String key,
+    boolean spp(Scanner in, StringBuffer buf, String key,
                 Set<String> keys, Map<String, String> vars,
-                boolean be, boolean skip) throws IOException {
-        while (true) {
-	    String ln = in.readLine();
-	    if (ln == null)
-	      break;
+                boolean be, boolean skip) {
+        while (in.hasNextLine()) {
+            String ln = in.nextLine();
             if (be) {
                 if (ln.startsWith("#begin")) {
                     buf.setLength(0);      //clean up to this line
                     continue;
                 }
                 if (ln.equals("#end")) {
-		    do { } while (in.readLine() != null);
+                    while (in.hasNextLine())
+                        in.nextLine();
                     return true;           //discard the rest to EOF
                 }
             }
