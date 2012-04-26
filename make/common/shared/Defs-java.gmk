@@ -148,7 +148,7 @@ JAVACFLAGS  += "-Xbootclasspath:$(CLASSBINDIR)$(JCEFLAGS)"
 JAVACFLAGS  += $(OTHER_JAVACFLAGS)
 
 # Needed for javah
-JAVAHFLAGS += -bootclasspath "$(CLASSBINDIR)$(JCEFLAGS):$(ICEDTEA_RT):$(CLASSDESTDIR)"
+JAVAHFLAGS += -bootclasspath "$(CLASSBINDIR)$(JCEFLAGS)"
 
 # Needed for javadoc to ensure it builds documentation
 # against the newly built classes
@@ -159,21 +159,28 @@ NO_PROPRIETARY_API_WARNINGS = -XDignore.symbol.file=true
 
 # Langtools
 ifdef LANGTOOLS_DIST
+  JAVAC_JAR   = $(LANGTOOLS_DIST)/bootstrap/lib/javac.jar
+  JAVAH_JAR   = $(LANGTOOLS_DIST)/bootstrap/lib/javah.jar
   JAVADOC_JAR = $(LANGTOOLS_DIST)/bootstrap/lib/javadoc.jar
   DOCLETS_JAR = $(LANGTOOLS_DIST)/bootstrap/lib/doclets.jar
+  JAVAC_CMD   = $(BOOT_JAVA_CMD) \
+		"-Xbootclasspath/p:$(JAVAC_JAR)" \
+		-jar $(JAVAC_JAR) $(JAVACFLAGS)
+  JAVAH_CMD   = $(BOOT_JAVA_CMD) \
+		"-Xbootclasspath/p:$(JAVAH_JAR)$(CLASSPATH_SEPARATOR)$(JAVAC_JAR)"  \
+		-jar $(JAVAH_JAR) $(JAVAHFLAGS)
   JAVADOC_CMD = $(BOOT_JAVA_CMD) \
 		"-Xbootclasspath/p:$(JAVADOC_JAR)$(CLASSPATH_SEPARATOR)$(JAVAC_JAR)$(CLASSPATH_SEPARATOR)$(DOCLETS_JAR)" \
 		-jar $(JAVADOC_JAR) $(JAVADOCFLAGS)
-#  JAVAC_CMD     = $(JAVA_TOOLS_DIR)/javac $(JAVAC_JVM_FLAGS) \
-#		  $(JAVACFLAGS)
-#  JAVAH_CMD     = $(JAVA_TOOLS_DIR)/javah \
-#		  $(JAVAHFLAGS)
-endif
-
+else
+  # If no explicit tools, use boot tools (add VM flags in this case)
   JAVAC_CMD     = $(JAVA_TOOLS_DIR)/javac $(JAVAC_JVM_FLAGS) \
 		  $(JAVACFLAGS)
   JAVAH_CMD     = $(JAVA_TOOLS_DIR)/javah \
 		  $(JAVAHFLAGS)
+  JAVADOC_CMD   = $(JAVA_TOOLS_DIR)/javadoc $(JAVA_TOOLS_FLAGS:%=-J%) \
+  		  $(JAVADOCFLAGS)
+endif
 
 # Override of what javac to use (see deploy workspace)
 ifdef JAVAC
