@@ -231,7 +231,7 @@ images:: sanity-images post-sanity-images  \
 	 $(INITIAL_IMAGE_JRE) $(INITIAL_IMAGE_JDK) \
 	 trim-image-jre trim-image-jdk \
          identify-image-jre identify-image-jdk \
-	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files
+	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files 
 
 # Don't use these
 image-jre:: initial-image-jre trim-image-jre identify-image-jre process-image-jre
@@ -483,7 +483,7 @@ endef
 $(JDK_IMAGE_DIR)/%: $(SHARE_JDK_DOC_SRC)/%
 	$(process-doc-file)
 
-# JRE files
+# JRE files 
 $(JRE_IMAGE_DIR)/%: $(SHARE_JRE_DOC_SRC)/%
 	$(process-doc-file)
 ifeq ($(PLATFORM), windows)
@@ -956,20 +956,19 @@ initial-image-jdk:: initial-image-jdk-setup \
 	        $(TOOLS) $(BOOT_JAR_JFLAGS)
 	@$(CD) $(CLASSBINDIR) && $(java-vm-cleanup)
 	$(CP) $(LIBDIR)/tools.jar $(JDK_IMAGE_DIR)/lib/tools.jar
-# ecj doesn't like
-#	@#
-#	@# lib/ct.sym
-#	@#
-#	$(MKDIR) -p $(OUTPUTDIR)/symbols/META-INF/sym
-#	$(JAVAC_CMD) -XDprocess.packages -proc:only \
-#	    -processor com.sun.tools.javac.sym.CreateSymbols \
-#	    -Acom.sun.tools.javac.sym.Jar=$(RT_JAR) \
-#	    -Acom.sun.tools.javac.sym.Dest=$(OUTPUTDIR)/symbols/META-INF/sym/rt.jar \
-#	    $(CORE_PKGS) $(NON_CORE_PKGS) $(EXCLUDE_PROPWARN_PKGS) $(EXPORTED_PRIVATE_PKGS)
-#	$(BOOT_JAR_CMD) $(CREATE_JAR_OPTS_NOMANIFEST) $(LIBDIR)/ct.sym \
-#	    -C $(OUTPUTDIR)/symbols META-INF $(BOOT_JAR_JFLAGS)
-#	@$(java-vm-cleanup)
-#	$(CP) $(LIBDIR)/ct.sym $(JDK_IMAGE_DIR)/lib/ct.sym
+	@#
+	@# lib/ct.sym
+	@#
+	$(MKDIR) -p $(OUTPUTDIR)/symbols/META-INF/sym
+	$(JAVAC_CMD) -XDprocess.packages -proc:only \
+	    -processor com.sun.tools.javac.sym.CreateSymbols \
+	    -Acom.sun.tools.javac.sym.Jar=$(RT_JAR) \
+	    -Acom.sun.tools.javac.sym.Dest=$(OUTPUTDIR)/symbols/META-INF/sym/rt.jar \
+	    $(CORE_PKGS) $(NON_CORE_PKGS) $(EXCLUDE_PROPWARN_PKGS) $(EXPORTED_PRIVATE_PKGS)
+	$(BOOT_JAR_CMD) $(CREATE_JAR_OPTS_NOMANIFEST) $(LIBDIR)/ct.sym \
+	    -C $(OUTPUTDIR)/symbols META-INF $(BOOT_JAR_JFLAGS)
+	@$(java-vm-cleanup)
+	$(CP) $(LIBDIR)/ct.sym $(JDK_IMAGE_DIR)/lib/ct.sym
 	@#
 	@# CORBA supported orb.idl and ir.idl should be copied to lib
 	@#
@@ -1053,11 +1052,10 @@ initial-image-jdk:: initial-image-jdk-setup \
 	$(CP) -r -f $(DEMODIR) $(JDK_IMAGE_DIR)
 	$(CP) -r -f $(SAMPLEDIR) $(JDK_IMAGE_DIR)
 	$(CP) -r $(INCLUDEDIR) $(JDK_IMAGE_DIR)
-# Sun javadoc doesn't play nice with the gnu.* classes
-#	@#
-#	@# Swing BeanInfo generation
-#	@#
-#	$(CD) javax/swing/beaninfo && $(MAKE) swing-1.2-beans
+	@#
+	@# Swing BeanInfo generation
+	@#
+	$(CD) javax/swing/beaninfo && $(MAKE) swing-1.2-beans
 ifneq ($(PLATFORM), windows)
 	$(call copy-man-pages,$(JDK_IMAGE_DIR),$(JDK_MAN_PAGES))
 endif # !windows
