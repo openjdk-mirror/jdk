@@ -49,13 +49,13 @@ extern "C" {
 /*
  * Multi-platform definitions
  */
-#ifdef __linux__
+#if defined(__linux__) || defined(__HAIKU__)
 #define B_FALSE FALSE
 #define B_TRUE TRUE
 typedef unsigned char uint8_t;
 typedef unsigned long ulong_t;
 typedef enum { B_FALSE, B_TRUE } boolean_t;
-#endif /* __linux__ */
+#endif /* __linux__ || __HAIKU__ */
 
 #ifdef _WIN32
 typedef unsigned char uint8_t;

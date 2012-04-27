@@ -39,9 +39,9 @@
 #include <sys/types.h>
 
 #ifndef _WIN32
-#ifndef __linux__
+#if !defined(__linux__) && !defined(__HAIKU__)
 #include <sys/systm.h>
-#endif /* __linux__ */
+#endif /* __linux__ && __HAIKU__ */
 #include <sys/param.h>
 #endif /* _WIN32 */
 
