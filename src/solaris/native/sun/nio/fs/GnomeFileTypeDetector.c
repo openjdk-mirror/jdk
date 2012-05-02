@@ -71,6 +71,12 @@ Java_sun_nio_fs_GnomeFileTypeDetector_initializeGio
     ret = gio_init();
 #endif
 
+    // If there was an error initializing GIO, return false immediately
+    if (ret == JNI_FALSE)
+    {
+        return ret;
+    }
+
     g_type_init ();
     return ret;
 }
