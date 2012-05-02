@@ -411,7 +411,7 @@ GetJavaProperties(JNIEnv *env)
 #ifdef MACOSX
             break;
         default:
-            sprops.graphics_env = "sun.awt.HeadlessGraphicsEnvironment";
+            sprops.graphics_env = "sun.java2d.HeadlessGraphicsEnvironment";
             break;
     }
 #endif
