@@ -36,6 +36,11 @@ package java.lang;
  */
 public class Object {
 
+    private static native void registerNatives();
+    static {
+        registerNatives();
+    }
+
     /**
      * Returns the runtime class of this {@code Object}. The returned
      * {@code Class} object is the object that is locked by {@code
@@ -55,9 +60,7 @@ public class Object {
      *         class of this object.
      * @jls 15.8.2 Class Literals
      */
-    public final Class<?> getClass() {
-        return VMObject.getClass(this);
-    }
+    public final native Class<?> getClass();
 
     /**
      * Returns a hash code value for the object. This method is
@@ -94,9 +97,7 @@ public class Object {
      * @see     java.lang.Object#equals(java.lang.Object)
      * @see     java.lang.System#identityHashCode
      */
-    public int hashCode() {
-        return VMObject.hashCode(this);
-    }
+    public native int hashCode();
 
     /**
      * Indicates whether some other object is "equal to" this one.
@@ -208,10 +209,7 @@ public class Object {
      *               be cloned.
      * @see java.lang.Cloneable
      */
-    protected Object clone() throws CloneNotSupportedException
-    {
-        return VMObject.clone(this);
-    }
+    protected native Object clone() throws CloneNotSupportedException;
 
     /**
      * Returns a string representation of the object. In general, the
@@ -270,9 +268,7 @@ public class Object {
      * @see        java.lang.Object#notifyAll()
      * @see        java.lang.Object#wait()
      */
-    public final void notify() {
-        VMObject.notify(this);
-    }
+    public final native void notify();
 
     /**
      * Wakes up all threads that are waiting on this object's monitor. A
@@ -296,10 +292,7 @@ public class Object {
      * @see        java.lang.Object#notify()
      * @see        java.lang.Object#wait()
      */
-    public final void notifyAll()
-    {
-        VMObject.notifyAll(this);
-    }
+    public final native void notifyAll();
 
     /**
      * Causes the current thread to wait until either another thread invokes the
@@ -386,9 +379,7 @@ public class Object {
      * @see        java.lang.Object#notify()
      * @see        java.lang.Object#notifyAll()
      */
-    public final void wait(long timeout) throws InterruptedException {
-        VMObject.wait(this, timeout);
-    }
+    public final native void wait(long timeout) throws InterruptedException;
 
     /**
      * Causes the current thread to wait until another thread invokes the
