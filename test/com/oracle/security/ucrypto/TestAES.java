@@ -219,7 +219,12 @@ public class TestAES extends UcryptoTest {
                     System.err.println("Skipping Unsupported CIP algo: " + algos[i]);
                     continue;
                 }
-                c1.init(Cipher.WRAP_MODE, key, (AlgorithmParameters)null, null);
+		try {
+		    c1.init(Cipher.WRAP_MODE, key, (AlgorithmParameters)null, null);
+		} catch (InvalidAlgorithmParameterException e) {
+		    System.err.println("Skipping due to lack of WRAP_MODE support.");
+		    continue;
+		}
                 AlgorithmParameters params = c1.getParameters();
                 Cipher c2 = Cipher.getInstance(algos[i], interopP);
                 c2.init(Cipher.UNWRAP_MODE, key, params, null);
