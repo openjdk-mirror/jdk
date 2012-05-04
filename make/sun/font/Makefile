@@ -90,6 +90,11 @@ else # PLATFORM unix
 
 endif # PLATFORM
 
+# Turn off aliasing with GCC for ExtensionSubtables.cpp
+ifeq ($(PLATFORM), linux)
+  OTHER_CXXFLAGS += -fno-strict-aliasing
+endif
+
 #In the non-OpenJDK mode we need to build T2K
 ifndef OPENJDK
 t2k:
