@@ -186,8 +186,7 @@ ifeq ($(PALTFORM), linux) # PLATFORM is linux
 endif
 
 ifeq ($(PLATFORM), haiku)
-  LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
-  OTHER_LDLIBS += -lawt -lmawt $(LIBCXX)
+  OTHER_LDLIBS += -lawt $(LIBCXX) 
 endif
 
 endif # PLATFORM

@@ -70,6 +70,8 @@ FILES_2D_vis = \
 	vis_XorBlit.c
 
 FILES_2D_c = \
+	AccelGlyphCache.c \
+	\
 	gifdecoder.c \
 	imageInitIDs.c \
 	img_colors.c \
@@ -165,7 +167,6 @@ FILES_NO_MOTIF_c = \
         OGLVertexCache.c \
         GLXGraphicsConfig.c \
         GLXSurfaceData.c \
-        AccelGlyphCache.c \
 	CUPSfuncs.c
 
 FILES_cpp = \
