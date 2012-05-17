@@ -366,13 +366,21 @@ GetJavaProperties(JNIEnv *env)
     sprops.patch_level = "unknown";
 
     /* Java 2D properties */
+#ifndef __HAIKU__
     sprops.graphics_env = "sun.awt.X11GraphicsEnvironment";
+#else
+    sprops.graphics_env = "sun.hawt.HaikuGraphicsEnvironment";
+#endif
 
 #ifdef JAVASE_EMBEDDED
     sprops.awt_toolkit = getEmbeddedToolkit();
     if (sprops.awt_toolkit == NULL) // default as below
 #endif
+#ifndef __HAIKU__
     sprops.awt_toolkit = "sun.awt.X11.XToolkit";
+#else
+    sprops.awt_toolkit = "sun.hawt.HaikuToolkit";
+#endif
 
     /* This is used only for debugging of font problems. */
     v = getenv("JAVA2D_FONTPATH");
