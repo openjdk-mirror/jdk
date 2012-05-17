@@ -130,7 +130,7 @@ ifndef ALT_BOOTDIR
 endif
 
 # Always build headless on Haiku
-BUILD_HEADLESS = true
+#BUILD_HEADLESS = true
 # For now, build headless only
 BUILD_HEADLESS_ONLY = true
 LIBM=

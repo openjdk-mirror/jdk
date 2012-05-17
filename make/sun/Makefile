@@ -37,8 +37,8 @@ ifneq ("$(ORG_EXISTS)", "")
   ORG_SUBDIR = org
 endif
 
-# Non windows subdirs
-ifneq ($(PLATFORM), windows)
+# Linux/solaris subdirs
+ifeq (,findstring($(PLATFORM), windows haiku))
   ifndef OPENJDK
     ifeq ($(PLATFORM), solaris)
       ifneq ($(ARCH), amd64)
@@ -77,6 +77,7 @@ else
   DISPLAY_LIBS = awt splashscreen $(XAWT_SUBDIR) $(HEADLESS_SUBDIR)
   DISPLAY_TOOLS = applet
 endif
+
 SUBDIRS_desktop    = audio $(RENDER_SUBDIR) image \
                      $(DISPLAY_LIBS) $(DGA_SUBDIR) \
                      jawt font jpeg cmm $(DISPLAY_TOOLS) beans

@@ -187,7 +187,7 @@ endif
 
 ifeq ($(PLATFORM), haiku)
   LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
-  OTHER_LDLIBS += -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt $(LIBCXX)
+  OTHER_LDLIBS += -lawt -lmawt $(LIBCXX)
 endif
 
 endif # PLATFORM
