@@ -75,7 +75,32 @@ endif
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WINDOWS
 endif # PLATFORM
 
-ifneq ($(PLATFORM), windows)
+ifeq ($(PLATFORM), haiku)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv HAIKU
+
+#
+# At the moment we still compile some files we don't need. That's a
+# consequence of sharing the src/solaris tree. We need the shared source
+# from sun/awt and sun/java2d, but we don't want the native source. This
+# prune should take care of most of it though.
+#
+AUTO_FILES_JAVA_DIRS += sun/hawt
+AUTO_JAVA_PRUNE += motif X11 AWTCharset.java
+
+#
+# Files
+#
+include FILES_c_haiku.gmk
+include FILES_export_haiku.gmk
+
+FILES_c = $(FILES_2D_c)
+OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
+OTHER_LDLIBS = $(JVMLIB) -lbe -lstdc++
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HAIKU
+endif # PLATFORM
+
+ifeq (,findstring($(PLATFORM), windows haiku))
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv SOLARIS/LINUX
 
 #
@@ -123,12 +148,6 @@ OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
 OTHER_LDLIBS = $(JVMLIB) $(LIBM) -ldl
 endif
 
-ifeq  ($(PLATFORM), haiku)
-FILES_c = $(FILES_2D_c)
-FILES_c += awt_LoadLibrary.c
-OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
-OTHER_LDLIBS = $(JVMLIB)
-endif
 
 FILES_c += initIDs.c
 
@@ -247,6 +266,14 @@ vpath %.c     $(SHARE_SRC)/native/$(PKGDIR)/../font
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WINDOWS
 endif # PLATFORM
 
+ifeq ($(PLATFORM), haiku)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv HAIKU
+vpath %.cpp   $(PLATFORM_SRC)/native/sun/hawt
+vpath %.c     $(SHARE_SRC)/native/$(PKGDIR)/../java2d/opengl
+vpath %.c     $(SHARE_SRC)/native/$(PKGDIR)/../font
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HAIKU
+endif # PLATFORM
+
 ifeq ($(PLATFORM), linux)
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv LINUX
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/../java2d/opengl
@@ -279,7 +306,7 @@ awt.clean:
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WINDOWS
 endif # PLATFORM
 
-ifneq ($(PLATFORM), windows)
+ifeq (,findstring($(PLATFORM), windows haiku))
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv SOLARIS/LINUX
 
 LIBXTST = -lXtst
@@ -397,6 +424,18 @@ FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SOLARIS
 endif # PLATFORM
 
+ifeq ($(PLATFORM), haiku)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv HAIKU
+
+FONTCONFIGS_SRC	= $(PLATFORM_SRC)/classes/sun/awt/fontconfigs
+_FONTCONFIGS	= \
+	fontconfig.properties
+
+FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HAIKU
+endif # PLATFORM
+
 FONTCONFIGS     = $(_FONTCONFIGS:%=$(LIBDIR)/%.src)
 BINARYFONTCONFIGS = $(_FONTCONFIGS:%.properties=$(LIBDIR)/%.bfc)
 
@@ -477,7 +516,7 @@ VERSIONINFO_RESOURCE = $(WINAWT_native)/awt.rc
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ WINDOWS
 endif # PLATFORM
 
-ifneq ($(PLATFORM), windows)
+ifeq (,findstring($(PLATFORM), windows haiku))
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv SOLARIS/LINUX
 
 #
@@ -518,6 +557,37 @@ LDFLAGS += -L$(LIBDIR)/$(LIBARCH)/$(TSOBJDIR) \
 	   $(AWT_RUNPATH)
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SOLARIS/LINUX
+endif # PLATFORM
+
+ifeq ($(PLATFORM), haiku)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv HAIKU
+
+#
+# Other extra flags needed for compiling.
+#
+
+CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/debug \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/../font \
+            -I$(PLATFORM_SRC)/native/$(PKGDIR)/../font \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/image \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/image/cvutils \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/shell \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/medialib \
+            -I$(PLATFORM_SRC)/native/$(PKGDIR)/medialib \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/../java2d \
+            -I$(PLATFORM_SRC)/native/$(PKGDIR)/../java2d \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/../java2d/loops \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/../java2d/pipe \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/../java2d/opengl \
+            -I$(PLATFORM_SRC)/native/$(PKGDIR)/../java2d/opengl \
+            -I$(PLATFORM_SRC)/native/$(PKGDIR)/../java2d/x11 \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/../dc/doe \
+            -I$(SHARE_SRC)/native/$(PKGDIR)/../dc/path \
+            -I$(PLATFORM_SRC)/native/$(PKGDIR)/../jdga \
+            -I$(PLATFORM_SRC)/native/$(PKGDIR) \
+		    $(EVENT_MODEL)
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HAIKU
 endif # PLATFORM
 
 CLASSES.export += java.io.InputStream \
