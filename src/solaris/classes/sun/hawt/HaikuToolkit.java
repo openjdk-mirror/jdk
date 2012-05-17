@@ -36,6 +36,7 @@ import java.awt.image.*;
 import java.awt.peer.*;
 import java.util.*;
 import java.util.logging.*;
+import sun.awt.*;
 import sun.awt.peer.cacio.*;
 
 public class HaikuToolkit extends CacioToolkit {
@@ -52,11 +53,23 @@ public class HaikuToolkit extends CacioToolkit {
 
     @Override
     public synchronized PlatformWindowFactory getPlatformWindowFactory() {
-
         if (platformWindow == null) {
             platformWindow = new HaikuPlatformWindowFactory();
         }
         return platformWindow;
+    }
+
+    @Override
+    protected void initializeDesktopProperties() {
+        super.initializeDesktopProperties();
+
+        // Enable font antialiasing by default
+        // Note -- can get these settings programmatically using some private
+        // functions in libbe.
+        Map<Object, Object> fontHints = new HashMap<Object, Object>();
+        fontHints.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        fontHints.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        desktopProperties.put(SunToolkit.DESKTOPFONTHINTS, fontHints);
     }
 
     @Override
