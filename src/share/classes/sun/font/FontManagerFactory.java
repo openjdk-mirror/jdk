@@ -53,6 +53,8 @@ public final class FontManagerFactory {
     static {
         if (FontUtilities.isWindows)
             DEFAULT_CLASS = "sun.awt.Win32FontManager";
+        else if (FontUtilities.isHaiku)
+            DEFAULT_CLASS = "sun.hawt.HaikuFontManager";
         else
             DEFAULT_CLASS = "sun.awt.X11FontManager";
     }
