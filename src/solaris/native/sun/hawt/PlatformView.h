@@ -43,6 +43,7 @@ public:
 			void			SetParent(PlatformView* parent);
 			void			SetResizable(bool resizable);
 			void			SetState(int state);
+			bool			GetVisible();
 			void			SetVisible(bool visible);
 	
 	virtual	void			FrameMoved(BPoint origin);

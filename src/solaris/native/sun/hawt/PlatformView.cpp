@@ -130,6 +130,20 @@ PlatformView::SetState(int state)
 }
 
 
+bool
+PlatformView::GetVisible()
+{
+	LockLooper();
+
+	// This also reflects whether the parent views and
+	// Window are hidden.
+	return !IsHidden();
+
+	UnlockLooper();
+}
+
+
+
 void
 PlatformView::SetVisible(bool visible)
 {

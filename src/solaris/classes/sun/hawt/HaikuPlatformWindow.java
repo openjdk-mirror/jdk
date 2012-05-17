@@ -66,7 +66,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     }
 
     private long nativeWindow;
-    private boolean visible;
     private boolean toplevel;
     private HaikuWindowSurfaceData surfaceData;
     private CacioComponent cacioComponent;
@@ -81,6 +80,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     private native void nativeGetBounds(long nativeWindow, Rectangle bounds);
     private native void nativeSetBounds(long nativeWindow, int x, int y,
     	int width, int height);
+    private native boolean nativeGetVisible(long nativeWindow);
     private native void nativeSetVisible(long nativeWindow, boolean visible);
     private native void nativeGetLocation(long nativeWindow, Point location);
     private native void nativeGetLocationOnScreen(long nativeWindow,
@@ -119,9 +119,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     }
 
     private SurfaceData getSurfaceData() {
-        if (!visible)
-            return NullSurfaceData.theInstance;
-
         if (surfaceData == null) {
         	long drawable = nativeGetDrawable(nativeWindow);
             surfaceData = new HaikuWindowSurfaceData(
@@ -160,7 +157,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     public void setVisible(boolean visible) {
         nativeSetVisible(nativeWindow, visible);
-        this.visible = visible;
     }
 
 	// =====================

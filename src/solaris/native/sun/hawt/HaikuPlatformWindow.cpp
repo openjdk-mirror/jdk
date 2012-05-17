@@ -133,6 +133,15 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetBounds
 	window->SetBounds(Rectangle(x, y, width, height));
 }
 
+
+JNIEXPORT jboolean JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeGetVisible
+  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->GetVisible();
+}
+
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeSetVisible
   (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean visible)

@@ -156,6 +156,13 @@ PlatformFrame::SetState(int state)
 }
 
 
+bool
+PlatformFrame::GetVisible()
+{
+	return !IsHidden();
+}
+
+
 void
 PlatformFrame::SetVisible(bool visible)
 {

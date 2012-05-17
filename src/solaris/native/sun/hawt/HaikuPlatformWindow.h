@@ -52,6 +52,7 @@ public:
 	virtual	void			SetParent(PlatformView* parent) = 0;
 	virtual	void			SetResizable(bool resizable) = 0;
 	virtual	void			SetState(int state) = 0;
+	virtual	bool			GetVisible() = 0;
 	virtual	void			SetVisible(bool visible) = 0;
 };
 
