@@ -99,10 +99,11 @@ void
 Drawable::Invalidate(Rectangle rect)
 {
 	if (fView != NULL) {
-		fView->LockLooper();
-		fView->DeferredDraw(BRect(rect.x, rect.y,
-			rect.x + rect.width - 1, rect.y + rect.height - 1));
-		fView->UnlockLooper();
+		if (fView->LockLooper()) {
+			fView->DeferredDraw(BRect(rect.x, rect.y,
+				rect.x + rect.width - 1, rect.y + rect.height - 1));
+			fView->UnlockLooper();
+		}
 	}
 }
 

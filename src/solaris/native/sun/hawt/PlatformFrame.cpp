@@ -56,7 +56,11 @@ PlatformFrame::PlatformFrame(jobject platformWindow)
 Rectangle
 PlatformFrame::GetBounds()
 {
+	if (!LockLooper())
+		return Rectangle(0, 0, 0, 0);
 	BRect frame = Frame();
+	UnlockLooper();
+
 	return Rectangle(frame.left, frame.top, frame.IntegerWidth() + 1,
 		frame.IntegerHeight() + 1);
 }
@@ -94,6 +98,9 @@ PlatformFrame::GetLocationOnScreen()
 int
 PlatformFrame::GetState()
 {
+	if (!LockLooper())
+		return 0;
+
 	int state = 0;
 	if (IsHidden() || IsMinimized())
 		state |= kStateMinimized;
@@ -103,7 +110,7 @@ PlatformFrame::GetState()
 	if (state == 0)
 		state |= kStateNormal;
 
-
+	UnlockLooper();
 	return state;
 }
 
@@ -111,7 +118,8 @@ PlatformFrame::GetState()
 void
 PlatformFrame::SetBounds(Rectangle bounds)
 {
-	LockLooper();
+	if (!LockLooper())
+		return;
 	MoveTo(bounds.x, bounds.y);
 	ResizeTo(bounds.width - 1, bounds.height - 1);
 	UnlockLooper();
@@ -128,16 +136,22 @@ PlatformFrame::SetParent(PlatformView* parent)
 void
 PlatformFrame::SetResizable(bool resizable)
 {
+	if (!LockLooper())
+		return;
 	if (resizable)
 		SetFlags(Flags() | B_NOT_RESIZABLE);
 	else
 		SetFlags(Flags() & ~B_NOT_RESIZABLE);
+	UnlockLooper();
 }
 
 
 void
 PlatformFrame::SetState(int state)
 {
+	if (!LockLooper())
+		return;
+
 	// Should a maximize cancel out a minimize?
 	// Or should it be 'behind-the-scenes' maximized,
 	// so it shows as maximized when it becomes unminimized?
@@ -153,23 +167,33 @@ PlatformFrame::SetState(int state)
 		if (fMaximized)
 			BWindow::Zoom();
 	}
+	UnlockLooper();
 }
 
 
 bool
 PlatformFrame::GetVisible()
 {
-	return !IsHidden();
+	if (!LockLooper())
+		return false;
+
+	bool visible = !IsHidden();
+	UnlockLooper();
+	return visible;
 }
 
 
 void
 PlatformFrame::SetVisible(bool visible)
 {
+	if (!LockLooper())
+		return;
+
 	if (visible)
 		Show();
 	else
 		Hide();
+	UnlockLooper();
 }
 
 

@@ -172,7 +172,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     public void eventResize(int width, int height) {
     	Component awtComp = cacioComponent.getAWTComponent();
-    	System.err.println("Resizing thru Accessor to: " + width + "x" + height);
     	AWTAccessor.getComponentAccessor().setSize(awtComp, width, height);
         ComponentEvent ev = new ComponentEvent(awtComp,
         	ComponentEvent.COMPONENT_RESIZED);

@@ -47,11 +47,13 @@ PlatformView::PlatformView(jobject platformWindow, bool root)
 Rectangle
 PlatformView::GetBounds()
 {
-	LockLooper();
+	if (!LockLooper())
+		return Rectangle(0, 0, 0, 0);
+
 	BRect frame = Frame();
+	UnlockLooper();
 	return Rectangle(frame.left, frame.top, frame.IntegerWidth() + 1,
 		frame.IntegerHeight() + 1);
-	UnlockLooper();
 }
 
 
@@ -80,11 +82,13 @@ PlatformView::GetLocation()
 Point
 PlatformView::GetLocationOnScreen()
 {
-	LockLooper();
+	if (!LockLooper())
+		return Point(0, 0);
+
 	BRect frame = Bounds();
 	ConvertToScreen(&frame);
-	return Point(frame.left, frame.top);
 	UnlockLooper();
+	return Point(frame.left, frame.top);
 }
 
 
@@ -98,7 +102,9 @@ PlatformView::GetState()
 void
 PlatformView::SetBounds(Rectangle bounds)
 {
-	LockLooper();
+	if (!LockLooper())
+		return;
+
 	MoveTo(bounds.x, bounds.y);
 	ResizeTo(bounds.width - 1, bounds.height - 1);
 	UnlockLooper();
@@ -108,13 +114,14 @@ PlatformView::SetBounds(Rectangle bounds)
 void
 PlatformView::SetParent(PlatformView* parent)
 {
-	LockLooper();
-	Rectangle bounds = parent->GetBounds();
+	// We don't support reparenting yet but when we do
+	// we need to rethink the locking here
+	
 	PlatformView* oldParent = (PlatformView*)Parent();
-	if (oldParent != NULL)
+	if (oldParent != NULL) {
 		oldParent->RemoveChild(this);
+	}
 	parent->AddChild(this);
-	UnlockLooper();
 }
 
 
@@ -133,13 +140,15 @@ PlatformView::SetState(int state)
 bool
 PlatformView::GetVisible()
 {
-	LockLooper();
+	if (!LockLooper())
+		return false;
 
 	// This also reflects whether the parent views and
 	// Window are hidden.
-	return !IsHidden();
+	bool visible = !IsHidden();
 
 	UnlockLooper();
+	return visible;
 }
 
 
@@ -147,7 +156,9 @@ PlatformView::GetVisible()
 void
 PlatformView::SetVisible(bool visible)
 {
-	LockLooper();
+	if (!LockLooper())
+		return;
+
 	if (visible)
 		Show();
 	else
@@ -173,16 +184,13 @@ PlatformView::FrameResized(float width, float height)
 	int w = width + 1;
 	int h = height + 1;
 
-	fDrawable.Lock();
-	if (fDrawable.IsValid()) {
-		if (w > fDrawable.Width() || h > fDrawable.Height()) {
-			// If we're resizing, increase the bitmap size by 100px
-			// so we're not reallocating all the time through a resize.
-			// Also, don't bother with shrinking?
+	if (fDrawable.Lock()) {
+		if (!fDrawable.IsValid()
+				|| w > fDrawable.Width() || h > fDrawable.Height()) {
 			fDrawable.Allocate(w + 100, h + 100);
 		}
+		fDrawable.Unlock();
 	}
-	fDrawable.Unlock();
 	
 	if (!fRoot) {
 		DoCallback(fPlatformWindow, "eventResize", "(II)V", w, h);
@@ -214,9 +222,11 @@ PlatformView::MakeFocus(bool focused)
 void
 PlatformView::DeferredDraw(BRect updateRect)
 {
-	fDrawable.Lock();
+	if (!fDrawable.Lock())
+		return;
+
 	if (fDrawable.IsValid())
-		DrawBitmap(fDrawable.GetBitmap(), updateRect, updateRect);
+		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, updateRect);
 	fDrawable.Unlock();
 		
 }

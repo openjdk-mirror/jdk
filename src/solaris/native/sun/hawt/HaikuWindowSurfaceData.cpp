@@ -66,17 +66,19 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
     operations->width = width;
     operations->height = height;
     
-    operations->drawable->Lock();
-    operations->drawable->Allocate(width, height);
-    operations->drawable->Unlock();
+    if (operations->drawable->Lock()) {
+	    operations->drawable->Allocate(width, height);
+    	operations->drawable->Unlock();
+    }
 }
 
 static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
                     SurfaceDataRasInfo* rasInfo, jint lockFlags)
 {
     HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
-    operations->drawable->Lock();
-    int ret = SD_FAILURE;
+
+    if (!operations->drawable->Lock())
+		return SD_FAILURE;
 
 	// We don't clip to Drawable bounds because we just
 	// reallocate the Drawable if neccessary in GetRasInfo.
@@ -104,10 +106,8 @@ static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
 
 	// We can honour the SD_LOCK_FASTEST since we just provide
 	// direct pixel access via BBitmap::Bits()
-	ret = SD_SUCCESS;
-
 	operations->lockFlags = lockFlags;
-    return ret;
+    return SD_SUCCESS;
 }
 
 static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
@@ -118,7 +118,7 @@ static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
 
 	int width = rasInfo->bounds.x2;
 	int height = rasInfo->bounds.y2;
-	printf("GetRasInfo x and y bounds are: %d %d\n", width, height);
+
 	if (!drawable->IsValid() || width > drawable->Width()
 			|| height > drawable->Height()) {
 		drawable->Allocate(width, height);
@@ -148,8 +148,10 @@ static void HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops,
 {
 	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
 
-	// We don't need to unlock here, we can unlock after.
-	// It might be faster.
+	// Must drop the lock before invalidating because otherwise
+	// we can deadlock with FrameResized. Invalidate wants
+	// the looper lock which FrameResized holds and FrameResized
+	// wants (indirectly) the Drawable lock which we hold.
     operations->drawable->Unlock();
 
     // If we were locked for writing the view needs
