@@ -94,6 +94,7 @@ FILES_export = \
 	sun/java2d/opengl/OGLTextRenderer.java \
 	sun/awt/ExtendedKeyCodes.java \
 	\
+	sun/hawt/HaikuDesktopPeer.java \
 	sun/hawt/HaikuEventPump.java \
 	sun/hawt/HaikuFontConfiguration.java \
 	sun/hawt/HaikuFontManager.java \
