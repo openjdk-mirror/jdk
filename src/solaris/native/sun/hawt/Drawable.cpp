@@ -55,30 +55,40 @@ Drawable::Drawable(PlatformView* view)
 bool
 Drawable::Allocate(int width, int height)
 {
-	if (fSurface != NULL) {
-		delete fSurface;
-		fSurface = NULL;
-	}
-
 	printf("%p: (Re)allocating a bitmap, size: %d x %d\n", this, width, height);
-	fSurface = new BBitmap(BRect(0, 0, width - 1, height - 1), B_RGBA32);
+	BBitmap* newSurface = new BBitmap(BRect(0, 0, width - 1, height - 1), B_RGBA32);
 
-	if (!fSurface->IsValid()) {
-		delete fSurface;
-		fSurface = NULL;
+	if (!newSurface->IsValid()) {
+		delete newSurface;
 		return false;
 	}
 
+	if (fSurface != NULL) {
+		// blit the contents of the old bitmap to the new one
+		BRect bounds = fSurface->Bounds();
+		int oldWidth = bounds.IntegerWidth() + 1;
+		int blitWidth =  width > oldWidth ? oldWidth : width;
+		int oldHeight = bounds.IntegerHeight() + 1;
+		int blitHeight = height > oldHeight ? oldHeight : height;
+		
+		// It doesn't really matter if this fails; new stuff will get drawn
+		// in soon enough.
+		newSurface->ImportBits(fSurface, BPoint(0, 0), BPoint(0, 0), blitWidth,
+			blitHeight);
+
+		delete fSurface;
+	}
+
+	fSurface = newSurface;
 	return true;
 }
 
 
-int32
+int
 Drawable::BytesPerPixel()
 {
 	// This code works but since we're hard-coding B_RGBA32
 	// for efficiency we might as well just...
-
 #if 0
 	if (fSurface == NULL)
 		return 0;
@@ -106,6 +116,3 @@ Drawable::Invalidate(Rectangle rect)
 		}
 	}
 }
-
-
-

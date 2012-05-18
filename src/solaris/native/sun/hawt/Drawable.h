@@ -36,24 +36,25 @@ class PlatformView;
 
 class Drawable : public BLocker {
 public:
-				Drawable();
-				Drawable(PlatformView* view);
-	bool		Allocate(int width, int height);
+					Drawable();
+					Drawable(PlatformView* view);
+	bool			Allocate(int width, int height);
 
-	bool		IsValid() { return fSurface != NULL && fSurface->IsValid(); }
+	bool			IsValid() { return fSurface != NULL
+						&& fSurface->IsValid(); }
 
-	void*		Bits() { return fSurface->Bits(); }
-	int32		BytesPerRow() { return fSurface->BytesPerRow(); }
-	int32		BytesPerPixel();
+	void*			Bits() { return fSurface->Bits(); }
+	int				BytesPerRow() { return fSurface->BytesPerRow(); }
+	int				BytesPerPixel();
 
-	int32		Height() { return fSurface->Bounds().IntegerHeight() + 1; }
-	int32		Width() { return fSurface->Bounds().IntegerWidth() + 1; }
+	int				Height() { return fSurface->Bounds().IntegerHeight() + 1; }
+	int				Width() { return fSurface->Bounds().IntegerWidth() + 1; }
 
-	BBitmap*	GetBitmap() { return fSurface; }
+	BBitmap*		GetBitmap() { return fSurface; }
 	
-	void		Invalidate(Rectangle rect);
+	void			Invalidate(Rectangle rect);
 private:
-	BBitmap*	fSurface;
+	BBitmap*		fSurface;
 	PlatformView*	fView;
 };
 
