@@ -66,10 +66,14 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
     operations->width = width;
     operations->height = height;
     
-    if (operations->drawable->Lock()) {
-	    operations->drawable->Allocate(width, height);
-    	operations->drawable->Unlock();
-    }
+	if (operations->drawable->Lock()) {
+		if (!operations->drawable->IsValid()
+				|| width > operations->drawable->Width()
+				|| height > operations->drawable->Height()) {
+			operations->drawable->Allocate(width, height);
+		}
+		operations->drawable->Unlock();
+	}
 }
 
 static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
@@ -121,7 +125,7 @@ static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
 
 	if (!drawable->IsValid() || width > drawable->Width()
 			|| height > drawable->Height()) {
-		drawable->Allocate(width, height);
+		drawable->Allocate(width + 100, height + 100);
 	}
     
     if (drawable->IsValid()) {
