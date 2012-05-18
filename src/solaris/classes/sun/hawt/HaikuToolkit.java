@@ -89,7 +89,7 @@ public class HaikuToolkit extends CacioToolkit {
 
     @Override
     public boolean isTraySupported() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return false;
     }
 
     @Override
@@ -133,13 +133,13 @@ public class HaikuToolkit extends CacioToolkit {
 
     @Override
     public boolean isDesktopSupported() {
-        return false;
+        return true;
     }
 
     @Override
     protected DesktopPeer createDesktopPeer(Desktop target)
-            throws HeadlessException {
-        throw new UnsupportedOperationException("Not supported yet.");
+    		throws HeadlessException {
+        return new HaikuDesktopPeer();
     }
 
     @Override
@@ -151,7 +151,9 @@ public class HaikuToolkit extends CacioToolkit {
 
     @Override
     public ColorModel getColorModel() throws HeadlessException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        HaikuGraphicsConfig config =
+                HaikuGraphicsConfig.getDefaultConfiguration();
+        return config.getColorModel();
     }
 
     @Override
