@@ -83,15 +83,15 @@ PlatformFrame::GetDrawable()
 Point
 PlatformFrame::GetLocation()
 {
-	return Point(0, 0);
+	Rectangle bounds = GetBounds();
+	return Point(bounds.x, bounds.y);
 }
 
 
 Point
 PlatformFrame::GetLocationOnScreen()
 {
-	Rectangle bounds = GetBounds();
-	return Point(bounds.x, bounds.y);
+	return GetLocation();
 }
 
 
