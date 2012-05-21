@@ -45,18 +45,28 @@ public:
 			void			SetState(int state);
 			bool			GetVisible();
 			void			SetVisible(bool visible);
-	
+
+			void			DeferredDraw(BRect updateRect);
+
+	virtual	void			Draw(BRect updateRect);
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
-	virtual	void			Draw(BRect updateRect);
 	virtual	void			MakeFocus(bool focused);
-			void			DeferredDraw(BRect updateRect);
+	virtual	void			MouseDown(BPoint point);
+	virtual	void			MouseMoved(BPoint point, uint32 transit,
+								const BMessage* message);
+	virtual	void			MouseUp(BPoint point);
 	
+private:
+			void			_HandleMouseEvent(BMessage* message,
+								uint32 transit = 0);
+
 private:
 			bool			fRoot;
 			Drawable		fDrawable;
 			rgb_color		fColour;
 			jobject			fPlatformWindow;
+			uint32			fPreviousButtons;
 };
 
 #endif	/* PLATFORM_VIEW_H */

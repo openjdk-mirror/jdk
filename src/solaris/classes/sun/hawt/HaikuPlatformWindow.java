@@ -33,6 +33,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseEvent;
 import java.awt.event.PaintEvent;
 import java.awt.event.WindowEvent;
 import java.awt.Font;
@@ -112,6 +113,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     public Graphics2D getGraphics(Color foreground, Color background,
     		Font font) {
+    	//System.err.println("Get graphics for " + hashCode());
         SurfaceData surface = getSurfaceData();
         Graphics2D graphics = new SunGraphics2D(surface, foreground,
         	background, font);
@@ -164,11 +166,13 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 	// =====================
 
 	public void eventRepaint(int x, int y, int width, int height) {
-        PaintEvent ev = PaintEventDispatcher.getPaintEventDispatcher()
-              .createPaintEvent(cacioComponent.getAWTComponent(), x, y, width, height);
-        postEvent(cacioComponent, ev);
+		Component awtComp = cacioComponent.getAWTComponent();
+		if (!AWTAccessor.getComponentAccessor().getIgnoreRepaint(awtComp)) {
+	        PaintEvent ev = PaintEventDispatcher.getPaintEventDispatcher()
+    	          .createPaintEvent(awtComp, x, y, width, height);
+        	postEvent(cacioComponent, ev);
+		}
 	}
-
 
     public void eventResize(int width, int height) {
     	Component awtComp = cacioComponent.getAWTComponent();
@@ -196,13 +200,14 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     }
     
     public void eventMinimize(boolean minimize) {
-    	WindowEvent iconifyEv = new WindowEvent((Window)cacioComponent.getAWTComponent(),
+    	Component awtComp = cacioComponent.getAWTComponent();
+    	WindowEvent iconifyEv = new WindowEvent((Window)awtComp,
     		minimize ? WindowEvent.WINDOW_ICONIFIED :
     		WindowEvent.WINDOW_DEICONIFIED);
     	postEvent(cacioComponent, iconifyEv);
     	
     	int newState = minimize ? Frame.ICONIFIED : Frame.NORMAL;
-    	WindowEvent stateEv = new WindowEvent((Window)cacioComponent.getAWTComponent(),
+    	WindowEvent stateEv = new WindowEvent((Window)awtComp,
     		WindowEvent.WINDOW_STATE_CHANGED, windowState, newState);
     	postEvent(cacioComponent, stateEv);
 
@@ -214,15 +219,69 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     		WindowEvent.WINDOW_CLOSING);
     	postEvent(cacioComponent, ev);
     }
-    
+
     public void eventActivate(boolean focused) {
     	FocusEvent ev = new FocusEvent(cacioComponent.getAWTComponent(),
     		focused ? FocusEvent.FOCUS_GAINED : FocusEvent.FOCUS_LOST);
     	postEvent(cacioComponent, ev);
     }
+
+	private void handleMouseDown(long when, int modifiers, int x, int y,
+			int clicks, int button) {
+		boolean popup = false;
+		// Right mouse button or Ctrl and left mouse button are popup
+		// triggers on Haiku
+		if (button == MouseEvent.BUTTON2 || (button == MouseEvent.BUTTON1
+				&& (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0))
+			popup = true;
+
+		Component comp = cacioComponent.getAWTComponent();
+		MouseEvent ev = new MouseEvent(comp, MouseEvent.MOUSE_PRESSED, when,
+			modifiers, x, y, clicks, popup, button);
+		postEvent(cacioComponent, ev);
+	}
+
+	private void handleMouseUp(long when, int modifiers, int x, int y,
+			int clicks, int button) {
+		Component comp = cacioComponent.getAWTComponent();
+		MouseEvent ev = new MouseEvent(comp, MouseEvent.MOUSE_RELEASED, when,
+			modifiers, x, y, clicks, false, button);
+		postEvent(cacioComponent, ev);
+		ev = new MouseEvent(comp, MouseEvent.MOUSE_CLICKED, when,
+			modifiers, x, y, clicks, false, button);
+		postEvent(cacioComponent, ev);
+	}
+
+	public void eventMouse(int id, long when, int modifiers, int x, int y,
+			int clicks, int pressed, int released) {
+    	
+    	// Mouse up/down is weird on Haiku so we check what buttons
+    	// exactly have changed with every mouse message and then
+    	// fire off the appropriate events.
+		if ((pressed & MouseEvent.BUTTON1_DOWN_MASK) != 0)
+			handleMouseDown(when, modifiers, x, y, clicks, MouseEvent.BUTTON1);
+		if ((pressed & MouseEvent.BUTTON2_DOWN_MASK) != 0)
+			handleMouseDown(when, modifiers, x, y, clicks, MouseEvent.BUTTON2);
+		if ((pressed & MouseEvent.BUTTON3_DOWN_MASK) != 0)
+			handleMouseDown(when, modifiers, x, y, clicks, MouseEvent.BUTTON3);
+		if ((released & MouseEvent.BUTTON1_DOWN_MASK) != 0)
+			handleMouseUp(when, modifiers, x, y, clicks, MouseEvent.BUTTON1);
+		if ((released & MouseEvent.BUTTON2_DOWN_MASK) != 0)
+			handleMouseUp(when, modifiers, x, y, clicks, MouseEvent.BUTTON2);
+		if ((released & MouseEvent.BUTTON3_DOWN_MASK) != 0)
+			handleMouseUp(when, modifiers, x, y, clicks, MouseEvent.BUTTON3);
+
+		if (id != MouseEvent.MOUSE_PRESSED
+				&& id != MouseEvent.MOUSE_RELEASED) {
+    		Component awtComp = cacioComponent.getAWTComponent();
+			MouseEvent ev = new MouseEvent(cacioComponent.getAWTComponent(),
+				id, when, modifiers, x, y, clicks, false);
+			postEvent(cacioComponent, ev);
+		}
+	}
     
     private void postEvent(CacioComponent component, AWTEvent ev) {
-        component.handlePeerEvent(ev);
+		component.handlePeerEvent(ev);
     }
 
 	// ===================

@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "java_awt_event_MouseEvent.h"
+
 PlatformView::PlatformView(jobject platformWindow, bool root)
 	:
 	BView(BRect(0, 0, 0, 0), NULL, root ? B_FOLLOW_ALL : B_FOLLOW_NONE,
@@ -152,7 +154,6 @@ PlatformView::GetVisible()
 }
 
 
-
 void
 PlatformView::SetVisible(bool visible)
 {
@@ -216,6 +217,7 @@ PlatformView::MakeFocus(bool focused)
 {
 	if (!fRoot)
 		DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
+	BView::MakeFocus(focused);
 }
 
 
@@ -227,6 +229,105 @@ PlatformView::DeferredDraw(BRect updateRect)
 
 	if (fDrawable.IsValid())
 		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, updateRect);
+	//if (fRoot)
+	//	FillRect(Bounds(), B_SOLID_LOW);
 	fDrawable.Unlock();
 		
+}
+
+
+void
+PlatformView::MouseDown(BPoint location)
+{
+	_HandleMouseEvent(Window()->CurrentMessage());
+	BView::MouseDown(location);
+}
+
+
+void
+PlatformView::MouseMoved(BPoint location, uint32 transit, const BMessage* message)
+{
+	_HandleMouseEvent(Window()->CurrentMessage(), transit);
+	BView::MouseMoved(location, transit, message);
+}
+
+
+void
+PlatformView::MouseUp(BPoint location)
+{
+	_HandleMouseEvent(Window()->CurrentMessage());
+	BView::MouseUp(location);
+}
+
+
+void
+PlatformView::_HandleMouseEvent(BMessage* message, uint32 transit)
+{
+	int64 when = 0;
+	message->FindInt64("when", &when);
+	int32 buttons = 0;
+	message->FindInt32("buttons", &buttons);
+	int32 modifiers = 0;
+	BPoint point;
+	message->FindPoint("where", &point);
+	int32 clicks = 0;
+	message->FindInt32("clicks", &clicks);
+	if (message->FindInt32("modifiers", &modifiers) != B_OK)
+		modifiers = ::modifiers();
+
+	int pressed = buttons & ~fPreviousButtons;
+	int released = ~buttons & fPreviousButtons;
+	fPreviousButtons = buttons;
+
+	jint javaPressed = 0;
+	if (pressed & B_PRIMARY_MOUSE_BUTTON)
+		javaPressed |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
+	if (pressed & B_SECONDARY_MOUSE_BUTTON)
+		javaPressed |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
+	if (pressed & B_TERTIARY_MOUSE_BUTTON)
+		javaPressed |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+
+	jint javaReleased = 0;
+	if (released & B_PRIMARY_MOUSE_BUTTON)
+		javaReleased |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
+	if (released & B_SECONDARY_MOUSE_BUTTON)
+		javaReleased |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
+	if (released & B_TERTIARY_MOUSE_BUTTON)
+		javaReleased |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+
+	jint id = 0;
+	switch (message->what) {
+		case B_MOUSE_DOWN:
+			id = java_awt_event_MouseEvent_MOUSE_PRESSED;
+			break;
+		case B_MOUSE_UP:
+			id = java_awt_event_MouseEvent_MOUSE_RELEASED;
+			break;
+		case B_MOUSE_MOVED:
+			if (transit == B_ENTERED_VIEW)
+				id = java_awt_event_MouseEvent_MOUSE_ENTERED;
+			else if (transit == B_EXITED_VIEW)
+				id = java_awt_event_MouseEvent_MOUSE_EXITED;
+			else {
+				if (buttons != 0)
+					id = java_awt_event_MouseEvent_MOUSE_DRAGGED;
+				else
+					id = java_awt_event_MouseEvent_MOUSE_MOVED;
+			}
+			break;
+		default:
+			break;
+	}
+
+	jint mods = ConvertInputModifiersToJava(modifiers);
+	if (buttons & B_PRIMARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
+	if (buttons & B_SECONDARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
+	if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+
+	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id, (jlong)when,
+		mods, (jint)point.x, (jint)point.y, (jint)clicks, javaPressed,
+		javaReleased);
 }

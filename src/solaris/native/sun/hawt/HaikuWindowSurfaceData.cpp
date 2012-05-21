@@ -65,7 +65,7 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
     operations->drawable = (Drawable*)drawable;
     operations->width = width;
     operations->height = height;
-    
+    printf("initing ops drawable: %p\n", operations->drawable);
 	if (operations->drawable->Lock()) {
 		if (!operations->drawable->IsValid()
 				|| width > operations->drawable->Width()
@@ -83,7 +83,7 @@ static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
 
     if (!operations->drawable->Lock())
 		return SD_FAILURE;
-
+	printf("lock drawable: %p\n", operations->drawable);
 	// We don't clip to Drawable bounds because we just
 	// reallocate the Drawable if neccessary in GetRasInfo.
 	// We probably should clip to PlatformView bounds though.
@@ -158,6 +158,7 @@ static void HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops,
 	// wants (indirectly) the Drawable lock which we hold.
     operations->drawable->Unlock();
 
+    //printf("unlocking drawable: %p\n", operations->drawable);
     // If we were locked for writing the view needs
     // to redraw now.
     if (operations->lockFlags & SD_LOCK_WRITE) {

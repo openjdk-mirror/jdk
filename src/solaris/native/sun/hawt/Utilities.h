@@ -50,4 +50,10 @@ struct Rectangle {
 
 void DoCallback(jobject obj, const char* name, const char* description, ...);
 
+int32 ConvertKeyCodeToNative(jint jkeycode);
+void ConvertKeyCodeToJava(int32 keycode, uint32 modifiers, jint *jkeyCode, jint *jkeyLocation);
+void GetKeyChar(BString* keyChar, int32 keycode, int32 modifiers = B_SHIFT_KEY);
+jint ConvertModifiersToJava(uint32 modifiers);
+jint ConvertInputModifiersToJava(uint32 modifiers);
+
 #endif	/* UTILITIES_H */
