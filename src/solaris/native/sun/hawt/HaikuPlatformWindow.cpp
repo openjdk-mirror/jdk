@@ -173,4 +173,14 @@ Java_sun_hawt_HaikuPlatformWindow_nativeGetLocationOnScreen
 	env->SetIntField(point, pointYField, location.y);
 }
 
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeDispose
+  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	window->Dispose();
+}
+
+
 }

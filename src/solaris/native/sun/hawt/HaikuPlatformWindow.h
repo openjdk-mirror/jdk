@@ -54,6 +54,7 @@ public:
 	virtual	void			SetState(int state) = 0;
 	virtual	bool			GetVisible() = 0;
 	virtual	void			SetVisible(bool visible) = 0;
+	virtual	void			Dispose() = 0;
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */

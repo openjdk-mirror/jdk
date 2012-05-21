@@ -189,10 +189,22 @@ PlatformFrame::SetVisible(bool visible)
 	if (!LockLooper())
 		return;
 
-	if (visible)
-		Show();
-	else
-		Hide();
+	if (visible) {
+		while (IsHidden())
+			Show();
+	} else {
+		while (!IsHidden())
+			Hide();
+	}
+	UnlockLooper();
+}
+
+
+void
+PlatformFrame::Dispose()
+{
+	LockLooper();
+	Quit();
 	UnlockLooper();
 }
 

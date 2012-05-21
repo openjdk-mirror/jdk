@@ -46,6 +46,7 @@ public:
 			void			SetState(int state);
 			bool			GetVisible();
 			void			SetVisible(bool visible);
+			void			Dispose();
 
 	// Overriden BWindow hooks
 	virtual	void			FrameMoved(BPoint origin);

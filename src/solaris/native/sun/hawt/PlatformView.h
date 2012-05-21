@@ -45,6 +45,7 @@ public:
 			void			SetState(int state);
 			bool			GetVisible();
 			void			SetVisible(bool visible);
+			void			Dispose();
 
 			void			DeferredDraw(BRect updateRect);
 

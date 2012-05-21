@@ -38,6 +38,8 @@ class Drawable : public BLocker {
 public:
 					Drawable();
 					Drawable(PlatformView* view);
+					~Drawable();
+
 	bool			Allocate(int width, int height);
 
 	bool			IsValid() { return fSurface != NULL

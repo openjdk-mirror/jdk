@@ -123,12 +123,12 @@ public class HaikuToolkit extends CacioToolkit {
 
     @Override
     public void grab(Window w) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    	System.err.println("HaikuToolkit.grab: Not supported yet.");
     }
 
     @Override
     public void ungrab(Window w) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    	System.err.println("HaikuToolkit.grab: Not supported yet.");
     }
 
     @Override

@@ -52,6 +52,15 @@ Drawable::Drawable(PlatformView* view)
 }
 
 
+Drawable::~Drawable()
+{
+	Lock();
+	if (fSurface != NULL)
+		delete fSurface;
+	Unlock();
+}
+
+
 bool
 Drawable::Allocate(int width, int height)
 {

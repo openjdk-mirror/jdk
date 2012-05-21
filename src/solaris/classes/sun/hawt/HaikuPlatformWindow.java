@@ -86,10 +86,11 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     private native void nativeGetLocation(long nativeWindow, Point location);
     private native void nativeGetLocationOnScreen(long nativeWindow,
     	Point location);
+    private native void nativeDispose(long nativeWindow);
 
     HaikuPlatformWindow(CacioComponent cacioComponent,
     		HaikuPlatformWindow parent, boolean toplevel, int x, int y,
-    		int w,int h) {
+    		int w, int h) {
     	if (parent != null)
 		    nativeWindow = nativeInit(parent.nativeWindow, toplevel, x, y, w, h);
 		else
@@ -159,6 +160,10 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     public void setVisible(boolean visible) {
         nativeSetVisible(nativeWindow, visible);
+    }
+
+    public void dispose() {
+        nativeDispose(nativeWindow);
     }
 
 	// =====================
@@ -294,10 +299,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     public void setMaximizedBounds(Rectangle bounds) {
         System.err.println("PlatformWindow.setMaximizedBounds(): Implement me!");
-    }
-
-    public void dispose() {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public boolean canDetermineObscurity() {
