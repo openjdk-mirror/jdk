@@ -54,12 +54,14 @@ public:
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
 	virtual	void			MakeFocus(bool focused);
+	virtual	void			MessageReceived(BMessage* message);
 	virtual	void			MouseDown(BPoint point);
 	virtual	void			MouseMoved(BPoint point, uint32 transit,
 								const BMessage* message);
 	virtual	void			MouseUp(BPoint point);
 	
 private:
+			void			_HandleKeyEvent(BMessage* message);
 			void			_HandleMouseEvent(BMessage* message, BPoint point,
 								uint32 transit = 0);
 

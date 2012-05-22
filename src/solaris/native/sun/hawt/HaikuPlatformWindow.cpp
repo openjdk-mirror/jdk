@@ -203,6 +203,7 @@ Java_sun_hawt_HaikuPlatformWindow_nativeFocus
   (JNIEnv *env, jobject thiz, jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	printf("Native focusing for: %p\n", window);
 	window->Focus();
 }
 

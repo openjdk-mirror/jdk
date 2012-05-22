@@ -183,6 +183,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     }
 
     public void requestFocus() {
+    	System.err.println("Requesting focus for " + nativeWindow);
         nativeFocus(nativeWindow);
     }
 
@@ -245,7 +246,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     	postEvent(cacioComponent, ev);
     }
 
-    public void eventActivate(boolean focused) {
+    public void eventFocus(boolean focused) {
     	FocusEvent ev = new FocusEvent(cacioComponent.getAWTComponent(),
     		focused ? FocusEvent.FOCUS_GAINED : FocusEvent.FOCUS_LOST);
     	postEvent(cacioComponent, ev);
@@ -346,14 +347,17 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     }
 
     public boolean requestFocus(Component lightweightChild, boolean temporary, boolean focusedWindowChangeAllowed, long time, Cause cause) {
+    	System.err.println("Requesting focus for " + nativeWindow);
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public void setBackground(Color c) {
+    	System.err.println("Set background called.");
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public void setForeground(Color c) {
+    	System.err.println("Set foreground called.");
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

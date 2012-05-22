@@ -25,20 +25,18 @@
 
 #include "PlatformView.h"
 
-#include <BitmapStream.h>
-#include <File.h>
-#include <TranslatorRoster.h>
-#include <kernel/OS.h>
+#include <String.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_MouseEvent.h"
 
 PlatformView::PlatformView(jobject platformWindow, bool root)
 	:
 	BView(BRect(0, 0, 0, 0), NULL, root ? B_FOLLOW_ALL : B_FOLLOW_NONE,
-		B_WILL_DRAW | B_FRAME_EVENTS),
+		B_WILL_DRAW | B_FRAME_EVENTS | B_NAVIGABLE),
 	fRoot(root),
 	fDrawable(this),
 	fPlatformWindow(platformWindow)
@@ -187,6 +185,34 @@ PlatformView::Focus()
 	UnlockLooper();
 }
 
+
+void
+PlatformView::DeferredDraw(BRect updateRect)
+{
+	if (!fDrawable.Lock())
+		return;
+	if (fDrawable.IsValid())
+		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, updateRect);
+	//if (fRoot)
+	//	FillRect(Bounds(), B_SOLID_LOW);
+	fDrawable.Unlock();
+		
+}
+
+
+void
+PlatformView::Draw(BRect updateRect)
+{
+	DeferredDraw(updateRect);
+
+	jint x = updateRect.left;
+	jint y = updateRect.top;
+	jint width = updateRect.right - updateRect.left + 1;
+	jint height = updateRect.bottom - updateRect.top + 1;
+	DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
+}
+
+
 void
 PlatformView::FrameMoved(BPoint origin)
 {
@@ -219,37 +245,28 @@ PlatformView::FrameResized(float width, float height)
 
 
 void
-PlatformView::Draw(BRect updateRect)
-{
-	DeferredDraw(updateRect);
-
-	jint x = updateRect.left;
-	jint y = updateRect.top;
-	jint width = updateRect.right - updateRect.left + 1;
-	jint height = updateRect.bottom - updateRect.top + 1;
-	DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
-}
-
-
-void
 PlatformView::MakeFocus(bool focused)
 {
+	printf("Going to call MakeFocus...\n");
 	DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
 	BView::MakeFocus(focused);
 }
 
 
 void
-PlatformView::DeferredDraw(BRect updateRect)
+PlatformView::MessageReceived(BMessage* message)
 {
-	if (!fDrawable.Lock())
-		return;
-	if (fDrawable.IsValid())
-		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, updateRect);
-	//if (fRoot)
-	//	FillRect(Bounds(), B_SOLID_LOW);
-	fDrawable.Unlock();
-		
+	switch (message->what) {
+		case B_KEY_DOWN:
+		case B_UNMAPPED_KEY_DOWN:
+		case B_KEY_UP:
+		case B_UNMAPPED_KEY_UP:
+			_HandleKeyEvent(message);
+			break;
+		default:
+			break;
+	}
+	BView::MessageReceived(message);
 }
 
 
@@ -274,6 +291,51 @@ PlatformView::MouseUp(BPoint point)
 {
 	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseUp(point);
+}
+
+
+void
+PlatformView::_HandleKeyEvent(BMessage* message)
+{
+	printf("Handle key event native!\n");
+	int64 when = 0;
+	message->FindInt64("when", &when);
+	int32 modifiers = 0;
+	message->FindInt32("modifiers", &modifiers);
+	int32 key = 0;
+	message->FindInt32("key", &key);	
+
+	jint id;
+	jint mods = 0;
+	jint keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
+	jint keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
+	jchar keyChar = java_awt_event_KeyEvent_CHAR_UNDEFINED;
+
+	if (message->what == B_KEY_DOWN || message->what == B_UNMAPPED_KEY_DOWN)
+		id = java_awt_event_KeyEvent_KEY_PRESSED;
+	else
+		id = java_awt_event_KeyEvent_KEY_RELEASED;
+
+	mods = ConvertInputModifiersToJava(modifiers);
+	ConvertKeyCodeToJava(key, modifiers, &keyCode, &keyLocation);
+	DoCallback(fPlatformWindow, "eventKey", "(IJIIII)V", id,
+		(jlong)(when / 1000), mods, keyCode, keyChar, keyLocation);
+
+	BString bytes;
+	if (message->FindString("bytes", &bytes) == B_OK) {
+		// If we hava a key field that's non-zero, respond on KEY_UP.
+		// If we don't have a key field (key is zero), we need to fire on KEY_DOWN.
+		if ((key != 0 && (message->what == B_KEY_UP || message->what == B_UNMAPPED_KEY_UP)) ||
+		    (key == 0 && (message->what == B_KEY_DOWN || message->what == B_UNMAPPED_KEY_DOWN)))
+		{
+			id = java_awt_event_KeyEvent_KEY_TYPED;
+			keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
+			keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
+			keyChar = bytes.ByteAt(0);
+			DoCallback(fPlatformWindow, "eventKey", "(IJIIII)V", id,
+				(jlong)(when / 1000), mods, keyCode, keyChar, keyLocation);
+		}
+	}
 }
 
 
