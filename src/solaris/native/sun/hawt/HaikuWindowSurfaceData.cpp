@@ -35,9 +35,6 @@
 
 extern "C" {
 
-extern void JNU_ThrowByName(JNIEnv *env, const char *name, const char *msg);
-
-
 static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
                     SurfaceDataRasInfo* rasInfo, jint lockFlags);
 static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
@@ -65,7 +62,7 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
     operations->drawable = (Drawable*)drawable;
     operations->width = width;
     operations->height = height;
-    printf("initing ops drawable: %p\n", operations->drawable);
+
 	if (operations->drawable->Lock()) {
 		if (!operations->drawable->IsValid()
 				|| width > operations->drawable->Width()
@@ -83,30 +80,6 @@ static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
 
     if (!operations->drawable->Lock())
 		return SD_FAILURE;
-	printf("lock drawable: %p\n", operations->drawable);
-	// We don't clip to Drawable bounds because we just
-	// reallocate the Drawable if neccessary in GetRasInfo.
-	// We probably should clip to PlatformView bounds though.
-/*
-	int width = operations->drawable->Width();
-	int height = operations->drawable->Height();
-
-    if (rasInfo->bounds.x1 > width) {
-        rasInfo->bounds.x1 = width;
-    }
-
-    if (rasInfo->bounds.y1 > height) {
-        rasInfo->bounds.y1 = height;
-    }
-
-    if (rasInfo->bounds.x2 > width) {
-      rasInfo->bounds.x2 = width;
-    }
-
-    if (rasInfo->bounds.y2 > height) {
-      rasInfo->bounds.y2 = height;
-    }
-*/
 
 	// We can honour the SD_LOCK_FASTEST since we just provide
 	// direct pixel access via BBitmap::Bits()

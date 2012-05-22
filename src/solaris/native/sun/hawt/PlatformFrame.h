@@ -32,7 +32,8 @@
 
 class PlatformFrame : public BWindow, public PlatformWindow {
 public:
-							PlatformFrame(jobject platformWindow);
+							PlatformFrame(jobject platformWindow,
+								bool decorated);
 
 			Rectangle		GetBounds();
 			PlatformView*	GetContainer();

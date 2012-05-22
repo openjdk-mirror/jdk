@@ -77,9 +77,9 @@ Java_sun_hawt_HaikuPlatformWindow_initIDs
 }
 
 JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeInit
-  (JNIEnv *env, jobject thiz, jlong parent, jboolean toplevel, jint x,
-   jint y, jint width, jint height)
+Java_sun_hawt_HaikuPlatformWindow_nativeInitFrame
+  (JNIEnv *env, jobject thiz, jint x, jint y, jint width, jint height,
+   jboolean decorated)
 {
 	// Wait for be_app to get created
 	acquire_sem(appSem);
@@ -87,11 +87,25 @@ Java_sun_hawt_HaikuPlatformWindow_nativeInit
 
 	// TODO release global ref in frame/view dispose
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
-	PlatformWindow* window;
-	if (toplevel == JNI_TRUE)
-		window = new PlatformFrame(javaWindow);
-	else
-		window = new PlatformView(javaWindow, false);
+	PlatformWindow* window = new PlatformFrame(javaWindow,
+		decorated == JNI_TRUE);
+	window->SetBounds(Rectangle(x, y, width, height));
+	return ptr_to_jlong(window);
+}
+
+
+JNIEXPORT jlong JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeInitView
+  (JNIEnv *env, jobject thiz, jint x, jint y, jint width, jint height,
+   jlong parent)
+{
+	// Wait for be_app to get created
+	acquire_sem(appSem);
+	release_sem(appSem);
+
+	// TODO release global ref in frame/view dispose
+	jobject javaWindow = env->NewWeakGlobalRef(thiz);
+	PlatformWindow* window = new PlatformView(javaWindow, false);
 
 	PlatformWindow* parentWindow = (PlatformWindow*)jlong_to_ptr(parent);
 	if (parentWindow != NULL) {
@@ -102,6 +116,7 @@ Java_sun_hawt_HaikuPlatformWindow_nativeInit
 	window->SetBounds(Rectangle(x, y, width, height));
 	return ptr_to_jlong(window);
 }
+
 
 JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeGetDrawable

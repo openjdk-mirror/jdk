@@ -34,9 +34,10 @@
  * Blocking
  */
 
-PlatformFrame::PlatformFrame(jobject platformWindow)
+PlatformFrame::PlatformFrame(jobject platformWindow, bool decorated)
 	:
-	BWindow(BRect(0, 0, 0, 0), NULL, B_TITLED_WINDOW, 0),
+	BWindow(BRect(0, 0, 0, 0), NULL, decorated ? B_TITLED_WINDOW_LOOK
+		: B_NO_BORDER_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL, 0),
 	fView(platformWindow, true),
 	fPlatformWindow(platformWindow)
 {

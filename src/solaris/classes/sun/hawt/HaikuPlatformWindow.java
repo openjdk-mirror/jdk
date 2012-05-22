@@ -31,6 +31,7 @@ import java.awt.BufferCapabilities;
 import java.awt.BufferCapabilities.FlipContents;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dialog;
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
@@ -75,8 +76,10 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     private int windowState = Frame.NORMAL;
 
     private static native void initIDs();
-    private native long nativeInit(long parent, boolean toplevel, int x,
-    	int y, int width, int height);
+    private native long nativeInitView(int x, int y, int width, int height,
+    	long parent);
+    private native long nativeInitFrame(int x, int y, int width, int height,
+    	boolean decorated);
     private native long nativeGetDrawable(long nativeWindow);
     private native void nativeGetBounds(long nativeWindow, Rectangle bounds);
     private native void nativeSetBounds(long nativeWindow, int x, int y,
@@ -91,11 +94,23 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     HaikuPlatformWindow(CacioComponent cacioComponent,
     		HaikuPlatformWindow parent, boolean toplevel, int x, int y,
-    		int w, int h) {
-    	if (parent != null)
-		    nativeWindow = nativeInit(parent.nativeWindow, toplevel, x, y, w, h);
-		else
-			nativeWindow = nativeInit(0, toplevel, x, y, w, h);
+    		int width, int height) {
+
+    	if (toplevel) {
+    		Component awtComp = cacioComponent.getAWTComponent();
+
+    		boolean decorated = false;
+    		if (awtComp instanceof Frame || awtComp instanceof Dialog)
+    			decorated = true;
+    		nativeWindow = nativeInitFrame(x, y, width, height, decorated);
+    	} else {
+    		if (parent != null)
+		    	nativeWindow = nativeInitView(x, y, width, height,
+		    		parent.nativeWindow);
+			else
+				nativeWindow = nativeInitView(x, y, width, height, 0);
+    	}
+
         this.cacioComponent = cacioComponent;
         this.parent = parent;
         this.toplevel = toplevel;

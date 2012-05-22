@@ -64,7 +64,6 @@ Drawable::~Drawable()
 bool
 Drawable::Allocate(int width, int height)
 {
-	printf("%p: (Re)allocating a bitmap, size: %d x %d\n", this, width, height);
 	BBitmap* newSurface = new BBitmap(BRect(0, 0, width - 1, height - 1), B_RGBA32);
 
 	if (!newSurface->IsValid()) {
