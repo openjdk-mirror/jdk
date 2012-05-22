@@ -59,7 +59,7 @@ public:
 	virtual	void			MouseUp(BPoint point);
 	
 private:
-			void			_HandleMouseEvent(BMessage* message,
+			void			_HandleMouseEvent(BMessage* message, BPoint point,
 								uint32 transit = 0);
 
 private:

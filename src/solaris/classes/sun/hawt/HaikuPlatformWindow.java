@@ -259,7 +259,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
 	public void eventMouse(int id, long when, int modifiers, int x, int y,
 			int clicks, int pressed, int released) {
-    	
     	// Mouse up/down is weird on Haiku so we check what buttons
     	// exactly have changed with every mouse message and then
     	// fire off the appropriate events.

@@ -248,41 +248,39 @@ PlatformView::DeferredDraw(BRect updateRect)
 
 
 void
-PlatformView::MouseDown(BPoint location)
+PlatformView::MouseDown(BPoint point)
 {
-	_HandleMouseEvent(Window()->CurrentMessage());
-	BView::MouseDown(location);
+	_HandleMouseEvent(Window()->CurrentMessage(), point);
+	BView::MouseDown(point);
 }
 
 
 void
-PlatformView::MouseMoved(BPoint location, uint32 transit, const BMessage* message)
+PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 {
-	_HandleMouseEvent(Window()->CurrentMessage(), transit);
-	BView::MouseMoved(location, transit, message);
+	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
+	BView::MouseMoved(point, transit, message);
 }
 
 
 void
-PlatformView::MouseUp(BPoint location)
+PlatformView::MouseUp(BPoint point)
 {
-	_HandleMouseEvent(Window()->CurrentMessage());
-	BView::MouseUp(location);
+	_HandleMouseEvent(Window()->CurrentMessage(), point);
+	BView::MouseUp(point);
 }
 
 
 void
-PlatformView::_HandleMouseEvent(BMessage* message, uint32 transit)
+PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 buttons = 0;
 	message->FindInt32("buttons", &buttons);
-	int32 modifiers = 0;
-	BPoint point;
-	message->FindPoint("where", &point);
 	int32 clicks = 0;
 	message->FindInt32("clicks", &clicks);
+	int32 modifiers = 0;
 	if (message->FindInt32("modifiers", &modifiers) != B_OK)
 		modifiers = ::modifiers();
 
@@ -338,7 +336,11 @@ PlatformView::_HandleMouseEvent(BMessage* message, uint32 transit)
 	if (buttons & B_TERTIARY_MOUSE_BUTTON)
 		mods |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
 
+	// Drop the lock when doing this callback, because the MouseEvent
+	// constructor will call getLocationOnScreen which may call native code.
+	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id, (jlong)when,
 		mods, (jint)point.x, (jint)point.y, (jint)clicks, javaPressed,
 		javaReleased);
+	LockLooper();
 }
