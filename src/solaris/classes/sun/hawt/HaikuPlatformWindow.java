@@ -87,6 +87,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     private native void nativeGetLocationOnScreen(long nativeWindow,
     	Point location);
     private native void nativeDispose(long nativeWindow);
+    private native void nativeFocus(long nativeWindow);
 
     HaikuPlatformWindow(CacioComponent cacioComponent,
     		HaikuPlatformWindow parent, boolean toplevel, int x, int y,
@@ -164,6 +165,10 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     public void dispose() {
         nativeDispose(nativeWindow);
+    }
+
+    public void requestFocus() {
+        nativeFocus(nativeWindow);
     }
 
 	// =====================
@@ -292,9 +297,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 	// Unimplemented stuff
 	// ===================
 
-    public void requestFocus() {
-        System.err.println("PlatformWindow.requestFocus(): Implement me!");
-    }
 
     public void setMaximizedBounds(Rectangle bounds) {
         System.err.println("PlatformWindow.setMaximizedBounds(): Implement me!");

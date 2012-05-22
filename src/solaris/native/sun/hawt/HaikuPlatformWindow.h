@@ -55,6 +55,7 @@ public:
 	virtual	bool			GetVisible() = 0;
 	virtual	void			SetVisible(bool visible) = 0;
 	virtual	void			Dispose() = 0;
+	virtual	void			Focus() = 0;
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */

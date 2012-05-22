@@ -180,6 +180,14 @@ PlatformView::Dispose()
 
 
 void
+PlatformView::Focus()
+{
+	LockLooper();
+	MakeFocus(true);
+	UnlockLooper();
+}
+
+void
 PlatformView::FrameMoved(BPoint origin)
 {
 	if (!fRoot) {
@@ -226,8 +234,7 @@ PlatformView::Draw(BRect updateRect)
 void
 PlatformView::MakeFocus(bool focused)
 {
-	if (!fRoot)
-		DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
+	DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
 	BView::MakeFocus(focused);
 }
 

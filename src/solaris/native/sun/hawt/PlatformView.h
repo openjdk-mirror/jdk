@@ -46,6 +46,7 @@ public:
 			bool			GetVisible();
 			void			SetVisible(bool visible);
 			void			Dispose();
+			void			Focus();
 
 			void			DeferredDraw(BRect updateRect);
 

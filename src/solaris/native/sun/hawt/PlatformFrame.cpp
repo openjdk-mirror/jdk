@@ -209,6 +209,16 @@ PlatformFrame::Dispose()
 }
 
 
+void
+PlatformFrame::Focus()
+{
+	LockLooper();
+	// Focus the root view
+	fView.Focus();
+	UnlockLooper();
+}
+
+
 // #pragma mark Overriden BWindow/BLooper hooks
 
 
