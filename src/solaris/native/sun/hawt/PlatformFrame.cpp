@@ -204,8 +204,10 @@ void
 PlatformFrame::Dispose()
 {
 	LockLooper();
+	// Remove the root view first, otherwise it
+	// gets deleted twice.
+	RemoveChild(&fView);
 	Quit();
-	UnlockLooper();
 }
 
 
