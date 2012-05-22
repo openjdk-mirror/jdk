@@ -244,7 +244,6 @@ PlatformView::DeferredDraw(BRect updateRect)
 {
 	if (!fDrawable.Lock())
 		return;
-
 	if (fDrawable.IsValid())
 		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, updateRect);
 	//if (fRoot)
@@ -346,8 +345,8 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	// Drop the lock when doing this callback, because the MouseEvent
 	// constructor will call getLocationOnScreen which may call native code.
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id, (jlong)when,
-		mods, (jint)point.x, (jint)point.y, (jint)clicks, javaPressed,
-		javaReleased);
+	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id,
+		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
+		(jint)clicks, javaPressed, javaReleased);
 	LockLooper();
 }
