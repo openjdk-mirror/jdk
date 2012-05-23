@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,28 +21,32 @@
  * questions.
  */
 
-/* @test
-   @bug 4054511
-   @summary Check that applets don't get a security exception when invoking
-            the File.isDirectory method on a non-existent directory
-   @author Mark Reinhold
-   @run applet Applet.html
- */
+import java.io.RandomAccessFile;
 
-import java.io.*;
+public class JMXStartStopDoSomething {
 
 
-public class Applet extends java.applet.Applet {
+    public void doSomething(){
+        try {
+            for (int i=0; i < 10; ++i) {
+                RandomAccessFile f = new RandomAccessFile("/dev/null","r");
+                int n = f.read();
+                f.close();
+            }
 
-    void go(String fn) {
-        File f = new File(fn);
-        System.err.println(fn + ": " + f.isDirectory());
+        } catch (Throwable e) {
+            System.err.println("Something bad happens:" +e);
+        }
     }
 
-    public void init() {
-        String nxdir = "non_EX_is_TENT_dir_EC_tory";
-        go(nxdir);
-        go(nxdir + File.separator + "bar" + File.separator + "baz");
+    public static void main(String args[]) throws Exception {
+        System.err.println("main enter");
+        int count = 1;
+        while(count > 0) {
+            JMXStartStopDoSomething p = new JMXStartStopDoSomething();
+            p.doSomething();
+            Thread.sleep(1);
+        }
+        // System.err.println("main exit");
     }
-
 }

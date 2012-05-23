@@ -42,6 +42,7 @@ jint* gButtonDownMasks;
 @implementation AWTToolkit
 
 static long eventCount;
+static bool shouldKeepRunningNestedLoop = NO;
 
 + (long) getEventCount{
     return eventCount;
@@ -401,18 +402,21 @@ JNIEXPORT jboolean JNICALL Java_sun_lwawt_macosx_LWCToolkit_isCapsLockOn
 JNIEXPORT jboolean JNICALL Java_sun_lwawt_macosx_LWCToolkit_isApplicationActive
 (JNIEnv *env, jclass clazz)
 {
-        __block jboolean active = JNI_FALSE;
+    __block jboolean active = JNI_FALSE;
 
-AWT_ASSERT_NOT_APPKIT_THREAD;
 JNF_COCOA_ENTER(env);
 
+    if ([NSThread isMainThread]) {
+        active = (jboolean)[NSRunningApplication currentApplication].active;
+    } else {
         [JNFRunLoop performOnMainThreadWaiting:YES withBlock:^() {
-                active = (jboolean)[NSRunningApplication currentApplication].active;
+            active = (jboolean)[NSRunningApplication currentApplication].active;
         }];
+    }
 
 JNF_COCOA_EXIT(env);
 
-        return active;
+    return active;
 }
 
 
@@ -452,4 +456,37 @@ Java_sun_font_FontManager_populateFontFileNameMap
 (JNIEnv *env, jclass obj, jobject fontToFileMap, jobject fontToFamilyMap, jobject familyToFontListMap, jobject locale)
 {
 
+}
+
+/*
+ * Class:     sun_lwawt_macosx_LWCToolkit
+ * Method:    startNativeNestedEventLoop
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_sun_lwawt_macosx_LWCToolkit_startNativeNestedEventLoop
+(JNIEnv *env, jclass cls)
+{
+    if(!shouldKeepRunningNestedLoop) {
+        NSRunLoop *theRL = [NSRunLoop currentRunLoop];
+        NSApplication * app = [NSApplication sharedApplication];
+        shouldKeepRunningNestedLoop = YES;
+        while (shouldKeepRunningNestedLoop && [theRL runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]])
+        {
+            NSEvent * event = [app nextEventMatchingMask: 0xFFFFFFFF untilDate:nil inMode:NSDefaultRunLoopMode dequeue:YES];
+            if (event != nil) {
+                [app sendEvent: event];
+            }
+        }
+    }
+}
+
+/*
+ * Class:     sun_lwawt_macosx_LWCToolkit
+ * Method:    stopNativeNestedEventLoop
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_sun_lwawt_macosx_LWCToolkit_stopNativeNestedEventLoop
+(JNIEnv *env, jclass cls)
+{
+    shouldKeepRunningNestedLoop = NO;
 }

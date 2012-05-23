@@ -347,7 +347,7 @@ public class JInternalFrame extends JComponent implements
         setRootPaneCheckingEnabled(true);
         desktopIcon = new JDesktopIcon(this);
         updateUI();
-        sun.awt.SunToolkit.checkAndSetPolicy(this, true);
+        sun.awt.SunToolkit.checkAndSetPolicy(this);
         addPropertyChangeListenerIfNecessary();
     }
 

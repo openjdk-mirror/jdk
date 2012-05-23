@@ -38,6 +38,8 @@ import javax.accessibility.*;
 import javax.swing.plaf.PopupMenuUI;
 import javax.swing.plaf.basic.BasicComboPopup;
 import javax.swing.event.*;
+
+import sun.awt.SunToolkit;
 import sun.security.util.SecurityConstants;
 
 /**
@@ -340,6 +342,7 @@ public class JPopupMenu extends JComponent implements Accessible,MenuElement {
         long popupBottomY = (long)popupLocation.y + (long)popupSize.height;
         int scrWidth = scrBounds.width;
         int scrHeight = scrBounds.height;
+
         if (!canPopupOverlapTaskBar()) {
             // Insets include the task bar. Take them into account.
             Insets scrInsets = toolkit.getScreenInsets(gc);
@@ -352,17 +355,20 @@ public class JPopupMenu extends JComponent implements Accessible,MenuElement {
         int scrBottomY = scrBounds.y + scrHeight;
 
         // Ensure that popup menu fits the screen
-        if (popupRightX > (long)scrRightX) {
+        if (popupRightX > (long) scrRightX) {
             popupLocation.x = scrRightX - popupSize.width;
-            if( popupLocation.x < scrBounds.x ) {
-                popupLocation.x = scrBounds.x ;
-            }
         }
-        if (popupBottomY > (long)scrBottomY) {
+
+        if (popupBottomY > (long) scrBottomY) {
             popupLocation.y = scrBottomY - popupSize.height;
-            if( popupLocation.y < scrBounds.y ) {
-                popupLocation.y = scrBounds.y;
-            }
+        }
+
+        if (popupLocation.x < scrBounds.x) {
+            popupLocation.x = scrBounds.x;
+        }
+
+        if (popupLocation.y < scrBounds.y) {
+            popupLocation.y = scrBounds.y;
         }
 
         return popupLocation;
@@ -397,24 +403,18 @@ public class JPopupMenu extends JComponent implements Accessible,MenuElement {
     }
 
     /**
-     * Checks that there are enough security permissions
-     * to make popup "always on top", which allows to show it above the task bar.
+     * Returns whether popup is allowed to be shown above the task bar.
      */
     static boolean canPopupOverlapTaskBar() {
         boolean result = true;
-        try {
-            SecurityManager sm = System.getSecurityManager();
-            if (sm != null) {
-                sm.checkPermission(
-                    SecurityConstants.AWT.SET_WINDOW_ALWAYS_ON_TOP_PERMISSION);
-            }
-        } catch (SecurityException se) {
-            // There is no permission to show popups over the task bar
-            result = false;
+
+        Toolkit tk = Toolkit.getDefaultToolkit();
+        if (tk instanceof SunToolkit) {
+            result = ((SunToolkit)tk).canPopupOverlapTaskBar();
         }
+
         return result;
     }
-
 
     /**
      * Factory method which creates the <code>JMenuItem</code> for
