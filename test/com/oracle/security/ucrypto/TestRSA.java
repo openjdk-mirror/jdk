@@ -165,34 +165,34 @@ public class TestRSA extends UcryptoTest {
     };
 
     private static KeyPair genRSAKey(int keyLength) {
-	try {
-	    KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-	    kpg.initialize(keyLength);
-	    return kpg.generateKeyPair();
-	} catch (NoSuchAlgorithmException e) {
-	    System.err.println("Couldn't generate key: " + e);
-	    return null;
-	}
+        try {
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+            kpg.initialize(keyLength);
+            return kpg.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
+            System.err.println("Couldn't generate key: " + e);
+            return null;
+        }
     }
 
     private static KeyPair genPredefinedRSAKeyPair() {
-	try {
-	    KeyFactory kf = KeyFactory.getInstance("RSA");
-	    BigInteger mod = new BigInteger(MOD);
-	    BigInteger pub = new BigInteger(PUB_EXP);
-	    
-	    PrivateKey privKey = kf.generatePrivate
-		(new RSAPrivateCrtKeySpec
-		 (mod, pub, new BigInteger(PRIV_EXP),
-		  new BigInteger(PRIME_P), new BigInteger(PRIME_Q),
-		  new BigInteger(EXP_P), new BigInteger(EXP_Q),
-		  new BigInteger(CRT_COEFF)));
-	    PublicKey pubKey = kf.generatePublic(new RSAPublicKeySpec(mod, pub));
-	    return new KeyPair(pubKey, privKey);
-	} catch (NoSuchAlgorithmException|InvalidKeySpecException ex) {
-	    System.err.println("Couldn't generate predefined key pair: " + ex);
-	    return null;
-	}
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            BigInteger mod = new BigInteger(MOD);
+            BigInteger pub = new BigInteger(PUB_EXP);
+
+            PrivateKey privKey = kf.generatePrivate
+                (new RSAPrivateCrtKeySpec
+                 (mod, pub, new BigInteger(PRIV_EXP),
+                  new BigInteger(PRIME_P), new BigInteger(PRIME_Q),
+                  new BigInteger(EXP_P), new BigInteger(EXP_Q),
+                  new BigInteger(CRT_COEFF)));
+            PublicKey pubKey = kf.generatePublic(new RSAPublicKeySpec(mod, pub));
+            return new KeyPair(pubKey, privKey);
+        } catch (NoSuchAlgorithmException|InvalidKeySpecException ex) {
+            System.err.println("Couldn't generate predefined key pair: " + ex);
+            return null;
+        }
     }
 
     private static final String CIP_ALGOS[] = {
@@ -220,14 +220,14 @@ public class TestRSA extends UcryptoTest {
     public boolean doTest(Provider prov) {
         // first test w/ predefine KeyPair
         KeyPair pkp = genPredefinedRSAKeyPair();
-	if (pkp == null)
-	    return true;
+        if (pkp == null)
+            return true;
         System.err.println("Test against Predefined RSA Key Pair");
         boolean result1 = testCipher(pkp, 128, true, prov);
         boolean result2 = testSignature(pkp, true, prov);
 
-	boolean[] cResults = new boolean[10];
-	boolean[] sResults = new boolean[10];
+        boolean[] cResults = new boolean[10];
+        boolean[] sResults = new boolean[10];
         for (int i = 0; i < 10; i++) {
             // then test w/ various key lengths
             int keyLens[] = { 1024, 2048 };
@@ -236,41 +236,41 @@ public class TestRSA extends UcryptoTest {
             cResults[i] = testCipher(keyLens, false, prov);
             sResults[i] = testSignature(keyLens, false, prov);
         }
-	boolean result3 = true;
-	boolean result4 = true;
-	for (int i = 0; i < 10; i++) {
-	    if (!cResults[i])
-		result3 = false;
-	    if (!sResults[i])
-		result4 = false;
-	}
-	return result1 && result2 && result3 && result4;
+        boolean result3 = true;
+        boolean result4 = true;
+        for (int i = 0; i < 10; i++) {
+            if (!cResults[i])
+                result3 = false;
+            if (!sResults[i])
+                result4 = false;
+        }
+        return result1 && result2 && result3 && result4;
     }
 
 
     private static boolean testCipher(KeyPair kp, int inputSizeInBytes,
-				      boolean checkInterop, Provider prov) {
+                                      boolean checkInterop, Provider prov) {
         Cipher c1, c2;
-	boolean[] results = new boolean[CIP_ALGOS.length];
+        boolean[] results = new boolean[CIP_ALGOS.length];
         for (int i = 0; i < CIP_ALGOS.length; i++) {
             String algo = CIP_ALGOS[i];
             try {
                 c1 = Cipher.getInstance(algo, prov);
             } catch (NoSuchAlgorithmException|NoSuchPaddingException nsae) {
                 System.err.println("Skip unsupported Cipher algo: " + algo);
-		results[i] = true;
+                results[i] = true;
                 continue;
             }
 
-	    try {
-		if (checkInterop) {
-		    c2 = Cipher.getInstance(algo, "SunJCE");
-		} else {
-		    c2 = Cipher.getInstance(algo, prov);
-		}
+            try {
+                if (checkInterop) {
+                    c2 = Cipher.getInstance(algo, "SunJCE");
+                } else {
+                    c2 = Cipher.getInstance(algo, prov);
+                }
             } catch (NoSuchAlgorithmException|NoSuchPaddingException|NoSuchProviderException nsae) {
                 System.err.println("Skip unsupported Cipher algo: " + algo);
-		results[i] = true;
+                results[i] = true;
                 continue;
             }
 
@@ -279,24 +279,24 @@ public class TestRSA extends UcryptoTest {
 
             results[i] = testEncryption(c1, c2, kp, data);
         }
-	for (int i = 0; i < CIP_ALGOS.length; i++)
-	    if (!results[i])
-		return false;
-	return true;
+        for (int i = 0; i < CIP_ALGOS.length; i++)
+            if (!results[i])
+                return false;
+        return true;
     }
 
     private static boolean testCipher(int keyLens[], boolean checkInterop,
-				      Provider prov) {
+                                      Provider prov) {
         // RSA CipherText will always differ due to the random nonce in padding
         // so we check whether both
         // 1) Java Encrypt/C Decrypt
         // 2) C Encrypt/Java Decrypt
         // works
         Cipher c1, c2;
-	boolean[] results = new boolean[CIP_ALGOS.length];
+        boolean[] results = new boolean[CIP_ALGOS.length];
         for (int i = 0; i < CIP_ALGOS.length; i++) {
             String algo = CIP_ALGOS[i];
-	    results[i] = true;
+            results[i] = true;
             try {
                 c1 = Cipher.getInstance(algo, prov);
             } catch (NoSuchAlgorithmException|NoSuchPaddingException nsae) {
@@ -304,47 +304,47 @@ public class TestRSA extends UcryptoTest {
                 continue;
             }
 
-	    try {
-		if (checkInterop) {
-		    c2 = Cipher.getInstance(algo, "SunJCE");
-		} else {
-		    c2 = Cipher.getInstance(algo, prov);
-		}
+            try {
+                if (checkInterop) {
+                    c2 = Cipher.getInstance(algo, "SunJCE");
+                } else {
+                    c2 = Cipher.getInstance(algo, prov);
+                }
             } catch (NoSuchAlgorithmException|NoSuchPaddingException|NoSuchProviderException nsae) {
                 System.err.println("Skip unsupported Cipher algo: " + algo);
                 continue;
             }
 
-	    boolean[] encResults = new boolean[keyLens.length];
+            boolean[] encResults = new boolean[keyLens.length];
             for (int h = 0; h < keyLens.length; h++) {
                 // Defer key pair generation until now when it'll soon be used.
                 if (kp[h] == null) {
                     kp[h] = genRSAKey(keyLens[h]);
-		    if (kp[h] == null) {
-			encResults[h] = true;
-			continue;
-		    }
+                    if (kp[h] == null) {
+                        encResults[h] = true;
+                        continue;
+                    }
                 }
                 System.err.println("Testing Cipher " + algo + " w/ KeySize " + keyLens[h]);
                 byte[] data = Arrays.copyOf
                     (PLAINTEXT, keyLens[h]/8 - INPUT_SIZE_REDUCTION[i]);
                 encResults[h] = testEncryption(c1, c2, kp[h], data);
             }
-	    for (int h = 0; h < keyLens.length; h++)
-		if (!encResults[h])
-		    results[i] = false;
+            for (int h = 0; h < keyLens.length; h++)
+                if (!encResults[h])
+                    results[i] = false;
         }
-	for (int i = 0; i < CIP_ALGOS.length; i++)
-	    if (!results[i])
-		return false;
-	return true;
+        for (int i = 0; i < CIP_ALGOS.length; i++)
+            if (!results[i])
+                return false;
+        return true;
     }
 
     private static boolean testEncryption(Cipher c1, Cipher c2, KeyPair kp, byte[] data) {
         // C1 Encrypt + C2 Decrypt
         byte[] out1 = null;
         byte[] recoveredText = null;
-	boolean result1 = true;
+        boolean result1 = true;
         try {
             c1.init(Cipher.ENCRYPT_MODE, kp.getPublic());
             out1 = c1.doFinal(data);
@@ -355,14 +355,14 @@ public class TestRSA extends UcryptoTest {
             ex.printStackTrace();
             result1 = false;
         }
-	boolean result2 = true;
+        boolean result2 = true;
         if(!Arrays.equals(recoveredText, data)) {
             System.err.println("DEC ERROR: different PT bytes");
-	    result2 = false;
+            result2 = false;
         }
         // C2 Encrypt + C1 Decrypt
         byte[] cipherText = null;
-	boolean result3 = true;
+        boolean result3 = true;
         try {
             c2.init(Cipher.ENCRYPT_MODE, kp.getPublic());
             cipherText = c2.doFinal(data);
@@ -379,59 +379,59 @@ public class TestRSA extends UcryptoTest {
             ex.printStackTrace();
             result3 = false;
         }
-	boolean result4 = Arrays.equals(out1, data);
+        boolean result4 = Arrays.equals(out1, data);
         if (!result4) {
             System.err.println("ENC ERROR: Decrypted result DIFF");
         }
-	if (result1 && result2 && result3 && result4) {
-	    System.err.println("=> PASS");
-	    return true;
-	}
-	return false;
+        if (result1 && result2 && result3 && result4) {
+            System.err.println("=> PASS");
+            return true;
+        }
+        return false;
     }
 
     private static boolean testSignature(KeyPair kp, boolean checkInterop,
-					 Provider prov) {
+                                         Provider prov) {
         byte[] data = PLAINTEXT;
         Signature sig1, sig2;
-	boolean[] results = new boolean[SIG_ALGOS.length];
+        boolean[] results = new boolean[SIG_ALGOS.length];
         for (int i = 0; i < SIG_ALGOS.length; i++) {
             String algo = SIG_ALGOS[i];
             try {
                 sig1 = Signature.getInstance(algo, prov);
             } catch (NoSuchAlgorithmException nsae) {
                 System.err.println("Skip unsupported Signature algo: " + algo);
-		results[i] = true;
+                results[i] = true;
                 continue;
             }
 
-	    try {
-		if (checkInterop) {
-		    sig2 = Signature.getInstance(algo, "SunRsaSign");
-		} else {
-		    sig2 = Signature.getInstance(algo, prov);
-		}
-	    } catch (NoSuchAlgorithmException|NoSuchProviderException nsae) {
-		System.err.println("Skip unsupported interop Signature algo: " + algo);
-		results[i] = true;
-		continue;
+            try {
+                if (checkInterop) {
+                    sig2 = Signature.getInstance(algo, "SunRsaSign");
+                } else {
+                    sig2 = Signature.getInstance(algo, prov);
+                }
+            } catch (NoSuchAlgorithmException|NoSuchProviderException nsae) {
+                System.err.println("Skip unsupported interop Signature algo: " + algo);
+                results[i] = true;
+                continue;
             }
             results[i] = testSigning(sig1, sig2, kp, data);
         }
-	for (int i = 0; i < SIG_ALGOS.length; i++)
-	    if (!results[i])
-		return false;
-	return true;
+        for (int i = 0; i < SIG_ALGOS.length; i++)
+            if (!results[i])
+                return false;
+        return true;
     }
 
     private static boolean testSignature(int keyLens[], boolean checkInterop,
-					 Provider prov) {
+                                         Provider prov) {
         byte[] data = PLAINTEXT;
         Signature sig1, sig2;
-	boolean[] results = new boolean[SIG_ALGOS.length];
+        boolean[] results = new boolean[SIG_ALGOS.length];
         for (int i = 0; i < SIG_ALGOS.length; i++) {
             String algo = SIG_ALGOS[i];
-	    results[i] = true;
+            results[i] = true;
             try {
                 sig1 = Signature.getInstance(algo, prov);
             } catch (NoSuchAlgorithmException nsae) {
@@ -439,45 +439,45 @@ public class TestRSA extends UcryptoTest {
                 continue;
             }
 
-	    try {
-		if (checkInterop) {
-		    sig2 = Signature.getInstance(algo, "SunRsaSign");
-		} else {
-		    sig2 = Signature.getInstance(algo, prov);
-		}
+            try {
+                if (checkInterop) {
+                    sig2 = Signature.getInstance(algo, "SunRsaSign");
+                } else {
+                    sig2 = Signature.getInstance(algo, prov);
+                }
             } catch (NoSuchAlgorithmException|NoSuchProviderException nsae) {
                 System.err.println("Skip unsupported Signature algo: " + algo);
                 continue;
             }
 
-	    boolean[] subResults = new boolean[keyLens.length];
+            boolean[] subResults = new boolean[keyLens.length];
             for (int h = 0; h < keyLens.length; h++) {
                 // Defer key pair generation until now when it'll soon be used.
                 if (kp[h] == null) {
                     kp[h] = genRSAKey(keyLens[h]);
-		    if (kp[h] == null) {
-			subResults[h] = true;
-			continue;
-		    }
+                    if (kp[h] == null) {
+                        subResults[h] = true;
+                        continue;
+                    }
                 }
                 System.err.println("Testing Signature " + algo + " w/ KeySize " + keyLens[h]);
 
                 subResults[h] = testSigning(sig1, sig2, kp[h], data);
             }
-	    for (int h = 0; h < keyLens.length; h++)
-		if (!subResults[h])
-		    results[i] = false;
+            for (int h = 0; h < keyLens.length; h++)
+                if (!subResults[h])
+                    results[i] = false;
         }
-	for (int i = 0; i < SIG_ALGOS.length; i++)
-	    if (!results[i])
-		return false;
-	return true;
+        for (int i = 0; i < SIG_ALGOS.length; i++)
+            if (!results[i])
+                return false;
+        return true;
     }
 
     private static boolean testSigning(Signature sig1, Signature sig2, KeyPair kp, byte[] data) {
         boolean sameSig = false;
         byte[] out = null;
-	boolean testInit = true;
+        boolean testInit = true;
         try {
             sig1.initSign(kp.getPrivate());
             sig1.update(data);
@@ -485,24 +485,24 @@ public class TestRSA extends UcryptoTest {
         } catch (Exception ex) {
             System.err.println("SIGN ERROR: unexpected exception: " + ex);
             ex.printStackTrace();
-	    testInit = false;
+            testInit = false;
         }
 
-	boolean testInit2 = true;
-	byte[] out2 = null;
-	try {
-	    sig2.initSign(kp.getPrivate());
-	    sig2.update(data);
-	    out2 = sig2.sign();
-	} catch (InvalidKeyException|SignatureException ex) {
-	    System.err.println("SIGN ERROR: unexpected exception " + ex);
-	    ex.printStackTrace();
-	    testInit2 = false;
-	}
-	boolean sigTestPassed = true;
+        boolean testInit2 = true;
+        byte[] out2 = null;
+        try {
+            sig2.initSign(kp.getPrivate());
+            sig2.update(data);
+            out2 = sig2.sign();
+        } catch (InvalidKeyException|SignatureException ex) {
+            System.err.println("SIGN ERROR: unexpected exception " + ex);
+            ex.printStackTrace();
+            testInit2 = false;
+        }
+        boolean sigTestPassed = true;
         if (out2 == null || !Arrays.equals(out2, out)) {
             System.err.println("SIGN ERROR: Signature DIFF!");
-	    sigTestPassed = false;
+            sigTestPassed = false;
         }
 
         boolean verify = false;
@@ -518,10 +518,10 @@ public class TestRSA extends UcryptoTest {
             System.err.println("VERIFY1 ERROR: unexpected exception: " + ex);
             ex.printStackTrace();
         }
-	if (verify && sigTestPassed && testInit && testInit2) {
-	    System.err.println("=> PASS");
-	    return true;
-	}
-	return false;
+        if (verify && sigTestPassed && testInit && testInit2) {
+            System.err.println("=> PASS");
+            return true;
+        }
+        return false;
     }
 }

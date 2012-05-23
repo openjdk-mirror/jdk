@@ -55,7 +55,7 @@ public class TestAES extends UcryptoTest {
         main(new TestAES(), null);
     }
 
-    public boolean doTest(Provider prov) 
+    public boolean doTest(Provider prov)
     throws NoSuchAlgorithmException {
         // Provider for testing Interoperability
         Provider sunJCEProv = Security.getProvider("SunJCE");
@@ -69,7 +69,7 @@ public class TestAES extends UcryptoTest {
         boolean result5 = testCipherKeyWrapping(PADDEDCIPHER_ALGOS, CIPHER_KEY, prov, sunJCEProv);
         boolean result6 = testCipherGCM(CIPHER_KEY, prov);
 
-	return result1 && result2 && result3 && result4 && result5 && result6;
+        return result1 && result2 && result3 && result4 && result5 && result6;
     }
 
     private static boolean testCipherInterop(String[] algos, SecretKey key,
@@ -128,12 +128,12 @@ public class TestAES extends UcryptoTest {
         } else {
             System.err.println("One or more CIPHER Interop tests failed!");
         }
-	
-	return testPassed;
+
+        return testPassed;
     }
 
     private static boolean testCipherOffset(String[] algos, SecretKey key,
-					    Provider p) {
+                                            Provider p) {
         boolean testPassed = true;
         byte[] in = new byte[16];
         (new SecureRandom()).nextBytes(in);
@@ -189,12 +189,12 @@ public class TestAES extends UcryptoTest {
         } else {
             System.err.println("One or more CIPHER offset tests failed!");
         }
-	
-	return testPassed;
+
+        return testPassed;
     }
 
     private static boolean testCipherKeyWrapping(String[] algos, SecretKey key,
-						 Provider p, Provider interopP)
+                                                 Provider p, Provider interopP)
         throws NoSuchAlgorithmException {
         boolean testPassed = true;
 
@@ -219,12 +219,12 @@ public class TestAES extends UcryptoTest {
                     System.err.println("Skipping Unsupported CIP algo: " + algos[i]);
                     continue;
                 }
-		try {
-		    c1.init(Cipher.WRAP_MODE, key, (AlgorithmParameters)null, null);
-		} catch (InvalidAlgorithmParameterException e) {
-		    System.err.println("Skipping due to lack of WRAP_MODE support.");
-		    continue;
-		}
+                try {
+                    c1.init(Cipher.WRAP_MODE, key, (AlgorithmParameters)null, null);
+                } catch (InvalidAlgorithmParameterException e) {
+                    System.err.println("Skipping due to lack of WRAP_MODE support.");
+                    continue;
+                }
                 AlgorithmParameters params = c1.getParameters();
                 Cipher c2 = Cipher.getInstance(algos[i], interopP);
                 c2.init(Cipher.UNWRAP_MODE, key, params, null);
@@ -262,12 +262,12 @@ public class TestAES extends UcryptoTest {
             System.err.println("One or more CIPHER keywrapping tests failed!");
         }
 
-	return testPassed;
+        return testPassed;
     }
 
 
     private static boolean testCipherGCM(SecretKey key,
-					 Provider p) {
+                                         Provider p) {
         boolean testPassed = true;
         byte[] in = new byte[16];
         (new SecureRandom()).nextBytes(in);
@@ -318,7 +318,7 @@ public class TestAES extends UcryptoTest {
             System.err.println("One or more CIPHER GCM tests failed!");
         }
 
-	return testPassed;
+        return testPassed;
     }
 
     private static boolean checkArrays(byte[] a1, int a1Len, byte[] a2, int a2Len) {

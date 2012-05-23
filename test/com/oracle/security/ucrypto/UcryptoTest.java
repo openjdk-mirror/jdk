@@ -49,21 +49,21 @@ public abstract class UcryptoTest {
     public static void main(UcryptoTest test, String config) throws Exception {
         Provider prov = null;
         if (hasUcrypto && config != null) {
-	    prov = getCustomizedUcrypto(config);
+            prov = getCustomizedUcrypto(config);
         }
-	List<Provider> providers = Arrays.asList(Security.getProviders());
-	if (prov != null)
-	    providers.add(prov);
-	List<String> failures = new ArrayList<String>();
-	for (Provider p : providers) {
-	    System.err.println("Testing provider: " + p);
-	    if (!test.doTest(p))
-		failures.add(p.getName());
-	}
-	if (failures.size() != 0)
-	    throw new RuntimeException("The following providers failed: " +
-				       failures);
-	System.err.println("All providers passed.");
+        List<Provider> providers = Arrays.asList(Security.getProviders());
+        if (prov != null)
+            providers.add(prov);
+        List<String> failures = new ArrayList<String>();
+        for (Provider p : providers) {
+            System.err.println("Testing provider: " + p);
+            if (!test.doTest(p))
+                failures.add(p.getName());
+        }
+        if (failures.size() != 0)
+            throw new RuntimeException("The following providers failed: " +
+                                       failures);
+        System.err.println("All providers passed.");
     }
 
 }

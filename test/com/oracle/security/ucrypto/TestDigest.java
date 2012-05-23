@@ -124,6 +124,6 @@ public class TestDigest extends UcryptoTest {
             System.err.println("One or more MD test failed!");
         }
 
-	return testPassed;
+        return testPassed;
     }
 }
