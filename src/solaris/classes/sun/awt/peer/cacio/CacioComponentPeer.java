@@ -46,6 +46,7 @@ import java.awt.Toolkit;
 import java.awt.Transparency;
 import java.awt.Window;
 
+import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -88,7 +89,7 @@ import sun.java2d.pipe.Region;
  * Swing component.</li>
  * </ul>
  */
-public class CacioComponentPeer<AWTComponentType extends Component,
+class CacioComponentPeer<AWTComponentType extends Component,
                          SwingComponentType extends JComponent>
     implements ComponentPeer, CacioComponent {
 
@@ -374,6 +375,10 @@ public class CacioComponentPeer<AWTComponentType extends Component,
         case FocusEvent.FOCUS_LOST:
           handleFocusEvent((FocusEvent)e);
           break;
+        case ComponentEvent.COMPONENT_MOVED:
+        case ComponentEvent.COMPONENT_RESIZED:
+          handleComponentEvent((ComponentEvent) e);
+          break;
         default:
           // Other event types are not handled here.
           break;
@@ -427,6 +432,15 @@ public class CacioComponentPeer<AWTComponentType extends Component,
         
         if (proxy != null)
             proxy.handleFocusEvent(e);
+    }
+
+    protected void handleComponentEvent(ComponentEvent e) {
+    	if (proxy != null) {
+            Rectangle bounds = AWTAccessor.getComponentAccessor().
+                getBounds(awtComponent);
+            setBoundsImpl(bounds.x, bounds.y, bounds.width, bounds.height,
+                ComponentPeer.SET_BOUNDS, false);
+    	}
     }
 
     protected void peerPaint(Graphics g, boolean update) {
@@ -585,20 +599,11 @@ public class CacioComponentPeer<AWTComponentType extends Component,
         return swingComponent.getForeground();
     }
 
-    private void setBoundsImpl(int x, int y, int width, int height, int op) {
+    private void setBoundsImpl(int x, int y, int width, int height, int op,
+            boolean updatePlatformWindow) {
 
-        platformWindow.setBounds(x, y, width, height, op);
-
-    }
-
-    void setViewport(int vx, int vy, int vw, int vh) {
-        setBoundsImpl(vx, vy, vw, vh, SET_BOUNDS);
-        viewRect = new Rectangle(vx, vy, vw, vh);
-    }
-
-    public void setBounds(int x, int y, int width, int height, int op) {
-
-        setBoundsImpl(x, y, width, height, op);
+        if (updatePlatformWindow)
+            platformWindow.setBounds(x, y, width, height, op);
 
         if (proxy != null) {
             // Use the updated bounds from the awtCompnent here. The new bounds
@@ -617,6 +622,16 @@ public class CacioComponentPeer<AWTComponentType extends Component,
             // laid out correctly.
             swingComponent.validate();
         }
+    }
+
+    void setViewport(int vx, int vy, int vw, int vh) {
+        setBoundsImpl(vx, vy, vw, vh, SET_BOUNDS, true);
+        viewRect = new Rectangle(vx, vy, vw, vh);
+    }
+
+    public void setBounds(int x, int y, int width, int height, int op) {
+
+        setBoundsImpl(x, y, width, height, op, true);
     }
 
     public void setEnabled(boolean enable) {
