@@ -132,7 +132,8 @@ ifeq ($(PLATFORM), haiku)
   ifndef BUILD_HEADLESS_ONLY
     OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt
   else
-    OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lawt -L$(LIBDIR)/$(LIBARCH)/headless -lmawt
+    OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lawt
+#-L$(LIBDIR)/$(LIBARCH)/headless -lmawt
     CFLAGS += -DHEADLESS
   endif
 endif # PLATFORM
