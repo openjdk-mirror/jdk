@@ -230,7 +230,9 @@ PlatformFrame::FrameMoved(BPoint origin)
 {
 	int x = origin.x;
 	int y = origin.y;
+	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventMove", "(II)V", x, y);
+	LockLooper();
 	BWindow::FrameMoved(origin);
 }
 
@@ -240,7 +242,9 @@ PlatformFrame::FrameResized(float width, float height)
 {
 	int w = width + 1;
 	int h = height + 1;
+	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventResize", "(II)V", w, h);
+	LockLooper();
 	BWindow::FrameResized(width, height);
 }
 

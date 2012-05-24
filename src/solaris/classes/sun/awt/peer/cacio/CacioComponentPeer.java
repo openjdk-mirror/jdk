@@ -88,7 +88,7 @@ import sun.java2d.pipe.Region;
  * Swing component.</li>
  * </ul>
  */
-class CacioComponentPeer<AWTComponentType extends Component,
+public class CacioComponentPeer<AWTComponentType extends Component,
                          SwingComponentType extends JComponent>
     implements ComponentPeer, CacioComponent {
 

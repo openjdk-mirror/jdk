@@ -43,6 +43,7 @@ import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.peer.ComponentPeer;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.ColorModel;
@@ -53,6 +54,7 @@ import sun.awt.AWTAccessor;
 import sun.awt.CausedFocusEvent.Cause;
 import sun.awt.PaintEventDispatcher;
 import sun.awt.peer.cacio.CacioComponent;
+import sun.awt.peer.cacio.CacioComponentPeer;
 import sun.awt.peer.cacio.PlatformToplevelWindow;
 import sun.awt.peer.cacio.PlatformWindow;
 import sun.awt.SunToolkit;
@@ -205,6 +207,8 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     	AWTAccessor.getComponentAccessor().setSize(awtComp, width, height);
         ComponentEvent ev = new ComponentEvent(awtComp,
         	ComponentEvent.COMPONENT_RESIZED);
+        Point p = AWTAccessor.getComponentAccessor().getLocation(awtComp);
+        ((CacioComponentPeer)cacioComponent).setBounds(p.x, p.y, width, height, ComponentPeer.SET_SIZE);
         postEvent(cacioComponent, ev);
     }
     
@@ -213,6 +217,8 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     	AWTAccessor.getComponentAccessor().setLocation(awtComp, x, y);
         ComponentEvent ev = new ComponentEvent(awtComp,
         	ComponentEvent.COMPONENT_MOVED);
+        Rectangle b = AWTAccessor.getComponentAccessor().getBounds(awtComp);
+        ((CacioComponentPeer)cacioComponent).setBounds(x, y, b.width, b.height, ComponentPeer.SET_LOCATION);
         postEvent(cacioComponent, ev);
     }
     
