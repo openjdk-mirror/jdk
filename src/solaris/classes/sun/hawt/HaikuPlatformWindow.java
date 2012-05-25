@@ -35,6 +35,7 @@ import java.awt.Dialog;
 
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.PaintEvent;
@@ -254,6 +255,20 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     		focused ? FocusEvent.FOCUS_GAINED : FocusEvent.FOCUS_LOST);
     	postEvent(cacioComponent, ev);
     }
+
+    public void eventKey(int id, long when, int modifiers, int keyCode,
+            int keyLocation) {
+        KeyEvent ev = new KeyEvent(cacioComponent.getAWTComponent(), id,
+            when, modifiers, keyCode, KeyEvent.CHAR_UNDEFINED, keyLocation);
+        postEvent(cacioComponent, ev);
+    }
+
+	public void eventKeyTyped(long when, int modifiers, String keyChar) {
+        KeyEvent ev = new KeyEvent(cacioComponent.getAWTComponent(),
+            KeyEvent.KEY_TYPED, when, modifiers, KeyEvent.VK_UNDEFINED,
+            keyChar.charAt(0), KeyEvent.KEY_LOCATION_UNKNOWN);
+        postEvent(cacioComponent, ev);		
+	}
 
 	private void handleMouseDown(long when, int modifiers, int x, int y,
 			int clicks, int button) {

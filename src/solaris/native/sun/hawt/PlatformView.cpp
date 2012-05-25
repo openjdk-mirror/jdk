@@ -245,11 +245,27 @@ PlatformView::FrameResized(float width, float height)
 
 
 void
+PlatformView::KeyDown(const char* bytes, int32 numBytes)
+{
+	_HandleKeyEvent(Window()->CurrentMessage());
+}
+
+
+void
+PlatformView::KeyUp(const char* bytes, int32 numBytes)
+{
+	_HandleKeyEvent(Window()->CurrentMessage());
+}
+
+
+void
 PlatformView::MakeFocus(bool focused)
 {
 	printf("Going to call MakeFocus...\n");
 	DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
 	BView::MakeFocus(focused);
+	
+	printf("This: %p CF: %p\n", this, Window()->CurrentFocus());
 }
 
 
@@ -257,9 +273,7 @@ void
 PlatformView::MessageReceived(BMessage* message)
 {
 	switch (message->what) {
-		case B_KEY_DOWN:
 		case B_UNMAPPED_KEY_DOWN:
-		case B_KEY_UP:
 		case B_UNMAPPED_KEY_UP:
 			_HandleKeyEvent(message);
 			break;
@@ -321,11 +335,14 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 
 	mods = ConvertInputModifiersToJava(modifiers);
 	ConvertKeyCodeToJava(key, modifiers, &keyCode, &keyLocation);
-	DoCallback(fPlatformWindow, "eventKey", "(IJIIII)V", id,
-		(jlong)(when / 1000), mods, keyCode, keyChar, keyLocation);
+	DoCallback(fPlatformWindow, "eventKey", "(IJIII)V", id,
+		(jlong)(when / 1000), mods, keyCode, keyLocation);
 
 	BString bytes;
 	if (message->FindString("bytes", &bytes) == B_OK) {
+		// Don't really get what this is about
+		// I just copied it from the 1.4.2 port  vvvvvvvvv
+		
 		// If we hava a key field that's non-zero, respond on KEY_UP.
 		// If we don't have a key field (key is zero), we need to fire on KEY_DOWN.
 		if ((key != 0 && (message->what == B_KEY_UP || message->what == B_UNMAPPED_KEY_UP)) ||
@@ -334,9 +351,16 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 			id = java_awt_event_KeyEvent_KEY_TYPED;
 			keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
 			keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
-			keyChar = bytes.ByteAt(0);
-			DoCallback(fPlatformWindow, "eventKey", "(IJIIII)V", id,
-				(jlong)(when / 1000), mods, keyCode, keyChar, keyLocation);
+			
+    		JNIEnv* env = NULL;
+    		jvm->AttachCurrentThread((void**)&env, NULL);
+			jstring keyChar = env->NewStringUTF(bytes.String());
+			if (keyChar == NULL)
+				return;
+
+			DoCallback(fPlatformWindow, "eventKeyTyped",
+				"(JILjava/lang/String;)V", (jlong)(when / 1000), mods, keyChar);
+			env->DeleteLocalRef(keyChar);
 		}
 	}
 }

@@ -53,6 +53,8 @@ public:
 	virtual	void			Draw(BRect updateRect);
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
+	virtual	void			KeyDown(const char* bytes, int32 numBytes);
+	virtual	void			KeyUp(const char* bytes, int32 numBytes);
 	virtual	void			MakeFocus(bool focused);
 	virtual	void			MessageReceived(BMessage* message);
 	virtual	void			MouseDown(BPoint point);
