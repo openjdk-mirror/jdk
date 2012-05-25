@@ -26,8 +26,6 @@
 
 package sun.lwawt;
 
-import sun.awt.CGraphicsConfig;
-
 import java.awt.BufferCapabilities;
 import java.awt.BufferCapabilities.FlipContents;
 import java.awt.Canvas;
@@ -47,22 +45,22 @@ final class LWCanvasPeer extends LWComponentPeer<Component, JComponent>
     /**
      * The back buffer provide user with a BufferStrategy.
      */
-    private VolatileImage backBuffer;
+/*    private VolatileImage backBuffer;*/
 
     LWCanvasPeer(final Canvas target,
                  final PlatformComponent platformComponent) {
         super(target, platformComponent);
     }
 
-    @Override
+/*    @Override
     public void createBuffers(final int numBuffers,
                               final BufferCapabilities caps) {
         //TODO parameters should be used.
-        final CGraphicsConfig gc = (CGraphicsConfig) getGraphicsConfiguration();
-        final VolatileImage buffer = gc.createBackBufferImage(getTarget(), 0);
-        synchronized (getStateLock()) {
-            backBuffer = buffer;
-        }
+        //final CGraphicsConfig gc = (CGraphicsConfig) getGraphicsConfiguration();
+        //final VolatileImage buffer = gc.createBackBufferImage(getTarget(), 0);
+        //synchronized (getStateLock()) {
+        //    backBuffer = buffer;
+        //}
     }
 
     @Override
@@ -107,7 +105,7 @@ final class LWCanvasPeer extends LWComponentPeer<Component, JComponent>
             }
             buffer.flush();
         }
-    }
+    }*/
 
     @Override
     public GraphicsConfiguration getAppropriateGraphicsConfiguration(

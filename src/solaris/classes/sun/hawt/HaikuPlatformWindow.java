@@ -52,16 +52,17 @@ import java.awt.Window;
 import sun.awt.AWTAccessor;
 import sun.awt.CausedFocusEvent.Cause;
 import sun.awt.PaintEventDispatcher;
-import sun.awt.peer.cacio.CacioComponent;
-import sun.awt.peer.cacio.PlatformToplevelWindow;
-import sun.awt.peer.cacio.PlatformWindow;
+
+import sun.lwawt.*;
+import sun.lwawt.LWWindowPeer.PeerType;
+
 import sun.awt.SunToolkit;
 import sun.java2d.NullSurfaceData;
 import sun.java2d.pipe.Region;
 import sun.java2d.SunGraphics2D;
 import sun.java2d.SurfaceData;
 
-class HaikuPlatformWindow implements PlatformToplevelWindow {
+class HaikuPlatformWindow implements PlatformWindow {
 
     static {
         initIDs();
@@ -72,6 +73,8 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     private HaikuWindowSurfaceData surfaceData;
     private CacioComponent cacioComponent;
     private HaikuPlatformWindow parent;
+    
+    private PeerType peerType;
     
     private int windowState = Frame.NORMAL;
 
@@ -91,6 +94,10 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     	Point location);
     private native void nativeDispose(long nativeWindow);
     private native void nativeFocus(long nativeWindow);
+
+    public HaikuPlatformWindow(final PeerType peerType) {
+    	this.peerType = peerType;
+    }
 
     HaikuPlatformWindow(CacioComponent cacioComponent,
     		HaikuPlatformWindow parent, boolean toplevel, int x, int y,
@@ -116,6 +123,45 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         this.toplevel = toplevel;
     }
 
+    /*
+     * Delegate initialization (create native window and all the
+     * related resources).
+     */
+    @Override // PlatformWindow
+    public void initialize(Window target, LWWindowPeer peer, PlatformWindow owner) {
+        this.peer = peer;
+        this.target = target;
+        if (owner instanceof HaikuPlatformWindow) {
+            this.owner = (HaikuPlatformWindow)owner;
+        }
+
+        nativeWindow = nativeInitFrame(0, 0, 0, 0, peerType != PeerType.SIMPLE_WINDOW);
+    }
+
+    @Override // PlatformWindow
+    public void setMenuBar(MenuBar mb) {
+        System.err.println("todo");
+    }
+    
+    
+    @Override // PlatformWindow
+    public Image createBackBuffer() {
+    	return null;
+    }
+    
+        @Override // PlatformWindow
+    public void flip(int x1, int y1, int x2, int y2, FlipContents flipAction) {
+        // TODO: not implemented
+        (new RuntimeException("unimplemented")).printStackTrace();
+    }
+
+    @Override // PlatformWindow
+    public FontMetrics getFontMetrics(Font f) {
+        // TODO: not implemented
+        (new RuntimeException("unimplemented")).printStackTrace();
+        return null;
+    }
+    
     public CacioComponent getCacioComponent() {
         return cacioComponent;
     }

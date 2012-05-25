@@ -37,26 +37,48 @@ import java.awt.peer.*;
 import java.util.*;
 import java.util.logging.*;
 import sun.awt.*;
-import sun.awt.peer.cacio.*;
+import sun.lwawt.*;
+import sun.lwawt.LWWindowPeer.PeerType;
 
-public class HaikuToolkit extends CacioToolkit {
+public class HaikuToolkit extends LWToolkit {
 
 	static {
 		System.loadLibrary("awt");
 	}
-
-    private PlatformWindowFactory platformWindow;
 
     public HaikuToolkit() {
         super();
     }
 
     @Override
-    public synchronized PlatformWindowFactory getPlatformWindowFactory() {
-        if (platformWindow == null) {
-            platformWindow = new HaikuPlatformWindowFactory();
+    protected PlatformWindow createPlatformWindow(PeerType peerType) {
+        if (peerType == PeerType.EMBEDDEDFRAME) {
+        	return null;
+            //return new CPlatformEmbeddedFrame();
+        } else {
+            return new HaikuPlatformWindow(peerType);
         }
-        return platformWindow;
+    }
+
+    @Override
+    protected PlatformComponent createPlatformComponent() {
+        return new HaikuPlatformComponent();
+    }
+
+    @Override
+    protected void platformCleanup() {
+    }
+
+    @Override
+    protected void platformInit() {
+    }
+
+    @Override
+    protected void platformRunMessage() {
+    }
+
+    @Override
+    protected void platformShutdown() {
     }
 
     @Override
@@ -73,12 +95,48 @@ public class HaikuToolkit extends CacioToolkit {
     }
 
     @Override
+    public LWCursorManager getCursorManager() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    protected FileDialogPeer createFileDialogPeer(FileDialog target) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public MenuPeer createMenu(Menu target) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public MenuBarPeer createMenuBar(MenuBar target) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public MenuItemPeer createMenuItem(MenuItem target) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public CheckboxMenuItemPeer createCheckboxMenuItem(CheckboxMenuItem target) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public PopupMenuPeer createPopupMenu(PopupMenu target) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+
+    @Override
     public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) throws InvalidDnDOperationException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public TrayIconPeer createTrayIcon(TrayIcon target) throws HeadlessException, AWTException {
+    public TrayIconPeer createTrayIcon(TrayIcon target) throws HeadlessException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
@@ -98,7 +156,7 @@ public class HaikuToolkit extends CacioToolkit {
     }
 
     @Override
-    public RobotPeer createRobot(Robot target, GraphicsDevice screen) throws AWTException {
+    public RobotPeer createRobot(Robot target, GraphicsDevice screen) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
@@ -182,5 +240,10 @@ public class HaikuToolkit extends CacioToolkit {
 
     public InputMethodDescriptor getInputMethodAdapterDescriptor() throws AWTException {
         return null;
+    }
+    
+    @Override
+    public boolean isApplicationActive() {
+    	return true;
     }
 }

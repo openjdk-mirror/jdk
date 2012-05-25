@@ -62,7 +62,6 @@ import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.RepaintManager;
 
-import sun.lwawt.macosx.CDropTarget;
 
 import com.sun.java.swing.SwingUtilities3;
 
@@ -135,7 +134,6 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     private final Object dropTargetLock = new Object();
 
     private int fNumDropTargets = 0;
-    private CDropTarget fDropTarget = null;
 
     private PlatformComponent platformComponent;
 
@@ -1010,7 +1008,7 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     // DropTargetPeer Method
     @Override
     public void addDropTarget(DropTarget dt) {
-        LWWindowPeer winPeer = getWindowPeerOrSelf();
+        /*LWWindowPeer winPeer = getWindowPeerOrSelf();
         if (winPeer != null && winPeer != this) {
             // We need to register the DropTarget in the
             // peer of the window ancestor of the component
@@ -1028,13 +1026,13 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
                     fDropTarget = CDropTarget.createDropTarget(dt, target, this);
                 }
             }
-        }
+        }*/
     }
 
     // DropTargetPeer Method
     @Override
     public void removeDropTarget(DropTarget dt) {
-        LWWindowPeer winPeer = getWindowPeerOrSelf();
+        /*LWWindowPeer winPeer = getWindowPeerOrSelf();
         if (winPeer != null && winPeer != this) {
             // We need to unregister the DropTarget in the
             // peer of the window ancestor of the component
@@ -1053,7 +1051,7 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
                         System.err.println("CComponent.removeDropTarget(): current drop target is null.");
                 }
             }
-        }
+        }*/
     }
 
     // ---- PEER NOTIFICATIONS ---- //

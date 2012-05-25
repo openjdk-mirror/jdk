@@ -36,7 +36,6 @@ import java.security.*;
 import java.util.*;
 
 import sun.awt.*;
-import sun.lwawt.macosx.*;
 import sun.print.*;
 
 public abstract class LWToolkit extends SunToolkit implements Runnable {
@@ -232,25 +231,25 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
         return createDelegatedPeer(target, platformComponent, platformWindow);
     }
 
-    public LWWindowPeer createEmbeddedFrame(CEmbeddedFrame target) {
-        PlatformComponent platformComponent = createPlatformComponent();
-        PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.EMBEDDEDFRAME);
-        return createDelegatedPeer(target, platformComponent, platformWindow);
-    }
+    //public LWWindowPeer createEmbeddedFrame(CEmbeddedFrame target) {
+    //    PlatformComponent platformComponent = createPlatformComponent();
+    //    PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.EMBEDDEDFRAME);
+    //    return createDelegatedPeer(target, platformComponent, platformWindow);
+    //}
 
-    CPrinterDialogPeer createCPrinterDialog(CPrinterDialog target) {
-        PlatformComponent platformComponent = createPlatformComponent();
-        PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.DIALOG);
-        CPrinterDialogPeer peer = new CPrinterDialogPeer(target, platformComponent, platformWindow);
-        targetCreatedPeer(target, peer);
-        return peer;
-    }
+    //CPrinterDialogPeer createCPrinterDialog(CPrinterDialog target) {
+    //    PlatformComponent platformComponent = createPlatformComponent();
+    //    PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.DIALOG);
+    //    CPrinterDialogPeer peer = new CPrinterDialogPeer(target, platformComponent, platformWindow);
+    //    targetCreatedPeer(target, peer);
+    //    return peer;
+    //}
 
     @Override
     public DialogPeer createDialog(Dialog target) {
-        if (target instanceof CPrinterDialog) {
-            return createCPrinterDialog((CPrinterDialog)target);
-        }
+        //if (target instanceof CPrinterDialog) {
+        //    return createCPrinterDialog((CPrinterDialog)target);
+        //}
 
         PlatformComponent platformComponent = createPlatformComponent();
         PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.DIALOG);
@@ -402,17 +401,17 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
         return true;
     }
 
-    @Override
-    protected DesktopPeer createDesktopPeer(Desktop target) {
-       return new CDesktopPeer();
-    }
+    //@Override
+    //protected DesktopPeer createDesktopPeer(Desktop target) {
+    //   return new CDesktopPeer();
+    //}
 
-    @Override
-    public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) {
-        DragSourceContextPeer dscp = CDragSourceContextPeer.createDragSourceContextPeer(dge);
+    //@Override
+    //public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) {
+    //    DragSourceContextPeer dscp = CDragSourceContextPeer.createDragSourceContextPeer(dge);
 
-        return dscp;
-    }
+    //    return dscp;
+    //}
 
     @Override
     public KeyboardFocusManagerPeer createKeyboardFocusManagerPeer(KeyboardFocusManager manager) {
