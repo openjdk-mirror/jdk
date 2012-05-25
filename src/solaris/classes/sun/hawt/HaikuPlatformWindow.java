@@ -32,11 +32,14 @@ import java.awt.BufferCapabilities.FlipContents;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
+
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.event.PaintEvent;
 import java.awt.event.WindowEvent;
+
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Graphics2D;
@@ -304,7 +307,17 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 			postEvent(cacioComponent, ev);
 		}
 	}
-    
+
+    public void eventWheel(long when, int modifiers, int x, int y,
+    		int scrollType, int scrollAmount, int wheelRotation) {
+    	System.err.println("mouse wheel event " + scrollType +  " " + scrollAmount + " " + wheelRotation);
+		Component awtComp = cacioComponent.getAWTComponent();
+    	MouseWheelEvent ev = new MouseWheelEvent(awtComp,
+    		MouseWheelEvent.MOUSE_WHEEL, when, modifiers, x, y, 0, false,
+    		scrollType, scrollAmount, wheelRotation);
+    	postEvent(cacioComponent, ev);	
+    }
+
     private void postEvent(CacioComponent component, AWTEvent ev) {
 		component.handlePeerEvent(ev);
     }

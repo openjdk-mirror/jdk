@@ -32,6 +32,7 @@
 
 #include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_MouseEvent.h"
+#include "java_awt_event_MouseWheelEvent.h"
 
 PlatformView::PlatformView(jobject platformWindow, bool root)
 	:
@@ -262,6 +263,9 @@ PlatformView::MessageReceived(BMessage* message)
 		case B_UNMAPPED_KEY_UP:
 			_HandleKeyEvent(message);
 			break;
+		case B_MOUSE_WHEEL_CHANGED:
+			_HandleWheelEvent(message);
+			break;
 		default:
 			break;
 	}
@@ -409,5 +413,40 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		(jint)clicks, javaPressed, javaReleased);
+	LockLooper();
+}
+
+
+void
+PlatformView::_HandleWheelEvent(BMessage* message)
+{
+	int64 when = 0;
+	message->FindInt64("when", &when);
+	int32 modifiers = ::modifiers();
+	
+	uint32 buttons = 0;
+	BPoint point;
+	GetMouse(&point, &buttons);
+
+	jint mods = ConvertInputModifiersToJava(modifiers);
+	if (buttons & B_PRIMARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
+	if (buttons & B_SECONDARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
+	if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+
+	float wheelRotation = 0;
+	message->FindFloat("be:wheel_delta_y", &wheelRotation);
+	
+	jint scrollType = java_awt_event_MouseWheelEvent_WHEEL_UNIT_SCROLL;
+	if ((modifiers & (B_OPTION_KEY | B_COMMAND_KEY | B_CONTROL_KEY)) != 0)
+	    scrollType = java_awt_event_MouseWheelEvent_WHEEL_BLOCK_SCROLL;
+
+	jint scrollAmount = 3;
+	UnlockLooper();
+	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIII)V",
+		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y, scrollType,
+		scrollAmount, (jint)wheelRotation);
 	LockLooper();
 }

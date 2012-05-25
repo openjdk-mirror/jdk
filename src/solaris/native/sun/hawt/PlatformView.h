@@ -64,6 +64,7 @@ private:
 			void			_HandleKeyEvent(BMessage* message);
 			void			_HandleMouseEvent(BMessage* message, BPoint point,
 								uint32 transit = 0);
+			void			_HandleWheelEvent(BMessage* message);
 
 private:
 			bool			fRoot;
