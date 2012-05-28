@@ -74,7 +74,7 @@ public class WToolkit extends SunToolkit implements Runnable {
     WClipboard clipboard;
 
     // cache of font peers
-    private Hashtable cacheFontPeer;
+    private Hashtable<String,FontPeer> cacheFontPeer;
 
     // Windows properties
     private WDesktopProperties  wprops;
@@ -94,7 +94,12 @@ public class WToolkit extends SunToolkit implements Runnable {
     public static void loadLibraries() {
         if (!loaded) {
             java.security.AccessController.doPrivileged(
-                          new sun.security.action.LoadLibraryAction("awt"));
+                new java.security.PrivilegedAction<Void>() {
+                    public Void run() {
+                        System.loadLibrary("awt");
+                        return null;
+                    }
+                });
             loaded = true;
         }
     }
@@ -110,10 +115,10 @@ public class WToolkit extends SunToolkit implements Runnable {
             log.fine("Win version: " + getWindowsVersion());
         }
 
-        java.security.AccessController.doPrivileged(
-            new java.security.PrivilegedAction()
+        AccessController.doPrivileged(
+            new PrivilegedAction <Void> ()
         {
-            public Object run() {
+            public Void run() {
                 String browserProp = System.getProperty("browser");
                 if (browserProp != null && browserProp.equals("sun.plugin")) {
                     disableCustomPalette();
@@ -261,8 +266,8 @@ public class WToolkit extends SunToolkit implements Runnable {
     }
 
     private final void registerShutdownHook() {
-        AccessController.doPrivileged(new PrivilegedAction() {
-            public Object run() {
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+            public Void run() {
                 ThreadGroup currentTG =
                     Thread.currentThread().getThreadGroup();
                 ThreadGroup parentTG = currentTG.getParent();
@@ -399,6 +404,7 @@ public class WToolkit extends SunToolkit implements Runnable {
         return peer;
     }
 
+    @SuppressWarnings("deprecation")
     public void disableBackgroundErase(Canvas canvas) {
         WCanvasPeer peer = (WCanvasPeer)canvas.getPeer();
         if (peer == null) {
@@ -592,7 +598,7 @@ public class WToolkit extends SunToolkit implements Runnable {
         FontPeer retval = null;
         String lcName = name.toLowerCase();
         if (null != cacheFontPeer) {
-            retval = (FontPeer)cacheFontPeer.get(lcName + style);
+            retval = cacheFontPeer.get(lcName + style);
             if (null != retval) {
                 return retval;
             }
@@ -600,7 +606,7 @@ public class WToolkit extends SunToolkit implements Runnable {
         retval = new WFontPeer(name, style);
         if (retval != null) {
             if (null == cacheFontPeer) {
-                cacheFontPeer = new Hashtable(5, (float)0.9);
+                cacheFontPeer = new Hashtable<>(5, 0.9f);
             }
             if (null != cacheFontPeer) {
                 cacheFontPeer.put(lcName + style, retval);
@@ -698,7 +704,9 @@ public class WToolkit extends SunToolkit implements Runnable {
     /**
      * Returns a style map for the input method highlight.
      */
-    public Map mapInputMethodHighlight(InputMethodHighlight highlight) {
+    public Map<java.awt.font.TextAttribute,?> mapInputMethodHighlight(
+        InputMethodHighlight highlight)
+    {
         return WInputMethod.mapInputMethodHighlight(highlight);
     }
 
@@ -879,6 +887,10 @@ public class WToolkit extends SunToolkit implements Runnable {
     }
 
     public synchronized void addPropertyChangeListener(String name, PropertyChangeListener pcl) {
+        if (name == null) {
+            // See JavaDoc for the Toolkit.addPropertyChangeListener() method
+            return;
+        }
         if ( WDesktopProperties.isWindowsProperty(name)
              || name.startsWith(awtPrefix)
              || name.startsWith(dndPrefix))
@@ -964,12 +976,14 @@ public class WToolkit extends SunToolkit implements Runnable {
         return !Win32GraphicsEnvironment.isDWMCompositionEnabled();
     }
 
+    @SuppressWarnings("deprecation")
     public void grab(Window w) {
         if (w.getPeer() != null) {
             ((WWindowPeer)w.getPeer()).grab();
         }
     }
 
+    @SuppressWarnings("deprecation")
     public void ungrab(Window w) {
         if (w.getPeer() != null) {
            ((WWindowPeer)w.getPeer()).ungrab();

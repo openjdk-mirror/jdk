@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2009, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -109,6 +109,9 @@ ifndef OPENJDK
   endif
 endif
 
+JAVAC_MAX_WARNINGS=false
+JAVAC_LINT_OPTIONS=-Xlint:all,-deprecation
+JAVAC_WARNINGS_FATAL=true
 include $(BUILDDIR)/common/Defs.gmk
 
 #
@@ -156,7 +159,9 @@ ifeq ($(NATIVE_ECC_AVAILABLE), true)
       $(PKGDIR)/ECDSASignature.java \
       $(PKGDIR)/ECKeyPairGenerator.java
 
-  JAVAHFLAGS += -classpath $(CLASSDESTDIR)
+  JAVAHFLAGS = -bootclasspath \
+      "$(CLASSDESTDIR)$(CLASSPATH_SEPARATOR)$(CLASSBINDIR)$(JCE_PATH)"
+
 
   #
   # C and C++ files
@@ -189,10 +194,8 @@ ifeq ($(NATIVE_ECC_AVAILABLE), true)
   #
   # Libraries to link
   #
-  ifeq ($(PLATFORM), windows)
-    OTHER_LDLIBS += $(JVMLIB)
-  else
-    OTHER_LDLIBS = -ldl $(JVMLIB) $(LIBCXX)
+  ifneq ($(PLATFORM), windows)
+    OTHER_LDLIBS = $(LIBCXX)
   endif
 
   include $(BUILDDIR)/common/Mapfile-vers.gmk

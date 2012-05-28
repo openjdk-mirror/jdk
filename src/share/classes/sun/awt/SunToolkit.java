@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,12 +35,15 @@ import java.awt.event.KeyEvent;
 import java.awt.image.*;
 import java.awt.TrayIcon;
 import java.awt.SystemTray;
+import java.awt.event.InputEvent;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import sun.security.util.SecurityConstants;
 import sun.util.logging.PlatformLogger;
 import sun.misc.SoftCache;
 import sun.font.FontDesignMetrics;
@@ -101,30 +104,28 @@ public abstract class SunToolkit extends Toolkit
      */
     public final static int MAX_BUTTONS_SUPPORTED = 20;
 
+    private static void initEQ(AppContext appContext) {
+        EventQueue eventQueue;
+
+        String eqName = System.getProperty("AWT.EventQueueClass",
+                "java.awt.EventQueue");
+
+        try {
+            eventQueue = (EventQueue)Class.forName(eqName).newInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Failed loading " + eqName + ": " + e);
+            eventQueue = new EventQueue();
+        }
+        appContext.put(AppContext.EVENT_QUEUE_KEY, eventQueue);
+
+        PostEventQueue postEventQueue = new PostEventQueue(eventQueue);
+        appContext.put(POST_EVENT_QUEUE_KEY, postEventQueue);
+    }
+
     public SunToolkit() {
-        Runnable initEQ = new Runnable() {
-            public void run () {
-                EventQueue eventQueue;
-
-                String eqName = System.getProperty("AWT.EventQueueClass",
-                                                   "java.awt.EventQueue");
-
-                try {
-                    eventQueue = (EventQueue)Class.forName(eqName).newInstance();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.err.println("Failed loading " + eqName + ": " + e);
-                    eventQueue = new EventQueue();
-                }
-                AppContext appContext = AppContext.getAppContext();
-                appContext.put(AppContext.EVENT_QUEUE_KEY, eventQueue);
-
-                PostEventQueue postEventQueue = new PostEventQueue(eventQueue);
-                appContext.put(POST_EVENT_QUEUE_KEY, postEventQueue);
-            }
-        };
-
-        initEQ.run();
+        // 7122796: Always create an EQ for the main AppContext
+        initEQ(AppContext.getMainAppContext());
     }
 
     public boolean useBufferPerWindow() {
@@ -197,6 +198,7 @@ public abstract class SunToolkit extends Toolkit
 
     public abstract boolean isTraySupported();
 
+    @SuppressWarnings("deprecation")
     public abstract FontPeer getFontPeer(String name, int style);
 
     public abstract RobotPeer createRobot(Robot target, GraphicsDevice screen)
@@ -288,24 +290,12 @@ public abstract class SunToolkit extends Toolkit
         // return correct values
         AppContext appContext = new AppContext(threadGroup);
 
-        EventQueue eventQueue;
-        String eqName = System.getProperty("AWT.EventQueueClass",
-                                           "java.awt.EventQueue");
-        try {
-            eventQueue = (EventQueue)Class.forName(eqName).newInstance();
-        } catch (Exception e) {
-            System.err.println("Failed loading " + eqName + ": " + e);
-            eventQueue = new EventQueue();
-        }
-        appContext.put(AppContext.EVENT_QUEUE_KEY, eventQueue);
-
-        PostEventQueue postEventQueue = new PostEventQueue(eventQueue);
-        appContext.put(POST_EVENT_QUEUE_KEY, postEventQueue);
+        initEQ(appContext);
 
         return appContext;
     }
 
-    public static Field getField(final Class klass, final String fieldName) {
+    public static Field getField(final Class<?> klass, final String fieldName) {
         return AccessController.doPrivileged(new PrivilegedAction<Field>() {
             public Field run() {
                 try {
@@ -325,8 +315,8 @@ public abstract class SunToolkit extends Toolkit
 
     static void wakeupEventQueue(EventQueue q, boolean isShutdown){
         if (wakeupMethod == null){
-            wakeupMethod = (Method)AccessController.doPrivileged(new PrivilegedAction(){
-                    public Object run(){
+            wakeupMethod = AccessController.doPrivileged(new PrivilegedAction<Method>() {
+                    public Method run() {
                         try {
                             Method method  = EventQueue.class.getDeclaredMethod("wakeup",new Class [] {Boolean.TYPE} );
                             if (method != null) {
@@ -386,8 +376,8 @@ public abstract class SunToolkit extends Toolkit
 
     // Maps from non-Component/MenuComponent to AppContext.
     // WeakHashMap<Component,AppContext>
-    private static final Map appContextMap =
-        Collections.synchronizedMap(new WeakHashMap());
+    private static final Map<Object, AppContext> appContextMap =
+        Collections.synchronizedMap(new WeakHashMap<Object, AppContext>());
 
     /**
      * Sets the appContext field of target. If target is not a Component or
@@ -437,7 +427,7 @@ public abstract class SunToolkit extends Toolkit
         if (context == null) {
             // target is not a Component/MenuComponent, try the
             // appContextMap.
-            context = (AppContext)appContextMap.get(target);
+            context = appContextMap.get(target);
         }
         return context;
     }
@@ -471,57 +461,20 @@ public abstract class SunToolkit extends Toolkit
         AWTAccessor.getWindowAccessor().setLWRequestStatus(changed, status);
     };
 
-    public static void checkAndSetPolicy(Container cont, boolean isSwingCont)
-    {
-        FocusTraversalPolicy defaultPolicy = KeyboardFocusManager
-            .getCurrentKeyboardFocusManager().getDefaultFocusTraversalPolicy();
+    public static void checkAndSetPolicy(Container cont) {
+        FocusTraversalPolicy defaultPolicy = KeyboardFocusManager.
+            getCurrentKeyboardFocusManager().
+                getDefaultFocusTraversalPolicy();
 
-        String toolkitName = Toolkit.getDefaultToolkit().getClass().getName();
-        // if this is not XAWT then use default policy
-        // because Swing change it
-        if (!"sun.awt.X11.XToolkit".equals(toolkitName)) {
-            cont.setFocusTraversalPolicy(defaultPolicy);
-            return;
-        }
-
-        String policyName = defaultPolicy.getClass().getName();
-
-        if (DefaultFocusTraversalPolicy.class != defaultPolicy.getClass()) {
-            // Policy was changed
-            // Check if it is awt policy or swing policy
-            // If it is Swing policy we shouldn't use it in AWT frames
-            // If it is AWT policy  we shouldn't use it in Swing frames
-            // Otherwise we should use this policy
-            if (policyName.startsWith("java.awt.")) {
-                // AWT
-                if (isSwingCont) {
-                    // Can't use AWT policy in Swing windows - should use Swing's one.
-                    defaultPolicy = createLayoutPolicy();
-                } else {
-                    // New awt policy.
-                }
-            } else if (policyName.startsWith("javax.swing.")) {
-                if (isSwingCont) {
-                    // New Swing's policy
-                } else {
-                    defaultPolicy = new DefaultFocusTraversalPolicy();
-                }
-            }
-        } else {
-            // Policy is default, use different default policy for swing
-            if (isSwingCont) {
-                defaultPolicy = createLayoutPolicy();
-            }
-        }
         cont.setFocusTraversalPolicy(defaultPolicy);
     }
 
     private static FocusTraversalPolicy createLayoutPolicy() {
         FocusTraversalPolicy policy = null;
         try {
-            Class layoutPolicyClass =
+            Class<?> layoutPolicyClass =
                 Class.forName("javax.swing.LayoutFocusTraversalPolicy");
-            policy = (FocusTraversalPolicy) layoutPolicyClass.newInstance();
+            policy = (FocusTraversalPolicy)layoutPolicyClass.newInstance();
         }
         catch (ClassNotFoundException e) {
             assert false;
@@ -591,7 +544,7 @@ public abstract class SunToolkit extends Toolkit
         postEvent(targetToAppContext(e.getSource()), pe);
     }
 
-    private static final Lock flushLock = new ReentrantLock();
+    protected static final Lock flushLock = new ReentrantLock();
     private static boolean isFlushingPendingEvents = false;
 
     /*
@@ -642,11 +595,13 @@ public abstract class SunToolkit extends Toolkit
      * Fixed 5064013: the InvocationEvent time should be equals
      * the time of the ActionEvent
      */
+    @SuppressWarnings("serial")
     public static void executeOnEventHandlerThread(Object target,
                                                    Runnable runnable,
                                                    final long when) {
-        executeOnEventHandlerThread(new PeerEvent(target, runnable, PeerEvent.PRIORITY_EVENT){
-                public long getWhen(){
+        executeOnEventHandlerThread(
+            new PeerEvent(target, runnable, PeerEvent.PRIORITY_EVENT) {
+                public long getWhen() {
                     return when;
                 }
             });
@@ -727,10 +682,12 @@ public abstract class SunToolkit extends Toolkit
     protected abstract int getScreenWidth();
     protected abstract int getScreenHeight();
 
+    @SuppressWarnings("deprecation")
     public FontMetrics getFontMetrics(Font font) {
         return FontDesignMetrics.getMetrics(font);
     }
 
+    @SuppressWarnings("deprecation")
     public String[] getFontList() {
         String[] hardwiredFontList = {
             Font.DIALOG, Font.SANS_SERIF, Font.SERIF, Font.MONOSPACED,
@@ -1127,6 +1084,43 @@ public abstract class SunToolkit extends Toolkit
     }
 
     /**
+     * Returns key modifiers used by Swing to set up a focus accelerator key stroke.
+     */
+    public int getFocusAcceleratorKeyMask() {
+        return InputEvent.ALT_MASK;
+    }
+
+    /**
+     * Tests whether specified key modifiers mask can be used to enter a printable
+     * character. This is a default implementation of this method, which reflects
+     * the way things work on Windows: here, pressing ctrl + alt allows user to enter
+     * characters from the extended character set (like euro sign or math symbols)
+     */
+    public boolean isPrintableCharacterModifiersMask(int mods) {
+        return ((mods & InputEvent.ALT_MASK) == (mods & InputEvent.CTRL_MASK));
+    }
+
+    /**
+     * Returns whether popup is allowed to be shown above the task bar.
+     * This is a default implementation of this method, which checks
+     * corresponding security permission.
+     */
+    public boolean canPopupOverlapTaskBar() {
+        boolean result = true;
+        try {
+            SecurityManager sm = System.getSecurityManager();
+            if (sm != null) {
+                sm.checkPermission(
+                        SecurityConstants.AWT.SET_WINDOW_ALWAYS_ON_TOP_PERMISSION);
+            }
+        } catch (SecurityException se) {
+            // There is no permission to show popups over the task bar
+            result = false;
+        }
+        return result;
+    }
+
+    /**
      * Returns a new input method window, with behavior as specified in
      * {@link java.awt.im.spi.InputMethodContext#createInputMethodWindow}.
      * If the inputContext is not null, the window should return it from its
@@ -1156,10 +1150,10 @@ public abstract class SunToolkit extends Toolkit
     public static Locale getStartupLocale() {
         if (startupLocale == null) {
             String language, region, country, variant;
-            language = (String) AccessController.doPrivileged(
+            language = AccessController.doPrivileged(
                             new GetPropertyAction("user.language", "en"));
             // for compatibility, check for old user.region property
-            region = (String) AccessController.doPrivileged(
+            region = AccessController.doPrivileged(
                             new GetPropertyAction("user.region"));
             if (region != null) {
                 // region can be of form country, country_variant, or _variant
@@ -1172,9 +1166,9 @@ public abstract class SunToolkit extends Toolkit
                     variant = "";
                 }
             } else {
-                country = (String) AccessController.doPrivileged(
+                country = AccessController.doPrivileged(
                                 new GetPropertyAction("user.country", ""));
-                variant = (String) AccessController.doPrivileged(
+                variant = AccessController.doPrivileged(
                                 new GetPropertyAction("user.variant", ""));
             }
             startupLocale = new Locale(language, country, variant);
@@ -1254,7 +1248,7 @@ public abstract class SunToolkit extends Toolkit
      * @return <code>true</code>, if XEmbed is needed, <code>false</code> otherwise
      */
     public static boolean needsXEmbed() {
-        String noxembed = (String) AccessController.
+        String noxembed = AccessController.
             doPrivileged(new GetPropertyAction("sun.awt.noxembed", "false"));
         if ("true".equals(noxembed)) {
             return false;
@@ -1466,7 +1460,7 @@ public abstract class SunToolkit extends Toolkit
             || comp instanceof Window);
     }
 
-    public static Method getMethod(final Class clz, final String methodName, final Class[] params) {
+    public static Method getMethod(final Class<?> clz, final String methodName, final Class[] params) {
         Method res = null;
         try {
             res = AccessController.doPrivileged(new PrivilegedExceptionAction<Method>() {
@@ -1482,6 +1476,7 @@ public abstract class SunToolkit extends Toolkit
         return res;
     }
 
+    @SuppressWarnings("serial")
     public static class OperationTimedOut extends RuntimeException {
         public OperationTimedOut(String msg) {
             super(msg);
@@ -1489,9 +1484,12 @@ public abstract class SunToolkit extends Toolkit
         public OperationTimedOut() {
         }
     }
+
+    @SuppressWarnings("serial")
     public static class InfiniteLoop extends RuntimeException {
     }
 
+    @SuppressWarnings("serial")
     public static class IllegalThreadException extends RuntimeException {
         public IllegalThreadException(String msg) {
             super(msg);
@@ -1648,6 +1646,7 @@ public abstract class SunToolkit extends Toolkit
      * Should return <code>true</code> if more processing is
      * necessary, <code>false</code> otherwise.
      */
+    @SuppressWarnings("serial")
     protected final boolean waitForIdle(final long timeout) {
         flushPendingEvents();
         boolean queueWasEmpty = isEQEmpty();
@@ -1831,7 +1830,7 @@ public abstract class SunToolkit extends Toolkit
             Toolkit tk = Toolkit.getDefaultToolkit();
             if (tk instanceof SunToolkit) {
                 systemAAFonts =
-                    (String)AccessController.doPrivileged(
+                    AccessController.doPrivileged(
                          new GetPropertyAction("awt.useSystemAAFontSettings"));
             }
             if (systemAAFonts != null) {
@@ -1898,7 +1897,7 @@ public abstract class SunToolkit extends Toolkit
         if (consumeNextKeyTypedMethod == null) {
             consumeNextKeyTypedMethod = getMethod(DefaultKeyboardFocusManager.class,
                                                   "consumeNextKeyTyped",
-                                                  new Class[] {KeyEvent.class});
+                                                  new Class<?>[] {KeyEvent.class});
         }
         try {
             consumeNextKeyTypedMethod.invoke(KeyboardFocusManager.getCurrentKeyboardFocusManager(),
@@ -1930,8 +1929,8 @@ public abstract class SunToolkit extends Toolkit
      * Returns the value of the system property indicated by the specified key.
      */
     public static String getSystemProperty(final String key) {
-        return (String)AccessController.doPrivileged(new PrivilegedAction() {
-                public Object run() {
+        return AccessController.doPrivileged(new PrivilegedAction<String>() {
+                public String run() {
                     return System.getProperty(key);
                 }
             });
@@ -1941,8 +1940,7 @@ public abstract class SunToolkit extends Toolkit
      * Returns the boolean value of the system property indicated by the specified key.
      */
     protected static Boolean getBooleanSystemProperty(String key) {
-        return Boolean.valueOf(AccessController.
-                   doPrivileged(new GetBooleanAction(key)));
+        return AccessController.doPrivileged(new GetBooleanAction(key));
     }
 
     private static Boolean sunAwtDisableMixing = null;
@@ -2015,7 +2013,7 @@ public abstract class SunToolkit extends Toolkit
      */
     public static boolean isContainingTopLevelTranslucent(Component c) {
         Window w = getContainingWindow(c);
-        return w != null && ((Window)w).getOpacity() < 1.0f;
+        return w != null && w.getOpacity() < 1.0f;
     }
 
     /**
@@ -2057,14 +2055,14 @@ public abstract class SunToolkit extends Toolkit
         return isInstanceOf(obj.getClass(), type);
     }
 
-    private static boolean isInstanceOf(Class cls, String type) {
+    private static boolean isInstanceOf(Class<?> cls, String type) {
         if (cls == null) return false;
 
         if (cls.getName().equals(type)) {
             return true;
         }
 
-        for (Class c : cls.getInterfaces()) {
+        for (Class<?> c : cls.getInterfaces()) {
             if (c.getName().equals(type)) {
                 return true;
             }

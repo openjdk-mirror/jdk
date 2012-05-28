@@ -38,7 +38,6 @@ import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
 import java.awt.Image;
 import java.awt.Insets;
-import java.awt.KeyboardFocusManager;
 import java.awt.Rectangle;
 import java.awt.SystemColor;
 import java.awt.Toolkit;
@@ -59,15 +58,11 @@ import java.awt.image.ImageProducer;
 import java.awt.image.VolatileImage;
 import java.awt.peer.ComponentPeer;
 import java.awt.peer.ContainerPeer;
-import java.awt.peer.LightweightPeer;
 import java.lang.reflect.*;
 import java.security.*;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.Vector;
 import sun.util.logging.PlatformLogger;
-
 import sun.awt.*;
 import sun.awt.event.IgnorePaintEvent;
 import sun.awt.image.SunVolatileImage;
@@ -87,7 +82,7 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
 
     boolean paintPending = false;
     boolean isLayouting = false;
-    boolean enabled;
+    private boolean enabled;
 
     // Actually used only by XDecoratedPeer
     protected int boundsOperation;
@@ -133,9 +128,6 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
     }
     void postInit(XCreateWindowParams params) {
         super.postInit(params);
-        Color c;
-        Font  f;
-        Cursor cursor;
 
         pSetCursor(target.getCursor());
 
@@ -148,19 +140,7 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
             reshape(r.x, r.y, r.width, r.height);
         }
 
-        enabled = target.isEnabled();
-
-        // If any of our heavyweight ancestors are disable, we should be too
-        // See 6176875 for more information
-        Component comp = target;
-        while( !(comp == null || comp instanceof Window) ) {
-            comp = comp.getParent();
-            if( comp != null && !comp.isEnabled() && !comp.isLightweight() ){
-                setEnabled(false);
-                break;
-            }
-        }
-        enableLog.fine("Initial enable state: {0}", Boolean.valueOf(enabled));
+        setEnabled(target.isEnabled());
 
         if (target.isVisible()) {
             setVisible(true);
@@ -389,66 +369,65 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
         setVisible(false);
     }
 
-
     /**
      * @see java.awt.peer.ComponentPeer
      */
-    public void setEnabled(boolean value) {
-        enableLog.fine("{0}ing {1}", (value?"Enabl":"Disabl"), this);
-        boolean repaintNeeded = (enabled != value);
-        enabled = value;
+    public void setEnabled(final boolean value) {
+        if (enableLog.isLoggable(PlatformLogger.FINE)) {
+            enableLog.fine("{0}ing {1}", (value ? "Enabl" : "Disabl"), this);
+        }
+        boolean status = value;
+        // If any of our heavyweight ancestors are disable, we should be too
+        // See 6176875 for more information
+        final Container cp = SunToolkit.getNativeContainer(target);
+        if (cp != null) {
+            status &= ((XComponentPeer) cp.getPeer()).isEnabled();
+        }
+        synchronized (getStateLock()) {
+            if (enabled == status) {
+                return;
+            }
+            enabled = status;
+        }
+
         if (target instanceof Container) {
-            Component list[] = ((Container)target).getComponents();
-            for (int i = 0; i < list.length; ++i) {
-                boolean childEnabled = list[i].isEnabled();
-                ComponentPeer p = list[i].getPeer();
-                if ( p != null ) {
-                    p.setEnabled(value && childEnabled);
+            final Component[] list = ((Container) target).getComponents();
+            for (final Component child : list) {
+                final ComponentPeer p = child.getPeer();
+                if (p != null) {
+                    p.setEnabled(status && child.isEnabled());
                 }
             }
         }
-        if (repaintNeeded) {
-            repaint();
-        }
+        repaint();
     }
 
     //
     // public so aw/Window can call it
     //
-    public boolean isEnabled() {
-        return enabled;
+    public final boolean isEnabled() {
+        synchronized (getStateLock()) {
+            return enabled;
+        }
     }
 
-
-
-    public void enable() {
-        setEnabled(true);
+    @Override
+    public void paint(final Graphics g) {
+        super.paint(g);
+        // allow target to change the picture
+        target.paint(g);
     }
-
-    public void disable() {
-        setEnabled(false);
-    }
-
-    public void paint(Graphics g) {
-    }
-    public void repaint(long tm, int x, int y, int width, int height) {
-        repaint();
-    }
-
 
     public Graphics getGraphics() {
         return getGraphics(surfaceData, getPeerForeground(), getPeerBackground(), getPeerFont());
     }
-
-
-
     public void print(Graphics g) {
         // clear rect here to emulate X clears rect before Expose
         g.setColor(target.getBackground());
         g.fillRect(0, 0, target.getWidth(), target.getHeight());
         g.setColor(target.getForeground());
         // paint peer
-        paint(g);
+        paintPeer(g);
         // allow target to change the picture
         target.print(g);
     }
@@ -475,12 +454,16 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
         if (true) {
             switch(e.getID()) {
               case PaintEvent.UPDATE:
-                  log.finer("XCP coalescePaintEvent : UPDATE : add : x = " +
+                  if (log.isLoggable(PlatformLogger.FINER)) {
+                      log.finer("XCP coalescePaintEvent : UPDATE : add : x = " +
                             r.x + ", y = " + r.y + ", width = " + r.width + ",height = " + r.height);
+                  }
                   return;
               case PaintEvent.PAINT:
-                  log.finer("XCP coalescePaintEvent : PAINT : add : x = " +
+                  if (log.isLoggable(PlatformLogger.FINER)) {
+                      log.finer("XCP coalescePaintEvent : PAINT : add : x = " +
                             r.x + ", y = " + r.y + ", width = " + r.width + ",height = " + r.height);
+                  }
                   return;
             }
         }
@@ -1257,7 +1240,9 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
      * ButtonPress, ButtonRelease, KeyPress, KeyRelease, EnterNotify, LeaveNotify, MotionNotify
      */
     protected boolean isEventDisabled(XEvent e) {
-        enableLog.finest("Component is {1}, checking for disabled event {0}", e, (isEnabled()?"enabled":"disable"));
+        if (enableLog.isLoggable(PlatformLogger.FINEST)) {
+            enableLog.finest("Component is {1}, checking for disabled event {0}", e, (isEnabled()?"enabled":"disable"));
+        }
         if (!isEnabled()) {
             switch (e.get_type()) {
               case XConstants.ButtonPress:
@@ -1267,7 +1252,9 @@ public class XComponentPeer extends XWindow implements ComponentPeer, DropTarget
               case XConstants.EnterNotify:
               case XConstants.LeaveNotify:
               case XConstants.MotionNotify:
-                  enableLog.finer("Event {0} is disable", e);
+                  if (enableLog.isLoggable(PlatformLogger.FINER)) {
+                      enableLog.finer("Event {0} is disable", e);
+                  }
                   return true;
             }
         }

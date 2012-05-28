@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2006, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -87,8 +87,8 @@ public final class ECParameters extends AlgorithmParametersSpi {
         if ((data.length == 0) || (data[0] != 4)) {
             throw new IOException("Only uncompressed point format supported");
         }
-        int n = (curve.getField().getFieldSize() + 7 ) >> 3;
-        if (data.length != (n * 2) + 1) {
+        int n = data.length / 2;
+        if (n > ((curve.getField().getFieldSize() + 7 ) >> 3)) {
             throw new IOException("Point does not match field size");
         }
         byte[] xb = new byte[n];
@@ -326,9 +326,9 @@ public final class ECParameters extends AlgorithmParametersSpi {
     protected <T extends AlgorithmParameterSpec> T engineGetParameterSpec(Class<T> spec)
             throws InvalidParameterSpecException {
         if (spec.isAssignableFrom(ECParameterSpec.class)) {
-            return (T)paramSpec;
+            return spec.cast(paramSpec);
         } else if (spec.isAssignableFrom(ECGenParameterSpec.class)) {
-            return (T)new ECGenParameterSpec(getCurveName(paramSpec));
+            return spec.cast(new ECGenParameterSpec(getCurveName(paramSpec)));
         } else {
             throw new InvalidParameterSpecException
                 ("Only ECParameterSpec and ECGenParameterSpec supported");

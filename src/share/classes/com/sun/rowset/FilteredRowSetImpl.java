@@ -66,6 +66,7 @@ public class FilteredRowSetImpl extends WebRowSetImpl implements Serializable, C
      * @param env a Hashtable containing a desired synchconizatation provider
      * name-value pair.
      */
+    @SuppressWarnings("rawtypes")
     public FilteredRowSetImpl(Hashtable env) throws SQLException {
         super(env);
     }
@@ -127,7 +128,7 @@ public class FilteredRowSetImpl extends WebRowSetImpl implements Serializable, C
          for(int rows=this.getRow(); rows<=this.size();rows++) {
              bool = super.internalNext();
 
-             if( p == null) {
+             if( !bool || p == null) {
                return bool;
              }
              if(p.evaluate(this)){

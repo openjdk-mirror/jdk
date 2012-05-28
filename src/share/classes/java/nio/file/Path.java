@@ -54,7 +54,7 @@ import java.util.Iterator;
  * resolveSibling} methods to combine paths. The {@link #relativize relativize}
  * method that can be used to construct a relative path between two paths.
  * Paths can be {@link #compareTo compared}, and tested against each other using
- * the {@link #startsWith startsWith} and {@link #endsWith endWith} methods.
+ * the {@link #startsWith startsWith} and {@link #endsWith endsWith} methods.
  *
  * <p> This interface extends {@link Watchable} interface so that a directory
  * located by a path can be {@link #register registered} with a {@link
@@ -72,7 +72,7 @@ import java.util.Iterator;
  * directory and is UTF-8 encoded.
  * <pre>
  *     Path path = FileSystems.getDefault().getPath("logs", "access.log");
- *     BufferReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
+ *     BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
  * </pre>
  *
  * <a name="interop"><h4>Interoperability</h4></a>

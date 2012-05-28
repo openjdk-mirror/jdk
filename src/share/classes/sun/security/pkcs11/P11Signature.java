@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,12 +53,14 @@ import static sun.security.pkcs11.wrapper.PKCS11Constants.*;
  *   . MD2withRSA
  *   . MD5withRSA
  *   . SHA1withRSA
+ *   . SHA224withRSA
  *   . SHA256withRSA
  *   . SHA384withRSA
  *   . SHA512withRSA
  * . ECDSA
  *   . NONEwithECDSA
  *   . SHA1withECDSA
+ *   . SHA224withECDSA
  *   . SHA256withECDSA
  *   . SHA384withECDSA
  *   . SHA512withECDSA
@@ -143,6 +145,7 @@ final class P11Signature extends SignatureSpi {
         case (int)CKM_MD2_RSA_PKCS:
         case (int)CKM_MD5_RSA_PKCS:
         case (int)CKM_SHA1_RSA_PKCS:
+        case (int)CKM_SHA224_RSA_PKCS:
         case (int)CKM_SHA256_RSA_PKCS:
         case (int)CKM_SHA384_RSA_PKCS:
         case (int)CKM_SHA512_RSA_PKCS:
@@ -181,6 +184,8 @@ final class P11Signature extends SignatureSpi {
                 String digestAlg;
                 if (algorithm.equals("SHA1withECDSA")) {
                     digestAlg = "SHA-1";
+                } else if (algorithm.equals("SHA224withECDSA")) {
+                    digestAlg = "SHA-224";
                 } else if (algorithm.equals("SHA256withECDSA")) {
                     digestAlg = "SHA-256";
                 } else if (algorithm.equals("SHA384withECDSA")) {
@@ -207,6 +212,9 @@ final class P11Signature extends SignatureSpi {
             } else if (algorithm.equals("MD2withRSA")) {
                 md = MessageDigest.getInstance("MD2");
                 digestOID = AlgorithmId.MD2_oid;
+            } else if (algorithm.equals("SHA224withRSA")) {
+                md = MessageDigest.getInstance("SHA-224");
+                digestOID = AlgorithmId.SHA224_oid;
             } else if (algorithm.equals("SHA256withRSA")) {
                 md = MessageDigest.getInstance("SHA-256");
                 digestOID = AlgorithmId.SHA256_oid;
@@ -272,7 +280,7 @@ final class P11Signature extends SignatureSpi {
                 if (keyAlgorithm.equals("DSA")) {
                     signature = new byte[40];
                 } else {
-                    signature = new byte[(p11Key.keyLength() + 7) >> 3];
+                    signature = new byte[(p11Key.length() + 7) >> 3];
                 }
                 if (type == T_UPDATE) {
                     token.p11.C_VerifyFinal(session.id(), signature);
@@ -332,6 +340,8 @@ final class P11Signature extends SignatureSpi {
             encodedLength = 34;
         } else if (algorithm.equals("SHA1withRSA")) {
             encodedLength = 35;
+        } else if (algorithm.equals("SHA224withRSA")) {
+            encodedLength = 47;
         } else if (algorithm.equals("SHA256withRSA")) {
             encodedLength = 51;
         } else if (algorithm.equals("SHA384withRSA")) {
@@ -357,7 +367,7 @@ final class P11Signature extends SignatureSpi {
         if (keyAlgorithm.equals("RSA") && publicKey != p11Key) {
             int keyLen;
             if (publicKey instanceof P11Key) {
-                keyLen = ((P11Key) publicKey).keyLength();
+                keyLen = ((P11Key) publicKey).length();
             } else {
                 keyLen = ((RSAKey) publicKey).getModulus().bitLength();
             }
@@ -396,7 +406,7 @@ final class P11Signature extends SignatureSpi {
         ensureInitialized();
         switch (type) {
         case T_UPDATE:
-            buffer[0] = (byte)b;
+            buffer[0] = b;
             engineUpdate(buffer, 0, 1);
             break;
         case T_DIGEST:
@@ -618,7 +628,7 @@ final class P11Signature extends SignatureSpi {
 
     private byte[] pkcs1Pad(byte[] data) {
         try {
-            int len = (p11Key.keyLength() + 7) >> 3;
+            int len = (p11Key.length() + 7) >> 3;
             RSAPadding padding = RSAPadding.getInstance
                                         (RSAPadding.PAD_BLOCKTYPE_1, len);
             byte[] padded = padding.pad(data);

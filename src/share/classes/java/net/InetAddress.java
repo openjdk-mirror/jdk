@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.ServiceLoader;
 import java.security.AccessController;
 import java.io.ObjectStreamException;
 import java.io.IOException;
@@ -39,7 +40,6 @@ import java.io.ObjectInputStream;
 import sun.security.action.*;
 import sun.net.InetAddressCachePolicy;
 import sun.net.util.IPAddressUtil;
-import sun.misc.Service;
 import sun.net.spi.nameservice.*;
 
 /**
@@ -234,7 +234,13 @@ class InetAddress implements java.io.Serializable {
     static {
         preferIPv6Address = java.security.AccessController.doPrivileged(
             new GetBooleanAction("java.net.preferIPv6Addresses")).booleanValue();
-        AccessController.doPrivileged(new LoadLibraryAction("net"));
+        AccessController.doPrivileged(
+            new java.security.PrivilegedAction<Void>() {
+                public Void run() {
+                    System.loadLibrary("net");
+                    return null;
+                }
+            });
         init();
     }
 
@@ -876,10 +882,11 @@ class InetAddress implements java.io.Serializable {
                 nameService = java.security.AccessController.doPrivileged(
                     new java.security.PrivilegedExceptionAction<NameService>() {
                         public NameService run() {
-                            Iterator itr = Service.providers(NameServiceDescriptor.class);
+                            Iterator<NameServiceDescriptor> itr =
+                                ServiceLoader.load(NameServiceDescriptor.class)
+                                    .iterator();
                             while (itr.hasNext()) {
-                                NameServiceDescriptor nsd
-                                    = (NameServiceDescriptor)itr.next();
+                                NameServiceDescriptor nsd = itr.next();
                                 if (providerName.
                                     equalsIgnoreCase(nsd.getType()+","
                                         +nsd.getProviderName())) {

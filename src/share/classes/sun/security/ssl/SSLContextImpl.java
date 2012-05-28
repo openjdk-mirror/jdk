@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -267,36 +267,42 @@ public abstract class SSLContextImpl extends SSLContextSpi {
 
     // Get suported CipherSuiteList.
     CipherSuiteList getSuportedCipherSuiteList() {
-        // Clear cache of available ciphersuites.
-        clearAvailableCache();
+        // The maintenance of cipher suites needs to be synchronized.
+        synchronized (this) {
+            // Clear cache of available ciphersuites.
+            clearAvailableCache();
 
-        if (supportedCipherSuiteList == null) {
-            supportedCipherSuiteList =
-                getApplicableCipherSuiteList(getSuportedProtocolList(), false);
+            if (supportedCipherSuiteList == null) {
+                supportedCipherSuiteList = getApplicableCipherSuiteList(
+                        getSuportedProtocolList(), false);
+            }
+
+            return supportedCipherSuiteList;
         }
-
-        return supportedCipherSuiteList;
     }
 
     // Get default CipherSuiteList.
     CipherSuiteList getDefaultCipherSuiteList(boolean roleIsServer) {
-        // Clear cache of available ciphersuites.
-        clearAvailableCache();
+        // The maintenance of cipher suites needs to be synchronized.
+        synchronized (this) {
+            // Clear cache of available ciphersuites.
+            clearAvailableCache();
 
-        if (roleIsServer) {
-            if (defaultServerCipherSuiteList == null) {
-                defaultServerCipherSuiteList = getApplicableCipherSuiteList(
+            if (roleIsServer) {
+                if (defaultServerCipherSuiteList == null) {
+                    defaultServerCipherSuiteList = getApplicableCipherSuiteList(
                         getDefaultProtocolList(true), true);
-            }
+                }
 
-            return defaultServerCipherSuiteList;
-        } else {
-            if (defaultClientCipherSuiteList == null) {
-                defaultClientCipherSuiteList = getApplicableCipherSuiteList(
+                return defaultServerCipherSuiteList;
+            } else {
+                if (defaultClientCipherSuiteList == null) {
+                    defaultClientCipherSuiteList = getApplicableCipherSuiteList(
                         getDefaultProtocolList(false), true);
-            }
+                }
 
-            return defaultClientCipherSuiteList;
+                return defaultClientCipherSuiteList;
+            }
         }
     }
 
@@ -364,8 +370,11 @@ public abstract class SSLContextImpl extends SSLContextSpi {
      * Clear cache of available ciphersuites. If we support all ciphers
      * internally, there is no need to clear the cache and calling this
      * method has no effect.
+     *
+     * Note that every call to clearAvailableCache() and the maintenance of
+     * cipher suites need to be synchronized with this instance.
      */
-    synchronized void clearAvailableCache() {
+    private void clearAvailableCache() {
         if (CipherSuite.DYNAMIC_AVAILABILITY) {
             supportedCipherSuiteList = null;
             defaultServerCipherSuiteList = null;
@@ -567,42 +576,46 @@ public abstract class SSLContextImpl extends SSLContextSpi {
             }
 
             FileInputStream fs = null;
-            if (defaultKeyStore.length() != 0 && !NONE.equals(defaultKeyStore)) {
-                fs = AccessController.doPrivileged(
-                        new PrivilegedExceptionAction<FileInputStream>() {
-                    public FileInputStream run() throws Exception {
-                        return new FileInputStream(defaultKeyStore);
-                    }
-                });
-            }
-
-            String defaultKeyStorePassword = props.get("keyStorePasswd");
-            char[] passwd = null;
-            if (defaultKeyStorePassword.length() != 0) {
-                passwd = defaultKeyStorePassword.toCharArray();
-            }
-
-            /**
-             * Try to initialize key store.
-             */
             KeyStore ks = null;
-            if ((defaultKeyStoreType.length()) != 0) {
-                if (debug != null && Debug.isOn("defaultctx")) {
-                    System.out.println("init keystore");
-                }
-                if (defaultKeyStoreProvider.length() == 0) {
-                    ks = KeyStore.getInstance(defaultKeyStoreType);
-                } else {
-                    ks = KeyStore.getInstance(defaultKeyStoreType,
-                                        defaultKeyStoreProvider);
+            char[] passwd = null;
+            try {
+                if (defaultKeyStore.length() != 0 &&
+                        !NONE.equals(defaultKeyStore)) {
+                    fs = AccessController.doPrivileged(
+                            new PrivilegedExceptionAction<FileInputStream>() {
+                        public FileInputStream run() throws Exception {
+                            return new FileInputStream(defaultKeyStore);
+                        }
+                    });
                 }
 
-                // if defaultKeyStore is NONE, fs will be null
-                ks.load(fs, passwd);
-            }
-            if (fs != null) {
-                fs.close();
-                fs = null;
+                String defaultKeyStorePassword = props.get("keyStorePasswd");
+                if (defaultKeyStorePassword.length() != 0) {
+                    passwd = defaultKeyStorePassword.toCharArray();
+                }
+
+                /**
+                 * Try to initialize key store.
+                 */
+                if ((defaultKeyStoreType.length()) != 0) {
+                    if (debug != null && Debug.isOn("defaultctx")) {
+                        System.out.println("init keystore");
+                    }
+                    if (defaultKeyStoreProvider.length() == 0) {
+                        ks = KeyStore.getInstance(defaultKeyStoreType);
+                    } else {
+                        ks = KeyStore.getInstance(defaultKeyStoreType,
+                                            defaultKeyStoreProvider);
+                    }
+
+                    // if defaultKeyStore is NONE, fs will be null
+                    ks.load(fs, passwd);
+                }
+            } finally {
+                if (fs != null) {
+                    fs.close();
+                    fs = null;
+                }
             }
 
             /*
@@ -767,6 +780,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
 final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
             implements X509TrustManager {
 
+    // the delegated trust manager
     private final X509TrustManager tm;
 
     AbstractTrustManagerWrapper(X509TrustManager tm) {
@@ -859,20 +873,7 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
                 constraints = new SSLAlgorithmConstraints(sslSocket, true);
             }
 
-            AlgorithmChecker checker = new AlgorithmChecker(constraints);
-            try {
-                checker.init(false);
-
-                // a forward checker, need to check from trust to target
-                for (int i = chain.length - 1; i >= 0; i--) {
-                    Certificate cert = chain[i];
-                    // We don't care about the unresolved critical extensions.
-                    checker.check(cert, Collections.<String>emptySet());
-                }
-            } catch (CertPathValidatorException cpve) {
-                throw new CertificateException(
-                    "Certificates does not conform to algorithm constraints");
-            }
+            checkAlgorithmConstraints(chain, constraints);
         }
     }
 
@@ -914,20 +915,40 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
                 constraints = new SSLAlgorithmConstraints(engine, true);
             }
 
-            AlgorithmChecker checker = new AlgorithmChecker(constraints);
-            try {
-                checker.init(false);
+            checkAlgorithmConstraints(chain, constraints);
+        }
+    }
 
-                // A forward checker, need to check from trust to target
-                for (int i = chain.length - 1; i >= 0; i--) {
+    private void checkAlgorithmConstraints(X509Certificate[] chain,
+            AlgorithmConstraints constraints) throws CertificateException {
+
+        try {
+            // Does the certificate chain end with a trusted certificate?
+            int checkedLength = chain.length - 1;
+
+            Collection<X509Certificate> trustedCerts = new HashSet<>();
+            X509Certificate[] certs = tm.getAcceptedIssuers();
+            if ((certs != null) && (certs.length > 0)){
+                Collections.addAll(trustedCerts, certs);
+            }
+
+            if (trustedCerts.contains(chain[checkedLength])) {
+                    checkedLength--;
+            }
+
+            // A forward checker, need to check from trust to target
+            if (checkedLength >= 0) {
+                AlgorithmChecker checker = new AlgorithmChecker(constraints);
+                checker.init(false);
+                for (int i = checkedLength; i >= 0; i--) {
                     Certificate cert = chain[i];
                     // We don't care about the unresolved critical extensions.
                     checker.check(cert, Collections.<String>emptySet());
                 }
-            } catch (CertPathValidatorException cpve) {
-                throw new CertificateException(
-                    "Certificates does not conform to algorithm constraints");
             }
+        } catch (CertPathValidatorException cpve) {
+            throw new CertificateException(
+                "Certificates does not conform to algorithm constraints");
         }
     }
 }

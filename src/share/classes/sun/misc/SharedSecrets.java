@@ -47,10 +47,12 @@ public class SharedSecrets {
     private static JavaLangAccess javaLangAccess;
     private static JavaIOAccess javaIOAccess;
     private static JavaNetAccess javaNetAccess;
+    private static JavaNetHttpCookieAccess javaNetHttpCookieAccess;
     private static JavaNioAccess javaNioAccess;
     private static JavaIOFileDescriptorAccess javaIOFileDescriptorAccess;
     private static JavaSecurityProtectionDomainAccess javaSecurityProtectionDomainAccess;
     private static JavaSecurityAccess javaSecurityAccess;
+    private static JavaAWTAccess javaAWTAccess;
 
     public static JavaUtilJarAccess javaUtilJarAccess() {
         if (javaUtilJarAccess == null) {
@@ -79,6 +81,16 @@ public class SharedSecrets {
 
     public static JavaNetAccess getJavaNetAccess() {
         return javaNetAccess;
+    }
+
+    public static void setJavaNetHttpCookieAccess(JavaNetHttpCookieAccess a) {
+        javaNetHttpCookieAccess = a;
+    }
+
+    public static JavaNetHttpCookieAccess getJavaNetHttpCookieAccess() {
+        if (javaNetHttpCookieAccess == null)
+            unsafe.ensureClassInitialized(java.net.HttpCookie.class);
+        return javaNetHttpCookieAccess;
     }
 
     public static void setJavaNioAccess(JavaNioAccess jna) {
@@ -139,5 +151,15 @@ public class SharedSecrets {
             unsafe.ensureClassInitialized(AccessController.class);
         }
         return javaSecurityAccess;
+    }
+
+    public static void setJavaAWTAccess(JavaAWTAccess jaa) {
+        javaAWTAccess = jaa;
+    }
+
+    public static JavaAWTAccess getJavaAWTAccess() {
+        // this may return null in which case calling code needs to
+        // provision for.
+        return javaAWTAccess;
     }
 }

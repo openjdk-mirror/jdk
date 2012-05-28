@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2005, 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -119,6 +119,13 @@ ifeq ($(PLATFORM), linux)
   _ALSA_VERSION := $(shell $(EGREP) SND_LIB_VERSION_STR $(ALSA_INCLUDE) | \
            $(SED) -e 's@.*"\(.*\)".*@\1@' )
   ALSA_VERSION := $(call GetVersion,$(_ALSA_VERSION))
+endif
+
+ifeq ($(PLATFORM), macosx)
+  # What kind of system we are using
+  OS_VERSION := $(shell uname -r)
+  OS_VARIANT_NAME := MacOSX
+  OS_VARIANT_VERSION := $(shell sw_vers -productVersion)
 endif
 
 ifeq ($(PLATFORM), windows)
@@ -349,7 +356,13 @@ ifneq ($(PLATFORM), windows)
 	    "        Try setting LANG to 'C'. \n" \
 	    "" >> $(WARNING_FILE) ; \
         fi
+ifeq ($(PLATFORM), macosx)
+	@if [ "$(LANG)" = "" ]; then \
+	  $(ECHO) "ERROR: LANG must be set on Mac OS X. Recommended value is \"C\"" >> $(ERROR_FILE) ; \
+	fi
 endif
+endif
+
 
 ######################################################
 # Check the Windows cygwin version
@@ -847,8 +860,10 @@ endif
 
 ######################################################
 # Check for existence of DEVTOOLS_PATH
+# All needed tools come with base system on Apple
 ######################################################
 sane-devtools_path:
+ifneq ($(OS_VENDOR), Apple)
 	@if [ "$(DEVTOOLS_PATH)" != "" -a ! -r "$(DEVTOOLS_PATH)" ]; then \
 	  $(ECHO) "ERROR: You do not have a valid DEVTOOLS_PATH setting. \n" \
 	    "      Please check your access to \n" \
@@ -856,6 +871,7 @@ sane-devtools_path:
 	    "      and/or check your value of ALT_DEVTOOLS_PATH. \n" \
 	    "" >> $(ERROR_FILE) ; \
 	fi
+endif
 
 ######################################################
 # Check for existence of MS_RUNTIME_LIBRARIES
@@ -1029,11 +1045,22 @@ ifeq ($(PLATFORM), windows)
 	    "      and/or check your value of ALT_HOTSPOT_LIB_PATH. \n" \
 	    "" >> $(ERROR_FILE) ; \
 	fi
+  ifeq ($(ENABLE_FULL_DEBUG_SYMBOLS),1)
 	@#
 	@# Check for the .map files - its OK if they are not there..
 	@#
-  ifeq ($(ARCH_DATA_MODEL), 32)
+    ifeq ($(ARCH_DATA_MODEL), 32)
 	@# There is no 64-bit HotSpot client VM
+      ifeq ($(ZIP_DEBUGINFO_FILES),1)
+	@if [ ! -r $(HOTSPOT_CLIENT_PATH)/jvm.diz ]; then \
+	  $(ECHO) "WARNING: HOTSPOT_CLIENT_PATH does not point to valid HotSpot .diz files. \n" \
+	    "        These files are optional and aid in the debugging of the JVM. \n" \
+	    "        Please check your access to \n" \
+	    "          $(HOTSPOT_CLIENT_PATH)/jvm.diz \n" \
+	    "        and/or check your value of ALT_HOTSPOT_CLIENT_PATH. \n" \
+	    "" >> $(WARNING_FILE) ; \
+	fi
+      else
 	@if [ ! -r $(HOTSPOT_CLIENT_PATH)/jvm.map ]; then \
 	  $(ECHO) "WARNING: HOTSPOT_CLIENT_PATH does not point to valid HotSpot .map files. \n" \
 	    "        These files are optional and aid in the debugging of the JVM. \n" \
@@ -1050,7 +1077,18 @@ ifeq ($(PLATFORM), windows)
 	    "        and/or check your value of ALT_HOTSPOT_CLIENT_PATH. \n" \
 	    "" >> $(WARNING_FILE) ; \
 	fi
-  endif
+      endif
+    endif
+    ifeq ($(ZIP_DEBUGINFO_FILES),1)
+	@if [ ! -r $(HOTSPOT_SERVER_PATH)/jvm.diz ]; then \
+	  $(ECHO) "WARNING: HOTSPOT_SERVER_PATH does not point to valid HotSpot .diz files. \n" \
+	    "        These files are optional and aid in the debugging of the JVM. \n" \
+	    "        Please check your access to \n" \
+	    "          $(HOTSPOT_SERVER_PATH)/jvm.diz \n" \
+	    "        and/or check your value of ALT_HOTSPOT_SERVER_PATH. \n" \
+	    "" >> $(WARNING_FILE) ; \
+	fi
+    else
 	@if [ ! -r $(HOTSPOT_SERVER_PATH)/jvm.map ]; then \
 	  $(ECHO) "WARNING: HOTSPOT_SERVER_PATH does not point to valid HotSpot .map files. \n" \
 	    "        These files are optional and aid in the debugging of the JVM. \n" \
@@ -1067,6 +1105,8 @@ ifeq ($(PLATFORM), windows)
 	    "        and/or check your value of ALT_HOTSPOT_SERVER_PATH. \n" \
 	    "" >> $(WARNING_FILE) ; \
 	fi
+    endif
+  endif	
 endif	
 
 
@@ -1562,60 +1602,6 @@ ifeq ($(PLATFORM), windows)
 	fi
   endif
 endif
-
-
-######################################################
-# SECURITY_BASELINE_131 test
-######################################################
-security_baseline_131:
-ifeq ($(PLATFORM), windows)
-	@if [ -z "$(SECURITY_BASELINE_131)" ]; then \
-	    $(ECHO) "WARNING: Your SECURITY_BASELINE_131 setting is empty.\n" \
-		"        Setting it to the default value of 1.3.1_20.\n" \
-		"        It is recommended to set SECURITY_BASELINE_131.\n" \
-		"" >> $(WARNING_FILE) ; \
-	fi
-endif
-
-######################################################
-# SECURITY_BASELINE_142 test
-######################################################
-security_baseline_142:
-ifeq ($(PLATFORM), windows)
-	@if [ -z "$(SECURITY_BASELINE_142)" ]; then \
-	    $(ECHO) "WARNING: Your SECURITY_BASELINE_142 setting is empty.\n" \
-		"        Setting it to the default value of 1.4.2_10.\n" \
-		"        It is recommended to set SECURITY_BASELINE_142.\n" \
-		"" >> $(WARNING_FILE) ; \
-	fi
-endif
-
-######################################################
-# SECURITY_BASELINE_150 test
-######################################################
-security_baseline_150:
-ifeq ($(PLATFORM), windows)
-	@if [ -z "$(SECURITY_BASELINE_150)" ]; then \
-	    $(ECHO) "WARNING: Your SECURITY_BASELINE_150 setting is empty.\n" \
-		"        Setting it to the default value of 1.5.0_07.\n" \
-		"        It is recommended to set SECURITY_BASELINE_150.\n" \
-		"" >> $(WARNING_FILE) ; \
-	fi
-endif
-
-######################################################
-# SECURITY_BASELINE_160 test
-######################################################
-security_baseline_160:
-ifeq ($(PLATFORM), windows)
-	@if [ -z "$(SECURITY_BASELINE_160)" ]; then \
-	    $(ECHO) "WARNING: Your SECURITY_BASELINE_160 setting is empty.\n" \
-		"        Setting it to the default value of 1.6.0_11.\n" \
-		"        It is recommended to set SECURITY_BASELINE_160.\n" \
-		"" >> $(WARNING_FILE) ; \
-	fi
-endif
-
 
 ######################################################
 # this should be the last rule in any target's sanity rule.

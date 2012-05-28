@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,34 +21,46 @@
  * questions.
  */
 
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.FileVisitResult;
-import java.nio.file.SimpleFileVisitor;
-import javax.tools.ToolProvider;
+import java.io.StringWriter;
+import java.io.PrintWriter;
+import java.util.Set;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.Files;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 
 import static java.nio.file.StandardCopyOption.*;
+import static java.nio.file.StandardOpenOption.*;
 
 /**
  * This class provides some common utilities for the launcher tests.
  */
-public enum TestHelper {
-    INSTANCE;
+public class TestHelper {
+    // commonly used jtreg constants
+    static final File TEST_CLASSES_DIR;
+    static final File TEST_SOURCES_DIR;
+
     static final String JAVAHOME = System.getProperty("java.home");
+    static final String JAVA_BIN;
     static final boolean isSDK = JAVAHOME.endsWith("jre");
     static final String javaCmd;
+    static final String javawCmd;
     static final String java64Cmd;
     static final String javacCmd;
     static final JavaCompiler compiler;
@@ -56,6 +68,8 @@ public enum TestHelper {
     static final boolean debug = Boolean.getBoolean("TestHelper.Debug");
     static final boolean isWindows =
             System.getProperty("os.name", "unknown").startsWith("Windows");
+    static final boolean isMacOSX =
+            System.getProperty("os.name", "unknown").contains("OS X");
     static final boolean is64Bit =
             System.getProperty("sun.arch.data.model").equals("64");
     static final boolean is32Bit =
@@ -67,9 +81,32 @@ public enum TestHelper {
     static final boolean isDualMode = isSolaris;
     static final boolean isSparc = System.getProperty("os.arch").startsWith("sparc");
 
+    // make a note of the golden default locale
+    static final Locale DefaultLocale = Locale.getDefault();
+
+    static final String JAVA_FILE_EXT  = ".java";
+    static final String CLASS_FILE_EXT = ".class";
+    static final String JAR_FILE_EXT   = ".jar";
+    static final String EXE_FILE_EXT   = ".exe";
+    static final String JLDEBUG_KEY     = "_JAVA_LAUNCHER_DEBUG";
+    static final String EXPECTED_MARKER = "TRACER_MARKER:About to EXEC";
+    static final String TEST_PREFIX     = "###TestError###: ";
+
     static int testExitValue = 0;
 
     static {
+        String tmp = System.getProperty("test.classes", null);
+        if (tmp == null) {
+            throw new Error("property test.classes not defined ??");
+        }
+        TEST_CLASSES_DIR = new File(tmp).getAbsoluteFile();
+
+        tmp = System.getProperty("test.src", null);
+        if (tmp == null) {
+            throw new Error("property test.src not defined ??");
+        }
+        TEST_SOURCES_DIR = new File(tmp).getAbsoluteFile();
+
         if (is64Bit && is32Bit) {
             throw new RuntimeException("arch model cannot be both 32 and 64 bit");
         }
@@ -79,20 +116,35 @@ public enum TestHelper {
         compiler = ToolProvider.getSystemJavaCompiler();
         File binDir = (isSDK) ? new File((new File(JAVAHOME)).getParentFile(), "bin")
             : new File(JAVAHOME, "bin");
+        JAVA_BIN = binDir.getAbsolutePath();
         File javaCmdFile = (isWindows)
                 ? new File(binDir, "java.exe")
                 : new File(binDir, "java");
         javaCmd = javaCmdFile.getAbsolutePath();
         if (!javaCmdFile.canExecute()) {
-            throw new RuntimeException("java <" + TestHelper.javaCmd + "> must exist");
+            throw new RuntimeException("java <" + TestHelper.javaCmd +
+                    "> must exist and should be executable");
         }
 
         File javacCmdFile = (isWindows)
                 ? new File(binDir, "javac.exe")
                 : new File(binDir, "javac");
         javacCmd = javacCmdFile.getAbsolutePath();
+
+        if (isWindows) {
+            File javawCmdFile = new File(binDir, "javaw.exe");
+            javawCmd = javawCmdFile.getAbsolutePath();
+            if (!javawCmdFile.canExecute()) {
+                throw new RuntimeException("java <" + javawCmd +
+                        "> must exist and should be executable");
+            }
+        } else {
+            javawCmd = null;
+        }
+
         if (!javacCmdFile.canExecute()) {
-            throw new RuntimeException("java <" + javacCmd + "> must exist");
+            throw new RuntimeException("java <" + javacCmd +
+                    "> must exist and should be executable");
         }
         if (isSolaris) {
             File sparc64BinDir = new File(binDir,isSparc ? "sparcv9" : "amd64");
@@ -161,6 +213,19 @@ public enum TestHelper {
     }
 
     /*
+     * A convenience method to compile java files.
+     */
+    static void compile(String... compilerArgs) {
+        if (compiler.run(null, null, null, compilerArgs) != 0) {
+            String sarg = "";
+            for (String x : compilerArgs) {
+                sarg.concat(x + " ");
+            }
+            throw new Error("compilation failed: " + sarg);
+        }
+    }
+
+    /*
      * A generic jar file creator to create a java file, compile it
      * and jar it up, a specific Main-Class entry name in the
      * manifest can be specified or a null to use the sole class file name
@@ -171,15 +236,15 @@ public enum TestHelper {
         if (jarName.exists()) {
             jarName.delete();
         }
-        PrintStream ps = new PrintStream(new FileOutputStream(mainClass + ".java"));
-        ps.println("public class Foo {");
-        if (mainDefs != null) {
-            for (String x : mainDefs) {
-                ps.println(x);
+        try (PrintStream ps = new PrintStream(new FileOutputStream(mainClass + ".java"))) {
+            ps.println("public class Foo {");
+            if (mainDefs != null) {
+                for (String x : mainDefs) {
+                    ps.println(x);
+                }
             }
+            ps.println("}");
         }
-        ps.println("}");
-        ps.close();
 
         String compileArgs[] = {
             mainClass + ".java"
@@ -196,12 +261,20 @@ public enum TestHelper {
             mEntry,
             mainClass.getName() + ".class"
         };
+        createJar(jarArgs);
+    }
+
+   static void createJar(String... args) {
         sun.tools.jar.Main jarTool =
                 new sun.tools.jar.Main(System.out, System.err, "JarCreator");
-        if (!jarTool.run(jarArgs)) {
-            throw new RuntimeException("jar creation failed " + jarName);
+        if (!jarTool.run(args)) {
+            String message = "jar creation failed with command:";
+            for (String x : args) {
+                message = message.concat(" " + x);
+            }
+            throw new RuntimeException(message);
         }
-    }
+   }
 
    static void copyFile(File src, File dst) throws IOException {
         Path parent = dst.toPath().getParent();
@@ -209,6 +282,11 @@ public enum TestHelper {
             Files.createDirectories(parent);
         }
         Files.copy(src.toPath(), dst.toPath(), COPY_ATTRIBUTES, REPLACE_EXISTING);
+    }
+
+    static void createFile(File outFile, List<String> content) throws IOException {
+        Files.write(outFile.getAbsoluteFile().toPath(), content,
+                Charset.defaultCharset(), CREATE_NEW);
     }
 
     static void recursiveDelete(File target) throws IOException {
@@ -242,19 +320,28 @@ public enum TestHelper {
     }
 
     static TestResult doExec(String...cmds) {
-        return doExec(null, cmds);
+        return doExec(null, null, cmds);
     }
 
+    static TestResult doExec(Map<String, String> envToSet, String...cmds) {
+        return doExec(envToSet, null, cmds);
+    }
     /*
      * A method which executes a java cmd and returns the results in a container
      */
-    static TestResult doExec(Map<String, String> envToSet, String...cmds) {
+    static TestResult doExec(Map<String, String> envToSet,
+                             Set<String> envToRemove, String...cmds) {
         String cmdStr = "";
         for (String x : cmds) {
             cmdStr = cmdStr.concat(x + " ");
         }
         ProcessBuilder pb = new ProcessBuilder(cmds);
         Map<String, String> env = pb.environment();
+        if (envToRemove != null) {
+            for (String key : envToRemove) {
+                env.remove(key);
+            }
+        }
         if (envToSet != null) {
             env.putAll(envToSet);
         }
@@ -280,12 +367,30 @@ public enum TestHelper {
         }
     }
 
+    static FileFilter createFilter(final String extension) {
+        return new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                String name = pathname.getName();
+                if (name.endsWith(extension)) {
+                    return true;
+                }
+                return false;
+            }
+        };
+    }
+
+    static boolean isEnglishLocale() {
+        return Locale.getDefault().getLanguage().equals("en");
+    }
+
     /*
      * A class to encapsulate the test results and stuff, with some ease
      * of use methods to check the test results.
      */
     static class TestResult {
-        StringBuilder status;
+        PrintWriter status;
+        StringWriter sw;
         int exitValue;
         List<String> testOutput;
         Map<String, String> env;
@@ -293,27 +398,33 @@ public enum TestHelper {
 
         public TestResult(String str, int rv, List<String> oList,
                 Map<String, String> env, Throwable t) {
-            status = new StringBuilder("Executed command: " + str + "\n");
+            sw = new StringWriter();
+            status = new PrintWriter(sw);
+            status.println("Executed command: " + str + "\n");
             exitValue = rv;
             testOutput = oList;
             this.env = env;
             this.t = t;
         }
 
-        void appendStatus(String x) {
-            status = status.append("  " + x + "\n");
+        void appendError(String x) {
+            status.println(TEST_PREFIX + x);
+        }
+
+        void indentStatus(String x) {
+            status.println("  " + x);
         }
 
         void checkNegative() {
             if (exitValue == 0) {
-                appendStatus("Error: test must not return 0 exit value");
+                appendError("test must not return 0 exit value");
                 testExitValue++;
             }
         }
 
         void checkPositive() {
             if (exitValue != 0) {
-                appendStatus("Error: test did not return 0 exit value");
+                appendError("test did not return 0 exit value");
                 testExitValue++;
             }
         }
@@ -324,7 +435,7 @@ public enum TestHelper {
 
         boolean isZeroOutput() {
             if (!testOutput.isEmpty()) {
-                appendStatus("Error: No message from cmd please");
+                appendError("No message from cmd please");
                 testExitValue++;
                 return false;
             }
@@ -333,7 +444,7 @@ public enum TestHelper {
 
         boolean isNotZeroOutput() {
             if (testOutput.isEmpty()) {
-                appendStatus("Error: Missing message");
+                appendError("Missing message");
                 testExitValue++;
                 return false;
             }
@@ -342,22 +453,25 @@ public enum TestHelper {
 
         @Override
         public String toString() {
-            status.append("++++Begin Test Info++++\n");
-            status.append("++++Test Environment++++\n");
+            status.println("++++Begin Test Info++++");
+            status.println("++++Test Environment++++");
             for (String x : env.keySet()) {
-                status.append(x).append("=").append(env.get(x)).append("\n");
+                indentStatus(x + "=" + env.get(x));
             }
-            status.append("++++Test Output++++\n");
+            status.println("++++Test Output++++");
             for (String x : testOutput) {
-                appendStatus(x);
+                indentStatus(x);
             }
-            status.append("++++Test Stack Trace++++\n");
-            status.append(t.toString());
+            status.println("++++Test Stack Trace++++");
+            status.println(t.toString());
             for (StackTraceElement e : t.getStackTrace()) {
-                status.append(e.toString());
+                indentStatus(e.toString());
             }
-            status.append("++++End of Test Info++++\n");
-            return status.toString();
+            status.println("++++End of Test Info++++");
+            status.flush();
+            String out = sw.toString();
+            status.close();
+            return out;
         }
 
         boolean contains(String str) {
@@ -366,7 +480,7 @@ public enum TestHelper {
                     return true;
                 }
             }
-            appendStatus("Error: string <" + str + "> not found");
+            appendError("string <" + str + "> not found");
             testExitValue++;
             return false;
         }
@@ -377,7 +491,7 @@ public enum TestHelper {
                     return true;
                 }
             }
-            appendStatus("Error: string <" + stringToMatch + "> not found");
+            appendError("string <" + stringToMatch + "> not found");
             testExitValue++;
             return false;
         }

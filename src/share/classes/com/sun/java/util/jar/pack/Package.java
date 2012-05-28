@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ package com.sun.java.util.jar.pack;
 import com.sun.java.util.jar.pack.Attribute.Layout;
 import com.sun.java.util.jar.pack.ConstantPool.ClassEntry;
 import com.sun.java.util.jar.pack.ConstantPool.DescriptorEntry;
+import com.sun.java.util.jar.pack.ConstantPool.BootstrapMethodEntry;
 import com.sun.java.util.jar.pack.ConstantPool.Index;
 import com.sun.java.util.jar.pack.ConstantPool.LiteralEntry;
 import com.sun.java.util.jar.pack.ConstantPool.Utf8Entry;
@@ -100,6 +101,8 @@ class Package {
         classes.clear();
         files.clear();
         BandStructure.nextSeqForDebug = 0;
+        package_minver = -1;  // fill in later
+        package_majver = 0;   // fill in later
     }
 
     int getPackageVersion() {
@@ -108,6 +111,7 @@ class Package {
 
     // Special empty versions of Code and InnerClasses, used for markers.
     public static final Attribute.Layout attrCodeEmpty;
+    public static final Attribute.Layout attrBootstrapMethodsEmpty;
     public static final Attribute.Layout attrInnerClassesEmpty;
     public static final Attribute.Layout attrSourceFileSpecial;
     public static final Map<Attribute.Layout, Attribute> attrDefs;
@@ -115,6 +119,8 @@ class Package {
         Map<Layout, Attribute> ad = new HashMap<>(3);
         attrCodeEmpty = Attribute.define(ad, ATTR_CONTEXT_METHOD,
                                          "Code", "").layout();
+        attrBootstrapMethodsEmpty = Attribute.define(ad, ATTR_CONTEXT_CLASS,
+                                                     "BootstrapMethods", "").layout();
         attrInnerClassesEmpty = Attribute.define(ad, ATTR_CONTEXT_CLASS,
                                                  "InnerClasses", "").layout();
         attrSourceFileSpecial = Attribute.define(ad, ATTR_CONTEXT_CLASS,
@@ -153,9 +159,8 @@ class Package {
             package_minver = JAVA6_PACKAGE_MINOR_VERSION;
         } else {
             // Normal case.  Use the newest archive format, when available
-            // TODO: replace the following with JAVA7* when the need arises
-            package_majver = JAVA6_PACKAGE_MAJOR_VERSION;
-            package_minver = JAVA6_PACKAGE_MINOR_VERSION;
+            package_majver = JAVA7_PACKAGE_MAJOR_VERSION;
+            package_minver = JAVA7_PACKAGE_MINOR_VERSION;
         }
     }
 
@@ -168,13 +173,22 @@ class Package {
             String expMag = Integer.toHexString(JAVA_PACKAGE_MAGIC);
             throw new IOException("Unexpected package magic number: got "+gotMag+"; expected "+expMag);
         }
-        if ((package_majver != JAVA6_PACKAGE_MAJOR_VERSION  &&
-             package_majver != JAVA5_PACKAGE_MAJOR_VERSION) ||
-             (package_minver != JAVA6_PACKAGE_MINOR_VERSION &&
-             package_minver != JAVA5_PACKAGE_MINOR_VERSION)) {
-
+        int[] majminFound = null;
+        for (int[] majmin : new int[][]{
+                { JAVA7_PACKAGE_MAJOR_VERSION, JAVA7_PACKAGE_MINOR_VERSION },
+                { JAVA6_PACKAGE_MAJOR_VERSION, JAVA6_PACKAGE_MINOR_VERSION },
+                { JAVA5_PACKAGE_MAJOR_VERSION, JAVA5_PACKAGE_MINOR_VERSION }
+            }) {
+            if (package_majver == majmin[0] && package_minver == majmin[1]) {
+                majminFound = majmin;
+                break;
+            }
+        }
+        if (majminFound == null) {
             String gotVer = package_majver+"."+package_minver;
-            String expVer = JAVA6_PACKAGE_MAJOR_VERSION+"."+JAVA6_PACKAGE_MINOR_VERSION+
+            String expVer = JAVA7_PACKAGE_MAJOR_VERSION+"."+JAVA7_PACKAGE_MINOR_VERSION+
+                            " OR "+
+                            JAVA6_PACKAGE_MAJOR_VERSION+"."+JAVA6_PACKAGE_MINOR_VERSION+
                             " OR "+
                             JAVA5_PACKAGE_MAJOR_VERSION+"."+JAVA5_PACKAGE_MINOR_VERSION;
             throw new IOException("Unexpected package minor version: got "+gotVer+"; expected "+expVer);
@@ -188,7 +202,7 @@ class Package {
     }
 
     public final
-    class Class extends Attribute.Holder implements Comparable {
+    class Class extends Attribute.Holder implements Comparable<Class> {
         public Package getPackage() { return Package.this; }
 
         // Optional file characteristics and data source (a "class stub")
@@ -213,6 +227,7 @@ class Package {
         //ArrayList attributes;  // in Attribute.Holder.this.attributes
         // Note that InnerClasses may be collected at the package level.
         ArrayList<InnerClass> innerClasses;
+        ArrayList<BootstrapMethodEntry> bootstrapMethods;
 
         Class(int flags, ClassEntry thisClass, ClassEntry superClass, ClassEntry[] interfaces) {
             this.magic      = JAVA_MAGIC;
@@ -247,8 +262,7 @@ class Package {
         }
 
         // Note:  equals and hashCode are identity-based.
-        public int compareTo(Object o) {
-            Class that = (Class)o;
+        public int compareTo(Class that) {
             String n0 = this.getName();
             String n1 = that.getName();
             return n0.compareTo(n1);
@@ -312,6 +326,25 @@ class Package {
 
         protected void setCPMap(Entry[] cpMap) {
             this.cpMap = cpMap;
+        }
+
+        boolean hasBootstrapMethods() {
+            return bootstrapMethods != null && !bootstrapMethods.isEmpty();
+        }
+
+        List<BootstrapMethodEntry> getBootstrapMethods() {
+            return bootstrapMethods;
+        }
+
+        BootstrapMethodEntry[] getBootstrapMethodMap() {
+            return (hasBootstrapMethods())
+                    ? bootstrapMethods.toArray(new BootstrapMethodEntry[bootstrapMethods.size()])
+                    : null;
+        }
+
+        void setBootstrapMethods(Collection<BootstrapMethodEntry> bsms) {
+            assert(bootstrapMethods == null);  // do not do this twice
+            bootstrapMethods = new ArrayList<>(bsms);
         }
 
         boolean hasInnerClasses() {
@@ -488,7 +521,7 @@ class Package {
         }
 
         public abstract
-        class Member extends Attribute.Holder implements Comparable {
+        class Member extends Attribute.Holder implements Comparable<Member> {
             DescriptorEntry descriptor;
 
             protected Member(int flags, DescriptorEntry descriptor) {
@@ -549,7 +582,7 @@ class Package {
                 return descriptor.getLiteralTag();
             }
 
-            public int compareTo(Object o) {
+            public int compareTo(Member o) {
                 Field that = (Field)o;
                 return this.order - that.order;
             }
@@ -582,7 +615,7 @@ class Package {
             }
 
             // Sort methods in a canonical order (by type, then by name).
-            public int compareTo(Object o) {
+            public int compareTo(Member o) {
                 Method that = (Method)o;
                 return this.getDescriptor().compareTo(that.getDescriptor());
             }
@@ -608,11 +641,10 @@ class Package {
         public void trimToSize() {
             super.trimToSize();
             for (int isM = 0; isM <= 1; isM++) {
-                ArrayList members = (isM == 0) ? fields : methods;
+                ArrayList<? extends Member> members = (isM == 0) ? fields : methods;
                 if (members == null)  continue;
                 members.trimToSize();
-                for (Iterator i = members.iterator(); i.hasNext(); ) {
-                    Member m = (Member)i.next();
+                for (Member m : members) {
                     m.trimToSize();
                 }
             }
@@ -625,10 +657,9 @@ class Package {
             if ("InnerClass".equals(attrName))
                 innerClasses = null;
             for (int isM = 0; isM <= 1; isM++) {
-                ArrayList members = (isM == 0) ? fields : methods;
+                ArrayList<? extends Member> members = (isM == 0) ? fields : methods;
                 if (members == null)  continue;
-                for (Iterator i = members.iterator(); i.hasNext(); ) {
-                    Member m = (Member)i.next();
+                for (Member m : members) {
                     m.strip(attrName);
                 }
             }
@@ -641,10 +672,9 @@ class Package {
             refs.add(superClass);
             refs.addAll(Arrays.asList(interfaces));
             for (int isM = 0; isM <= 1; isM++) {
-                ArrayList members = (isM == 0) ? fields : methods;
+                ArrayList<? extends Member> members = (isM == 0) ? fields : methods;
                 if (members == null)  continue;
-                for (Iterator i = members.iterator(); i.hasNext(); ) {
-                    Member m = (Member)i.next();
+                for (Member m : members) {
                     boolean ok = false;
                     try {
                         m.visitRefs(mode, refs);
@@ -747,13 +777,13 @@ class Package {
         return classStubs;
     }
 
-    public final class File implements Comparable {
+    public final class File implements Comparable<File> {
         String nameString;  // true name of this file
         Utf8Entry name;
         int modtime = NO_MODTIME;
         int options = 0;  // random flag bits, such as deflate_hint
         Class stubClass;  // if this is a stub, here's the class
-        ArrayList prepend = new ArrayList();  // list of byte[]
+        ArrayList<byte[]> prepend = new ArrayList<>();  // list of byte[]
         java.io.ByteArrayOutputStream append = new ByteArrayOutputStream();
 
         File(Utf8Entry name) {
@@ -798,8 +828,7 @@ class Package {
             return nameString.hashCode();
         }
         // Simple alphabetic sort.  PackageWriter uses a better comparator.
-        public int compareTo(Object o) {
-            File that = (File)o;
+        public int compareTo(File that) {
             return this.nameString.compareTo(that.nameString);
         }
         public String toString() {
@@ -834,8 +863,7 @@ class Package {
         public long getFileLength() {
             long len = 0;
             if (prepend == null || append == null)  return 0;
-            for (Iterator i = prepend.iterator(); i.hasNext(); ) {
-                byte[] block = (byte[]) i.next();
+            for (byte[] block : prepend) {
                 len += block.length;
             }
             len += append.size();
@@ -843,8 +871,7 @@ class Package {
         }
         public void writeTo(OutputStream out) throws IOException {
             if (prepend == null || append == null)  return;
-            for (Iterator i = prepend.iterator(); i.hasNext(); ) {
-                byte[] block = (byte[]) i.next();
+            for (byte[] block : prepend) {
                 out.write(block);
             }
             append.writeTo(out);
@@ -860,8 +887,7 @@ class Package {
             InputStream in = new ByteArrayInputStream(append.toByteArray());
             if (prepend.isEmpty())  return in;
             List<InputStream> isa = new ArrayList<>(prepend.size()+1);
-            for (Iterator i = prepend.iterator(); i.hasNext(); ) {
-                byte[] bytes = (byte[]) i.next();
+            for (byte[] bytes : prepend) {
                 isa.add(new ByteArrayInputStream(bytes));
             }
             isa.add(in);
@@ -926,7 +952,7 @@ class Package {
     }
 
     static
-    class InnerClass implements Comparable {
+    class InnerClass implements Comparable<InnerClass> {
         final ClassEntry thisClass;
         final ClassEntry outerClass;
         final Utf8Entry name;
@@ -977,8 +1003,7 @@ class Package {
         public int hashCode() {
             return thisClass.hashCode();
         }
-        public int compareTo(Object o) {
-            InnerClass that = (InnerClass)o;
+        public int compareTo(InnerClass that) {
             return this.thisClass.compareTo(that.thisClass);
         }
 
@@ -1108,7 +1133,7 @@ class Package {
         return ConstantPool.getUtf8Entry(s);
     }
 
-    static LiteralEntry getRefLiteral(Comparable s) {
+    static LiteralEntry getRefLiteral(Comparable<?> s) {
         return ConstantPool.getLiteralEntry(s);
     }
 
@@ -1199,7 +1224,6 @@ class Package {
     // compress better.  It also moves classes to the end of the
     // file order.  It also removes JAR directory entries, which
     // are useless.
-    @SuppressWarnings("unchecked")
     void reorderFiles(boolean keepClassOrder, boolean stripDirectories) {
         // First reorder the classes, if that is allowed.
         if (!keepClassOrder) {
@@ -1226,10 +1250,8 @@ class Package {
         // This keeps files of similar format near each other.
         // Put class files at the end, keeping their fixed order.
         // Be sure the JAR file's required manifest stays at the front. (4893051)
-        Collections.sort(files, new Comparator() {
-                public int compare(Object o0, Object o1) {
-                    File r0 = (File) o0;
-                    File r1 = (File) o1;
+        Collections.sort(files, new Comparator<File>() {
+                public int compare(File r0, File r1) {
                     // Get the file name.
                     String f0 = r0.nameString;
                     String f1 = r1.nameString;
@@ -1295,7 +1317,8 @@ class Package {
             byTagU[tag] = null;  // done with it
         }
         for (int i = 0; i < byTagU.length; i++) {
-            assert(byTagU[i] == null);  // all consumed
+            Index ix = byTagU[i];
+            assert(ix == null);  // all consumed
         }
         for (int i = 0; i < ConstantPool.TAGS_IN_ORDER.length; i++) {
             byte tag = ConstantPool.TAGS_IN_ORDER[i];

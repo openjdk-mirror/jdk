@@ -105,7 +105,6 @@ class XTextAreaPeer extends XComponentPeer implements TextAreaPeer {
         this.target = target;
 
         //ComponentAccessor.enableEvents(target,AWTEvent.MOUSE_WHEEL_EVENT_MASK);
-        target.enableInputMethods(true);
 
         firstChangeSkipped = false;
         String text = ((TextArea)target).getText();
@@ -113,7 +112,6 @@ class XTextAreaPeer extends XComponentPeer implements TextAreaPeer {
         jtext.setWrapStyleWord(true);
         jtext.getDocument().addDocumentListener(jtext);
         XToolkit.specialPeerMap.put(jtext,this);
-        jtext.enableInputMethods(true);
         textPane = new AWTTextPane(jtext,this, target.getParent());
 
         setBounds(x, y, width, height, SET_BOUNDS);
@@ -170,6 +168,8 @@ class XTextAreaPeer extends XComponentPeer implements TextAreaPeer {
 
     public void dispose() {
         XToolkit.specialPeerMap.remove(jtext);
+        // visible caret has a timer thread which must be stopped
+        jtext.getCaret().setVisible(false);
         jtext.removeNotify();
         textPane.removeNotify();
         super.dispose();
@@ -185,11 +185,8 @@ class XTextAreaPeer extends XComponentPeer implements TextAreaPeer {
      */
     @Override
     public void pSetCursor(Cursor cursor, boolean ignoreSubComponents) {
-        Point onScreen = getLocationOnScreen();
         if (ignoreSubComponents ||
-            javaMouseEventHandler == null ||
-            onScreen == null)
-        {
+            javaMouseEventHandler == null) {
             super.pSetCursor(cursor, true);
             return;
         }
@@ -197,6 +194,7 @@ class XTextAreaPeer extends XComponentPeer implements TextAreaPeer {
         Point cursorPos = new Point();
         ((XGlobalCursorManager)XGlobalCursorManager.getCursorManager()).getCursorPos(cursorPos);
 
+        final Point onScreen = getLocationOnScreen();
         Point localPoint = new Point(cursorPos.x - onScreen.x, cursorPos.y - onScreen.y );
 
         javaMouseEventHandler.setPointerToUnderPoint(localPoint);
@@ -300,15 +298,14 @@ class XTextAreaPeer extends XComponentPeer implements TextAreaPeer {
      * Paint the component
      * this method is called when the repaint instruction has been used
      */
-
     public void repaint() {
         if (textPane  != null)  {
             //textPane.validate();
             textPane.repaint();
         }
     }
-
-    public void paint(Graphics g) {
+    @Override
+    void paintPeer(final Graphics g) {
         if (textPane  != null)  {
             textPane.paint(g);
         }
@@ -660,10 +657,13 @@ class XTextAreaPeer extends XComponentPeer implements TextAreaPeer {
     }
 
 
-    // TODO : fix this duplicate code
-    class XAWTCaret extends DefaultCaret {
+    static class XAWTCaret extends DefaultCaret {
         public void focusGained(FocusEvent e) {
             super.focusGained(e);
+            if (getComponent().isEnabled()){
+                // Make sure the cursor is visible in case of non-editable TextArea
+                super.setVisible(true);
+            }
             getComponent().repaint();
         }
 

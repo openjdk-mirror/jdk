@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,8 +40,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.crypto.BadPaddingException;
 
 import javax.net.ssl.*;
-
-import com.sun.net.ssl.internal.ssl.X509ExtendedTrustManager;
 
 /**
  * Implementation of an SSL socket.  This is a normal connection type
@@ -371,6 +369,17 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
     /* Class and subclass dynamic debugging support */
     private static final Debug debug = Debug.getInstance("ssl");
 
+    /*
+     * Is it the first application record to write?
+     */
+    private boolean isFirstAppOutputRecord = true;
+
+    /*
+     * If AppOutputStream needs to delay writes of small packets, we
+     * will use this to store the data until we actually do the write.
+     */
+    private ByteArrayOutputStream heldRecordBuffer = null;
+
     //
     // CONSTRUCTORS AND INITIALIZATION CODE
     //
@@ -651,13 +660,24 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
     //
 
     /*
+     * AppOutputStream calls may need to buffer multiple outbound
+     * application packets.
+     *
+     * All other writeRecord() calls will not buffer, so do not hold
+     * these records.
+     */
+    void writeRecord(OutputRecord r) throws IOException {
+        writeRecord(r, false);
+    }
+
+    /*
      * Record Output. Application data can't be sent until the first
      * handshake establishes a session.
      *
      * NOTE:  we let empty records be written as a hook to force some
      * TCP-level activity, notably handshaking, to occur.
      */
-    void writeRecord(OutputRecord r) throws IOException {
+    void writeRecord(OutputRecord r, boolean holdRecord) throws IOException {
         /*
          * The loop is in case of HANDSHAKE --> ERROR transitions, etc
          */
@@ -728,7 +748,7 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
                 try {
                     if (writeLock.tryLock(getSoLinger(), TimeUnit.SECONDS)) {
                         try {
-                            writeRecordInternal(r);
+                            writeRecordInternal(r, holdRecord);
                         } finally {
                             writeLock.unlock();
                         }
@@ -776,7 +796,7 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
             } else {
                 writeLock.lock();
                 try {
-                    writeRecordInternal(r);
+                    writeRecordInternal(r, holdRecord);
                 } finally {
                     writeLock.unlock();
                 }
@@ -784,11 +804,29 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
         }
     }
 
-    private void writeRecordInternal(OutputRecord r) throws IOException {
+    private void writeRecordInternal(OutputRecord r,
+            boolean holdRecord) throws IOException {
+
         // r.compress(c);
         r.addMAC(writeMAC);
         r.encrypt(writeCipher);
-        r.write(sockOutput);
+
+        if (holdRecord) {
+            // If we were requested to delay the record due to possibility
+            // of Nagle's being active when finally got to writing, and
+            // it's actually not, we don't really need to delay it.
+            if (getTcpNoDelay()) {
+                holdRecord = false;
+            } else {
+                // We need to hold the record, so let's provide
+                // a per-socket place to do it.
+                if (heldRecordBuffer == null) {
+                    // Likely only need 37 bytes.
+                    heldRecordBuffer = new ByteArrayOutputStream(40);
+                }
+            }
+        }
+        r.write(sockOutput, holdRecord, heldRecordBuffer);
 
         /*
          * Check the sequence number state
@@ -804,8 +842,35 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
         if (connectionState < cs_ERROR) {
             checkSequenceNumber(writeMAC, r.contentType());
         }
+
+        // turn off the flag of the first application record
+        if (isFirstAppOutputRecord &&
+                r.contentType() == Record.ct_application_data) {
+            isFirstAppOutputRecord = false;
+        }
     }
 
+    /*
+     * Need to split the payload except the following cases:
+     *
+     * 1. protocol version is TLS 1.1 or later;
+     * 2. bulk cipher does not use CBC mode, including null bulk cipher suites.
+     * 3. the payload is the first application record of a freshly
+     *    negotiated TLS session.
+     * 4. the CBC protection is disabled;
+     *
+     * More details, please refer to AppOutputStream.write(byte[], int, int).
+     */
+    boolean needToSplitPayload() {
+        writeLock.lock();
+        try {
+            return (protocolVersion.v <= ProtocolVersion.TLS10.v) &&
+                    writeCipher.isCBCMode() && !isFirstAppOutputRecord &&
+                    Record.enableCBCProtection;
+        } finally {
+            writeLock.unlock();
+        }
+    }
 
     /*
      * Read an application data record.  Alerts and handshake
@@ -1455,7 +1520,8 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
 
     private void closeSocket(boolean selfInitiated) throws IOException {
         if ((debug != null) && Debug.isOn("ssl")) {
-            System.out.println(threadName() + ", called closeSocket(selfInitiated)");
+            System.out.println(threadName() +
+                ", called closeSocket(" + selfInitiated + ")");
         }
         if (self == this) {
             super.close();
@@ -1996,8 +2062,7 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
             readMAC = handshaker.newReadMAC();
         } catch (GeneralSecurityException e) {
             // "can't happen"
-            throw (SSLException)new SSLException
-                                ("Algorithm missing:  ").initCause(e);
+            throw new SSLException("Algorithm missing:  ", e);
         }
 
         /*
@@ -2028,12 +2093,14 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
             writeMAC = handshaker.newWriteMAC();
         } catch (GeneralSecurityException e) {
             // "can't happen"
-            throw (SSLException)new SSLException
-                                ("Algorithm missing:  ").initCause(e);
+            throw new SSLException("Algorithm missing:  ", e);
         }
 
         // See comment above.
         oldCipher.dispose();
+
+        // reset the flag of the first application record
+        isFirstAppOutputRecord = true;
     }
 
     /*
@@ -2217,6 +2284,7 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
      * client or server mode.  Must be called before any SSL
      * traffic has started.
      */
+    @SuppressWarnings("fallthrough")
     synchronized public void setUseClientMode(boolean flag) {
         switch (connectionState) {
 
@@ -2443,11 +2511,12 @@ final public class SSLSocketImpl extends BaseSSLSocketImpl {
             entrySet, HandshakeCompletedEvent e) {
 
             super("HandshakeCompletedNotify-Thread");
-            targets = entrySet;
+            targets = new HashSet<>(entrySet);          // clone the entry set
             event = e;
         }
 
         public void run() {
+            // Don't need to synchronize, as it only runs in one thread.
             for (Map.Entry<HandshakeCompletedListener,AccessControlContext>
                 entry : targets) {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -150,6 +150,7 @@ public class Collections {
      *         detects that the natural ordering of the list elements is
      *         found to violate the {@link Comparable} contract
      */
+    @SuppressWarnings("unchecked")
     public static <T extends Comparable<? super T>> void sort(List<T> list) {
         Object[] a = list.toArray();
         Arrays.sort(a);
@@ -212,13 +213,14 @@ public class Collections {
      * @throws IllegalArgumentException (optional) if the comparator is
      *         found to violate the {@link Comparator} contract
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static <T> void sort(List<T> list, Comparator<? super T> c) {
         Object[] a = list.toArray();
         Arrays.sort(a, (Comparator)c);
-        ListIterator i = list.listIterator();
+        ListIterator<T> i = list.listIterator();
         for (int j=0; j<a.length; j++) {
             i.next();
-            i.set(a[j]);
+            i.set((T)a[j]);
         }
     }
 
@@ -357,9 +359,10 @@ public class Collections {
      *         or the search key is not mutually comparable with the
      *         elements of the list using this comparator.
      */
+    @SuppressWarnings("unchecked")
     public static <T> int binarySearch(List<? extends T> list, T key, Comparator<? super T> c) {
         if (c==null)
-            return binarySearch((List) list, key);
+            return binarySearch((List<? extends Comparable<? super T>>) list, key);
 
         if (list instanceof RandomAccess || list.size()<BINARYSEARCH_THRESHOLD)
             return Collections.indexedBinarySearch(list, key, c);
@@ -406,9 +409,6 @@ public class Collections {
         return -(low + 1);  // key not found
     }
 
-    private interface SelfComparable extends Comparable<SelfComparable> {}
-
-
     /**
      * Reverses the order of the elements in the specified list.<p>
      *
@@ -418,12 +418,16 @@ public class Collections {
      * @throws UnsupportedOperationException if the specified list or
      *         its list-iterator does not support the <tt>set</tt> operation.
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static void reverse(List<?> list) {
         int size = list.size();
         if (size < REVERSE_THRESHOLD || list instanceof RandomAccess) {
             for (int i=0, mid=size>>1, j=size-1; i<mid; i++, j--)
                 swap(list, i, j);
         } else {
+            // instead of using a raw type here, it's possible to capture
+            // the wildcard but it will require a call to a supplementary
+            // private method
             ListIterator fwd = list.listIterator();
             ListIterator rev = list.listIterator(size);
             for (int i=0, mid=list.size()>>1; i<mid; i++) {
@@ -493,6 +497,7 @@ public class Collections {
      * @throws UnsupportedOperationException if the specified list or its
      *         list-iterator does not support the <tt>set</tt> operation.
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static void shuffle(List<?> list, Random rnd) {
         int size = list.size();
         if (size < SHUFFLE_THRESHOLD || list instanceof RandomAccess) {
@@ -506,6 +511,9 @@ public class Collections {
                 swap(arr, i-1, rnd.nextInt(i));
 
             // Dump array back into list
+            // instead of using a raw type here, it's possible to capture
+            // the wildcard but it will require a call to a supplementary
+            // private method
             ListIterator it = list.listIterator();
             for (int i=0; i<arr.length; i++) {
                 it.next();
@@ -527,7 +535,11 @@ public class Collections {
      *         || j &lt; 0 || j &gt;= list.size()).
      * @since 1.4
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static void swap(List<?> list, int i, int j) {
+        // instead of using a raw type here, it's possible to capture
+        // the wildcard but it will require a call to a supplementary
+        // private method
         final List l = list;
         l.set(i, l.set(j, l.get(i)));
     }
@@ -657,9 +669,10 @@ public class Collections {
      * @throws NoSuchElementException if the collection is empty.
      * @see Comparable
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static <T> T min(Collection<? extends T> coll, Comparator<? super T> comp) {
         if (comp==null)
-            return (T)min((Collection<SelfComparable>) (Collection) coll);
+            return (T)min((Collection) coll);
 
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
@@ -727,9 +740,10 @@ public class Collections {
      * @throws NoSuchElementException if the collection is empty.
      * @see Comparable
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static <T> T max(Collection<? extends T> coll, Comparator<? super T> comp) {
         if (comp==null)
-            return (T)max((Collection<SelfComparable>) (Collection) coll);
+            return (T)max((Collection) coll);
 
         Iterator<? extends T> i = coll.iterator();
         T candidate = i.next();
@@ -1389,7 +1403,9 @@ public class Collections {
             extends UnmodifiableSet<Map.Entry<K,V>> {
             private static final long serialVersionUID = 7854390611657943733L;
 
+            @SuppressWarnings({ "unchecked", "rawtypes" })
             UnmodifiableEntrySet(Set<? extends Map.Entry<? extends K, ? extends V>> s) {
+                // Need to cast to raw in order to work around a limitation in the type system
                 super((Set)s);
             }
             public Iterator<Map.Entry<K,V>> iterator() {
@@ -1408,13 +1424,15 @@ public class Collections {
                 };
             }
 
+            @SuppressWarnings("unchecked")
             public Object[] toArray() {
                 Object[] a = c.toArray();
                 for (int i=0; i<a.length; i++)
-                    a[i] = new UnmodifiableEntry<>((Map.Entry<K,V>)a[i]);
+                    a[i] = new UnmodifiableEntry<>((Map.Entry<? extends K, ? extends V>)a[i]);
                 return a;
             }
 
+            @SuppressWarnings("unchecked")
             public <T> T[] toArray(T[] a) {
                 // We don't pass a to c.toArray, to avoid window of
                 // vulnerability wherein an unscrupulous multithreaded client
@@ -1422,7 +1440,7 @@ public class Collections {
                 Object[] arr = c.toArray(a.length==0 ? a : Arrays.copyOf(a, 0));
 
                 for (int i=0; i<arr.length; i++)
-                    arr[i] = new UnmodifiableEntry<>((Map.Entry<K,V>)arr[i]);
+                    arr[i] = new UnmodifiableEntry<>((Map.Entry<? extends K, ? extends V>)arr[i]);
 
                 if (arr.length > a.length)
                     return (T[])arr;
@@ -1464,7 +1482,7 @@ public class Collections {
 
                 if (!(o instanceof Set))
                     return false;
-                Set s = (Set) o;
+                Set<?> s = (Set<?>) o;
                 if (s.size() != c.size())
                     return false;
                 return containsAll(s); // Invokes safe containsAll() above
@@ -1489,9 +1507,11 @@ public class Collections {
                 }
                 public int hashCode()    {return e.hashCode();}
                 public boolean equals(Object o) {
+                    if (this == o)
+                        return true;
                     if (!(o instanceof Map.Entry))
                         return false;
-                    Map.Entry t = (Map.Entry)o;
+                    Map.Entry<?,?> t = (Map.Entry<?,?>)o;
                     return eq(e.getKey(),   t.getKey()) &&
                            eq(e.getValue(), t.getValue());
                 }
@@ -1709,6 +1729,8 @@ public class Collections {
         }
 
         public boolean equals(Object o) {
+            if (this == o)
+                return true;
             synchronized (mutex) {return c.equals(o);}
         }
         public int hashCode() {
@@ -1863,6 +1885,8 @@ public class Collections {
         }
 
         public boolean equals(Object o) {
+            if (this == o)
+                return true;
             synchronized (mutex) {return list.equals(o);}
         }
         public int hashCode() {
@@ -2073,6 +2097,8 @@ public class Collections {
         }
 
         public boolean equals(Object o) {
+            if (this == o)
+                return true;
             synchronized (mutex) {return m.equals(o);}
         }
         public int hashCode() {
@@ -2348,6 +2374,64 @@ public class Collections {
             // semantics (which we wouldn't get if we type-checked each
             // element as we added it)
             return c.addAll(checkedCopyOf(coll));
+        }
+    }
+
+    /**
+     * Returns a dynamically typesafe view of the specified queue.
+     * Any attempt to insert an element of the wrong type will result in
+     * an immediate {@link ClassCastException}.  Assuming a queue contains
+     * no incorrectly typed elements prior to the time a dynamically typesafe
+     * view is generated, and that all subsequent access to the queue
+     * takes place through the view, it is <i>guaranteed</i> that the
+     * queue cannot contain an incorrectly typed element.
+     *
+     * <p>A discussion of the use of dynamically typesafe views may be
+     * found in the documentation for the {@link #checkedCollection
+     * checkedCollection} method.
+     *
+     * <p>The returned queue will be serializable if the specified queue
+     * is serializable.
+     *
+     * <p>Since {@code null} is considered to be a value of any reference
+     * type, the returned queue permits insertion of {@code null} elements
+     * whenever the backing queue does.
+     *
+     * @param queue the queue for which a dynamically typesafe view is to be
+     *             returned
+     * @param type the type of element that {@code queue} is permitted to hold
+     * @return a dynamically typesafe view of the specified queue
+     * @since 1.8
+     */
+    public static <E> Queue<E> checkedQueue(Queue<E> queue, Class<E> type) {
+        return new CheckedQueue<>(queue, type);
+    }
+
+    /**
+     * @serial include
+     */
+    static class CheckedQueue<E>
+        extends CheckedCollection<E>
+        implements Queue<E>, Serializable
+    {
+        private static final long serialVersionUID = 1433151992604707767L;
+        final Queue<E> queue;
+
+        CheckedQueue(Queue<E> queue, Class<E> elementType) {
+            super(queue, elementType);
+            this.queue = queue;
+        }
+
+        public E element()              {return queue.element();}
+        public boolean equals(Object o) {return o == this || c.equals(o);}
+        public int hashCode()           {return c.hashCode();}
+        public E peek()                 {return queue.peek();}
+        public E poll()                 {return queue.poll();}
+        public E remove()               {return queue.remove();}
+
+        public boolean offer(E e) {
+            typeCheck(e);
+            return add(e);
         }
     }
 
@@ -3140,6 +3224,102 @@ public class Collections {
         // Preserves singleton property
         private Object readResolve() {
             return EMPTY_SET;
+        }
+    }
+
+    /**
+     * Returns the empty sorted set (immutable).  This set is serializable.
+     *
+     * <p>This example illustrates the type-safe way to obtain an empty sorted
+     * set:
+     * <pre>
+     *     SortedSet&lt;String&gt; s = Collections.emptySortedSet();
+     * </pre>
+     * Implementation note:  Implementations of this method need not
+     * create a separate <tt>SortedSet</tt> object for each call.
+     *
+     * @since 1.8
+     */
+    @SuppressWarnings("unchecked")
+    public static final <E> SortedSet<E> emptySortedSet() {
+        return (SortedSet<E>) new EmptySortedSet<>();
+    }
+
+    /**
+     * @serial include
+     */
+    private static class EmptySortedSet<E>
+        extends AbstractSet<E>
+        implements SortedSet<E>, Serializable
+    {
+        private static final long serialVersionUID = 6316515401502265487L;
+        public Iterator<E> iterator() { return emptyIterator(); }
+        public int size() {return 0;}
+        public boolean isEmpty() {return true;}
+        public boolean contains(Object obj) {return false;}
+        public boolean containsAll(Collection<?> c) { return c.isEmpty(); }
+        public Object[] toArray() { return new Object[0]; }
+
+        public <E> E[] toArray(E[] a) {
+            if (a.length > 0)
+                a[0] = null;
+            return a;
+        }
+
+        // Preserves singleton property
+        private Object readResolve() {
+            return new EmptySortedSet<>();
+        }
+
+        public Comparator comparator() {
+            return null;
+        }
+
+        public SortedSet<E> subSet(Object fromElement, Object toElement) {
+            Objects.requireNonNull(fromElement);
+            Objects.requireNonNull(toElement);
+
+            if (!(fromElement instanceof Comparable) ||
+                    !(toElement instanceof Comparable))
+            {
+                throw new ClassCastException();
+            }
+
+            if ((((Comparable)fromElement).compareTo(toElement) >= 0) ||
+                    (((Comparable)toElement).compareTo(fromElement) < 0))
+            {
+                throw new IllegalArgumentException();
+            }
+
+            return emptySortedSet();
+        }
+
+        public SortedSet<E> headSet(Object toElement) {
+            Objects.requireNonNull(toElement);
+
+            if (!(toElement instanceof Comparable)) {
+                throw new ClassCastException();
+            }
+
+            return emptySortedSet();
+        }
+
+        public SortedSet<E> tailSet(Object fromElement) {
+            Objects.requireNonNull(fromElement);
+
+            if (!(fromElement instanceof Comparable)) {
+                throw new ClassCastException();
+            }
+
+            return emptySortedSet();
+        }
+
+        public E first() {
+            throw new NoSuchElementException();
+        }
+
+        public E last() {
+            throw new NoSuchElementException();
         }
     }
 

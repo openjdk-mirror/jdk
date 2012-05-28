@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -256,11 +256,9 @@ public abstract class Preferences {
                                       .getContextClassLoader())
                         .newInstance();
                 } catch (Exception e) {
-                    InternalError error = new InternalError(
+                    throw new InternalError(
                         "Can't instantiate Preferences factory "
-                        + factoryName);
-                    error.initCause(e);
-                    throw error;
+                        + factoryName, e);
                 }
             }
         }
@@ -291,19 +289,22 @@ public abstract class Preferences {
         }
 
         // 3. Use platform-specific system-wide default
-        String platformFactory =
-            System.getProperty("os.name").startsWith("Windows")
-            ? "java.util.prefs.WindowsPreferencesFactory"
-            : "java.util.prefs.FileSystemPreferencesFactory";
+        String osName = System.getProperty("os.name");
+        String platformFactory;
+        if (osName.startsWith("Windows")) {
+            platformFactory = "java.util.prefs.WindowsPreferencesFactory";
+        } else if (osName.contains("OS X")) {
+            platformFactory = "java.util.prefs.MacOSXPreferencesFactory";
+        } else {
+            platformFactory = "java.util.prefs.FileSystemPreferencesFactory";
+        }
         try {
             return (PreferencesFactory)
                 Class.forName(platformFactory, false, null).newInstance();
         } catch (Exception e) {
-            InternalError error = new InternalError(
+            throw new InternalError(
                 "Can't instantiate platform default Preferences factory "
-                + platformFactory);
-            error.initCause(e);
-            throw error;
+                + platformFactory, e);
         }
     }
 
@@ -417,7 +418,7 @@ public abstract class Preferences {
      * @throws IllegalArgumentException if the package has node preferences
      *         node associated with it.
      */
-    private static String nodeName(Class c) {
+    private static String nodeName(Class<?> c) {
         if (c.isArray())
             throw new IllegalArgumentException(
                 "Arrays have no associated preferences node.");

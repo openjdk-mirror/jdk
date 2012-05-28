@@ -37,7 +37,6 @@ import javax.management.RuntimeOperationsException;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import sun.security.action.LoadLibraryAction;
 
 import sun.util.logging.LoggingSupport;
 
@@ -110,7 +109,7 @@ public class ManagementFactoryHelper {
 
     public static List<MemoryPoolMXBean> getMemoryPoolMXBeans() {
         MemoryPoolMXBean[] pools = MemoryImpl.getMemoryPools();
-        List<MemoryPoolMXBean> list = new ArrayList<MemoryPoolMXBean>(pools.length);
+        List<MemoryPoolMXBean> list = new ArrayList<>(pools.length);
         for (MemoryPoolMXBean p : pools) {
             list.add(p);
         }
@@ -119,7 +118,7 @@ public class ManagementFactoryHelper {
 
     public static List<MemoryManagerMXBean> getMemoryManagerMXBeans() {
         MemoryManagerMXBean[]  mgrs = MemoryImpl.getMemoryManagers();
-        List<MemoryManagerMXBean> result = new ArrayList<MemoryManagerMXBean>(mgrs.length);
+        List<MemoryManagerMXBean> result = new ArrayList<>(mgrs.length);
         for (MemoryManagerMXBean m : mgrs) {
             result.add(m);
         }
@@ -128,7 +127,7 @@ public class ManagementFactoryHelper {
 
     public static List<GarbageCollectorMXBean> getGarbageCollectorMXBeans() {
         MemoryManagerMXBean[]  mgrs = MemoryImpl.getMemoryManagers();
-        List<GarbageCollectorMXBean> result = new ArrayList<GarbageCollectorMXBean>(mgrs.length);
+        List<GarbageCollectorMXBean> result = new ArrayList<>(mgrs.length);
         for (MemoryManagerMXBean m : mgrs) {
             if (GarbageCollectorMXBean.class.isInstance(m)) {
                  result.add(GarbageCollectorMXBean.class.cast(m));
@@ -171,7 +170,8 @@ public class ManagementFactoryHelper {
             ObjectName result = objname;
             if (result == null) {
                 synchronized (this) {
-                    if (objname == null) {
+                    result = objname;
+                    if (result == null) {
                         result = Util.newObjectName(LOGGING_MXBEAN_NAME);
                         objname = result;
                     }
@@ -228,7 +228,8 @@ public class ManagementFactoryHelper {
                 ObjectName result = objname;
                 if (result == null) {
                     synchronized (this) {
-                        if (objname == null) {
+                        result = objname;
+                        if (result == null) {
                             result = Util.newObjectName(BUFFER_POOL_MXBEAN_NAME +
                                 ",name=" + pool.getName());
                             objname = result;
@@ -420,7 +421,13 @@ public class ManagementFactoryHelper {
     }
 
     static {
-        AccessController.doPrivileged(new LoadLibraryAction("management"));
+        AccessController.doPrivileged(
+            new java.security.PrivilegedAction<Void>() {
+                public Void run() {
+                    System.loadLibrary("management");
+                    return null;
+                }
+            });
         jvm = new VMManagementImpl();
     }
 

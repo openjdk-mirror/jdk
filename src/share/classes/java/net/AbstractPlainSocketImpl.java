@@ -71,14 +71,19 @@ abstract class AbstractPlainSocketImpl extends SocketImpl
 
    /* whether this Socket is a stream (TCP) socket or not (UDP)
     */
-    private boolean stream;
+    protected boolean stream;
 
     /**
      * Load net library into runtime.
      */
     static {
         java.security.AccessController.doPrivileged(
-                  new sun.security.action.LoadLibraryAction("net"));
+            new java.security.PrivilegedAction<Void>() {
+                public Void run() {
+                    System.loadLibrary("net");
+                    return null;
+                }
+            });
     }
 
     /**
@@ -86,10 +91,11 @@ abstract class AbstractPlainSocketImpl extends SocketImpl
      * is a stream socket (true) or an unconnected UDP socket (false).
      */
     protected synchronized void create(boolean stream) throws IOException {
-        fd = new FileDescriptor();
         this.stream = stream;
         if (!stream) {
             ResourceManager.beforeUdpCreate();
+            // only create the fd after we know we will be able to create the socket
+            fd = new FileDescriptor();
             try {
                 socketCreate(false);
             } catch (IOException ioe) {
@@ -98,6 +104,7 @@ abstract class AbstractPlainSocketImpl extends SocketImpl
                 throw ioe;
             }
         } else {
+            fd = new FileDescriptor();
             socketCreate(true);
         }
         if (socket != null)
@@ -457,10 +464,10 @@ abstract class AbstractPlainSocketImpl extends SocketImpl
         }
 
         /*
-         * If connection has been reset then return 0 to indicate
-         * there are no buffered bytes.
+         * If connection has been reset or shut down for input, then return 0
+         * to indicate there are no buffered bytes.
          */
-        if (isConnectionReset()) {
+        if (isConnectionReset() || shut_rd) {
             return 0;
         }
 

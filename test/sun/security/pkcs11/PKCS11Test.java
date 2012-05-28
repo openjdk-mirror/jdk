@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2007, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,10 +72,33 @@ public abstract class PKCS11Test {
     }
 
     public static void main(PKCS11Test test) throws Exception {
-        System.out.println("Beginning test run " + test.getClass().getName() + "...");
-        testDefault(test);
-        testNSS(test);
-        testDeimos(test);
+        Provider[] oldProviders = Security.getProviders();
+        try {
+            System.out.println("Beginning test run " + test.getClass().getName() + "...");
+            testDefault(test);
+            testNSS(test);
+            testDeimos(test);
+        } finally {
+            Provider[] newProviders = Security.getProviders();
+            // Do not restore providers if nothing changed. This is especailly
+            // useful for ./Provider/Login.sh, where a SecurityManager exists.
+            if (oldProviders.length == newProviders.length) {
+                boolean found = false;
+                for (int i = 0; i<oldProviders.length; i++) {
+                    if (oldProviders[i] != newProviders[i]) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) return;
+            }
+            for (Provider p: newProviders) {
+                Security.removeProvider(p.getName());
+            }
+            for (Provider p: oldProviders) {
+                Security.addProvider(p);
+            }
+        }
     }
 
     public static void testDeimos(PKCS11Test test) throws Exception {
@@ -106,6 +129,13 @@ public abstract class PKCS11Test {
     }
 
     private static String PKCS11_BASE;
+    static {
+        try {
+            PKCS11_BASE = getBase();
+        } catch (Exception e) {
+            // ignore
+        }
+    }
 
     private final static String PKCS11_REL_PATH = "sun/security/pkcs11";
 
@@ -137,37 +167,37 @@ public abstract class PKCS11Test {
         }
         String osid = osName + "-"
                 + props.getProperty("os.arch") + "-" + props.getProperty("sun.arch.data.model");
-        String ostype = osMap.get(osid);
-        if (ostype == null) {
+        String nssLibDir = osMap.get(osid);
+        if (nssLibDir == null) {
             System.out.println("Unsupported OS, skipping: " + osid);
             return null;
-//          throw new Exception("Unsupported OS " + osid);
+//          throw new Exception("Unsupported OS " + osName);
         }
-        if (ostype.length() == 0) {
+        if (nssLibDir.length() == 0) {
             System.out.println("NSS not supported on this platform, skipping test");
             return null;
         }
-        String base = getBase();
-        String libdir = base + SEP + "nss" + SEP + "lib" + SEP + ostype + SEP;
-        System.setProperty("pkcs11test.nss.libdir", libdir);
-        return libdir;
+        System.setProperty("pkcs11test.nss.libdir", nssLibDir);
+        return nssLibDir;
+    }
+
+    protected static void safeReload(String lib) throws Exception {
+        try {
+            System.load(lib);
+        } catch (UnsatisfiedLinkError e) {
+            if (e.getMessage().contains("already loaded")) {
+                return;
+            }
+        }
     }
 
     static boolean loadNSPR(String libdir) throws Exception {
         // load NSS softoken dependencies in advance to avoid resolver issues
-        try {
-            System.load(libdir + System.mapLibraryName(NSPR_PREFIX + "nspr4"));
-        } catch (UnsatisfiedLinkError e) {
-            // GLIBC problem on older linux-amd64 machines
-            if (libdir.contains("linux-amd64")) {
-                System.out.println(e);
-                System.out.println("NSS does not work on this platform, skipping.");
-                return false;
-            }
-            throw e;
-        }
-        System.load(libdir + System.mapLibraryName(NSPR_PREFIX + "plc4"));
-        System.load(libdir + System.mapLibraryName(NSPR_PREFIX + "plds4"));
+        safeReload(libdir + System.mapLibraryName(NSPR_PREFIX + "nspr4"));
+        safeReload(libdir + System.mapLibraryName(NSPR_PREFIX + "plc4"));
+        safeReload(libdir + System.mapLibraryName(NSPR_PREFIX + "plds4"));
+        safeReload(libdir + System.mapLibraryName("sqlite3"));
+        safeReload(libdir + System.mapLibraryName("nssutil3"));
         return true;
     }
 
@@ -206,15 +236,15 @@ public abstract class PKCS11Test {
 
     private static final Map<String,String> osMap;
 
+    // Location of the NSS libraries on each supported platform
     static {
         osMap = new HashMap<String,String>();
-        osMap.put("SunOS-sparc-32", "solaris-sparc");
-        osMap.put("SunOS-sparcv9-64", "solaris-sparcv9");
-        osMap.put("SunOS-x86-32", "solaris-i586");
-        osMap.put("SunOS-amd64-64", "solaris-amd64");
-        osMap.put("Linux-i386-32", "linux-i586");
-        osMap.put("Linux-amd64-64", "linux-amd64");
-        osMap.put("Windows-x86-32", "windows-i586");
+        osMap.put("SunOS-sparc-32", "/usr/lib/mps/");
+        osMap.put("SunOS-sparcv9-64", "/usr/lib/mps/64/");
+        osMap.put("SunOS-x86-32", "/usr/lib/mps/");
+        osMap.put("SunOS-amd64-64", "/usr/lib/mps/64/");
+        osMap.put("Linux-i386-32", "/usr/lib/");
+        osMap.put("Linux-amd64-64", "/usr/lib64/");
     }
 
     private final static char[] hexDigits = "0123456789abcdef".toCharArray();

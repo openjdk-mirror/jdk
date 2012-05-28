@@ -46,6 +46,7 @@ import sun.util.logging.PlatformLogger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The AppContext is a table referenced by ThreadGroup which stores
@@ -171,7 +172,7 @@ public final class AppContext {
      * HashMap's potentially risky methods, such as clear(), elements(),
      * putAll(), etc.
      */
-    private final HashMap table = new HashMap();
+    private final Map<Object, Object> table = new HashMap<>();
 
     private final ThreadGroup threadGroup;
 
@@ -194,12 +195,21 @@ public final class AppContext {
         return isDisposed;
     }
 
+    /*
+     * The total number of AppContexts, system-wide.  This number is
+     * incremented at the beginning of the constructor, and decremented
+     * at the end of dispose().  getAppContext() checks to see if this
+     * number is 1.  If so, it returns the sole AppContext without
+     * checking Thread.currentThread().
+     */
+    private static final AtomicInteger numAppContexts = new AtomicInteger(0);
+
     static {
         // On the main Thread, we get the ThreadGroup, make a corresponding
         // AppContext, and instantiate the Java EventQueue.  This way, legacy
         // code is unaffected by the move to multiple AppContext ability.
-        AccessController.doPrivileged(new PrivilegedAction() {
-            public Object run() {
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+            public Void run() {
                 ThreadGroup currentThreadGroup =
                         Thread.currentThread().getThreadGroup();
                 ThreadGroup parentThreadGroup = currentThreadGroup.getParent();
@@ -209,20 +219,10 @@ public final class AppContext {
                     parentThreadGroup = currentThreadGroup.getParent();
                 }
                 mainAppContext = new AppContext(currentThreadGroup);
-                numAppContexts = 1;
-                return mainAppContext;
+                return null;
             }
         });
     }
-
-    /*
-     * The total number of AppContexts, system-wide.  This number is
-     * incremented at the beginning of the constructor, and decremented
-     * at the end of dispose().  getAppContext() checks to see if this
-     * number is 1.  If so, it returns the sole AppContext without
-     * checking Thread.currentThread().
-     */
-    private static volatile int numAppContexts;
 
     /*
      * The context ClassLoader that was used to create this AppContext.
@@ -243,7 +243,7 @@ public final class AppContext {
      * @since   1.2
      */
     AppContext(ThreadGroup threadGroup) {
-        numAppContexts++;
+        numAppContexts.incrementAndGet();
 
         this.threadGroup = threadGroup;
         threadGroup2appContext.put(threadGroup, this);
@@ -278,7 +278,7 @@ public final class AppContext {
      * @since   1.2
      */
     public final static AppContext getAppContext() {
-        if (numAppContexts == 1)   // If there's only one system-wide,
+        if (numAppContexts.get() == 1)   // If there's only one system-wide,
             return mainAppContext; // return the main system AppContext.
 
         AppContext appContext = threadAppContext.get();
@@ -342,6 +342,16 @@ public final class AppContext {
         return appContext;
     }
 
+    /**
+     * Returns the main ("system") AppContext.
+     *
+     * @return  the main AppContext
+     * @since   1.8
+     */
+    final static AppContext getMainAppContext() {
+        return mainAppContext;
+    }
+
     private long DISPOSAL_TIMEOUT = 5000;  // Default to 5-second timeout
                                            // for disposal of all Frames
                                            // (we wait for this time twice,
@@ -399,8 +409,8 @@ public final class AppContext {
                         log.finer("exception occured while disposing app context", t);
                     }
                 }
-                AccessController.doPrivileged(new PrivilegedAction() {
-                        public Object run() {
+                AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                        public Void run() {
                             if (!GraphicsEnvironment.isHeadless() && SystemTray.isSupported())
                             {
                                 SystemTray systemTray = SystemTray.getSystemTray();
@@ -503,7 +513,7 @@ public final class AppContext {
             this.table.clear(); // Clear out the Hashtable to ease garbage collection
         }
 
-        numAppContexts--;
+        numAppContexts.decrementAndGet();
 
         mostRecentKeyValue = null;
     }
@@ -523,7 +533,7 @@ public final class AppContext {
         }
     }
 
-    static final class CreateThreadAction implements PrivilegedAction {
+    static final class CreateThreadAction implements PrivilegedAction<Thread> {
         private final AppContext appContext;
         private final Runnable runnable;
 
@@ -532,7 +542,7 @@ public final class AppContext {
             runnable = r;
         }
 
-        public Object run() {
+        public Thread run() {
             Thread t = new Thread(appContext.getThreadGroup(), runnable);
             t.setContextClassLoader(appContext.getContextClassLoader());
             t.setPriority(Thread.NORM_PRIORITY + 1);
@@ -552,8 +562,8 @@ public final class AppContext {
             if (appContext != AppContext.getAppContext()) {
                 // Create a thread that belongs to the thread group associated
                 // with the AppContext and invokes EventQueue.postEvent.
-                PrivilegedAction action = new CreateThreadAction(appContext, r);
-                Thread thread = (Thread)AccessController.doPrivileged(action);
+                PrivilegedAction<Thread> action = new CreateThreadAction(appContext, r);
+                Thread thread = AccessController.doPrivileged(action);
                 thread.start();
             } else {
                 r.run();
@@ -776,6 +786,27 @@ public final class AppContext {
             return new PropertyChangeListener[0];
         }
         return changeSupport.getPropertyChangeListeners(propertyName);
+    }
+
+    // Set up JavaAWTAccess in SharedSecrets
+    static {
+        sun.misc.SharedSecrets.setJavaAWTAccess(new sun.misc.JavaAWTAccess() {
+            public Object get(Object key) {
+                return getAppContext().get(key);
+            }
+            public void put(Object key, Object value) {
+                getAppContext().put(key, value);
+            }
+            public void remove(Object key) {
+                getAppContext().remove(key);
+            }
+            public boolean isDisposed() {
+                return getAppContext().isDisposed();
+            }
+            public boolean isMainAppContext() {
+                return (numAppContexts.get() == 1);
+            }
+        });
     }
 }
 

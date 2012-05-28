@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package sun.security.rsa;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.math.BigInteger;
 import java.util.Arrays;
 
 import java.security.*;
@@ -40,8 +39,8 @@ import sun.security.x509.AlgorithmId;
  * PKCS#1 RSA signatures with the various message digest algorithms.
  * This file contains an abstract base class with all the logic plus
  * a nested static class for each of the message digest algorithms
- * (see end of the file). We support MD2, MD5, SHA-1, SHA-256, SHA-384,
- * and SHA-512.
+ * (see end of the file). We support MD2, MD5, SHA-1, SHA-224, SHA-256,
+ * SHA-384, and SHA-512.
  *
  * @since   1.5
  * @author  Andreas Sterbenz
@@ -202,8 +201,6 @@ public abstract class RSASignature extends SignatureSpi {
             // return false rather than propagating the exception for
             // compatibility/ease of use
             return false;
-        } catch (GeneralSecurityException e) {
-            throw new SignatureException("Signature verification failed", e);
         } catch (IOException e) {
             throw new SignatureException("Signature encoding error", e);
         }
@@ -235,7 +232,7 @@ public abstract class RSASignature extends SignatureSpi {
             throw new IOException("SEQUENCE length error");
         }
         AlgorithmId algId = AlgorithmId.parse(values[0]);
-        if (algId.getOID().equals(oid) == false) {
+        if (algId.getOID().equals((Object)oid) == false) {
             throw new IOException("ObjectIdentifier mismatch: "
                 + algId.getOID());
         }
@@ -276,6 +273,13 @@ public abstract class RSASignature extends SignatureSpi {
     public static final class SHA1withRSA extends RSASignature {
         public SHA1withRSA() {
             super("SHA-1", AlgorithmId.SHA_oid, 7);
+        }
+    }
+
+    // Nested class for SHA224withRSA signatures
+    public static final class SHA224withRSA extends RSASignature {
+        public SHA224withRSA() {
+            super("SHA-224", AlgorithmId.SHA224_oid, 11);
         }
     }
 

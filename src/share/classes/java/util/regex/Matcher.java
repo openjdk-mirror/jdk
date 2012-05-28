@@ -515,6 +515,7 @@ public final class Matcher implements MatchResult {
      * @throws  IllegalArgumentException
      *          If there is no capturing group in the pattern
      *          with the given name
+     * @since 1.7
      */
     public String group(String name) {
         if (name == null)
@@ -758,16 +759,19 @@ public final class Matcher implements MatchResult {
             char nextChar = replacement.charAt(cursor);
             if (nextChar == '\\') {
                 cursor++;
+                if (cursor == replacement.length())
+                    throw new IllegalArgumentException(
+                        "character to be escaped is missing");
                 nextChar = replacement.charAt(cursor);
                 result.append(nextChar);
                 cursor++;
             } else if (nextChar == '$') {
                 // Skip past $
                 cursor++;
-                // A StringIndexOutOfBoundsException is thrown if
-                // this "$" is the last character in replacement
-                // string in current implementation, a IAE might be
-                // more appropriate.
+                // Throw IAE if this "$" is the last character in replacement
+                if (cursor == replacement.length())
+                   throw new IllegalArgumentException(
+                        "Illegal group reference: group index is missing");
                 nextChar = replacement.charAt(cursor);
                 int refNum = -1;
                 if (nextChar == '{') {

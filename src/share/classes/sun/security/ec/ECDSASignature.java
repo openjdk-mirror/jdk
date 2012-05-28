@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,8 @@
 
 package sun.security.ec;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
-import java.util.Arrays;
 
 import java.security.*;
 import java.security.interfaces.*;
@@ -36,7 +34,6 @@ import java.security.spec.*;
 
 import sun.security.jca.JCAUtil;
 import sun.security.util.*;
-import sun.security.x509.AlgorithmId;
 
 /**
  * ECDSA signature implementation. This class currently supports the
@@ -44,6 +41,7 @@ import sun.security.x509.AlgorithmId;
  *
  *   . "NONEwithECDSA"
  *   . "SHA1withECDSA"
+ *   . "SHA224withECDSA"
  *   . "SHA256withECDSA"
  *   . "SHA384withECDSA"
  *   . "SHA512withECDSA"
@@ -162,6 +160,13 @@ abstract class ECDSASignature extends SignatureSpi {
     public static final class SHA1 extends ECDSASignature {
         public SHA1() {
             super("SHA1");
+        }
+    }
+
+    // Nested class for SHA224withECDSA signatures
+    public static final class SHA224 extends ECDSASignature {
+        public SHA224() {
+           super("SHA-224");
         }
     }
 

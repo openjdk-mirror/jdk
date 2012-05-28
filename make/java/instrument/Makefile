@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,8 @@
 # Makefile for building the Java Programming Language Instrumentation Services
 # agent, supporting java.lang.instrument
 
+LIBRARY_SUPPORTS_FULL_DEBUG_SYMBOLS=1
+
 BUILDDIR = ../..
 PACKAGE = sun.instrument
 LIBRARY = instrument
@@ -37,6 +39,9 @@ PRODUCT = sun
 MS_RUNTIME_STATIC=true
 
 FILES_m = mapfile-vers
+
+JAVAC_MAX_WARNINGS = true
+JAVAC_WARNINGS_FATAL = true
 
 include $(BUILDDIR)/common/Defs.gmk
 
@@ -102,6 +107,16 @@ ifeq ($(PLATFORM), windows)
   # equivalent of strcasecmp is stricmp on Windows
   CPPFLAGS_COMMON += -Dstrcasecmp=stricmp
 else
+ifneq (,$(findstring $(PLATFORM), macosx))
+  ifneq ($(ARCH), universal)
+    LDFLAGS += -Wl,-all_load
+  endif
+  LDFLAGS += $(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/static/libjli.a
+  OTHER_LDLIBS += -liconv
+  ifeq ($(SYSTEM_ZLIB), true)
+    OTHER_LDLIBS += -lz
+  endif
+else
   LDFLAGS += -L $(LIBDIR)/$(LIBARCH)/jli
   OTHER_LDLIBS += -ljli
   OTHER_LDLIBS += -ldl 
@@ -113,6 +128,11 @@ else
     LDFLAGS += -Wl,--allow-shlib-undefined
     LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/jli
   endif
+endif
+endif
+
+ifeq ($(PLATFORM), macosx)
+  LDFLAGS += -framework Cocoa -framework Security -framework ApplicationServices
 endif
 
 #
