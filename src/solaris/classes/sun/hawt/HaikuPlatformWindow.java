@@ -199,6 +199,22 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         throw new UnsupportedOperationException("Not supported.");
     }
 
+    public boolean isReparentSuppored() {
+        false;
+    }
+
+    public void reparent(ContainerPeer newContainer) {
+        throw new UnsupportedOperationException("Not supported.");
+    }
+
+    public boolean isRestackSupported() {
+        false;
+    }
+
+    public void restack() {
+        throw new UnsupportedOperationException("Not supported.");
+    }
+
 	// =====================
 	// Native code callbacks
 	// =====================
@@ -355,22 +371,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     }
 
     public void applyShape(Region shape) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public boolean isReparentSuppored() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void reparent(ContainerPeer newContainer) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public boolean isRestackSupported() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void restack() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
