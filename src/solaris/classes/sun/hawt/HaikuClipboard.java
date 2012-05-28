@@ -33,10 +33,9 @@ import sun.awt.datatransfer.*;
 
 public class HaikuClipboard extends SunClipboard {
 
-    private native String[] nativeGetClipboardFormats();
-    private native byte[] nativeGetClipboardData(String format)
-        throws IOException;
-    public native void setData(byte[] data, long format);
+    private native String[] nativeGetFormats();
+    private native byte[] nativeGetData(String format) throws IOException;
+    private native void nativeSetData(byte[] data, String format);
 
     public HaikuClipboard(String name) {
         super(name);
@@ -61,7 +60,8 @@ public class HaikuClipboard extends SunClipboard {
         // Get all of the target formats into which the Transferable can be
         // translated. Then, for each format, translate the data and post
         // it to the Clipboard.
-        DataTransferer transferer = DataTransferer.getInstance();
+        HaikuDataTransferer transferer = (HaikuDataTransferer)
+            DataTransferer.getInstance();
         Map<Long, DataFlavor> formatMap = transferer.
             getFormatsForTransferable(contents, flavorMap);
 
@@ -71,7 +71,7 @@ public class HaikuClipboard extends SunClipboard {
             try {
                 byte[] bytes = transferer.
                     translateTransferable(contents, flavor, format);
-                setData(bytes, format);
+                nativeSetData(bytes, transferer.getNativeForFormat(format));
             } catch (IOException e) {
                 // Fix 4696186: don't print exception if data with
                 // javaJVMLocalObjectMimeType failed to serialize.
@@ -87,7 +87,8 @@ public class HaikuClipboard extends SunClipboard {
 
     @Override
     protected long[] getClipboardFormats() {
-        String[] nativeFormats = nativeGetClipboardFormats();
+        String[] nativeFormats = nativeGetFormats();
+        if (nativeFormats == null) nativeFormats = new String[0];
 
         long[] temporary = new long[nativeFormats.length];
         HaikuDataTransferer transferer =
@@ -107,7 +108,7 @@ public class HaikuClipboard extends SunClipboard {
         HaikuDataTransferer transferer = (HaikuDataTransferer)
             DataTransferer.getInstance();
         String nativeFormat = transferer.getNativeForFormat(format);
-        return nativeGetClipboardData(nativeFormat);
+        return nativeGetData(nativeFormat);
     }
 
     @Override

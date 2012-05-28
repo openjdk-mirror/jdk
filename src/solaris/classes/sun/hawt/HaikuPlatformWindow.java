@@ -191,6 +191,14 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         nativeFocus(nativeWindow);
     }
 
+    public boolean canDetermineObscurity() {
+        return false;
+    }
+
+    public boolean isObscured() {
+        throw new UnsupportedOperationException("Not supported.");
+    }
+
 	// =====================
 	// Native code callbacks
 	// =====================
@@ -344,14 +352,6 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
 
     public void setMaximizedBounds(Rectangle bounds) {
         System.err.println("PlatformWindow.setMaximizedBounds(): Implement me!");
-    }
-
-    public boolean canDetermineObscurity() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public boolean isObscured() {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public void applyShape(Region shape) {

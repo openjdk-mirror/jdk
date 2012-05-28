@@ -436,10 +436,17 @@ class CacioComponentPeer<AWTComponentType extends Component,
 
     protected void handleComponentEvent(ComponentEvent e) {
     	if (proxy != null) {
-            Rectangle bounds = AWTAccessor.getComponentAccessor().
-                getBounds(awtComponent);
-            setBoundsImpl(bounds.x, bounds.y, bounds.width, bounds.height,
-                ComponentPeer.SET_BOUNDS, false);
+    		if (e.getID() == ComponentEvent.COMPONENT_MOVED) {
+    		    Point location = AWTAccessor.getComponentAccessor().
+    		        getLocation(awtComponent);
+                setBoundsImpl(location.x, location.y, 0, 0,
+                    ComponentPeer.SET_LOCATION, false);
+    		} else if (e.getID() == ComponentEvent.COMPONENT_RESIZED) {
+                Rectangle bounds = AWTAccessor.getComponentAccessor().
+                    getBounds(awtComponent);
+                setBoundsImpl(bounds.x, bounds.y, bounds.width, bounds.height,
+                    ComponentPeer.SET_SIZE, false);
+    		}
     	}
     }
 

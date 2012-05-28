@@ -261,11 +261,8 @@ PlatformView::KeyUp(const char* bytes, int32 numBytes)
 void
 PlatformView::MakeFocus(bool focused)
 {
-	printf("Going to call MakeFocus...\n");
 	DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
 	BView::MakeFocus(focused);
-	
-	printf("This: %p CF: %p\n", this, Window()->CurrentFocus());
 }
 
 
@@ -314,7 +311,6 @@ PlatformView::MouseUp(BPoint point)
 void
 PlatformView::_HandleKeyEvent(BMessage* message)
 {
-	printf("Handle key event native!\n");
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 modifiers = 0;

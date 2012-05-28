@@ -46,9 +46,11 @@ public class HaikuToolkit extends CacioToolkit {
 	}
 
     private PlatformWindowFactory platformWindow;
+    private HaikuClipboard clipboard;
 
     public HaikuToolkit() {
         super();
+        SunToolkit.setDataTransfererClassName("sun.hawt.HaikuDataTransferer");
     }
 
     @Override
@@ -92,9 +94,20 @@ public class HaikuToolkit extends CacioToolkit {
         return false;
     }
 
+    class HaikuPlatformFont extends PlatformFont {
+
+        public HaikuPlatformFont(String name, int style) {
+            super(name, style);
+        }
+
+        protected char getMissingGlyphCharacter() {
+            return (char)0xfff8;
+        }
+    }
+
     @Override
     public FontPeer getFontPeer(String name, int style) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return new HaikuPlatformFont(name, style);
     }
 
     @Override
@@ -172,7 +185,11 @@ public class HaikuToolkit extends CacioToolkit {
 
     @Override
     public Clipboard getSystemClipboard() throws HeadlessException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        synchronized (this) {
+            if (clipboard == null)
+                clipboard = new HaikuClipboard("System");
+        }
+        return clipboard;
     }
 
     @Override
