@@ -375,10 +375,6 @@ class CacioComponentPeer<AWTComponentType extends Component,
         case FocusEvent.FOCUS_LOST:
           handleFocusEvent((FocusEvent)e);
           break;
-        case ComponentEvent.COMPONENT_MOVED:
-        case ComponentEvent.COMPONENT_RESIZED:
-          handleComponentEvent((ComponentEvent) e);
-          break;
         default:
           // Other event types are not handled here.
           break;
@@ -432,22 +428,6 @@ class CacioComponentPeer<AWTComponentType extends Component,
         
         if (proxy != null)
             proxy.handleFocusEvent(e);
-    }
-
-    protected void handleComponentEvent(ComponentEvent e) {
-    	if (proxy != null) {
-    		if (e.getID() == ComponentEvent.COMPONENT_MOVED) {
-    		    Point location = AWTAccessor.getComponentAccessor().
-    		        getLocation(awtComponent);
-                setBoundsImpl(location.x, location.y, 0, 0,
-                    ComponentPeer.SET_LOCATION, false);
-    		} else if (e.getID() == ComponentEvent.COMPONENT_RESIZED) {
-                Rectangle bounds = AWTAccessor.getComponentAccessor().
-                    getBounds(awtComponent);
-                setBoundsImpl(bounds.x, bounds.y, bounds.width, bounds.height,
-                    ComponentPeer.SET_SIZE, false);
-    		}
-    	}
     }
 
     protected void peerPaint(Graphics g, boolean update) {
@@ -777,6 +757,19 @@ class CacioComponentPeer<AWTComponentType extends Component,
     }
 
     public void handlePeerEvent(AWTEvent event) {
+
+  		if (event.getID() == ComponentEvent.COMPONENT_MOVED) {
+   		    Point location = AWTAccessor.getComponentAccessor().
+                getLocation(awtComponent);
+            setBoundsImpl(location.x, location.y, 0, 0,
+                ComponentPeer.SET_LOCATION, false);
+   		} else if (event.getID() == ComponentEvent.COMPONENT_RESIZED) {
+            Rectangle bounds = AWTAccessor.getComponentAccessor().
+                getBounds(awtComponent);
+            setBoundsImpl(bounds.x, bounds.y, bounds.width, bounds.height,
+                ComponentPeer.SET_SIZE, false);
+        }
+
         postEvent(event);
     }
 

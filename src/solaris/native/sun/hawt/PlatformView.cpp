@@ -226,7 +226,9 @@ PlatformView::FrameMoved(BPoint origin)
 	if (!fRoot) {
 		int x = origin.x;
 		int y = origin.y;
+        UnlockLooper();
 		DoCallback(fPlatformWindow, "eventMove", "(II)V", x, y);
+		LockLooper();
 	}
 }
 
@@ -245,8 +247,11 @@ PlatformView::FrameResized(float width, float height)
 		fDrawable.Unlock();
 	}
 	
-	if (!fRoot)
+	if (!fRoot) {
+        UnlockLooper();
 		DoCallback(fPlatformWindow, "eventResize", "(II)V", w, h);
+		LockLooper();
+	}
 }
 
 
