@@ -84,7 +84,7 @@ Java_sun_hawt_HaikuPlatformWindow_nativeInitFrame
 	// Wait for be_app to get created
 	acquire_sem(appSem);
 	release_sem(appSem);
-
+    printf("innitting the frame..\n");
 	// TODO release global ref in frame/view dispose
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
 	PlatformWindow* window = new PlatformFrame(javaWindow,

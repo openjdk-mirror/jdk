@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,43 +23,22 @@
  * questions.
  */
 
-#include <jni.h>
+package sun.awt;
 
-#include "sun_hawt_HaikuEventPump.h"
-
-#include <Application.h>
-#include <kernel/OS.h>
-#include <stdio.h>
-
-extern "C" {
-
-// What's the correct synchronization primitive to
-// use here?
-sem_id appSem = -1;
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuEventPump_initIDs
-  (JNIEnv *env, jclass clazz)
-{
-	appSem = create_sem(0, "awtAppSem");
-}
-
-/*
- * Class:     sun_hawt_HaikuEventPump
- * Method:    runApplication
- * Signature: ()
+/**
+ * A class implements the FullScreenCapable interface to
+ * indicate that it's capable to enter the full-screen mode.
  */
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuEventPump_runApplication
-  (JNIEnv *env, jobject thiz)
-{
-	// A bit of a hack, we just start the app and the windows/views
-	// do all the work of delivering the events back to AWT.
-    BApplication* awtApp = new BApplication("application/x-vnd.java-awt-app");
-    release_sem(appSem);
-    awtApp->Run();
-    delete awtApp;
-    return;
-}
+public interface FullScreenCapable {
+
+    /**
+     * Enters full-screen mode.
+     */
+    public void enterFullScreenMode();
+
+    /**
+     * Returns to windowed mode.
+     */
+    public void exitFullScreenMode();
 
 }

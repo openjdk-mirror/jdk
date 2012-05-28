@@ -171,8 +171,8 @@ FILES_NO_MOTIF_c = \
 
 FILES_cpp = \
 	Drawable.cpp \
+	HaikuCursorManager.cpp \
 	HaikuDesktopPeer.cpp \
-	HaikuEventPump.cpp \
 	HaikuFontManager.cpp \
 	HaikuGraphicsConfig.cpp \
 	HaikuGraphicsDevice.cpp \

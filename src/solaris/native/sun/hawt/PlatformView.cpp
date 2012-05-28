@@ -272,7 +272,8 @@ PlatformView::MessageReceived(BMessage* message)
 void
 PlatformView::MouseDown(BPoint point)
 {
-	_HandleMouseEvent(Window()->CurrentMessage(), point);
+	BPoint screenPoint = ConvertToScreen(point);
+	_HandleMouseEvent(Window()->CurrentMessage(), screenPoint, point);
 	BView::MouseDown(point);
 }
 
@@ -280,7 +281,11 @@ PlatformView::MouseDown(BPoint point)
 void
 PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 {
-	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
+	// We already have a screen location here in the message
+	BMessage* moveMessage = Window()->CurrentMessage();
+	BPoint screenPoint;
+	moveMessage->FindPoint("where", &screenPoint);
+	_HandleMouseEvent(moveMessage, point, screenPoint, transit);
 	BView::MouseMoved(point, transit, message);
 }
 
@@ -288,7 +293,8 @@ PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 void
 PlatformView::MouseUp(BPoint point)
 {
-	_HandleMouseEvent(Window()->CurrentMessage(), point);
+	BPoint screenPoint = ConvertToScreen(point);
+	_HandleMouseEvent(Window()->CurrentMessage(), screenPoint, point);
 	BView::MouseUp(point);
 }
 
@@ -339,7 +345,8 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 
 
 void
-PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
+PlatformView::_HandleMouseEvent(BMessage* message, BPoint point,
+	BPoint screenPoint, uint32 transit)
 {
 	int64 when = 0;
 	message->FindInt64("when", &when);
@@ -406,8 +413,9 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	// Drop the lock when doing this callback, because the MouseEvent
 	// constructor will call getLocationOnScreen which may call native code.
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id,
+	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIII)V", id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
-		(jint)clicks, javaPressed, javaReleased);
+		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
+		javaReleased);
 	LockLooper();
 }

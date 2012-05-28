@@ -42,12 +42,17 @@ import sun.lwawt.LWWindowPeer.PeerType;
 
 public class HaikuToolkit extends LWToolkit {
 
+	private static native void nativeInit();
+    private native void nativeRunMessage();
+
 	static {
 		System.loadLibrary("awt");
 	}
 
     public HaikuToolkit() {
         super();
+		nativeInit();
+        init();
     }
 
     @Override
@@ -75,6 +80,7 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     protected void platformRunMessage() {
+    	nativeRunMessage();
     }
 
     @Override
@@ -95,8 +101,13 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
+    public Clipboard createPlatformClipboard() {
+    	return null;
+    }
+
+    @Override
     public LWCursorManager getCursorManager() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return HaikuCursorManager.getInstance();
     }
 
     @Override
@@ -111,7 +122,8 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public MenuBarPeer createMenuBar(MenuBar target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        System.err.println("Menubar implement me");
+        return null;
     }
 
     @Override

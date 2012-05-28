@@ -25,42 +25,16 @@
 
 package sun.hawt;
 
-import java.awt.AWTEvent;
-import java.awt.AWTException;
-import java.awt.BufferCapabilities;
-import java.awt.BufferCapabilities.FlipContents;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dialog;
-import java.awt.event.ComponentEvent;
-import java.awt.event.FocusEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.PaintEvent;
-import java.awt.event.WindowEvent;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.image.ColorModel;
-import java.awt.peer.ContainerPeer;
-import java.awt.Window;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.*;
+import java.awt.peer.*;
 
-import sun.awt.AWTAccessor;
-import sun.awt.CausedFocusEvent.Cause;
-import sun.awt.PaintEventDispatcher;
-
+import sun.awt.*;
 import sun.lwawt.*;
 import sun.lwawt.LWWindowPeer.PeerType;
 
-import sun.awt.SunToolkit;
-import sun.java2d.NullSurfaceData;
-import sun.java2d.pipe.Region;
-import sun.java2d.SunGraphics2D;
-import sun.java2d.SurfaceData;
+import sun.java2d.*;
 
 class HaikuPlatformWindow implements PlatformWindow {
 
@@ -68,15 +42,14 @@ class HaikuPlatformWindow implements PlatformWindow {
         initIDs();
     }
 
+    private Window target;
+    private LWWindowPeer peer;
+    private HaikuPlatformWindow owner;
+
     private long nativeWindow;
-    private boolean toplevel;
     private HaikuWindowSurfaceData surfaceData;
-    private CacioComponent cacioComponent;
-    private HaikuPlatformWindow parent;
-    
+
     private PeerType peerType;
-    
-    private int windowState = Frame.NORMAL;
 
     private static native void initIDs();
     private native long nativeInitView(int x, int y, int width, int height,
@@ -99,35 +72,11 @@ class HaikuPlatformWindow implements PlatformWindow {
     	this.peerType = peerType;
     }
 
-    HaikuPlatformWindow(CacioComponent cacioComponent,
-    		HaikuPlatformWindow parent, boolean toplevel, int x, int y,
-    		int width, int height) {
-
-    	if (toplevel) {
-    		Component awtComp = cacioComponent.getAWTComponent();
-
-    		boolean decorated = false;
-    		if (awtComp instanceof Frame || awtComp instanceof Dialog)
-    			decorated = true;
-    		nativeWindow = nativeInitFrame(x, y, width, height, decorated);
-    	} else {
-    		if (parent != null)
-		    	nativeWindow = nativeInitView(x, y, width, height,
-		    		parent.nativeWindow);
-			else
-				nativeWindow = nativeInitView(x, y, width, height, 0);
-    	}
-
-        this.cacioComponent = cacioComponent;
-        this.parent = parent;
-        this.toplevel = toplevel;
-    }
-
     /*
      * Delegate initialization (create native window and all the
      * related resources).
      */
-    @Override // PlatformWindow
+    @Override
     public void initialize(Window target, LWWindowPeer peer, PlatformWindow owner) {
         this.peer = peer;
         this.target = target;
@@ -135,55 +84,53 @@ class HaikuPlatformWindow implements PlatformWindow {
             this.owner = (HaikuPlatformWindow)owner;
         }
 
-        nativeWindow = nativeInitFrame(0, 0, 0, 0, peerType != PeerType.SIMPLE_WINDOW);
+        nativeWindow = nativeInitFrame(0, 0, 0, 0, peerType != PeerType.SIMPLEWINDOW);
     }
 
-    @Override // PlatformWindow
-    public void setMenuBar(MenuBar mb) {
-        System.err.println("todo");
-    }
-    
-    
-    @Override // PlatformWindow
-    public Image createBackBuffer() {
-    	return null;
-    }
-    
-        @Override // PlatformWindow
-    public void flip(int x1, int y1, int x2, int y2, FlipContents flipAction) {
-        // TODO: not implemented
-        (new RuntimeException("unimplemented")).printStackTrace();
+    @Override
+    public void dispose() {
+        nativeDispose(nativeWindow);
     }
 
-    @Override // PlatformWindow
+    @Override
+    public void setVisible(boolean visible) {
+        nativeSetVisible(nativeWindow, visible);
+    }
+
+    @Override
+    public void setTitle(String title) {
+    }
+
+    @Override
+    public void setBounds(int x, int y, int width, int height) {
+        nativeSetBounds(nativeWindow, x, y, width, height);
+    }
+
+    @Override
+    public int getScreenImOn() {
+    	return 0;
+    }
+
+    @Override
+    public Point getLocationOnScreen() {
+        Point location = new Point();
+        nativeGetLocationOnScreen(nativeWindow, location);
+        return location;
+    }
+
+    @Override
+    public Insets getInsets() {
+    	return new Insets(0, 0, 0, 0);
+    }
+
+    @Override
     public FontMetrics getFontMetrics(Font f) {
-        // TODO: not implemented
         (new RuntimeException("unimplemented")).printStackTrace();
         return null;
     }
-    
-    public CacioComponent getCacioComponent() {
-        return cacioComponent;
-    }
 
-    public ColorModel getColorModel() {
-        return getGraphicsConfiguration().getColorModel();
-    }
-
-    public GraphicsConfiguration getGraphicsConfiguration() {
-        return HaikuGraphicsConfig.getDefaultConfiguration();
-    }
-
-    public Graphics2D getGraphics(Color foreground, Color background,
-    		Font font) {
-    	//System.err.println("Get graphics for " + hashCode());
-        SurfaceData surface = getSurfaceData();
-        Graphics2D graphics = new SunGraphics2D(surface, foreground,
-        	background, font);
-        return graphics;
-    }
-
-    private SurfaceData getSurfaceData() {
+    @Override
+    public SurfaceData getScreenSurface() {
         if (surfaceData == null) {
         	long drawable = nativeGetDrawable(nativeWindow);
             surfaceData = new HaikuWindowSurfaceData(
@@ -193,9 +140,108 @@ class HaikuPlatformWindow implements PlatformWindow {
         return surfaceData;
     }
 
-    public void setBounds(int x, int y, int width, int height, int op) {
-    	// TODO handle the client area op
-        nativeSetBounds(nativeWindow, x, y, width, height);
+    @Override
+    public SurfaceData replaceSurfaceData() {
+    	return getScreenSurface();
+    }
+    
+    @Override
+    public Image createBackBuffer() {
+    	return null;
+    }
+
+    @Override
+    public void flip(int x1, int y1, int x2, int y2,
+            BufferCapabilities.FlipContents flipAction) {
+        (new RuntimeException("unimplemented")).printStackTrace();
+    }
+    
+    @Override
+    public void toFront() {
+    }
+    
+    @Override
+    public void toBack() {
+    }
+
+    @Override
+    public void setMenuBar(MenuBar mb) {
+        System.err.println("todo");
+    }
+
+    @Override
+	public void setAlwaysOnTop(boolean value) {
+	}
+	
+    @Override
+	public void updateFocusableWindowState() {
+	}
+
+    @Override
+    public void setResizable(boolean resizable) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+	public void setMinimumSize(int width, int height) {
+	}
+
+    @Override
+	public Graphics transformGraphics(Graphics g) {
+		return g;
+	}
+
+    @Override
+    public void updateIconImages() {
+    }
+
+    @Override
+    public void setOpacity(float opacity) {
+    }
+
+    @Override
+    public void setOpaque(boolean isOpaque) {
+    }
+
+    @Override
+    public void enterFullScreenMode() {
+    }
+
+    @Override
+    public void exitFullScreenMode() {
+    }
+
+    @Override
+    public void setWindowState(int windowState) {
+    }
+
+    @Override
+    public long getLayerPtr() {
+    	return nativeWindow;
+    }
+
+    @Override
+    public LWWindowPeer getPeer() {
+    	return peer;
+    }
+    
+    @Override
+    public boolean requestWindowFocus() {
+        nativeFocus(nativeWindow);
+        return false;
+    }    
+    
+    @Override
+	public boolean isActive() {
+		return false;
+	}
+
+    public ColorModel getColorModel() {
+        return getGraphicsConfiguration().getColorModel();
+    }
+
+    public GraphicsConfiguration getGraphicsConfiguration() {
+        return HaikuGraphicsConfig.getDefaultConfiguration();
     }
 
 	public Rectangle getBounds() {
@@ -204,246 +250,81 @@ class HaikuPlatformWindow implements PlatformWindow {
 		return bounds;
 	}
 
-    public Insets getInsets() {
-        return new Insets(0, 0, 0, 0);
-    }
-
-    public Point getLocationOnScreen() {
-        Point location = new Point();
-        nativeGetLocationOnScreen(nativeWindow, location);
-        return location;
-    }
-
-    private Point getLocation() {
-        Point location = new Point();
-        nativeGetLocation(nativeWindow, location);
-        return location;
-    }
-
-    public void setVisible(boolean visible) {
-        nativeSetVisible(nativeWindow, visible);
-    }
-
-    public void dispose() {
-        nativeDispose(nativeWindow);
-    }
-
-    public void requestFocus() {
-    	System.err.println("Requesting focus for " + nativeWindow);
-        nativeFocus(nativeWindow);
-    }
-
 	// =====================
 	// Native code callbacks
 	// =====================
 
 	public void eventRepaint(int x, int y, int width, int height) {
-		Component awtComp = cacioComponent.getAWTComponent();
-		if (!AWTAccessor.getComponentAccessor().getIgnoreRepaint(awtComp)) {
-	        PaintEvent ev = PaintEventDispatcher.getPaintEventDispatcher()
-    	          .createPaintEvent(awtComp, x, y, width, height);
-        	postEvent(cacioComponent, ev);
-		}
+		peer.notifyExpose(x, y, width, height);
 	}
 
     public void eventResize(int width, int height) {
-    	Component awtComp = cacioComponent.getAWTComponent();
-    	AWTAccessor.getComponentAccessor().setSize(awtComp, width, height);
-        ComponentEvent ev = new ComponentEvent(awtComp,
-        	ComponentEvent.COMPONENT_RESIZED);
-        postEvent(cacioComponent, ev);
+    	Rectangle bounds = peer.getBounds();
+    	peer.notifyReshape(bounds.x, bounds.y, width, height);
     }
     
     public void eventMove(int x, int y) {
-    	Component awtComp = cacioComponent.getAWTComponent();
-    	AWTAccessor.getComponentAccessor().setLocation(awtComp, x, y);
-        ComponentEvent ev = new ComponentEvent(awtComp,
-        	ComponentEvent.COMPONENT_MOVED);
-        postEvent(cacioComponent, ev);
+    	Rectangle bounds = peer.getBounds();
+    	peer.notifyReshape(x, y, bounds.width, bounds.height);
     }
     
     public void eventMaximize(boolean maximize) {
-    	int newState = maximize ? Frame.MAXIMIZED_BOTH : Frame.NORMAL;
-    	WindowEvent ev = new WindowEvent((Window)cacioComponent.getAWTComponent(),
-    		WindowEvent.WINDOW_STATE_CHANGED, windowState, newState);
-    	postEvent(cacioComponent, ev);
-    	
-    	windowState = newState;
+    	peer.notifyZoom(maximize);
     }
     
     public void eventMinimize(boolean minimize) {
-    	Component awtComp = cacioComponent.getAWTComponent();
-    	WindowEvent iconifyEv = new WindowEvent((Window)awtComp,
-    		minimize ? WindowEvent.WINDOW_ICONIFIED :
-    		WindowEvent.WINDOW_DEICONIFIED);
-    	postEvent(cacioComponent, iconifyEv);
-    	
-    	int newState = minimize ? Frame.ICONIFIED : Frame.NORMAL;
-    	WindowEvent stateEv = new WindowEvent((Window)awtComp,
-    		WindowEvent.WINDOW_STATE_CHANGED, windowState, newState);
-    	postEvent(cacioComponent, stateEv);
-
-    	windowState = newState;
+    	peer.notifyIconify(minimize);
     }
     
     public void eventWindowClosing() {
-    	WindowEvent ev = new WindowEvent((Window)cacioComponent.getAWTComponent(),
-    		WindowEvent.WINDOW_CLOSING);
-    	postEvent(cacioComponent, ev);
+        if (peer.getBlocker() == null)  {
+            peer.postEvent(new WindowEvent(target, WindowEvent.WINDOW_CLOSING));
+        }
     }
 
     public void eventFocus(boolean focused) {
-    	FocusEvent ev = new FocusEvent(cacioComponent.getAWTComponent(),
-    		focused ? FocusEvent.FOCUS_GAINED : FocusEvent.FOCUS_LOST);
-    	postEvent(cacioComponent, ev);
+    	peer.notifyActivation(focused);
     }
 
 	private void handleMouseDown(long when, int modifiers, int x, int y,
-			int clicks, int button) {
-		boolean popup = false;
-		// Right mouse button or Ctrl and left mouse button are popup
-		// triggers on Haiku
-		if (button == MouseEvent.BUTTON2 || (button == MouseEvent.BUTTON1
-				&& (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0))
-			popup = true;
+			int screenX, int screenY, int clicks, int button) {
+		boolean popup = button == MouseEvent.BUTTON2 ||
+		    (button == MouseEvent.BUTTON1 &&
+		    (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0);
 
-		Component comp = cacioComponent.getAWTComponent();
-		MouseEvent ev = new MouseEvent(comp, MouseEvent.MOUSE_PRESSED, when,
-			modifiers, x, y, clicks, popup, button);
-		postEvent(cacioComponent, ev);
+		peer.dispatchMouseEvent(MouseEvent.MOUSE_PRESSED, when, button,
+		    x, y, screenX, screenY, modifiers, clicks, popup, null);
 	}
 
 	private void handleMouseUp(long when, int modifiers, int x, int y,
-			int clicks, int button) {
-		Component comp = cacioComponent.getAWTComponent();
-		MouseEvent ev = new MouseEvent(comp, MouseEvent.MOUSE_RELEASED, when,
-			modifiers, x, y, clicks, false, button);
-		postEvent(cacioComponent, ev);
-		ev = new MouseEvent(comp, MouseEvent.MOUSE_CLICKED, when,
-			modifiers, x, y, clicks, false, button);
-		postEvent(cacioComponent, ev);
+			int screenX, int screenY, int clicks, int button) {
+		peer.dispatchMouseEvent(MouseEvent.MOUSE_RELEASED, when, button,
+			x, y, screenX, screenY, modifiers, clicks, false, null);
+		peer.dispatchMouseEvent(MouseEvent.MOUSE_CLICKED, when, button,
+			x, y, screenX, screenY, modifiers, clicks, false, null);
 	}
 
 	public void eventMouse(int id, long when, int modifiers, int x, int y,
-			int clicks, int pressed, int released) {
+			int screenX, int screenY, int clicks, int pressed, int released) {
     	// Mouse up/down is weird on Haiku so we check what buttons
     	// exactly have changed with every mouse message and then
     	// fire off the appropriate events.
 		if ((pressed & MouseEvent.BUTTON1_DOWN_MASK) != 0)
-			handleMouseDown(when, modifiers, x, y, clicks, MouseEvent.BUTTON1);
+			handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
 		if ((pressed & MouseEvent.BUTTON2_DOWN_MASK) != 0)
-			handleMouseDown(when, modifiers, x, y, clicks, MouseEvent.BUTTON2);
+			handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
 		if ((pressed & MouseEvent.BUTTON3_DOWN_MASK) != 0)
-			handleMouseDown(when, modifiers, x, y, clicks, MouseEvent.BUTTON3);
+			handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
 		if ((released & MouseEvent.BUTTON1_DOWN_MASK) != 0)
-			handleMouseUp(when, modifiers, x, y, clicks, MouseEvent.BUTTON1);
+			handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
 		if ((released & MouseEvent.BUTTON2_DOWN_MASK) != 0)
-			handleMouseUp(when, modifiers, x, y, clicks, MouseEvent.BUTTON2);
+			handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
 		if ((released & MouseEvent.BUTTON3_DOWN_MASK) != 0)
-			handleMouseUp(when, modifiers, x, y, clicks, MouseEvent.BUTTON3);
+			handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
 
 		if (id != MouseEvent.MOUSE_PRESSED
-				&& id != MouseEvent.MOUSE_RELEASED) {
-    		Component awtComp = cacioComponent.getAWTComponent();
-			MouseEvent ev = new MouseEvent(cacioComponent.getAWTComponent(),
-				id, when, modifiers, x, y, clicks, false);
-			postEvent(cacioComponent, ev);
-		}
+				&& id != MouseEvent.MOUSE_RELEASED)
+    		peer.dispatchMouseEvent(id, when, 0, x, y, screenX, screenY,
+    		    modifiers, clicks, false, null);
 	}
-    
-    private void postEvent(CacioComponent component, AWTEvent ev) {
-		component.handlePeerEvent(ev);
-    }
-
-	// ===================
-	// Unimplemented stuff
-	// ===================
-
-
-    public void setMaximizedBounds(Rectangle bounds) {
-        System.err.println("PlatformWindow.setMaximizedBounds(): Implement me!");
-    }
-
-    public boolean canDetermineObscurity() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public boolean isObscured() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void applyShape(Region shape) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public boolean isReparentSuppored() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void reparent(ContainerPeer newContainer) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public boolean isRestackSupported() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void restack() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public boolean requestFocus(Component lightweightChild, boolean temporary, boolean focusedWindowChangeAllowed, long time, Cause cause) {
-    	System.err.println("Requesting focus for " + nativeWindow);
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void setBackground(Color c) {
-    	System.err.println("Set background called.");
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void setForeground(Color c) {
-    	System.err.println("Set foreground called.");
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void setFont(Font f) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void createBuffers(int numBuffers, BufferCapabilities caps) throws AWTException {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void destroyBuffers() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void flip(int x1, int y1, int x2, int y2, FlipContents flipAction) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public Image getBackBuffer() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int getState() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void setState(int state) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void setResizable(boolean resizable) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void setTitle(String title) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void setBlocked(boolean blocked) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
 }
