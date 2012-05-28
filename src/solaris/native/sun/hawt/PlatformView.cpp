@@ -113,6 +113,12 @@ PlatformView::SetBounds(Rectangle bounds)
 
 
 void
+PlatformView::SetName(const char* name)
+{
+}
+
+
+void
 PlatformView::SetParent(PlatformView* parent)
 {
 	// We don't support reparenting yet but when we do

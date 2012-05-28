@@ -208,4 +208,47 @@ Java_sun_hawt_HaikuPlatformWindow_nativeFocus
 }
 
 
+JNIEXPORT jint JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeGetState
+  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->GetState();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetState
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jint state)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->SetState(state);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean resizable)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->SetResizable(resizable == JNI_TRUE);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jstring title)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	printf("set title native\n");
+	const char* name = env->GetStringUTFChars(title, NULL);
+	if (name == NULL)
+		return;
+
+	window->SetName(name);
+	env->ReleaseStringUTFChars(title, name);
+}
+
+
 }

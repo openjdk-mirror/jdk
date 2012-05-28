@@ -25,6 +25,7 @@
 
 #include "PlatformFrame.h"
 
+#include "java_awt_Frame.h"
 #include <stdio.h>
 
 /*
@@ -37,7 +38,8 @@
 PlatformFrame::PlatformFrame(jobject platformWindow, bool decorated)
 	:
 	BWindow(BRect(0, 0, 0, 0), NULL, decorated ? B_TITLED_WINDOW_LOOK
-		: B_NO_BORDER_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL, 0),
+		: B_NO_BORDER_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
+		decorated ? 0 : B_AVOID_FOCUS),
 	fView(platformWindow, true),
 	fPlatformWindow(platformWindow)
 {
@@ -104,12 +106,12 @@ PlatformFrame::GetState()
 
 	int state = 0;
 	if (IsHidden() || IsMinimized())
-		state |= kStateMinimized;
+		state |= java_awt_Frame_ICONIFIED;
 	if (fMaximized)
-		state |= kStateMaximized;
+		state |= java_awt_Frame_MAXIMIZED_BOTH;
 
 	if (state == 0)
-		state |= kStateNormal;
+		state |= java_awt_Frame_NORMAL;
 
 	UnlockLooper();
 	return state;
@@ -123,6 +125,16 @@ PlatformFrame::SetBounds(Rectangle bounds)
 		return;
 	MoveTo(bounds.x, bounds.y);
 	ResizeTo(bounds.width - 1, bounds.height - 1);
+	UnlockLooper();
+}
+
+
+void
+PlatformFrame::SetName(const char* name)
+{
+	if (!LockLooper())
+		return;
+	SetTitle(name);
 	UnlockLooper();
 }
 
@@ -157,13 +169,16 @@ PlatformFrame::SetState(int state)
 	// Or should it be 'behind-the-scenes' maximized,
 	// so it shows as maximized when it becomes unminimized?
 	
-	if ((state & kStateMinimized) != 0)
+	if ((state & java_awt_Frame_ICONIFIED) != 0)
 		Minimize(true);
-	if ((state & kStateMaximized) != 0)
-		BWindow::Zoom();
+
+	if ((state & java_awt_Frame_MAXIMIZED_BOTH) != 0) {
+		if (!fMaximized)
+			BWindow::Zoom();
+	}
 
 	// Normal should cancel out the two other states
-	if ((state & kStateNormal) != 0) {
+	if ((state & java_awt_Frame_NORMAL) != 0) {
 		Minimize(false);
 		if (fMaximized)
 			BWindow::Zoom();
