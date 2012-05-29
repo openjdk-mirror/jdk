@@ -32,12 +32,12 @@
 
 #include "Utilities.h"
 
-class PlatformView;
+class ContentView;
 
 class Drawable : public BLocker {
 public:
 					Drawable();
-					Drawable(PlatformView* view);
+					Drawable(ContentView* view);
 					~Drawable();
 
 	bool			Allocate(int width, int height);
@@ -57,7 +57,7 @@ public:
 	void			Invalidate(Rectangle rect);
 private:
 	BBitmap*		fSurface;
-	PlatformView*	fView;
+	ContentView*	fView;
 };
 
 #endif	/* DRAWABLE_H */

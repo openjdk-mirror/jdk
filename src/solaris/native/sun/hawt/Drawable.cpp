@@ -30,7 +30,7 @@
 #include <Rect.h>
 #include <View.h>
 
-#include "PlatformView.h"
+#include "ContentView.h"
 
 #include <stdio.h>
 
@@ -43,7 +43,7 @@ Drawable::Drawable()
 }
 
 
-Drawable::Drawable(PlatformView* view)
+Drawable::Drawable(ContentView* view)
 	:
 	BLocker(),
 	fSurface(NULL),

@@ -23,144 +23,35 @@
  * questions.
  */
 
-#include "PlatformView.h"
+#include "ContentView.h"
 
 #include <String.h>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <Window.h>
 
 #include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_MouseEvent.h"
 #include "java_awt_event_MouseWheelEvent.h"
 
-PlatformView::PlatformView(jobject platformWindow, bool root)
+
+ContentView::ContentView(jobject platformWindow)
 	:
-	BView(BRect(0, 0, 0, 0), NULL, root ? B_FOLLOW_ALL : B_FOLLOW_NONE,
+	BView(BRect(0, 0, 0, 0), NULL, B_FOLLOW_ALL,
 		B_WILL_DRAW | B_FRAME_EVENTS | B_NAVIGABLE),
-	fRoot(root),
 	fDrawable(this),
 	fPlatformWindow(platformWindow)
 {
 }
 
 
-Rectangle
-PlatformView::GetBounds()
-{
-	if (!LockLooper())
-		return Rectangle(0, 0, 0, 0);
-
-	BRect frame = Frame();
-	UnlockLooper();
-	return Rectangle(frame.left, frame.top, frame.IntegerWidth() + 1,
-		frame.IntegerHeight() + 1);
-}
-
-
-PlatformView*
-PlatformView::GetContainer()
-{
-	return this;
-}
-
-
 Drawable*
-PlatformView::GetDrawable()
+ContentView::GetDrawable()
 {
 	return &fDrawable;
 }
 
 
-Point
-PlatformView::GetLocation()
-{
-	Rectangle bounds = GetBounds();
-	return Point(bounds.x, bounds.y);
-}
-
-
-Point
-PlatformView::GetLocationOnScreen()
-{
-	if (!LockLooper())
-		return Point(0, 0);
-
-	BRect frame = Bounds();
-	ConvertToScreen(&frame);
-	UnlockLooper();
-	return Point(frame.left, frame.top);
-}
-
-
 void
-PlatformView::SetBounds(Rectangle bounds)
-{
-	if (!LockLooper())
-		return;
-
-	MoveTo(bounds.x, bounds.y);
-	ResizeTo(bounds.width - 1, bounds.height - 1);
-	UnlockLooper();
-}
-
-
-void
-PlatformView::SetParent(PlatformView* parent)
-{
-	// We don't support reparenting yet but when we do
-	// we need to rethink the locking here
-	
-	PlatformView* oldParent = (PlatformView*)Parent();
-	if (oldParent != NULL) {
-		oldParent->RemoveChild(this);
-	}
-	parent->AddChild(this);
-}
-
-
-bool
-PlatformView::GetVisible()
-{
-	if (!LockLooper())
-		return false;
-
-	// This also reflects whether the parent views and
-	// Window are hidden.
-	bool visible = !IsHidden();
-
-	UnlockLooper();
-	return visible;
-}
-
-
-void
-PlatformView::SetVisible(bool visible)
-{
-	if (!LockLooper())
-		return;
-
-	if (visible) {
-		while (IsHidden())
-			Show();
-	} else {
-		while (!IsHidden())
-			Hide();
-	}
-	UnlockLooper();
-}
-
-
-void
-PlatformView::Dispose()
-{
-	RemoveSelf();
-	delete this;
-}
-
-
-void
-PlatformView::Focus()
+ContentView::Focus()
 {
 	LockLooper();
 	MakeFocus(true);
@@ -169,21 +60,19 @@ PlatformView::Focus()
 
 
 void
-PlatformView::DeferredDraw(BRect updateRect)
+ContentView::DeferredDraw(BRect updateRect)
 {
 	if (!fDrawable.Lock())
 		return;
 	if (fDrawable.IsValid())
 		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, updateRect);
-	//if (fRoot)
-	//	FillRect(Bounds(), B_SOLID_LOW);
 	fDrawable.Unlock();
 		
 }
 
 
 void
-PlatformView::Draw(BRect updateRect)
+ContentView::Draw(BRect updateRect)
 {
 	DeferredDraw(updateRect);
 
@@ -196,24 +85,12 @@ PlatformView::Draw(BRect updateRect)
 
 
 void
-PlatformView::FrameMoved(BPoint origin)
-{
-	if (!fRoot) {
-		int x = origin.x;
-		int y = origin.y;
-        UnlockLooper();
-		DoCallback(fPlatformWindow, "eventMove", "(II)V", x, y);
-		LockLooper();
-	}
-}
-
-
-void
-PlatformView::FrameResized(float width, float height)
+ContentView::FrameResized(float width, float height)
 {
 	int w = width + 1;
 	int h = height + 1;
 
+    // todo review resize heuristic make function
 	if (fDrawable.Lock()) {
 		if (!fDrawable.IsValid()
 				|| w > fDrawable.Width() || h > fDrawable.Height()) {
@@ -221,39 +98,33 @@ PlatformView::FrameResized(float width, float height)
 		}
 		fDrawable.Unlock();
 	}
-	
-	if (!fRoot) {
-        UnlockLooper();
-		DoCallback(fPlatformWindow, "eventResize", "(II)V", w, h);
-		LockLooper();
-	}
 }
 
 
 void
-PlatformView::KeyDown(const char* bytes, int32 numBytes)
+ContentView::KeyDown(const char* bytes, int32 numBytes)
 {
 	_HandleKeyEvent(Window()->CurrentMessage());
 }
 
 
 void
-PlatformView::KeyUp(const char* bytes, int32 numBytes)
+ContentView::KeyUp(const char* bytes, int32 numBytes)
 {
 	_HandleKeyEvent(Window()->CurrentMessage());
 }
 
 
 void
-PlatformView::MakeFocus(bool focused)
+ContentView::MakeFocus(bool focused)
 {
-	DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
+	//DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
 	BView::MakeFocus(focused);
 }
 
 
 void
-PlatformView::MessageReceived(BMessage* message)
+ContentView::MessageReceived(BMessage* message)
 {
 	switch (message->what) {
 		case B_UNMAPPED_KEY_DOWN:
@@ -271,7 +142,7 @@ PlatformView::MessageReceived(BMessage* message)
 
 
 void
-PlatformView::MouseDown(BPoint point)
+ContentView::MouseDown(BPoint point)
 {
 	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseDown(point);
@@ -279,7 +150,7 @@ PlatformView::MouseDown(BPoint point)
 
 
 void
-PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
+ContentView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 {
 	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
 	BView::MouseMoved(point, transit, message);
@@ -287,7 +158,7 @@ PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 
 
 void
-PlatformView::MouseUp(BPoint point)
+ContentView::MouseUp(BPoint point)
 {
 	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseUp(point);
@@ -295,7 +166,7 @@ PlatformView::MouseUp(BPoint point)
 
 
 void
-PlatformView::_HandleKeyEvent(BMessage* message)
+ContentView::_HandleKeyEvent(BMessage* message)
 {
 	int64 when = 0;
 	message->FindInt64("when", &when);
@@ -349,7 +220,7 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 
 
 void
-PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
+ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
 	printf("viewsc pts: %d %d\n", (int)point.x, (int)point.y);
 	BPoint screenPoint = ConvertToScreen(point);
@@ -410,7 +281,7 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 
 
 void
-PlatformView::_HandleWheelEvent(BMessage* message)
+ContentView::_HandleWheelEvent(BMessage* message)
 {
 	int64 when = 0;
 	message->FindInt64("when", &when);

@@ -28,33 +28,30 @@
 #include <View.h>
 #include <Window.h>
 
+#include "ContentView.h"
 #include "Drawable.h"
 #include "Utilities.h"
 
-class PlatformView;
-
-// The PlatformWindow "interface" defines the methods required of
-// PlatformFrame and PlatformView, since I decided to treat them
-// the same in the Java class.
-class PlatformWindow {
+class PlatformWindow : public BWindow {
 public:
-	virtual	void			Dispose() = 0;
-	virtual Rectangle		GetBounds() = 0;
-	virtual	void			SetBounds(Rectangle bounds) = 0;
-	virtual	PlatformView*	GetContainer() = 0;
-	virtual	Drawable*		GetDrawable() = 0;
-	virtual	Point			GetLocation() = 0;
-	virtual	Point			GetLocationOnScreen() = 0;
-	virtual	bool			GetVisible() = 0;
-	virtual	void			SetVisible(bool visible) = 0;
-	virtual	void			Focus() = 0;
+							PlatformWindow(jobject platformWindow,
+								bool simple);
 
-	virtual	void			SetName(const char* name) { }
-	virtual	int				GetState() { return 0; }
-	virtual	void			SetState(int state) { }
-	virtual	void			SetParent(PlatformView* parent) { }
-	virtual	void			SetResizable(bool resizable) { }
-	virtual	void			SendTo(bool front) { }
+			Drawable*		GetDrawable();
+			void			SetState(int state);
+			void			Dispose(JNIEnv* env);
+			void			Focus();
+
+	virtual	void			FrameMoved(BPoint origin);
+	virtual	void			FrameResized(float width, float height);
+	virtual	void			Minimize(bool minimize);
+	virtual	bool			QuitRequested();
+	virtual	void			WindowActivated(bool active);
+	virtual	void			Zoom(BPoint origin, float width, float height);
+private:
+			ContentView		fView;
+			bool			fMaximized;
+			jobject			fPlatformWindow;
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */

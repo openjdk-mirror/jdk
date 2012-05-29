@@ -212,16 +212,6 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
-    public void grab(Window w) {
-    	System.err.println("HaikuToolkit.grab: Not supported yet.");
-    }
-
-    @Override
-    public void ungrab(Window w) {
-    	System.err.println("HaikuToolkit.grab: Not supported yet.");
-    }
-
-    @Override
     public boolean isDesktopSupported() {
         return true;
     }

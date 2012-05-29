@@ -296,8 +296,8 @@ class HaikuPlatformWindow implements PlatformWindow {
         }
     }
 
-    public void eventFocus(boolean focused) {
-        peer.notifyActivation(focused);
+    public void eventActivate(boolean activated) {
+        peer.notifyActivation(activated);
     }
 
     public void eventKey(int id, long when, int modifiers, int keyCode,

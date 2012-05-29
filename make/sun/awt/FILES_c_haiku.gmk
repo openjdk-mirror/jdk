@@ -170,6 +170,7 @@ FILES_NO_MOTIF_c = \
 	CUPSfuncs.c
 
 FILES_cpp = \
+	ContentView.cpp \
 	Drawable.cpp \
 	HaikuClipboard.cpp \
 	HaikuCursorManager.cpp \
@@ -181,7 +182,5 @@ FILES_cpp = \
 	HaikuPlatformWindow.cpp \
 	HaikuToolkit.cpp \
 	HaikuWindowSurfaceData.cpp \
-	PlatformFrame.cpp \
-	PlatformView.cpp \
 	Utilities.cpp
 

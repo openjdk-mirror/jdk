@@ -22,46 +22,43 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-#ifndef PLATFORM_FRAME_H
-#define	PLATFORM_FRAME_H
+#ifndef CONTENT_VIEW_H
+#define	CONTENT_VIEW_H
 
-#include <Window.h>
+#include <View.h>
 
-#include "HaikuPlatformWindow.h"
-#include "PlatformView.h"
+#include "Drawable.h"
 
-class PlatformFrame : public BWindow, public PlatformWindow {
+class ContentView : public BView {
 public:
-							PlatformFrame(jobject platformWindow,
-								bool decorated);
+							ContentView(jobject platformWindow);
 
-			Rectangle		GetBounds();
-			PlatformView*	GetContainer();
 			Drawable*		GetDrawable();
-			Point			GetLocation();
-			Point			GetLocationOnScreen();
-			int				GetState();
-			void			SetBounds(Rectangle bounds);
-			void			SetName(const char* name);
-			void			SetResizable(bool resizable);
-			void			SetState(int state);
-			bool			GetVisible();
-			void			SetVisible(bool visible);
-			void			Dispose();
 			void			Focus();
-			void			SendTo(bool front);
 
-	// Overriden BWindow hooks
-	virtual	void			FrameMoved(BPoint origin);
+			void			DeferredDraw(BRect updateRect);
+
+	virtual	void			Draw(BRect updateRect);
 	virtual	void			FrameResized(float width, float height);
-	virtual	void			Minimize(bool minimize);
-	virtual	bool			QuitRequested();
-	virtual	void			WindowActivated(bool active);
-	virtual	void			Zoom(BPoint origin, float width, float height);
+	virtual	void			KeyDown(const char* bytes, int32 numBytes);
+	virtual	void			KeyUp(const char* bytes, int32 numBytes);
+	virtual	void			MakeFocus(bool focused);
+	virtual	void			MessageReceived(BMessage* message);
+	virtual	void			MouseDown(BPoint point);
+	virtual	void			MouseMoved(BPoint point, uint32 transit,
+								const BMessage* message);
+	virtual	void			MouseUp(BPoint point);
+	
 private:
-			PlatformView	fView;
-			bool			fMaximized;
+			void			_HandleKeyEvent(BMessage* message);
+			void			_HandleMouseEvent(BMessage* message, BPoint point,
+								uint32 transit = 0);
+			void			_HandleWheelEvent(BMessage* message);
+
+private:
+			Drawable		fDrawable;
 			jobject			fPlatformWindow;
+			uint32			fPreviousButtons;
 };
 
-#endif	/* PLATFORM_FRAME_H */
+#endif	/* CONTENT_VIEW_H */
