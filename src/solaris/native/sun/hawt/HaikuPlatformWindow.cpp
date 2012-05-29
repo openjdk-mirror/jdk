@@ -77,43 +77,17 @@ Java_sun_hawt_HaikuPlatformWindow_initIDs
 }
 
 JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeInitFrame
-  (JNIEnv *env, jobject thiz, jint x, jint y, jint width, jint height,
-   jboolean decorated)
+Java_sun_hawt_HaikuPlatformWindow_nativeInit(JNIEnv *env, jobject thiz,
+	jboolean simpleWindow)
 {
 	// Wait for be_app to get created
 	acquire_sem(appSem);
 	release_sem(appSem);
 
-	// TODO release global ref in frame/view dispose
+	// TODO release global ref in window dispose
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
 	PlatformWindow* window = new PlatformFrame(javaWindow,
-		decorated == JNI_TRUE);
-	window->SetBounds(Rectangle(x, y, width, height));
-	return ptr_to_jlong(window);
-}
-
-
-JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeInitView
-  (JNIEnv *env, jobject thiz, jint x, jint y, jint width, jint height,
-   jlong parent)
-{
-	// Wait for be_app to get created
-	acquire_sem(appSem);
-	release_sem(appSem);
-
-	// TODO release global ref in frame/view dispose
-	jobject javaWindow = env->NewWeakGlobalRef(thiz);
-	PlatformWindow* window = new PlatformView(javaWindow, false);
-
-	PlatformWindow* parentWindow = (PlatformWindow*)jlong_to_ptr(parent);
-	if (parentWindow != NULL) {
-		PlatformView* parentContainer = parentWindow->GetContainer();
-		window->SetParent(parentContainer);
-	}
-
-	window->SetBounds(Rectangle(x, y, width, height));
+		simpleWindow == JNI_TRUE);
 	return ptr_to_jlong(window);
 }
 
@@ -203,7 +177,6 @@ Java_sun_hawt_HaikuPlatformWindow_nativeFocus
   (JNIEnv *env, jobject thiz, jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	printf("Native focusing for: %p\n", window);
 	window->Focus();
 }
 
@@ -218,11 +191,11 @@ Java_sun_hawt_HaikuPlatformWindow_nativeGetState
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetState
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jint state)
+Java_sun_hawt_HaikuPlatformWindow_nativeSetWindowState(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jint windowState)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	return window->SetState(state);
+	return window->SetState(windowState);
 }
 
 
@@ -241,7 +214,6 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
-	printf("set title native\n");
 	const char* name = env->GetStringUTFChars(title, NULL);
 	if (name == NULL)
 		return;
@@ -252,11 +224,20 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSendTo
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean front)
+Java_sun_hawt_HaikuPlatformWindow_nativeToFront
+  (JNIEnv *env, jobject thiz, jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	window->SendTo(front == JNI_TRUE);
+	window->SendTo(true);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeToBack
+  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	window->SendTo(false);
 }
 
 

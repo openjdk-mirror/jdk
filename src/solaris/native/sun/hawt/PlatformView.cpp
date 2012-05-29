@@ -273,8 +273,7 @@ PlatformView::MessageReceived(BMessage* message)
 void
 PlatformView::MouseDown(BPoint point)
 {
-	BPoint screen = ConvertToScreen(point);
-	_HandleMouseEvent(Window()->CurrentMessage(), screen, point);
+	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseDown(point);
 }
 
@@ -282,10 +281,7 @@ PlatformView::MouseDown(BPoint point)
 void
 PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 {
-	BMessage* mouseMoved = Window()->CurrentMessage();
-	BPoint screen;
-	mouseMoved->FindPoint("where", &screen);
-	_HandleMouseEvent(Window()->CurrentMessage(), point, screen, transit);
+	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
 	BView::MouseMoved(point, transit, message);
 }
 
@@ -293,8 +289,7 @@ PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 void
 PlatformView::MouseUp(BPoint point)
 {
-	BPoint screen = ConvertToScreen(point);
-	_HandleMouseEvent(Window()->CurrentMessage(), screen, point);
+	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseUp(point);
 }
 
@@ -354,9 +349,11 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 
 
 void
-PlatformView::_HandleMouseEvent(BMessage* message, BPoint point,
-	BPoint screenPoint, uint32 transit)
+PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
+	printf("viewsc pts: %d %d\n", (int)point.x, (int)point.y);
+	BPoint screenPoint = ConvertToScreen(point);
+	printf("screen pts: %d %d\n", (int)screenPoint.x, (int)screenPoint.y);
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 buttons = 0;
@@ -407,7 +404,7 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point,
 	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIIII)V", id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
-		javaReleased, buttons);
+		javaReleased, javaButtons);
 	LockLooper();
 }
 
@@ -440,8 +437,8 @@ PlatformView::_HandleWheelEvent(BMessage* message)
 
 	jint scrollAmount = 3;
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIII)V",
+	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIIID)V",
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y, scrollType,
-		scrollAmount, (jint)wheelRotation);
+		scrollAmount, (jint)wheelRotation, (jdouble)wheelRotation);
 	LockLooper();
 }
