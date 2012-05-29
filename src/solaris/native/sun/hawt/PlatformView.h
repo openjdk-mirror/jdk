@@ -38,11 +38,8 @@ public:
 			Drawable*		GetDrawable();
 			Point			GetLocation();
 			Point			GetLocationOnScreen();
-			int				GetState();
 			void			SetBounds(Rectangle bounds);
 			void			SetParent(PlatformView* parent);
-			void			SetResizable(bool resizable);
-			void			SetState(int state);
 			bool			GetVisible();
 			void			SetVisible(bool visible);
 			void			Dispose();
@@ -53,6 +50,8 @@ public:
 	virtual	void			Draw(BRect updateRect);
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
+	virtual	void			KeyDown(const char* bytes, int32 numBytes);
+	virtual	void			KeyUp(const char* bytes, int32 numBytes);
 	virtual	void			MakeFocus(bool focused);
 	virtual	void			MessageReceived(BMessage* message);
 	virtual	void			MouseDown(BPoint point);
@@ -63,7 +62,8 @@ public:
 private:
 			void			_HandleKeyEvent(BMessage* message);
 			void			_HandleMouseEvent(BMessage* message, BPoint point,
-								BPoint screenPoint, uint32 transit = 0);
+								uint32 transit = 0);
+			void			_HandleWheelEvent(BMessage* message);
 
 private:
 			bool			fRoot;

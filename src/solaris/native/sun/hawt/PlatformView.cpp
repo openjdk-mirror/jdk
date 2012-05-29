@@ -32,6 +32,7 @@
 
 #include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_MouseEvent.h"
+#include "java_awt_event_MouseWheelEvent.h"
 
 PlatformView::PlatformView(jobject platformWindow, bool root)
 	:
@@ -92,13 +93,6 @@ PlatformView::GetLocationOnScreen()
 }
 
 
-int
-PlatformView::GetState()
-{
-	return 0;
-}
-
-
 void
 PlatformView::SetBounds(Rectangle bounds)
 {
@@ -122,18 +116,6 @@ PlatformView::SetParent(PlatformView* parent)
 		oldParent->RemoveChild(this);
 	}
 	parent->AddChild(this);
-}
-
-
-void
-PlatformView::SetResizable(bool resizable)
-{
-}
-
-
-void
-PlatformView::SetState(int state)
-{
 }
 
 
@@ -219,7 +201,9 @@ PlatformView::FrameMoved(BPoint origin)
 	if (!fRoot) {
 		int x = origin.x;
 		int y = origin.y;
+        UnlockLooper();
 		DoCallback(fPlatformWindow, "eventMove", "(II)V", x, y);
+		LockLooper();
 	}
 }
 
@@ -238,15 +222,31 @@ PlatformView::FrameResized(float width, float height)
 		fDrawable.Unlock();
 	}
 	
-	if (!fRoot)
+	if (!fRoot) {
+        UnlockLooper();
 		DoCallback(fPlatformWindow, "eventResize", "(II)V", w, h);
+		LockLooper();
+	}
+}
+
+
+void
+PlatformView::KeyDown(const char* bytes, int32 numBytes)
+{
+	_HandleKeyEvent(Window()->CurrentMessage());
+}
+
+
+void
+PlatformView::KeyUp(const char* bytes, int32 numBytes)
+{
+	_HandleKeyEvent(Window()->CurrentMessage());
 }
 
 
 void
 PlatformView::MakeFocus(bool focused)
 {
-	printf("Going to call MakeFocus...\n");
 	DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
 	BView::MakeFocus(focused);
 }
@@ -256,11 +256,12 @@ void
 PlatformView::MessageReceived(BMessage* message)
 {
 	switch (message->what) {
-		case B_KEY_DOWN:
 		case B_UNMAPPED_KEY_DOWN:
-		case B_KEY_UP:
 		case B_UNMAPPED_KEY_UP:
 			_HandleKeyEvent(message);
+			break;
+		case B_MOUSE_WHEEL_CHANGED:
+			_HandleWheelEvent(message);
 			break;
 		default:
 			break;
@@ -272,8 +273,7 @@ PlatformView::MessageReceived(BMessage* message)
 void
 PlatformView::MouseDown(BPoint point)
 {
-	BPoint screenPoint = ConvertToScreen(point);
-	_HandleMouseEvent(Window()->CurrentMessage(), screenPoint, point);
+	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseDown(point);
 }
 
@@ -281,11 +281,7 @@ PlatformView::MouseDown(BPoint point)
 void
 PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 {
-	// We already have a screen location here in the message
-	BMessage* moveMessage = Window()->CurrentMessage();
-	BPoint screenPoint;
-	moveMessage->FindPoint("where", &screenPoint);
-	_HandleMouseEvent(moveMessage, point, screenPoint, transit);
+	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
 	BView::MouseMoved(point, transit, message);
 }
 
@@ -293,8 +289,7 @@ PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 void
 PlatformView::MouseUp(BPoint point)
 {
-	BPoint screenPoint = ConvertToScreen(point);
-	_HandleMouseEvent(Window()->CurrentMessage(), screenPoint, point);
+	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseUp(point);
 }
 
@@ -302,7 +297,6 @@ PlatformView::MouseUp(BPoint point)
 void
 PlatformView::_HandleKeyEvent(BMessage* message)
 {
-	printf("Handle key event native!\n");
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 modifiers = 0;
@@ -323,11 +317,14 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 
 	mods = ConvertInputModifiersToJava(modifiers);
 	ConvertKeyCodeToJava(key, modifiers, &keyCode, &keyLocation);
-	DoCallback(fPlatformWindow, "eventKey", "(IJIIII)V", id,
-		(jlong)(when / 1000), mods, keyCode, keyChar, keyLocation);
+	DoCallback(fPlatformWindow, "eventKey", "(IJIII)V", id,
+		(jlong)(when / 1000), mods, keyCode, keyLocation);
 
 	BString bytes;
 	if (message->FindString("bytes", &bytes) == B_OK) {
+		// Don't really get what this is about
+		// I just copied it from the 1.4.2 port  vvvvvvvvv
+		
 		// If we hava a key field that's non-zero, respond on KEY_UP.
 		// If we don't have a key field (key is zero), we need to fire on KEY_DOWN.
 		if ((key != 0 && (message->what == B_KEY_UP || message->what == B_UNMAPPED_KEY_UP)) ||
@@ -336,17 +333,23 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 			id = java_awt_event_KeyEvent_KEY_TYPED;
 			keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
 			keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
-			keyChar = bytes.ByteAt(0);
-			DoCallback(fPlatformWindow, "eventKey", "(IJIIII)V", id,
-				(jlong)(when / 1000), mods, keyCode, keyChar, keyLocation);
+			
+    		JNIEnv* env = NULL;
+    		jvm->AttachCurrentThread((void**)&env, NULL);
+			jstring keyChar = env->NewStringUTF(bytes.String());
+			if (keyChar == NULL)
+				return;
+
+			DoCallback(fPlatformWindow, "eventKeyTyped",
+				"(JILjava/lang/String;)V", (jlong)(when / 1000), mods, keyChar);
+			env->DeleteLocalRef(keyChar);
 		}
 	}
 }
 
 
 void
-PlatformView::_HandleMouseEvent(BMessage* message, BPoint point,
-	BPoint screenPoint, uint32 transit)
+PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
 	int64 when = 0;
 	message->FindInt64("when", &when);
@@ -413,9 +416,43 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point,
 	// Drop the lock when doing this callback, because the MouseEvent
 	// constructor will call getLocationOnScreen which may call native code.
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIII)V", id,
+	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
-		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
-		javaReleased);
+		(jint)clicks, javaPressed, javaReleased);
+	LockLooper();
+}
+
+
+void
+PlatformView::_HandleWheelEvent(BMessage* message)
+{
+	int64 when = 0;
+	message->FindInt64("when", &when);
+	int32 modifiers = ::modifiers();
+	
+	uint32 buttons = 0;
+	BPoint point;
+	GetMouse(&point, &buttons);
+
+	jint mods = ConvertInputModifiersToJava(modifiers);
+	if (buttons & B_PRIMARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
+	if (buttons & B_SECONDARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
+	if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		mods |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+
+	float wheelRotation = 0;
+	message->FindFloat("be:wheel_delta_y", &wheelRotation);
+	
+	jint scrollType = java_awt_event_MouseWheelEvent_WHEEL_UNIT_SCROLL;
+	if ((modifiers & (B_OPTION_KEY | B_COMMAND_KEY | B_CONTROL_KEY)) != 0)
+	    scrollType = java_awt_event_MouseWheelEvent_WHEEL_BLOCK_SCROLL;
+
+	jint scrollAmount = 3;
+	UnlockLooper();
+	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIII)V",
+		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y, scrollType,
+		scrollAmount, (jint)wheelRotation);
 	LockLooper();
 }

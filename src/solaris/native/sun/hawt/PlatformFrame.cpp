@@ -25,6 +25,7 @@
 
 #include "PlatformFrame.h"
 
+#include "java_awt_Frame.h"
 #include <stdio.h>
 
 /*
@@ -37,7 +38,8 @@
 PlatformFrame::PlatformFrame(jobject platformWindow, bool decorated)
 	:
 	BWindow(BRect(0, 0, 0, 0), NULL, decorated ? B_TITLED_WINDOW_LOOK
-		: B_NO_BORDER_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL, 0),
+		: B_NO_BORDER_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
+		decorated ? 0 : B_AVOID_FOCUS),
 	fView(platformWindow, true),
 	fPlatformWindow(platformWindow)
 {
@@ -104,12 +106,12 @@ PlatformFrame::GetState()
 
 	int state = 0;
 	if (IsHidden() || IsMinimized())
-		state |= kStateMinimized;
+		state |= java_awt_Frame_ICONIFIED;
 	if (fMaximized)
-		state |= kStateMaximized;
+		state |= java_awt_Frame_MAXIMIZED_BOTH;
 
 	if (state == 0)
-		state |= kStateNormal;
+		state |= java_awt_Frame_NORMAL;
 
 	UnlockLooper();
 	return state;
@@ -128,9 +130,12 @@ PlatformFrame::SetBounds(Rectangle bounds)
 
 
 void
-PlatformFrame::SetParent(PlatformView* parent)
+PlatformFrame::SetName(const char* name)
 {
-	fprintf(stderr, "Attempted to parent a frame");
+	if (!LockLooper())
+		return;
+	SetTitle(name);
+	UnlockLooper();
 }
 
 
@@ -157,13 +162,16 @@ PlatformFrame::SetState(int state)
 	// Or should it be 'behind-the-scenes' maximized,
 	// so it shows as maximized when it becomes unminimized?
 	
-	if ((state & kStateMinimized) != 0)
+	if ((state & java_awt_Frame_ICONIFIED) != 0)
 		Minimize(true);
-	if ((state & kStateMaximized) != 0)
-		BWindow::Zoom();
+
+	if ((state & java_awt_Frame_MAXIMIZED_BOTH) != 0) {
+		if (!fMaximized)
+			BWindow::Zoom();
+	}
 
 	// Normal should cancel out the two other states
-	if ((state & kStateNormal) != 0) {
+	if ((state & java_awt_Frame_NORMAL) != 0) {
 		Minimize(false);
 		if (fMaximized)
 			BWindow::Zoom();
@@ -222,6 +230,19 @@ PlatformFrame::Focus()
 }
 
 
+void
+PlatformFrame::SendTo(bool front)
+{
+	LockLooper();
+	if (front)
+		Activate();
+	else
+		SendBehind(NULL);
+	UnlockLooper();
+}
+
+
+
 // #pragma mark Overriden BWindow/BLooper hooks
 
 
@@ -230,7 +251,9 @@ PlatformFrame::FrameMoved(BPoint origin)
 {
 	int x = origin.x;
 	int y = origin.y;
+	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventMove", "(II)V", x, y);
+	LockLooper();
 	BWindow::FrameMoved(origin);
 }
 
@@ -240,7 +263,9 @@ PlatformFrame::FrameResized(float width, float height)
 {
 	int w = width + 1;
 	int h = height + 1;
+	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventResize", "(II)V", w, h);
+	LockLooper();
 	BWindow::FrameResized(width, height);
 }
 

@@ -84,7 +84,7 @@ Java_sun_hawt_HaikuPlatformWindow_nativeInitFrame
 	// Wait for be_app to get created
 	acquire_sem(appSem);
 	release_sem(appSem);
-    printf("innitting the frame..\n");
+
 	// TODO release global ref in frame/view dispose
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
 	PlatformWindow* window = new PlatformFrame(javaWindow,
@@ -205,6 +205,58 @@ Java_sun_hawt_HaikuPlatformWindow_nativeFocus
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	printf("Native focusing for: %p\n", window);
 	window->Focus();
+}
+
+
+JNIEXPORT jint JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeGetState
+  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->GetState();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetState
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jint state)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->SetState(state);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean resizable)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->SetResizable(resizable == JNI_TRUE);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jstring title)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	printf("set title native\n");
+	const char* name = env->GetStringUTFChars(title, NULL);
+	if (name == NULL)
+		return;
+
+	window->SetName(name);
+	env->ReleaseStringUTFChars(title, name);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSendTo
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean front)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	window->SendTo(front == JNI_TRUE);
 }
 
 

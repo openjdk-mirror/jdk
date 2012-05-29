@@ -33,29 +33,28 @@
 
 class PlatformView;
 
-const int kStateMinimized = 0x01;
-const int kStateNormal = 0x02;
-const int kStateMaximized = 0x03;
-
 // The PlatformWindow "interface" defines the methods required of
 // PlatformFrame and PlatformView, since I decided to treat them
 // the same in the Java class.
 class PlatformWindow {
 public:
+	virtual	void			Dispose() = 0;
 	virtual Rectangle		GetBounds() = 0;
+	virtual	void			SetBounds(Rectangle bounds) = 0;
 	virtual	PlatformView*	GetContainer() = 0;
 	virtual	Drawable*		GetDrawable() = 0;
 	virtual	Point			GetLocation() = 0;
 	virtual	Point			GetLocationOnScreen() = 0;
-	virtual	int				GetState() = 0;
-	virtual	void			SetBounds(Rectangle bounds) = 0;
-	virtual	void			SetParent(PlatformView* parent) = 0;
-	virtual	void			SetResizable(bool resizable) = 0;
-	virtual	void			SetState(int state) = 0;
 	virtual	bool			GetVisible() = 0;
 	virtual	void			SetVisible(bool visible) = 0;
-	virtual	void			Dispose() = 0;
 	virtual	void			Focus() = 0;
+
+	virtual	void			SetName(const char* name) { }
+	virtual	int				GetState() { return 0; }
+	virtual	void			SetState(int state) { }
+	virtual	void			SetParent(PlatformView* parent) { }
+	virtual	void			SetResizable(bool resizable) { }
+	virtual	void			SendTo(bool front) { }
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */
