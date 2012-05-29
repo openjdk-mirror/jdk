@@ -45,14 +45,16 @@ public:
 	virtual	Drawable*		GetDrawable() = 0;
 	virtual	Point			GetLocation() = 0;
 	virtual	Point			GetLocationOnScreen() = 0;
-	virtual	void			SetName(const char* name) = 0;
-	virtual	int				GetState() = 0;
-	virtual	void			SetState(int state) = 0;
-	virtual	void			SetParent(PlatformView* parent) = 0;
-	virtual	void			SetResizable(bool resizable) = 0;
 	virtual	bool			GetVisible() = 0;
 	virtual	void			SetVisible(bool visible) = 0;
 	virtual	void			Focus() = 0;
+
+	virtual	void			SetName(const char* name) { }
+	virtual	int				GetState() { return 0; }
+	virtual	void			SetState(int state) { }
+	virtual	void			SetParent(PlatformView* parent) { }
+	virtual	void			SetResizable(bool resizable) { }
+	virtual	void			SendTo(bool front) { }
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */

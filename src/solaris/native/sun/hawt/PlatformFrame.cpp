@@ -140,13 +140,6 @@ PlatformFrame::SetName(const char* name)
 
 
 void
-PlatformFrame::SetParent(PlatformView* parent)
-{
-	fprintf(stderr, "Attempted to parent a frame");
-}
-
-
-void
 PlatformFrame::SetResizable(bool resizable)
 {
 	if (!LockLooper())
@@ -235,6 +228,19 @@ PlatformFrame::Focus()
 	fView.Focus();
 	UnlockLooper();
 }
+
+
+void
+PlatformFrame::SendTo(bool front)
+{
+	LockLooper();
+	if (front)
+		Activate();
+	else
+		SendBehind(NULL);
+	UnlockLooper();
+}
+
 
 
 // #pragma mark Overriden BWindow/BLooper hooks

@@ -193,12 +193,12 @@ class CacioWindowPeer extends CacioContainerPeer<Window, JRootPane>
     }
 
     public void toBack() {
-        // TODO Auto-generated method stub
+        getToplevelWindow().toBack();
 
     }
 
     public void toFront() {
-        // TODO Auto-generated method stub
+        getToplevelWindow().toFront();
 
     }
 

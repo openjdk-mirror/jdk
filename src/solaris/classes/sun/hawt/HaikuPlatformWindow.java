@@ -100,6 +100,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     private native void nativeSetResizable(long nativeWindow,
         boolean resizable);
     private native void nativeSetTitle(long nativeWindow, String title);
+    private native void nativeSendTo(long nativeWindow, boolean front);
 
     HaikuPlatformWindow(CacioComponent cacioComponent,
             HaikuPlatformWindow parent, boolean toplevel, int x, int y,
@@ -211,6 +212,14 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         nativeSetTitle(nativeWindow, title);
     }
 
+    public void toFront() {
+    	nativeSendTo(nativeWindow, true);
+    }
+
+    public void toBack() {
+    	nativeSendTo(nativeWindow, false);
+    }
+
     public boolean canDetermineObscurity() {
         return false;
     }
@@ -244,7 +253,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         if (!AWTAccessor.getComponentAccessor().getIgnoreRepaint(awtComp)) {
             PaintEvent ev = PaintEventDispatcher.getPaintEventDispatcher()
                   .createPaintEvent(awtComp, x, y, width, height);
-            postEvent(cacioComponent, ev);
+            postEvent(ev);
         }
     }
 
@@ -253,7 +262,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         AWTAccessor.getComponentAccessor().setSize(awtComp, width, height);
         ComponentEvent ev = new ComponentEvent(awtComp,
             ComponentEvent.COMPONENT_RESIZED);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
     }
     
     public void eventMove(int x, int y) {
@@ -261,14 +270,14 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         AWTAccessor.getComponentAccessor().setLocation(awtComp, x, y);
         ComponentEvent ev = new ComponentEvent(awtComp,
             ComponentEvent.COMPONENT_MOVED);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
     }
     
     public void eventMaximize(boolean maximize) {
         int newState = maximize ? Frame.MAXIMIZED_BOTH : Frame.NORMAL;
         WindowEvent ev = new WindowEvent((Window)cacioComponent.getAWTComponent(),
             WindowEvent.WINDOW_STATE_CHANGED, windowState, newState);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
         
         windowState = newState;
     }
@@ -278,12 +287,12 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         WindowEvent iconifyEv = new WindowEvent((Window)awtComp,
             minimize ? WindowEvent.WINDOW_ICONIFIED :
             WindowEvent.WINDOW_DEICONIFIED);
-        postEvent(cacioComponent, iconifyEv);
+        postEvent(iconifyEv);
         
         int newState = minimize ? Frame.ICONIFIED : Frame.NORMAL;
         WindowEvent stateEv = new WindowEvent((Window)awtComp,
             WindowEvent.WINDOW_STATE_CHANGED, windowState, newState);
-        postEvent(cacioComponent, stateEv);
+        postEvent(stateEv);
 
         windowState = newState;
     }
@@ -291,27 +300,27 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
     public void eventWindowClosing() {
         WindowEvent ev = new WindowEvent((Window)cacioComponent.getAWTComponent(),
             WindowEvent.WINDOW_CLOSING);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
     }
 
     public void eventFocus(boolean focused) {
         FocusEvent ev = new FocusEvent(cacioComponent.getAWTComponent(),
             focused ? FocusEvent.FOCUS_GAINED : FocusEvent.FOCUS_LOST);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
     }
 
     public void eventKey(int id, long when, int modifiers, int keyCode,
             int keyLocation) {
         KeyEvent ev = new KeyEvent(cacioComponent.getAWTComponent(), id,
             when, modifiers, keyCode, KeyEvent.CHAR_UNDEFINED, keyLocation);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
     }
 
     public void eventKeyTyped(long when, int modifiers, String keyChar) {
         KeyEvent ev = new KeyEvent(cacioComponent.getAWTComponent(),
             KeyEvent.KEY_TYPED, when, modifiers, KeyEvent.VK_UNDEFINED,
             keyChar.charAt(0), KeyEvent.KEY_LOCATION_UNKNOWN);
-        postEvent(cacioComponent, ev);        
+        postEvent(ev);        
     }
 
     private void handleMouseDown(long when, int modifiers, int x, int y,
@@ -326,7 +335,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         Component comp = cacioComponent.getAWTComponent();
         MouseEvent ev = new MouseEvent(comp, MouseEvent.MOUSE_PRESSED, when,
             modifiers, x, y, clicks, popup, button);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
     }
 
     private void handleMouseUp(long when, int modifiers, int x, int y,
@@ -334,10 +343,10 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         Component comp = cacioComponent.getAWTComponent();
         MouseEvent ev = new MouseEvent(comp, MouseEvent.MOUSE_RELEASED, when,
             modifiers, x, y, clicks, false, button);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
         ev = new MouseEvent(comp, MouseEvent.MOUSE_CLICKED, when,
             modifiers, x, y, clicks, false, button);
-        postEvent(cacioComponent, ev);
+        postEvent(ev);
     }
 
     public void eventMouse(int id, long when, int modifiers, int x, int y,
@@ -363,7 +372,7 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
             Component awtComp = cacioComponent.getAWTComponent();
             MouseEvent ev = new MouseEvent(cacioComponent.getAWTComponent(),
                 id, when, modifiers, x, y, clicks, false);
-            postEvent(cacioComponent, ev);
+            postEvent(ev);
         }
     }
 
@@ -374,11 +383,11 @@ class HaikuPlatformWindow implements PlatformToplevelWindow {
         MouseWheelEvent ev = new MouseWheelEvent(awtComp,
             MouseWheelEvent.MOUSE_WHEEL, when, modifiers, x, y, 0, false,
             scrollType, scrollAmount, wheelRotation);
-        postEvent(cacioComponent, ev);    
+        postEvent(ev);    
     }
 
-    private void postEvent(CacioComponent component, AWTEvent ev) {
-        component.handlePeerEvent(ev);
+    private void postEvent(AWTEvent ev) {
+        cacioComponent.handlePeerEvent(ev);
     }
 
     // ===================

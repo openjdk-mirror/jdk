@@ -251,4 +251,13 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
 }
 
 
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSendTo
+  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean front)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	window->SendTo(front == JNI_TRUE);
+}
+
+
 }

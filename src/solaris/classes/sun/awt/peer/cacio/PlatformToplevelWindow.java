@@ -101,4 +101,18 @@ public interface PlatformToplevelWindow extends PlatformWindow {
      */
     void setBlocked(boolean blocked);
 
+    /**
+     * Makes this window the topmost window on the desktop.
+     *
+     * @see Window#toFront()
+     */
+    void toFront();
+
+    /**
+     * Makes this window the bottommost window on the desktop.
+     *
+     * @see Window#toBack()
+     */
+    void toBack();
+
 }

@@ -38,12 +38,8 @@ public:
 			Drawable*		GetDrawable();
 			Point			GetLocation();
 			Point			GetLocationOnScreen();
-			int				GetState();
 			void			SetBounds(Rectangle bounds);
-			void			SetName(const char* name);
 			void			SetParent(PlatformView* parent);
-			void			SetResizable(bool resizable);
-			void			SetState(int state);
 			bool			GetVisible();
 			void			SetVisible(bool visible);
 			void			Dispose();

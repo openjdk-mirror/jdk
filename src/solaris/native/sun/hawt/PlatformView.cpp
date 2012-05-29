@@ -93,13 +93,6 @@ PlatformView::GetLocationOnScreen()
 }
 
 
-int
-PlatformView::GetState()
-{
-	return 0;
-}
-
-
 void
 PlatformView::SetBounds(Rectangle bounds)
 {
@@ -109,12 +102,6 @@ PlatformView::SetBounds(Rectangle bounds)
 	MoveTo(bounds.x, bounds.y);
 	ResizeTo(bounds.width - 1, bounds.height - 1);
 	UnlockLooper();
-}
-
-
-void
-PlatformView::SetName(const char* name)
-{
 }
 
 
@@ -129,18 +116,6 @@ PlatformView::SetParent(PlatformView* parent)
 		oldParent->RemoveChild(this);
 	}
 	parent->AddChild(this);
-}
-
-
-void
-PlatformView::SetResizable(bool resizable)
-{
-}
-
-
-void
-PlatformView::SetState(int state)
-{
 }
 
 
