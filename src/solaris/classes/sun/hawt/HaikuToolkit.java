@@ -42,6 +42,8 @@ import sun.lwawt.LWWindowPeer.PeerType;
 
 public class HaikuToolkit extends LWToolkit {
 
+    private HaikuClipboard clipboard;
+
 	private static native void nativeInit();
     private native void nativeRunMessage();
 
@@ -51,6 +53,8 @@ public class HaikuToolkit extends LWToolkit {
 
     public HaikuToolkit() {
         super();
+        SunToolkit.setDataTransfererClassName("sun.hawt.HaikuDataTransferer");
+
 		nativeInit();
         init();
     }
@@ -102,7 +106,11 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public Clipboard createPlatformClipboard() {
-    	return null;
+        synchronized (this) {
+            if (clipboard == null)
+                clipboard = new HaikuClipboard("System");
+        }
+        return clipboard;
     }
 
     @Override
@@ -148,6 +156,11 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
+    public boolean isTraySupported() {
+        return false;
+    }
+
+    @Override
     public TrayIconPeer createTrayIcon(TrayIcon target) throws HeadlessException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
@@ -157,15 +170,22 @@ public class HaikuToolkit extends LWToolkit {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    @Override
-    public boolean isTraySupported() {
-        return false;
+    class HaikuPlatformFont extends PlatformFont {
+
+        public HaikuPlatformFont(String name, int style) {
+            super(name, style);
+        }
+
+        protected char getMissingGlyphCharacter() {
+            return (char)0xfff8;
+        }
     }
 
     @Override
     public FontPeer getFontPeer(String name, int style) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return new HaikuPlatformFont(name, style);
     }
+
 
     @Override
     public RobotPeer createRobot(Robot target, GraphicsDevice screen) {
@@ -238,11 +258,6 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public void beep() {
-    }
-
-    @Override
-    public Clipboard getSystemClipboard() throws HeadlessException {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override

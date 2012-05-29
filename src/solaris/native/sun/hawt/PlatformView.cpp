@@ -273,7 +273,8 @@ PlatformView::MessageReceived(BMessage* message)
 void
 PlatformView::MouseDown(BPoint point)
 {
-	_HandleMouseEvent(Window()->CurrentMessage(), point);
+	BPoint screen = ConvertToScreen(point);
+	_HandleMouseEvent(Window()->CurrentMessage(), screen, point);
 	BView::MouseDown(point);
 }
 
@@ -281,7 +282,10 @@ PlatformView::MouseDown(BPoint point)
 void
 PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 {
-	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
+	BMessage* mouseMoved = Window()->CurrentMessage();
+	BPoint screen;
+	mouseMoved->FindPoint("where", &screen);
+	_HandleMouseEvent(Window()->CurrentMessage(), point, screen, transit);
 	BView::MouseMoved(point, transit, message);
 }
 
@@ -289,7 +293,8 @@ PlatformView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 void
 PlatformView::MouseUp(BPoint point)
 {
-	_HandleMouseEvent(Window()->CurrentMessage(), point);
+	BPoint screen = ConvertToScreen(point);
+	_HandleMouseEvent(Window()->CurrentMessage(), screen, point);
 	BView::MouseUp(point);
 }
 
@@ -349,7 +354,8 @@ PlatformView::_HandleKeyEvent(BMessage* message)
 
 
 void
-PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
+PlatformView::_HandleMouseEvent(BMessage* message, BPoint point,
+	BPoint screenPoint, uint32 transit)
 {
 	int64 when = 0;
 	message->FindInt64("when", &when);
@@ -365,21 +371,9 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	int released = ~buttons & fPreviousButtons;
 	fPreviousButtons = buttons;
 
-	jint javaPressed = 0;
-	if (pressed & B_PRIMARY_MOUSE_BUTTON)
-		javaPressed |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
-	if (pressed & B_SECONDARY_MOUSE_BUTTON)
-		javaPressed |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
-	if (pressed & B_TERTIARY_MOUSE_BUTTON)
-		javaPressed |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
-
-	jint javaReleased = 0;
-	if (released & B_PRIMARY_MOUSE_BUTTON)
-		javaReleased |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
-	if (released & B_SECONDARY_MOUSE_BUTTON)
-		javaReleased |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
-	if (released & B_TERTIARY_MOUSE_BUTTON)
-		javaReleased |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+	jint javaPressed = ConvertButtonsToJava(pressed);
+	jint javaReleased = ConvertButtonsToJava(released);
+	jint javaButtons = ConvertButtonsToJava(buttons);
 
 	jint id = 0;
 	switch (message->what) {
@@ -405,20 +399,15 @@ PlatformView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 			break;
 	}
 
-	jint mods = ConvertInputModifiersToJava(modifiers);
-	if (buttons & B_PRIMARY_MOUSE_BUTTON)
-		mods |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
-	if (buttons & B_SECONDARY_MOUSE_BUTTON)
-		mods |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
-	if (buttons & B_TERTIARY_MOUSE_BUTTON)
-		mods |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+	jint mods = ConvertInputModifiersToJava(modifiers) | javaButtons;
 
 	// Drop the lock when doing this callback, because the MouseEvent
 	// constructor will call getLocationOnScreen which may call native code.
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIII)V", id,
+	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIIII)V", id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
-		(jint)clicks, javaPressed, javaReleased);
+		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
+		javaReleased, buttons);
 	LockLooper();
 }
 

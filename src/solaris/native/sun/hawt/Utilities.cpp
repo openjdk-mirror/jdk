@@ -27,10 +27,12 @@
 
 #include <InterfaceDefs.h>
 #include <String.h>
+#include <View.h>
 
 #include "java_awt_Event.h"
-#include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_InputEvent.h"
+#include "java_awt_event_KeyEvent.h"
+#include "java_awt_event_MouseEvent.h"
 
 void
 DoCallback(jobject obj, const char* name, const char* description, ...)
@@ -52,6 +54,18 @@ DoCallback(jobject obj, const char* name, const char* description, ...)
     va_end(args);
 }
 
+jint
+ConvertButtonsToJava(int32 buttons)
+{
+	jint javaButtons = 0;
+	if (buttons & B_PRIMARY_MOUSE_BUTTON)
+		javaButtons |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
+	if (buttons & B_SECONDARY_MOUSE_BUTTON)
+		javaButtons |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
+	if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		javaButtons |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+	return javaButtons;
+}
 
 int32
 ConvertKeyCodeToNative(jint jkeycode) {

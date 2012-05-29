@@ -25,18 +25,14 @@
 
 #include <jni.h>
 
-#include <FindDirectory.h>
-#include <Path.h>
-#include <String.h>
-
 extern "C" {
 
 /*
  * Class:     sun_hawt_HaikuClipboard
  * Method:    nativeGetClipboardFormats
- * Signature: ()Ljava/lang/String;
+ * Signature: ()[Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL
+JNIEXPORT jobject JNICALL
 Java_sun_hawt_HaikuClipboard_nativeGetFormats(JNIEnv *env, jobject thiz)
 {
 	// JNI create string array blah blah
@@ -52,7 +48,7 @@ JNIEXPORT jbyteArray JNICALL
 Java_sun_hawt_HaikuClipboard_nativeGetData(JNIEnv *env, jobject thiz,
     jstring format)
 {
-	// JNI create string array blah blah
+	// JNI do shit
 	return NULL;
 }
 
@@ -65,7 +61,7 @@ JNIEXPORT jstring JNICALL
 Java_sun_hawt_HaikuClipboard_nativeSetData(JNIEnv *env, jbyteArray data,
     jstring format)
 {
-	// JNI create string array blah blah
+	// JNI do other shit
 	return NULL;
 }
 

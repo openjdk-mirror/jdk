@@ -53,23 +53,23 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     private static native void initIDs();
     private native long nativeInitView(int x, int y, int width, int height,
-    	long parent);
+        long parent);
     private native long nativeInitFrame(int x, int y, int width, int height,
-    	boolean decorated);
+        boolean decorated);
     private native long nativeGetDrawable(long nativeWindow);
     private native void nativeGetBounds(long nativeWindow, Rectangle bounds);
     private native void nativeSetBounds(long nativeWindow, int x, int y,
-    	int width, int height);
+        int width, int height);
     private native boolean nativeGetVisible(long nativeWindow);
     private native void nativeSetVisible(long nativeWindow, boolean visible);
     private native void nativeGetLocation(long nativeWindow, Point location);
     private native void nativeGetLocationOnScreen(long nativeWindow,
-    	Point location);
+        Point location);
     private native void nativeDispose(long nativeWindow);
     private native void nativeFocus(long nativeWindow);
 
     public HaikuPlatformWindow(final PeerType peerType) {
-    	this.peerType = peerType;
+        this.peerType = peerType;
     }
 
     /*
@@ -108,7 +108,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public int getScreenImOn() {
-    	return 0;
+        return 0;
     }
 
     @Override
@@ -120,7 +120,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public Insets getInsets() {
-    	return new Insets(0, 0, 0, 0);
+        return new Insets(0, 0, 0, 0);
     }
 
     @Override
@@ -132,22 +132,22 @@ class HaikuPlatformWindow implements PlatformWindow {
     @Override
     public SurfaceData getScreenSurface() {
         if (surfaceData == null) {
-        	long drawable = nativeGetDrawable(nativeWindow);
+            long drawable = nativeGetDrawable(nativeWindow);
             surfaceData = new HaikuWindowSurfaceData(
-            	HaikuWindowSurfaceData.typeDefault, getColorModel(),
-            	getBounds(), getGraphicsConfiguration(), this, drawable);
+                HaikuWindowSurfaceData.typeDefault, getColorModel(),
+                getBounds(), getGraphicsConfiguration(), this, drawable);
         }
         return surfaceData;
     }
 
     @Override
     public SurfaceData replaceSurfaceData() {
-    	return getScreenSurface();
+        return getScreenSurface();
     }
     
     @Override
     public Image createBackBuffer() {
-    	return null;
+        return null;
     }
 
     @Override
@@ -170,12 +170,12 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     @Override
-	public void setAlwaysOnTop(boolean value) {
-	}
-	
+    public void setAlwaysOnTop(boolean value) {
+    }
+    
     @Override
-	public void updateFocusableWindowState() {
-	}
+    public void updateFocusableWindowState() {
+    }
 
     @Override
     public void setResizable(boolean resizable) {
@@ -183,13 +183,13 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     @Override
-	public void setMinimumSize(int width, int height) {
-	}
+    public void setMinimumSize(int width, int height) {
+    }
 
     @Override
-	public Graphics transformGraphics(Graphics g) {
-		return g;
-	}
+    public Graphics transformGraphics(Graphics g) {
+        return g;
+    }
 
     @Override
     public void updateIconImages() {
@@ -217,12 +217,12 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public long getLayerPtr() {
-    	return nativeWindow;
+        return nativeWindow;
     }
 
     @Override
     public LWWindowPeer getPeer() {
-    	return peer;
+        return peer;
     }
     
     @Override
@@ -232,9 +232,9 @@ class HaikuPlatformWindow implements PlatformWindow {
     }    
     
     @Override
-	public boolean isActive() {
-		return false;
-	}
+    public boolean isActive() {
+        return false;
+    }
 
     public ColorModel getColorModel() {
         return getGraphicsConfiguration().getColorModel();
@@ -244,36 +244,36 @@ class HaikuPlatformWindow implements PlatformWindow {
         return HaikuGraphicsConfig.getDefaultConfiguration();
     }
 
-	public Rectangle getBounds() {
-		Rectangle bounds = new Rectangle();
-		nativeGetBounds(nativeWindow, bounds);
-		return bounds;
-	}
+    public Rectangle getBounds() {
+        Rectangle bounds = new Rectangle();
+        nativeGetBounds(nativeWindow, bounds);
+        return bounds;
+    }
 
-	// =====================
-	// Native code callbacks
-	// =====================
+    // =====================
+    // Native code callbacks
+    // =====================
 
-	public void eventRepaint(int x, int y, int width, int height) {
-		peer.notifyExpose(x, y, width, height);
-	}
+    public void eventRepaint(int x, int y, int width, int height) {
+        peer.notifyExpose(x, y, width, height);
+    }
 
     public void eventResize(int width, int height) {
-    	Rectangle bounds = peer.getBounds();
-    	peer.notifyReshape(bounds.x, bounds.y, width, height);
+        Rectangle bounds = peer.getBounds();
+        peer.notifyReshape(bounds.x, bounds.y, width, height);
     }
     
     public void eventMove(int x, int y) {
-    	Rectangle bounds = peer.getBounds();
-    	peer.notifyReshape(x, y, bounds.width, bounds.height);
+        Rectangle bounds = peer.getBounds();
+        peer.notifyReshape(x, y, bounds.width, bounds.height);
     }
     
     public void eventMaximize(boolean maximize) {
-    	peer.notifyZoom(maximize);
+        peer.notifyZoom(maximize);
     }
     
     public void eventMinimize(boolean minimize) {
-    	peer.notifyIconify(minimize);
+        peer.notifyIconify(minimize);
     }
     
     public void eventWindowClosing() {
@@ -283,48 +283,61 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     public void eventFocus(boolean focused) {
-    	peer.notifyActivation(focused);
+        peer.notifyActivation(focused);
     }
 
-	private void handleMouseDown(long when, int modifiers, int x, int y,
-			int screenX, int screenY, int clicks, int button) {
-		boolean popup = button == MouseEvent.BUTTON2 ||
-		    (button == MouseEvent.BUTTON1 &&
-		    (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0);
+    private void handleMouseDown(long when, int modifiers, int x, int y,
+            int screenX, int screenY, int clicks, int button) {
+        boolean popup = button == MouseEvent.BUTTON2 ||
+            (button == MouseEvent.BUTTON1 &&
+            (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0);
 
-		peer.dispatchMouseEvent(MouseEvent.MOUSE_PRESSED, when, button,
-		    x, y, screenX, screenY, modifiers, clicks, popup, null);
-	}
+        peer.dispatchMouseEvent(MouseEvent.MOUSE_PRESSED, when, button,
+            x, y, screenX, screenY, modifiers, clicks, popup, null);
+    }
 
-	private void handleMouseUp(long when, int modifiers, int x, int y,
-			int screenX, int screenY, int clicks, int button) {
-		peer.dispatchMouseEvent(MouseEvent.MOUSE_RELEASED, when, button,
-			x, y, screenX, screenY, modifiers, clicks, false, null);
-		peer.dispatchMouseEvent(MouseEvent.MOUSE_CLICKED, when, button,
-			x, y, screenX, screenY, modifiers, clicks, false, null);
-	}
+    private void handleMouseUp(long when, int modifiers, int x, int y,
+            int screenX, int screenY, int clicks, int button) {
+        peer.dispatchMouseEvent(MouseEvent.MOUSE_RELEASED, when, button,
+            x, y, screenX, screenY, modifiers, clicks, false, null);
+        peer.dispatchMouseEvent(MouseEvent.MOUSE_CLICKED, when, button,
+            x, y, screenX, screenY, modifiers, clicks, false, null);
+    }
 
-	public void eventMouse(int id, long when, int modifiers, int x, int y,
-			int screenX, int screenY, int clicks, int pressed, int released) {
-    	// Mouse up/down is weird on Haiku so we check what buttons
-    	// exactly have changed with every mouse message and then
-    	// fire off the appropriate events.
-		if ((pressed & MouseEvent.BUTTON1_DOWN_MASK) != 0)
-			handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
-		if ((pressed & MouseEvent.BUTTON2_DOWN_MASK) != 0)
-			handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
-		if ((pressed & MouseEvent.BUTTON3_DOWN_MASK) != 0)
-			handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
-		if ((released & MouseEvent.BUTTON1_DOWN_MASK) != 0)
-			handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
-		if ((released & MouseEvent.BUTTON2_DOWN_MASK) != 0)
-			handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
-		if ((released & MouseEvent.BUTTON3_DOWN_MASK) != 0)
-			handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
+    private void handleMouseDrag(long when, int modifiers, int x, int y,
+            int screenX, int screenY, int clicks, int button) {
+        peer.dispatchMouseEvent(MouseEvent.MOUSE_DRAGGED, when, button,
+            x, y, screenX, screenY, modifiers, clicks, false, null);
+    }
 
-		if (id != MouseEvent.MOUSE_PRESSED
-				&& id != MouseEvent.MOUSE_RELEASED)
-    		peer.dispatchMouseEvent(id, when, 0, x, y, screenX, screenY,
-    		    modifiers, clicks, false, null);
-	}
+    public void eventMouse(int id, long when, int modifiers, int x, int y,
+            int screenX, int screenY, int clicks, int pressed, int released,
+            int buttons) {
+        // Mouse up/down is weird on Haiku so we check what buttons
+        // exactly have changed with every mouse message and then
+        // fire off the appropriate events.
+        if ((pressed & MouseEvent.BUTTON1_DOWN_MASK) != 0)
+            handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
+        if ((pressed & MouseEvent.BUTTON2_DOWN_MASK) != 0)
+            handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
+        if ((pressed & MouseEvent.BUTTON3_DOWN_MASK) != 0)
+            handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
+        if ((released & MouseEvent.BUTTON1_DOWN_MASK) != 0)
+            handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
+        if ((released & MouseEvent.BUTTON2_DOWN_MASK) != 0)
+            handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
+        if ((released & MouseEvent.BUTTON3_DOWN_MASK) != 0)
+            handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
+
+        if (id == MouseEvent.MOUSE_DRAGGED) {
+            if ((buttons & MouseEvent.BUTTON1_DOWN_MASK) != 0)
+                handleMouseDrag(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
+            if ((buttons & MouseEvent.BUTTON2_DOWN_MASK) != 0)
+                handleMouseDrag(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
+            if ((buttons & MouseEvent.BUTTON3_DOWN_MASK) != 0)
+                handleMouseDrag(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
+        } else if (id != MouseEvent.MOUSE_PRESSED && id != MouseEvent.MOUSE_RELEASED)
+            peer.dispatchMouseEvent(id, when, 0, x, y, screenX, screenY,
+                modifiers, clicks, false, null);
+    }
 }

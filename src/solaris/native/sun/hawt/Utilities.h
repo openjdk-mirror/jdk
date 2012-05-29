@@ -52,6 +52,7 @@ void DoCallback(jobject obj, const char* name, const char* description, ...);
 
 class BString;
 
+jint ConvertButtonsToJava(int32 buttons);
 int32 ConvertKeyCodeToNative(jint jkeycode);
 void ConvertKeyCodeToJava(int32 keycode, uint32 modifiers, jint *jkeyCode, jint *jkeyLocation);
 void GetKeyChar(BString* keyChar, int32 keycode, int32 modifiers);
