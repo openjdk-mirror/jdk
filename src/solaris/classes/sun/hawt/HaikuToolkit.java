@@ -46,6 +46,7 @@ public class HaikuToolkit extends LWToolkit {
 
 	private static native void nativeInit();
     private native void nativeRunMessage();
+    private native void nativeBeep();
 
 	static {
 		System.loadLibrary("awt");
@@ -248,6 +249,7 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public void beep() {
+    	nativeBeep();
     }
 
     @Override

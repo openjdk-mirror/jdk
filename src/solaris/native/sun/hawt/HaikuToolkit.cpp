@@ -27,6 +27,7 @@
 
 #include <Application.h>
 #include <kernel/OS.h>
+#include <Beep.h>
 
 #include <dlfcn.h>
 
@@ -62,6 +63,16 @@ Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
     return;
 }
 
+/*
+ * Class:     sun_hawt_HaikuToolkit
+ * Method:    nativeBeep
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuToolkit_nativeBeep(JNIEnv *env, jobject thiz)
+{
+	beep();
+}
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM* vm, void *reserved)
