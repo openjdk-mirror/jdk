@@ -39,7 +39,7 @@
 
 // The amount of extra size we give the drawable
 // so we're not reallocating it all the time
-static const int kResizeBuffer = 100;
+static const int kResizeBuffer = 200;
 
 static jfieldID pointXField;
 static jfieldID pointYField;
@@ -278,6 +278,7 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
 
 	if (!window->LockLooper())
 		return;
+	// todo insets
 	float maxWidth, maxHeight;
 	window->GetSizeLimits(NULL, &maxWidth, NULL, &maxHeight);
 	window->SetSizeLimits(width, maxWidth, height, maxHeight);

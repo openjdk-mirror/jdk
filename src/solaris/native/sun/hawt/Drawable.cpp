@@ -32,7 +32,6 @@
 
 #include "ContentView.h"
 
-#include <stdio.h>
 
 Drawable::Drawable()
 	:
@@ -70,7 +69,7 @@ Drawable::Allocate(int width, int height)
 		delete newSurface;
 		return false;
 	}
-	printf("Reallocating drawable %d %d\n", width, height);
+
 	if (fSurface != NULL) {
 		// blit the contents of the old bitmap to the new one
 		BRect bounds = fSurface->Bounds();
@@ -78,9 +77,7 @@ Drawable::Allocate(int width, int height)
 		int blitWidth =  width > oldWidth ? oldWidth : width;
 		int oldHeight = bounds.IntegerHeight() + 1;
 		int blitHeight = height > oldHeight ? oldHeight : height;
-		
-		// It doesn't really matter if this fails; new stuff will get drawn
-		// in soon enough.
+
 		newSurface->ImportBits(fSurface, BPoint(0, 0), BPoint(0, 0), blitWidth,
 			blitHeight);
 
