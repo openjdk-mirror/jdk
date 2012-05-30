@@ -101,7 +101,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void dispose() {
-    	System.err.println("Disposing " + peerType + " " + hashCode());
+        System.err.println("Disposing " + peerType + " " + hashCode());
         nativeDispose(nativeWindow);
     }
 
@@ -112,7 +112,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void setTitle(String title) {
-    	nativeSetTitle(nativeWindow, title);
+        nativeSetTitle(nativeWindow, title);
     }
 
     @Override
@@ -129,20 +129,20 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public Insets getInsets() {
-    	Insets insets = new Insets(0, 0, 0, 0);
-    	nativeGetInsets(nativeWindow, insets);
-    	System.err.println(insets);
-    	return insets;
+        Insets insets = new Insets(0, 0, 0, 0);
+        nativeGetInsets(nativeWindow, insets);
+        System.err.println(insets);
+        return insets;
     }
 
     @Override
     public void toFront() {
-    	nativeToFront(nativeWindow);
+        nativeToFront(nativeWindow);
     }
     
     @Override
     public void toBack() {
-    	nativeToBack(nativeWindow);
+        nativeToBack(nativeWindow);
     }
 
     @Override
@@ -170,23 +170,23 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void setMinimumSize(int width, int height) {
-    	//nativeSetMinimumSize(nativeWindow, width, height);
+        //nativeSetMinimumSize(nativeWindow, width, height);
     }
 
 
     @Override
     public void setWindowState(int windowState) {
-    	nativeSetWindowState(nativeWindow, windowState);
+        nativeSetWindowState(nativeWindow, windowState);
     }
 
     @Override
     public boolean rejectFocusRequest(CausedFocusEvent.Cause cause) {
-    	return false;
+        return false;
     }
 
     @Override
     public boolean requestWindowFocus() {
-    	System.err.println("requesting focus");
+        System.err.println("requesting focus");
         nativeFocus(nativeWindow);
         return true;
     }    
@@ -240,7 +240,7 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     public Rectangle getBounds() {
-    	return peer.getBounds();
+        return peer.getBounds();
     }
 
     // =======================================
@@ -249,27 +249,27 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void updateIconImages() {
-    	// not supported
+        // not supported
     }
 
     @Override
     public void setOpacity(float opacity) {
-    	// not supported
+        // not supported
     }
 
     @Override
     public void setOpaque(boolean isOpaque) {
-    	// not supported
+        // not supported
     }
 
     @Override
     public void enterFullScreenMode() {
-    	// not supported
+        // not supported
     }
 
     @Override
     public void exitFullScreenMode() {
-    	// not supported
+        // not supported
     }
 
     @Override
@@ -289,12 +289,13 @@ class HaikuPlatformWindow implements PlatformWindow {
     // =====================
 
     public void eventRepaint(int x, int y, int width, int height) {
-    	System.err.format("JAVA REPAINT CALLBACK! %d %d %d %d%n", x, y, width, height);
-        peer.notifyExpose(x, y, width, height);
+        // The repaint event coordinates are in view-space, so we need
+        // to translate them.
+        Insets insets = peer.getInsets();
+        peer.notifyExpose(x + insets.left, y + insets.top, width, height);
     }
 
     public void eventReshape(int x, int y, int width, int height) {
-    	System.err.format("JAVA RESHAPE CALLBACK! %d %d %d %d%n", x, y, width, height);
         peer.notifyReshape(x, y, width, height);
     }
 
@@ -354,6 +355,12 @@ class HaikuPlatformWindow implements PlatformWindow {
     public void eventMouse(int id, long when, int modifiers, int x, int y,
             int screenX, int screenY, int clicks, int pressed, int released,
             int buttons) {
+        // Mouse event coordinates are in view-space, so we need
+        // to translate them.
+        Insets insets = peer.getInsets();
+        x += insets.left;
+        y += insets.top;
+
         // Mouse up/down is weird on Haiku so we check what buttons
         // exactly have changed with every mouse message and then
         // fire off the appropriate events.
@@ -385,13 +392,19 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     public void eventWheel(long when, int modifiers, int x, int y, int scrollType,
             int scrollAmount, int wheelRotation, double preciseWheelRotation) {
+        // Mouse event coordinates are in view-space, so we need
+        // to translate them.
+        Insets insets = peer.getInsets();
+        x += insets.left;
+        y += insets.top;
+
         peer.dispatchMouseWheelEvent(when, x, y, modifiers, scrollType,
             scrollAmount, wheelRotation, preciseWheelRotation, null);
     }
 
     public void updateInsets(int left, int top, int right, int bottom) {
-    	Insets insets = new Insets(top, left, bottom, right);
-    	peer.updateInsets(insets);
+        Insets insets = new Insets(top, left, bottom, right);
+        peer.updateInsets(insets);
     }
 
 }

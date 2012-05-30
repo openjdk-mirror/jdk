@@ -104,10 +104,13 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetBounds(JNIEnv *env, jobject thiz,
 	jlong nativeWindow, jint x, jint y, jint width, jint height)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	BRect frameRect = BRect(x, y, x + width - 1, y + height - 1);
 
 	if (!window->LockLooper())
 		return;
-	BRect frameRect = BRect(x, y, x + width - 1, y + height - 1);
+
+	// given coordinates include the decorator frame, transform to
+	// the client area
 	BRect rect = window->TransformFromFrame(frameRect);
 	window->MoveTo(rect.left, rect.top);
 	window->ResizeTo(rect.IntegerWidth(), rect.IntegerHeight());
@@ -143,10 +146,11 @@ Java_sun_hawt_HaikuPlatformWindow_nativeGetLocation
 	if (!window->LockLooper())
 		return;
 	BRect frame = window->Frame();
+    BPoint location = window->TranslateToFrame(BPoint(frame.left, frame.top));
 	window->UnlockLooper();
 
-	env->SetIntField(point, pointXField, (jint)frame.left);
-	env->SetIntField(point, pointYField, (jint)frame.top);
+	env->SetIntField(point, pointXField, (jint)location.x);
+	env->SetIntField(point, pointYField, (jint)location.y);
 }
 
 
@@ -298,12 +302,6 @@ Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env,
 }
 
 
-/*
- * TODO:
- * Get/set maximize bounds
- * Blocking
- */
-
 PlatformWindow::PlatformWindow(jobject platformWindow, bool simpleWindow)
 	:
 	BWindow(BRect(0, 0, 0, 0), NULL, simpleWindow ? B_NO_BORDER_WINDOW_LOOK
@@ -319,7 +317,7 @@ PlatformWindow::PlatformWindow(jobject platformWindow, bool simpleWindow)
 	// After this initial bounds set the view will size itself
 	// to match the frame
 	BRect frame = Bounds();
-	fView.MoveTo(frame.left, frame.top);
+	fView.MoveTo(0, 0);
 	fView.ResizeTo(frame.IntegerWidth(), frame.IntegerHeight());
 }
 
@@ -461,14 +459,6 @@ PlatformWindow::QuitRequested()
 
 
 void
-PlatformWindow::WindowActivated(bool active)
-{
-	//DoCallback(fPlatformWindow, "eventActivate", "(Z)V", active);
-	BWindow::WindowActivated(active);
-}
-
-
-void
 PlatformWindow::Zoom(BPoint origin, float width, float height)
 {
 	// For whatever reason, there is no getter for this
@@ -496,13 +486,6 @@ PlatformWindow::ViewToFrame(BRect rect)
 }
 
 
-BPoint
-PlatformWindow::ViewToFrame(BPoint point)
-{
-	return BPoint(point.x + fInsets.left, point.y + fInsets.top);
-}
-
-
 BRect
 PlatformWindow::TransformToFrame(BRect rect)
 {
@@ -527,10 +510,21 @@ PlatformWindow::TransformFromFrame(BRect rect)
 }
 
 
+BPoint
+PlatformWindow::TranslateToFrame(BPoint point)
+{
+	int topInsets = fInsets.top;
+	if (fMenuBar != NULL)
+		topInsets -= fMenuBar->Bounds().IntegerHeight() + 1;
+
+	return BPoint(point.x - fInsets.left, point.y - topInsets);
+}
+
 void
 PlatformWindow::_Reshape()
 {
 	BRect bounds = Frame();
+	// transform bounds to include the decorations
 	BRect frame = TransformToFrame(bounds);
 	int x = frame.left;
 	int y = frame.top;

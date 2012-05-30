@@ -58,12 +58,12 @@ public:
 	virtual	void			Zoom(BPoint origin, float width, float height);
 	
 			BRect			ViewFromFrame(BRect rect);
-			BPoint			ViewToFrame(BPoint point);
 			BRect			ViewToFrame(BRect rect);
 
 			// Used to translate client-area bounds to frame-bounds
 			BRect			TransformFromFrame(BRect rect);
 			BRect			TransformToFrame(BRect rect);
+			BPoint			TranslateToFrame(BPoint point);
 
 private:
 			void			_Reshape();

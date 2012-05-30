@@ -34,6 +34,10 @@
 
 #include "HaikuPlatformWindow.h"
 
+// The amount of extra size we give the drawable
+// so we're not reallocating it all the time
+static const int kResizeBuffer = 100;
+
 ContentView::ContentView(jobject platformWindow)
 	:
 	BView(BRect(0, 0, 0, 0), NULL, B_FOLLOW_ALL,
@@ -64,13 +68,10 @@ ContentView::Focus()
 void
 ContentView::DeferredDraw(BRect updateRect)
 {
-	//fDefferedDraw = true;
-	//Invalidate(updateRect);
-	printf("1 Drawing in %d %d %ld %ld\n", (int)updateRect.left, (int)updateRect.top, updateRect.IntegerWidth() + 1, updateRect.IntegerHeight() + 1);
-	// updateRect is in frame coords
-	BRect viewRect = ((PlatformWindow*)Window())
-		->ViewFromFrame(updateRect);
-	// viewRect is in view coords
+	// updateRect includes the menu and the decorations, and indicates
+	// the region of the bitmap we should draw. However we also need the
+	// corresponding region of view-space to draw in.
+	BRect viewRect = ((PlatformWindow*)Window())->ViewFromFrame(updateRect);
 	if (!fDrawable.Lock())
 		return;
 	if (fDrawable.IsValid())
@@ -82,19 +83,16 @@ ContentView::DeferredDraw(BRect updateRect)
 void
 ContentView::Draw(BRect updateRect)
 {
-	// updateRect is in view coords
+	// updateRect is in view-space here. We need to translate to frame-space
+	// in order to deal with the bitmap's insets
 	BRect rect = ((PlatformWindow*)Window())->ViewToFrame(updateRect);
-	// rect is in frame coords
-	DeferredDraw(rect);
+	DeferredDraw(updateRect);
 
-	//if (!fDeferredDraw) {
-		jint x = rect.left;
-		jint y = rect.top;
-		jint width = rect.IntegerWidth() + 1;
-		jint height = rect.IntegerHeight() + 1;
-		DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
-	//} else
-	//	fDeferredDraw = false;
+	jint x = updateRect.left;
+	jint y = updateRect.top;
+	jint width = updateRect.IntegerWidth() + 1;
+	jint height = updateRect.IntegerHeight() + 1;
+	DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
 }
 
 
@@ -104,12 +102,21 @@ ContentView::FrameResized(float width, float height)
 	int w = width + 1;
 	int h = height + 1;
 
-    // todo review resize heuristic make function
+    // Drawable resizing logic is as follows:
+    // If the new dimensions are within 50 of the drawable size,
+    // increase the drawable size by 100 so we have a buffer of
+    // 50 pixels before we need to reallocate the bitmap.
+    // If the new dimensions are without 100 of the drawable size,
+    // decrease the drawable size by 50, because we're probably
+    // being resized smaller. 
 	if (fDrawable.Lock()) {
+		
 		if (!fDrawable.IsValid()
-				|| w > fDrawable.Width() || h > fDrawable.Height()) {
-			fDrawable.Allocate(w + 100, h + 100);
-		}
+				|| w + kResizeBuffer > fDrawable.Width() || h + kResizeBuffer > fDrawable.Height()) {
+			fDrawable.Allocate(w + kResizeBuffer, h + kResizeBuffer);
+		} else if (w + kResizeBuffer < fDrawable.Width() || h + kResizeBuffer < fDrawable.Height()) {
+			fDrawable.Allocate(w + kResizeBuffer, h + kResizeBuffer);
+		} 
 		fDrawable.Unlock();
 	}
 }
@@ -237,7 +244,6 @@ void
 ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
 	BPoint screenPoint = ConvertToScreen(point);
-	BPoint framePoint = ((PlatformWindow*)Window())->ViewToFrame(point);
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 buttons = 0;
@@ -286,7 +292,7 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	// constructor will call getLocationOnScreen which may call native code.
 	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIIII)V", id,
-		(jlong)(when / 1000), mods, (jint)framePoint.x, (jint)framePoint.y,
+		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
 		javaReleased, javaButtons);
 	LockLooper();
@@ -303,7 +309,6 @@ ContentView::_HandleWheelEvent(BMessage* message)
 	uint32 buttons = 0;
 	BPoint point;
 	GetMouse(&point, &buttons);
-	BPoint framePoint = ((PlatformWindow*)Window())->ViewToFrame(point);
 
 	jint mods = ConvertInputModifiersToJava(modifiers);
 	if (buttons & B_PRIMARY_MOUSE_BUTTON)
@@ -323,7 +328,7 @@ ContentView::_HandleWheelEvent(BMessage* message)
 	jint scrollAmount = 3;
 	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIIID)V",
-		(jlong)(when / 1000), mods, (jint)framePoint.x, (jint)framePoint.y,
+		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		scrollType, scrollAmount, (jint)wheelRotation, (jdouble)wheelRotation);
 	LockLooper();
 }
