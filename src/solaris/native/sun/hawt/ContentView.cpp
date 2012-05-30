@@ -32,6 +32,7 @@
 #include "java_awt_event_MouseEvent.h"
 #include "java_awt_event_MouseWheelEvent.h"
 
+#include "HaikuPlatformWindow.h"
 
 ContentView::ContentView(jobject platformWindow)
 	:
@@ -63,26 +64,37 @@ ContentView::Focus()
 void
 ContentView::DeferredDraw(BRect updateRect)
 {
+	//fDefferedDraw = true;
+	//Invalidate(updateRect);
+	printf("1 Drawing in %d %d %ld %ld\n", (int)updateRect.left, (int)updateRect.top, updateRect.IntegerWidth() + 1, updateRect.IntegerHeight() + 1);
+	// updateRect is in frame coords
+	BRect viewRect = ((PlatformWindow*)Window())
+		->ViewFromFrame(updateRect);
+	// viewRect is in view coords
 	if (!fDrawable.Lock())
 		return;
 	if (fDrawable.IsValid())
-		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, updateRect);
+		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, viewRect);
 	fDrawable.Unlock();
-		
 }
 
 
 void
 ContentView::Draw(BRect updateRect)
 {
-	DeferredDraw(updateRect);
+	// updateRect is in view coords
+	BRect rect = ((PlatformWindow*)Window())->ViewToFrame(updateRect);
+	// rect is in frame coords
+	DeferredDraw(rect);
 
-	ConvertToParent(&updateRect);
-	jint x = updateRect.left;
-	jint y = updateRect.top;
-	jint width = updateRect.right - updateRect.left + 1;
-	jint height = updateRect.bottom - updateRect.top + 1;
-	DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
+	//if (!fDeferredDraw) {
+		jint x = rect.left;
+		jint y = rect.top;
+		jint width = rect.IntegerWidth() + 1;
+		jint height = rect.IntegerHeight() + 1;
+		DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
+	//} else
+	//	fDeferredDraw = false;
 }
 
 
@@ -225,6 +237,7 @@ void
 ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
 	BPoint screenPoint = ConvertToScreen(point);
+	BPoint framePoint = ((PlatformWindow*)Window())->ViewToFrame(point);
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 buttons = 0;
@@ -273,7 +286,7 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	// constructor will call getLocationOnScreen which may call native code.
 	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIIII)V", id,
-		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
+		(jlong)(when / 1000), mods, (jint)framePoint.x, (jint)framePoint.y,
 		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
 		javaReleased, javaButtons);
 	LockLooper();
@@ -290,6 +303,7 @@ ContentView::_HandleWheelEvent(BMessage* message)
 	uint32 buttons = 0;
 	BPoint point;
 	GetMouse(&point, &buttons);
+	BPoint framePoint = ((PlatformWindow*)Window())->ViewToFrame(point);
 
 	jint mods = ConvertInputModifiersToJava(modifiers);
 	if (buttons & B_PRIMARY_MOUSE_BUTTON)
@@ -309,7 +323,7 @@ ContentView::_HandleWheelEvent(BMessage* message)
 	jint scrollAmount = 3;
 	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIIID)V",
-		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y, scrollType,
-		scrollAmount, (jint)wheelRotation, (jdouble)wheelRotation);
+		(jlong)(when / 1000), mods, (jint)framePoint.x, (jint)framePoint.y,
+		scrollType, scrollAmount, (jint)wheelRotation, (jdouble)wheelRotation);
 	LockLooper();
 }

@@ -37,7 +37,6 @@
 #include <View.h>
 #include <Window.h>
 
-
 static jfieldID pointXField;
 static jfieldID pointYField;
 static jfieldID rectXField;
@@ -108,8 +107,10 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetBounds(JNIEnv *env, jobject thiz,
 
 	if (!window->LockLooper())
 		return;
-	window->MoveTo(x, y);
-	window->ResizeTo(width - 1, height - 1);
+	BRect frameRect = BRect(x, y, x + width - 1, y + height - 1);
+	BRect rect = window->TransformFromFrame(frameRect);
+	window->MoveTo(rect.left, rect.top);
+	window->ResizeTo(rect.IntegerWidth(), rect.IntegerHeight());
 	window->UnlockLooper();
 }
 
@@ -278,14 +279,19 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
 
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env,
-	jobject thiz, jlong nativeWindow, jobject insets)
+	jobject thiz, jlong nativeWindow, jobject javaInsets)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
 	if (!window->LockLooper())
 		return;
-	window->GetInsets(env, insets);
+	Insets insets = window->GetInsets();
 	window->UnlockLooper();
+
+	env->SetIntField(javaInsets, insetsLeftField, (jint)insets.left);
+	env->SetIntField(javaInsets, insetsTopField, (jint)insets.top);
+	env->SetIntField(javaInsets, insetsRightField, (jint)insets.right);
+	env->SetIntField(javaInsets, insetsBottomField, (jint)insets.bottom);
 }
 
 
@@ -305,7 +311,8 @@ PlatformWindow::PlatformWindow(jobject platformWindow, bool simpleWindow)
 		simpleWindow ? B_AVOID_FOCUS : 0),
 	fView(platformWindow),
 	fPlatformWindow(platformWindow),
-	fMenuBar(NULL)
+	fMenuBar(NULL),
+	fInsets(GetInsets())
 {
 	AddChild(&fView);
 
@@ -364,32 +371,49 @@ PlatformWindow::SetMenuBar(BMenuBar* menuBar)
 		AddChild(menuBar);
 		BRect bounds = menuBar->Bounds();
 		fView.MoveTo(0, bounds.bottom + 1);
-		ResizeBy(0, bounds.bottom);
 	} else {
 		fView.MoveTo(0, 0);
-		if (fMenuBar != NULL)
-			ResizeBy(0, -fMenuBar->Bounds().bottom);
 	}
 
 	if (fMenuBar != NULL)
 		RemoveChild(fMenuBar);
 	fMenuBar = menuBar;
+
+	// The insets probably changed
+	_UpdateInsets();
 }
 
 
-void
-PlatformWindow::GetInsets(JNIEnv* env, jobject insets)
+Insets
+PlatformWindow::GetInsets()
 {
-	int topInset = 0;
-	if (fMenuBar != NULL) {
-		BRect bounds = fMenuBar->Bounds();
-		topInset = bounds.IntegerHeight() + 1;
+	float borderWidth = 5.0;
+	float tabHeight = 21.0;
+
+	BMessage settings;
+	if (GetDecoratorSettings(&settings) == B_OK) {
+		BRect tabRect;
+		if (settings.FindRect("tab frame", &tabRect) == B_OK)
+			tabHeight = tabRect.Height();
+		settings.FindFloat("border width", &borderWidth);
+	} else {
+		// probably no-border window look
+		if (Look() == B_NO_BORDER_WINDOW_LOOK) {
+			borderWidth = 0.0;
+			tabHeight = 0.0;
+		}
+		// else use fall-back values from above
 	}
 
-	env->SetIntField(insets, insetsLeftField, (jint)0);
-	env->SetIntField(insets, insetsTopField, (jint)topInset);
-	env->SetIntField(insets, insetsRightField, (jint)0);
-	env->SetIntField(insets, insetsBottomField, (jint)0);
+	int menuHeight = 0;
+	if (fMenuBar != NULL) {
+		BRect bounds = fMenuBar->Bounds();
+		menuHeight = bounds.IntegerHeight() + 1;
+	}
+
+	// +1's here?
+	return Insets(borderWidth, tabHeight + borderWidth + menuHeight,
+		borderWidth, borderWidth);
 }
 
 void
@@ -403,9 +427,7 @@ PlatformWindow::Focus()
 void
 PlatformWindow::FrameMoved(BPoint origin)
 {
-	UnlockLooper();
 	_Reshape();
-	LockLooper();
 	BWindow::FrameMoved(origin);
 }
 
@@ -413,9 +435,7 @@ PlatformWindow::FrameMoved(BPoint origin)
 void
 PlatformWindow::FrameResized(float width, float height)
 {
-	UnlockLooper();
 	_Reshape();
-	LockLooper();
 	BWindow::FrameResized(width, height);
 }
 
@@ -460,13 +480,70 @@ PlatformWindow::Zoom(BPoint origin, float width, float height)
 }
 
 
+BRect
+PlatformWindow::ViewFromFrame(BRect rect)
+{
+	return BRect(rect.left - fInsets.left, rect.top - fInsets.top,
+		rect.right - fInsets.left, rect.bottom - fInsets.top);
+}
+
+
+BRect
+PlatformWindow::ViewToFrame(BRect rect)
+{
+	return BRect(rect.left + fInsets.left, rect.top + fInsets.top,
+		rect.right + fInsets.left, rect.bottom + fInsets.top);
+}
+
+
+BPoint
+PlatformWindow::ViewToFrame(BPoint point)
+{
+	return BPoint(point.x + fInsets.left, point.y + fInsets.top);
+}
+
+
+BRect
+PlatformWindow::TransformToFrame(BRect rect)
+{
+	int topInsets = fInsets.top;
+	if (fMenuBar != NULL)
+		topInsets -= fMenuBar->Bounds().IntegerHeight() + 1;
+
+	return BRect(rect.left - fInsets.left, rect.top - topInsets,
+		rect.right + fInsets.right, rect.bottom + fInsets.bottom);
+}
+
+
+BRect
+PlatformWindow::TransformFromFrame(BRect rect)
+{
+	int topInsets = fInsets.top;
+	if (fMenuBar != NULL)
+		topInsets -= fMenuBar->Bounds().IntegerHeight() + 1;
+
+	return BRect(rect.left + fInsets.left, rect.top + topInsets,
+		rect.right - fInsets.left, rect.bottom - topInsets);
+}
+
+
 void
 PlatformWindow::_Reshape()
 {
-	BRect frame = Frame();
+	BRect bounds = Frame();
+	BRect frame = TransformToFrame(bounds);
 	int x = frame.left;
 	int y = frame.top;
 	int width = frame.IntegerWidth() + 1;
 	int height = frame.IntegerHeight() + 1;
 	DoCallback(fPlatformWindow, "eventReshape", "(IIII)V", x, y, width, height);
+}
+
+
+void
+PlatformWindow::_UpdateInsets()
+{
+	fInsets = GetInsets();
+	DoCallback(fPlatformWindow, "updateInsets", "(IIII)V", fInsets.left,
+		fInsets.top, fInsets.right, fInsets.bottom);
 }

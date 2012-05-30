@@ -289,10 +289,12 @@ class HaikuPlatformWindow implements PlatformWindow {
     // =====================
 
     public void eventRepaint(int x, int y, int width, int height) {
+    	System.err.format("JAVA REPAINT CALLBACK! %d %d %d %d%n", x, y, width, height);
         peer.notifyExpose(x, y, width, height);
     }
 
     public void eventReshape(int x, int y, int width, int height) {
+    	System.err.format("JAVA RESHAPE CALLBACK! %d %d %d %d%n", x, y, width, height);
         peer.notifyReshape(x, y, width, height);
     }
 
@@ -385,6 +387,11 @@ class HaikuPlatformWindow implements PlatformWindow {
             int scrollAmount, int wheelRotation, double preciseWheelRotation) {
         peer.dispatchMouseWheelEvent(when, x, y, modifiers, scrollType,
             scrollAmount, wheelRotation, preciseWheelRotation, null);
+    }
+
+    public void updateInsets(int left, int top, int right, int bottom) {
+    	Insets insets = new Insets(top, left, bottom, right);
+    	peer.updateInsets(insets);
     }
 
 }

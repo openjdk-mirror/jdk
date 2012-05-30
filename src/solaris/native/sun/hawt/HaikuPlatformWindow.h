@@ -32,6 +32,12 @@
 #include "Drawable.h"
 #include "Utilities.h"
 
+struct Insets {
+	Insets(int left, int top, int right, int bottom)
+	: left(left), top(top), right(right), bottom(bottom) {}
+	int left, top, right, bottom;
+};
+
 class PlatformWindow : public BWindow {
 public:
 							PlatformWindow(jobject platformWindow,
@@ -42,7 +48,7 @@ public:
 			void			Dispose(JNIEnv* env);
 			void			Focus();
 			void			SetMenuBar(BMenuBar* menuBar);
-			void			GetInsets(JNIEnv* env, jobject insets);
+			Insets			GetInsets();
 
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
@@ -50,15 +56,25 @@ public:
 	virtual	bool			QuitRequested();
 	virtual	void			WindowActivated(bool active);
 	virtual	void			Zoom(BPoint origin, float width, float height);
+	
+			BRect			ViewFromFrame(BRect rect);
+			BPoint			ViewToFrame(BPoint point);
+			BRect			ViewToFrame(BRect rect);
+
+			// Used to translate client-area bounds to frame-bounds
+			BRect			TransformFromFrame(BRect rect);
+			BRect			TransformToFrame(BRect rect);
 
 private:
 			void			_Reshape();
+			void			_UpdateInsets();
 
 private:
 			ContentView		fView;
 			bool			fMaximized;
 			jobject			fPlatformWindow;
 			BMenuBar*		fMenuBar;
+			Insets			fInsets;
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */

@@ -38,7 +38,7 @@ typedef struct {
     jint			y;
     jint			width;
     jint			height;
-    jint 			lockFlags;
+    jint 			lockflags;
 } HaikuWindowSurfaceDataOps;
 
 }

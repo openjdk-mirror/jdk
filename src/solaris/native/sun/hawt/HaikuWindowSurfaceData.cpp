@@ -60,31 +60,50 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
     operations->sdOps.Release = &HaikuRelease;
     operations->sdOps.Unlock = &HaikuUnlock;
     operations->drawable = (Drawable*)drawable;
-    operations->width = width;
-    operations->height = height;
 
-	if (operations->drawable->Lock()) {
-		if (!operations->drawable->IsValid()
-				|| width > operations->drawable->Width()
-				|| height > operations->drawable->Height()) {
-			operations->drawable->Allocate(width, height);
-		}
-		operations->drawable->Unlock();
-	}
+    // initial set up on the drawable maybe not neccessary
+    if (operations->drawable->Lock()) {
+        if (!operations->drawable->IsValid()
+                || width > operations->drawable->Width()
+                || height > operations->drawable->Height()) {
+            operations->drawable->Allocate(width, height);
+        }
+        operations->drawable->Unlock();
+    }
 }
 
 static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
-                    SurfaceDataRasInfo* rasInfo, jint lockFlags)
+    SurfaceDataRasInfo* rasInfo, jint lockflags)
 {
     HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
 
+    // lock now because we're going to be messing with the drawable
     if (!operations->drawable->Lock())
-		return SD_FAILURE;
+        return SD_FAILURE;
 
-	// We can honour the SD_LOCK_FASTEST since we just provide
-	// direct pixel access via BBitmap::Bits()
-	operations->lockFlags = lockFlags;
-    return SD_SUCCESS;
+    if (lockflags & SD_LOCK_RD_WR) {
+        SurfaceDataBounds* bounds = &rasInfo->bounds;
+
+        int width = operations->drawable->Width();
+        int height = operations->drawable->Height();
+        // Could clip away insets here
+        if (bounds->x1 < 0)
+            bounds->x1 = 0;
+        if (bounds->y1 < 0)
+            bounds->y1 = 0;
+        if (bounds->x2 > width)
+            bounds->x2 = width;
+        if (bounds->y2 > height)
+            bounds->y2 = height;
+
+        if (bounds->x2 > bounds->x1 && bounds->y2 > bounds->y1) {
+            operations->lockflags = lockflags;
+            return SD_SUCCESS;
+        }
+    }
+
+    operations->drawable->Unlock();
+    return SD_FAILURE;
 }
 
 static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
@@ -93,21 +112,13 @@ static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
     HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
     Drawable* drawable = operations->drawable;
 
-	int width = rasInfo->bounds.x2;
-	int height = rasInfo->bounds.y2;
-
-	if (!drawable->IsValid() || width > drawable->Width()
-			|| height > drawable->Height()) {
-		drawable->Allocate(width + 100, height + 100);
-	}
-    
-    if (drawable->IsValid()) {
+    if (drawable->IsValid() && (operations->lockflags & SD_LOCK_RD_WR)) {
         rasInfo->rasBase = drawable->Bits();
         rasInfo->pixelStride = drawable->BytesPerPixel();
         rasInfo->pixelBitOffset = 0;
         rasInfo->scanStride = drawable->BytesPerRow();
     } else {
-    	// Out of memory
+        // fail if they didn't lock or the drawable isn't valid
         rasInfo->rasBase = NULL;
         rasInfo->pixelStride = 0;
         rasInfo->pixelBitOffset = 0;
@@ -123,23 +134,23 @@ static void HaikuRelease(JNIEnv* env, SurfaceDataOps* ops,
 static void HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops,
         SurfaceDataRasInfo* rasInfo)
 {
-	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
+    HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
 
-	// Must drop the lock before invalidating because otherwise
-	// we can deadlock with FrameResized. Invalidate wants
-	// the looper lock which FrameResized holds and FrameResized
-	// wants (indirectly) the Drawable lock which we hold.
+    // Must drop the lock before invalidating because otherwise
+    // we can deadlock with FrameResized. Invalidate wants
+    // the looper lock which FrameResized holds and FrameResized
+    // wants (indirectly) the Drawable lock which we hold.
     operations->drawable->Unlock();
 
     //printf("unlocking drawable: %p\n", operations->drawable);
     // If we were locked for writing the view needs
     // to redraw now.
-    if (operations->lockFlags & SD_LOCK_WRITE) {
-    	int x = rasInfo->bounds.x1;
-    	int y = rasInfo->bounds.y1;
-    	int w = rasInfo->bounds.x2 - x;
-    	int h = rasInfo->bounds.y2 - y;
-	    operations->drawable->Invalidate(Rectangle(x, y, w, h));
+    if (operations->lockflags & SD_LOCK_WRITE) {
+        int x = rasInfo->bounds.x1;
+        int y = rasInfo->bounds.y1;
+        int w = rasInfo->bounds.x2 - x;
+        int h = rasInfo->bounds.y2 - y;
+        operations->drawable->Invalidate(Rectangle(x, y, w, h));
     }
 }
 
