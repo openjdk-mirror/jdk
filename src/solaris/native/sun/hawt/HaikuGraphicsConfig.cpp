@@ -38,6 +38,8 @@ static jfieldID rectHeightField;
 
 extern "C" {
 
+extern sem_id appSem;
+
 /*
  * Class:     sun_hawt_HaikuGraphicsConfig
  * Method:    initIDs
@@ -47,17 +49,9 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuGraphicsConfig_initIDs
   (JNIEnv *env, jclass clazz)
 {
     jclass rectangleClazz = env->FindClass("java/awt/Rectangle");
-    if (env->ExceptionCheck())
-    	return;
     rectXField = env->GetFieldID(rectangleClazz, "x", "I");
-    if (env->ExceptionCheck())
-    	return;
-    rectYField = env->GetFieldID(rectangleClazz, "y", "I");	
-    if (env->ExceptionCheck())
-    	return;
+    rectYField = env->GetFieldID(rectangleClazz, "y", "I");
     rectWidthField = env->GetFieldID(rectangleClazz, "width", "I");
-    if (env->ExceptionCheck())
-    	return;
     rectHeightField = env->GetFieldID(rectangleClazz, "height", "I");
 }
 
@@ -71,6 +65,11 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuGraphicsConfig_nativeGetBounds
 {
 	screen_id id;
 	id.id = displayID;
+
+	// Wait for be_app to get created
+	acquire_sem(appSem);
+	release_sem(appSem);
+
     BScreen screen(id);
     if (!screen.IsValid()) {
     	return;

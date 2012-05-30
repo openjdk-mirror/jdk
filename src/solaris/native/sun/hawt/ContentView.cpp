@@ -40,6 +40,7 @@ ContentView::ContentView(jobject platformWindow)
 	fDrawable(this),
 	fPlatformWindow(platformWindow)
 {
+	get_mouse(NULL, &fPreviousButtons);
 }
 
 
@@ -222,9 +223,7 @@ ContentView::_HandleKeyEvent(BMessage* message)
 void
 ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
-	printf("viewsc pts: %d %d\n", (int)point.x, (int)point.y);
 	BPoint screenPoint = ConvertToScreen(point);
-	printf("screen pts: %d %d\n", (int)screenPoint.x, (int)screenPoint.y);
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 buttons = 0;
