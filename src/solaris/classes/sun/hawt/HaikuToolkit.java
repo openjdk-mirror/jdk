@@ -126,30 +126,38 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public MenuPeer createMenu(Menu target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        MenuPeer peer = new HaikuMenu(target);
+        targetCreatedPeer(target, peer);
+        return peer;
     }
 
     @Override
     public MenuBarPeer createMenuBar(MenuBar target) {
-        System.err.println("Menubar implement me");
-        return null;
+        MenuBarPeer peer = new HaikuMenuBar(target);
+        targetCreatedPeer(target, peer);
+        return peer;
     }
 
     @Override
     public MenuItemPeer createMenuItem(MenuItem target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        MenuItemPeer peer = new HaikuMenuItem(target);
+        targetCreatedPeer(target, peer);
+        return peer;
     }
 
     @Override
     public CheckboxMenuItemPeer createCheckboxMenuItem(CheckboxMenuItem target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        CheckboxMenuItemPeer peer = new HaikuCheckboxMenuItem(target);
+        targetCreatedPeer(target, peer);
+        return peer;
     }
 
     @Override
     public PopupMenuPeer createPopupMenu(PopupMenu target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        PopupMenuPeer peer = new HaikuPopupMenu(target);
+        targetCreatedPeer(target, peer);
+        return peer;
     }
-
 
     @Override
     public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) throws InvalidDnDOperationException {

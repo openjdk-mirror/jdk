@@ -26,14 +26,16 @@
 #include <jlong.h>
 #include <jni.h>
 
+#include "HaikuPlatformWindow.h"
+
 #include "sun_hawt_HaikuPlatformWindow.h"
 #include "java_awt_Frame.h"
 
 #include <kernel/OS.h>
+#include <MenuBar.h>
 #include <View.h>
 #include <Window.h>
 
-#include "HaikuPlatformWindow.h"
 
 static jfieldID pointXField;
 static jfieldID pointYField;
@@ -233,6 +235,34 @@ Java_sun_hawt_HaikuPlatformWindow_nativeToBack
 }
 
 
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetMenuBar(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jlong menuBarPtr)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	BMenuBar* menuBar = (BMenuBar*)menuBarPtr;
+
+	if (!window->LockLooper())
+		return;
+	window->SetMenuBar(menuBar);
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jint width, jint height)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+	float maxWidth, maxHeight;
+	window->GetSizeLimits(NULL, &maxWidth, NULL, &maxHeight);
+	window->SetSizeLimits(width, maxWidth, height, maxHeight);
+	window->UnlockLooper();
+}
+
 }
 
 
@@ -294,8 +324,29 @@ PlatformWindow::SetState(int state)
 void
 PlatformWindow::Dispose(JNIEnv* env)
 {
+	RemoveChild(&fView);
 	env->DeleteWeakGlobalRef(fPlatformWindow);
 	Quit();
+}
+
+
+void
+PlatformWindow::SetMenuBar(BMenuBar* menuBar)
+{
+	if (fMenuBar != NULL)
+		RemoveChild(fMenuBar);
+
+	// todo use layout? how easy is it to change layout?
+	if (menuBar != NULL) {
+		AddChild(fMenuBar);
+		BRect bounds = menuBar->Bounds();
+		fView.MoveTo(0, bounds.bottom + 1);
+	} else {
+		fView.MoveTo(0, 0);
+	}
+
+	fMenuBar = menuBar;
+	
 }
 
 

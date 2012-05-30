@@ -38,10 +38,6 @@ import sun.java2d.*;
 
 class HaikuPlatformWindow implements PlatformWindow {
 
-    static {
-        initIDs();
-    }
-
     private Window target;
     private LWWindowPeer peer;
     private HaikuPlatformWindow owner;
@@ -60,12 +56,20 @@ class HaikuPlatformWindow implements PlatformWindow {
     private native void nativeGetLocation(long nativeWindow, Point location);
     private native void nativeDispose(long nativeWindow);
     private native void nativeFocus(long nativeWindow);
-    private native void nativeSetWindowState(long nativeWindow, int windowState);
+    private native void nativeSetWindowState(long nativeWindow,
+        int windowState);
     private native void nativeSetTitle(long nativeWindow, String title);
-    private native void nativeSetResizable(long nativeWindow, boolean resizable);
+    private native void nativeSetResizable(long nativeWindow,
+        boolean resizable);
     private native void nativeToFront(long nativeWindow);
     private native void nativeToBack(long nativeWindow);
-//    private native void nativeSetMinimumSize(long native
+    private native void nativeSetMenuBar(long nativeWindow, long menuBarPtr);
+    private native void nativeSetMinimumSize(long nativeWindow, int width,
+        int height);
+
+    static {
+        initIDs();
+    }
 
     public HaikuPlatformWindow(final PeerType peerType) {
         this.peerType = peerType;
@@ -146,8 +150,13 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     @Override
-    public void setMenuBar(MenuBar mb) {
-        System.err.println("todo");
+    public void setMenuBar(MenuBar menuBar) {
+        HaikuMenuBar peer = (HaikuMenuBar)LWToolkit.targetToPeer(menuBar);
+        if (peer != null) {
+            nativeSetMenuBar(nativeWindow, peer.getModel());
+        } else {
+            nativeSetMenuBar(nativeWindow, 0);
+        }
     }
 
     @Override

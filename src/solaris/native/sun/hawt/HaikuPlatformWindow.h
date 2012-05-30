@@ -41,6 +41,7 @@ public:
 			void			SetState(int state);
 			void			Dispose(JNIEnv* env);
 			void			Focus();
+			void			SetMenuBar(BMenuBar* menuBar);
 
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
@@ -52,6 +53,7 @@ private:
 			ContentView		fView;
 			bool			fMaximized;
 			jobject			fPlatformWindow;
+			BMenuBar*		fMenuBar;
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */
