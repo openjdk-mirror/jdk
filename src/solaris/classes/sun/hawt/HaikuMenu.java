@@ -28,21 +28,20 @@ package sun.hawt;
 import java.awt.*;
 import java.awt.peer.*;
 
-public class HaikuMenu extends HaikuMenuComponent implements MenuPeer {
+public class HaikuMenu extends HaikuMenuItem implements MenuPeer {
 
     private native long nativeCreateMenu();
     private native void nativeSetLabel(long menuPtr, String label);
-    private native void nativeSetEnabled(boolean enabled);
+    private native void nativeSetEnabled(long menuPtr, boolean enabled);
     private native void nativeAddSeparator(long menuPtr);
     private native void nativeAddItem(long menuPtr, long itemPtr);
-    private native void nativeAddMenu(long menuPtr, long itemPtr);
     private native void nativeDeleteItem(long menuPtr, int index);
 
     public HaikuMenu(Menu target) {
         super(target);
-        initialize(target);
     }
 
+    @Override
     protected void initialize(MenuItem target) {
         setLabel(target.getLabel());
         setEnabled(target.isEnabled());
@@ -56,10 +55,7 @@ public class HaikuMenu extends HaikuMenuComponent implements MenuPeer {
     @Override
     public void addItem(MenuItem item) {
     	MenuComponentPeer peer = item.getPeer();
-    	if (peer instanceof HaikuMenu)
-    	    nativeAddMenu(getModel(), ((HaikuMenu)peer).getModel());
-    	else
-            nativeAddItem(getModel(), ((HaikuMenuItem)peer).getModel());
+        nativeAddItem(getModel(), ((HaikuMenuItem)peer).getModel());
     }
 
     @Override
@@ -79,7 +75,7 @@ public class HaikuMenu extends HaikuMenuComponent implements MenuPeer {
 
     @Override
     public void setEnabled(boolean enabled) {
-        nativeSetEnabled(enabled);
+        nativeSetEnabled(getModel(), enabled);
     }
 
 }

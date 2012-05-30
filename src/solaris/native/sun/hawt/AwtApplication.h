@@ -22,41 +22,15 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+#ifndef AWT_APPLICATION_H
+#define	AWT_APPLICATION_H
 
-package sun.hawt;
+#include <Application.h>
 
-import java.awt.Menu;
-import java.awt.MenuBar;
-import java.awt.peer.MenuBarPeer;
+class AwtApplication : public BApplication {
+public:
+					AwtApplication(const char* signature);
+	virtual	void	MessageReceived(BMessage* msg);
+};
 
-public class HaikuMenuBar extends HaikuMenuComponent implements MenuBarPeer {
-
-    private native long nativeCreateMenuBar();
-    private native void nativeAddMenu(long menuBarPtr, long menuPtr);
-    private native void nativeDelMenu(long menuBarPtr, int index);
-
-    public HaikuMenuBar(MenuBar target) {
-        super(target);
-    }
-
-    @Override
-    protected long createModel() {
-        return nativeCreateMenuBar();
-    }
-
-    @Override
-    public void addHelpMenu(Menu menu) {
-        addMenu(menu);
-    }
-
-    @Override
-    public void addMenu(Menu menu) {
-    	HaikuMenu peer = (HaikuMenu)menu.getPeer();
-        nativeAddMenu(getModel(), peer.getModel());
-    }
-
-    @Override
-    public void delMenu(int index) {
-        nativeDelMenu(getModel(), index);
-    }
-}
+#endif	/* AWT_APPLICATION_H */

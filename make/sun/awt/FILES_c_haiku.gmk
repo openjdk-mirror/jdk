@@ -170,6 +170,7 @@ FILES_NO_MOTIF_c = \
 	CUPSfuncs.c
 
 FILES_cpp = \
+	AwtApplication.cpp \
 	ContentView.cpp \
 	Drawable.cpp \
 	HaikuClipboard.cpp \
@@ -179,6 +180,7 @@ FILES_cpp = \
 	HaikuGraphicsConfig.cpp \
 	HaikuGraphicsDevice.cpp \
 	HaikuGraphicsEnvironment.cpp \
+	HaikuMenuComponent.cpp \
 	HaikuPlatformWindow.cpp \
 	HaikuToolkit.cpp \
 	HaikuWindowSurfaceData.cpp \

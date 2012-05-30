@@ -23,40 +23,46 @@
  * questions.
  */
 
-package sun.hawt;
+#include "AwtApplication.h"
 
-import java.awt.Menu;
-import java.awt.MenuBar;
-import java.awt.peer.MenuBarPeer;
+#include <MenuItem.h>
 
-public class HaikuMenuBar extends HaikuMenuComponent implements MenuBarPeer {
+#include "Utilities.h"
 
-    private native long nativeCreateMenuBar();
-    private native void nativeAddMenu(long menuBarPtr, long menuPtr);
-    private native void nativeDelMenu(long menuBarPtr, int index);
+AwtApplication::AwtApplication(const char* signature)
+	:
+	BApplication(signature)
+{
+}
 
-    public HaikuMenuBar(MenuBar target) {
-        super(target);
-    }
+void
+AwtApplication::MessageReceived(BMessage* message)
+{
+	switch (message->what) {
+		case 'menu': {
+			void* peerPointer;
+			if (message->FindPointer("peer", &peerPointer) != B_OK)
+				break;
+			
+			jobject peer = (jobject)peerPointer;
+			jint mods = ConvertInputModifiersToJava(modifiers());
 
-    @Override
-    protected long createModel() {
-        return nativeCreateMenuBar();
-    }
+			int64 when;
+			message->FindInt64("when", &when);
 
-    @Override
-    public void addHelpMenu(Menu menu) {
-        addMenu(menu);
-    }
+			bool check = false;
+			if (message->FindBool("checkbox", &check) == B_OK) {
+				BMenuItem* item;
+				message->FindPointer("source", (void**)&item);
+				// We gotta flip the check on this bad boy
+				check = !item->IsMarked();
+				item->SetMarked(check);
+			}
 
-    @Override
-    public void addMenu(Menu menu) {
-    	HaikuMenu peer = (HaikuMenu)menu.getPeer();
-        nativeAddMenu(getModel(), peer.getModel());
-    }
-
-    @Override
-    public void delMenu(int index) {
-        nativeDelMenu(getModel(), index);
-    }
+			DoCallback(peer, "handleAction", "(JIZ)V", (jlong)(when / 1000),
+				mods, check);
+			break;
+		}
+	}
+	BApplication::MessageReceived(message);
 }

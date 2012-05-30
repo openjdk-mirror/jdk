@@ -31,7 +31,7 @@ import java.awt.peer.PopupMenuPeer;
 public class HaikuPopupMenu extends HaikuMenu implements PopupMenuPeer {
 
     private native long nativeCreatePopupMenu();
-    private native long nativeShowPopupMenu(long modelPtr, int x, int y);
+    private native long nativeShowPopupMenu(long popupMenuPtr, int x, int y);
 
     HaikuPopupMenu(PopupMenu target) {
         super(target);

@@ -34,6 +34,7 @@ import sun.awt.SunToolkit;
 
 public class HaikuCheckboxMenuItem extends HaikuMenuItem implements CheckboxMenuItemPeer {
 
+    private native long nativeCreateCheckboxMenuItem();
     private native void nativeSetState(long modelPtr, boolean state);
 
     HaikuCheckboxMenuItem(CheckboxMenuItem target) {
@@ -42,11 +43,18 @@ public class HaikuCheckboxMenuItem extends HaikuMenuItem implements CheckboxMenu
     }
 
     @Override
+    protected long createModel() {
+        return nativeCreateCheckboxMenuItem();
+    }
+
+    @Override
     public void setState(boolean state) {
         nativeSetState(getModel(), state);
     }
 
-    public void handleAction(final boolean state) {
+    @Override
+    public void handleAction(long when, int modifiers, final boolean state) {
+        super.handleAction(when, modifiers, state);
         final CheckboxMenuItem target = (CheckboxMenuItem)getTarget();
         EventQueue.invokeLater(new Runnable() {
             public void run() {

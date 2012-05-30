@@ -25,11 +25,11 @@
 
 #include <jni.h>
 
-#include <Application.h>
-#include <kernel/OS.h>
 #include <Beep.h>
-
 #include <dlfcn.h>
+#include <kernel/OS.h>
+
+#include "AwtApplication.h"
 
 extern "C" {
 
@@ -55,8 +55,7 @@ Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jclass clazz)
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
 {
-	printf("Going to run the BAPP\n");
-    BApplication* awtApp = new BApplication("application/x-vnd.java-awt-app");
+    BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
     release_sem(appSem);
     awtApp->Run();
     delete awtApp;

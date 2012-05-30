@@ -35,9 +35,9 @@ import java.awt.peer.MenuItemPeer;
 
 public class HaikuMenuItem extends HaikuMenuComponent implements MenuItemPeer {
 
-    private native long nativeCreateMenuItem(boolean isSeparator);
-    private native void nativeSetLabel(long modelPtr, String label);
-    private native void nativeSetEnabled(long modelPtr, boolean enabled);
+    private native long nativeCreateMenuItem(boolean separator);
+    private native void nativeSetLabel(long itemPtr, String label);
+    private native void nativeSetEnabled(long itemPtr, boolean enabled);
 
     public HaikuMenuItem(MenuItem target) {
         super(target);
@@ -70,7 +70,7 @@ public class HaikuMenuItem extends HaikuMenuComponent implements MenuItemPeer {
         nativeSetEnabled(getModel(), enabled);
     }
 
-    void handleAction(final long when, final int modifiers) {
+    void handleAction(final long when, final int modifiers, boolean checked) {
         SunToolkit.executeOnEventHandlerThread(getTarget(), new Runnable() {
             public void run() {
                 final String cmd = ((MenuItem)getTarget()).getActionCommand();
