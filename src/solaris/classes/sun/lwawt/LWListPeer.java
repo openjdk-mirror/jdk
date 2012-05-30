@@ -245,15 +245,6 @@ final class LWListPeer
             }
         }
 
-        @Override
-        public void setFont(Font font) {
-            super.setFont(font);
-            if (getView() != null) {
-                getView().setFont(font);
-                LWListPeer.this.revalidate();
-            }
-        }
-
         private final class JListDelegate extends JList<Object> {
 
             JListDelegate() {

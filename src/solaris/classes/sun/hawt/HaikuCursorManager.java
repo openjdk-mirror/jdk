@@ -54,7 +54,7 @@ public class HaikuCursorManager extends LWCursorManager {
     }
 
     @Override
-    protected void setCursor(LWWindowPeer windowUnderCursor, Cursor cursor) {
+    protected void setCursor(Cursor cursor) {
         // todo
     }
 }

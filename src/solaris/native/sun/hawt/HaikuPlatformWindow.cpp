@@ -276,7 +276,7 @@ PlatformWindow::PlatformWindow(jobject platformWindow, bool decorated)
 	:
 	BWindow(BRect(0, 0, 0, 0), NULL, decorated ? B_TITLED_WINDOW_LOOK
 		: B_NO_BORDER_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
-		decorated ? 0 : B_AVOID_FOCUS),
+		decorated ? 0 : 0/*B_AVOID_FOCUS*/),
 	fView(platformWindow),
 	fPlatformWindow(platformWindow)
 {

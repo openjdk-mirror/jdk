@@ -62,7 +62,6 @@ import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.RepaintManager;
 
-
 import com.sun.java.swing.SwingUtilities3;
 
 public abstract class LWComponentPeer<T extends Component, D extends JComponent>
@@ -375,7 +374,7 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     }
 
     @Override
-    public void dispose() {
+    public final void dispose() {
         if (disposed.compareAndSet(false, true)) {
             disposeImpl();
         }
@@ -609,6 +608,17 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
         Point locationInWindow = localToWindow(0, 0);
         return new Point(windowLocation.x + locationInWindow.x,
                 windowLocation.y + locationInWindow.y);
+    }
+
+    /**
+     * Returns the cursor of the peer, which is cursor of the target by default,
+     * but peer can override this behavior.
+     *
+     * @param p Point relative to the peer.
+     * @return Cursor of the peer or null if default cursor should be used.
+     */
+    protected Cursor getCursor(final Point p) {
+        return getTarget().getCursor();
     }
 
     @Override
@@ -963,7 +973,6 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
 
     @Override
     public Image createImage(int w, int h) {
-        // TODO: accelerated image
         return getGraphicsConfiguration().createCompatibleImage(w, h);
     }
 
@@ -1008,7 +1017,8 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     // DropTargetPeer Method
     @Override
     public void addDropTarget(DropTarget dt) {
-        /*LWWindowPeer winPeer = getWindowPeerOrSelf();
+/*
+        LWWindowPeer winPeer = getWindowPeerOrSelf();
         if (winPeer != null && winPeer != this) {
             // We need to register the DropTarget in the
             // peer of the window ancestor of the component
@@ -1026,13 +1036,15 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
                     fDropTarget = CDropTarget.createDropTarget(dt, target, this);
                 }
             }
-        }*/
+        }
+*/
     }
 
     // DropTargetPeer Method
     @Override
     public void removeDropTarget(DropTarget dt) {
-        /*LWWindowPeer winPeer = getWindowPeerOrSelf();
+/*
+        LWWindowPeer winPeer = getWindowPeerOrSelf();
         if (winPeer != null && winPeer != this) {
             // We need to unregister the DropTarget in the
             // peer of the window ancestor of the component
@@ -1051,7 +1063,8 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
                         System.err.println("CComponent.removeDropTarget(): current drop target is null.");
                 }
             }
-        }*/
+        }
+*/
     }
 
     // ---- PEER NOTIFICATIONS ---- //
@@ -1154,7 +1167,7 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
         sendEventToDelegate(e);
     }
 
-    protected void sendEventToDelegate(final AWTEvent e) {
+    private void sendEventToDelegate(final AWTEvent e) {
         synchronized (getDelegateLock()) {
             if (getDelegate() == null || !isShowing() || !isEnabled()) {
                 return;

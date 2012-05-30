@@ -62,11 +62,15 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     protected PlatformWindow createPlatformWindow(PeerType peerType) {
+    	//System.err.println("Creating platform window " + peerType);
         if (peerType == PeerType.EMBEDDEDFRAME) {
+        	System.err.println("Creating embedddedframe!!");
         	return null;
             //return new CPlatformEmbeddedFrame();
         } else {
-            return new HaikuPlatformWindow(peerType);
+        	HaikuPlatformWindow win = new HaikuPlatformWindow(peerType);
+        	System.err.println("Created " + peerType + " " + win.hashCode());
+            return win;
         }
     }
 
@@ -268,9 +272,5 @@ public class HaikuToolkit extends LWToolkit {
     public InputMethodDescriptor getInputMethodAdapterDescriptor() throws AWTException {
         return null;
     }
-    
-    @Override
-    public boolean isApplicationActive() {
-    	return true;
-    }
+
 }

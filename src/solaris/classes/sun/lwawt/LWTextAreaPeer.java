@@ -27,6 +27,7 @@
 package sun.lwawt;
 
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.TextArea;
@@ -69,6 +70,15 @@ final class LWTextAreaPeer
     @Override
     JTextComponent getTextComponent() {
         return getDelegate().getView();
+    }
+
+    @Override
+    protected Cursor getCursor(final Point p) {
+        final boolean isContains;
+        synchronized (getDelegateLock()) {
+            isContains = getDelegate().getViewport().getBounds().contains(p);
+        }
+        return isContains ? super.getCursor(p) : null;
     }
 
     @Override
@@ -198,6 +208,15 @@ final class LWTextAreaPeer
             // class shouldn't be emulated by a synthetic accessor method.
             JTextAreaDelegate() {
                 super();
+            }
+
+            @Override
+            public void replaceSelection(String content) {
+                getDocument().removeDocumentListener(LWTextAreaPeer.this);
+                super.replaceSelection(content);
+                // post only one text event in this case
+                postTextEvent();
+                getDocument().addDocumentListener(LWTextAreaPeer.this);
             }
 
             @Override

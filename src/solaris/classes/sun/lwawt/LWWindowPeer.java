@@ -68,7 +68,7 @@ public class LWWindowPeer
 
     private Insets insets = new Insets(0, 0, 0, 0);
 
-    private int screenOn = -1;
+    private GraphicsDevice graphicsDevice;
     private GraphicsConfiguration graphicsConfig;
 
     private SurfaceData surfaceData;
@@ -246,6 +246,7 @@ public class LWWindowPeer
                         } else {
                             requestWindowFocus(CausedFocusEvent.Cause.ACTIVATION);
                         }
+                    // Focus the owner in case this window is focused.
                     } else if (manager.getCurrentFocusedWindow() == getTarget()) {
                         // Transfer focus to the owner.
                         LWWindowPeer owner = getOwnerFrameDialog(LWWindowPeer.this);
@@ -313,25 +314,7 @@ public class LWWindowPeer
     public void flip(int x1, int y1, int x2, int y2,
                      BufferCapabilities.FlipContents flipAction)
     {
-        final BufferedImage buffer = (BufferedImage)getBackBuffer();
-        if (buffer == null) {
-            throw new IllegalStateException("Buffers have not been created");
-        }
-        final Graphics g = getGraphics();
-        try {
-            g.drawImage(buffer, x1, y1, x2, y2, x1, y1, x2, y2, null);
-        } finally {
-            g.dispose();
-        }
-        if (flipAction == BufferCapabilities.FlipContents.BACKGROUND) {
-            final Graphics2D bg = (Graphics2D) buffer.getGraphics();
-            try {
-                bg.setBackground(getBackground());
-                bg.clearRect(0, 0, buffer.getWidth(), buffer.getHeight());
-            } finally {
-                bg.dispose();
-            }
-        }
+        platformWindow.flip(x1, y1, x2, y2, flipAction);
     }
 
     @Override
@@ -421,12 +404,10 @@ public class LWWindowPeer
     @Override
     public void setModalBlocked(Dialog blocker, boolean blocked) {
         synchronized (getPeerTreeLock()) {
-            if(blocked && blocker.getPeer() instanceof LWWindowPeer) {
-                this.blocker = (LWWindowPeer)blocker.getPeer();
-            } else {
-                this.blocker = null;
-            }
+            this.blocker = blocked ? (LWWindowPeer)blocker.getPeer() : null;
         }
+
+        platformWindow.setModalBlocked(blocked);
     }
 
     @Override
@@ -687,39 +668,42 @@ public class LWWindowPeer
             }
         } else {
             if (targetPeer != lastMouseEventPeer) {
-                // lastMouseEventPeer may be null if mouse was out of Java windows
-                if (lastMouseEventPeer != null && lastMouseEventPeer.isEnabled()) {
-                    // Sometimes, MOUSE_EXITED is not sent by delegate (or is sent a bit
-                    // later), in which case lastWindowPeer is another window
-                    if (lastWindowPeer != this) {
-                        Point oldp = lastMouseEventPeer.windowToLocal(x, y, lastWindowPeer);
-                        // Additionally translate from this to lastWindowPeer coordinates
-                        Rectangle lr = lastWindowPeer.getBounds();
-                        oldp.x += r.x - lr.x;
-                        oldp.y += r.y - lr.y;
-                        postEvent(new MouseEvent(lastMouseEventPeer.getTarget(),
-                                                 MouseEvent.MOUSE_EXITED,
+
+                if (id != MouseEvent.MOUSE_DRAGGED || lastMouseEventPeer == null) {
+                    // lastMouseEventPeer may be null if mouse was out of Java windows
+                    if (lastMouseEventPeer != null && lastMouseEventPeer.isEnabled()) {
+                        // Sometimes, MOUSE_EXITED is not sent by delegate (or is sent a bit
+                        // later), in which case lastWindowPeer is another window
+                        if (lastWindowPeer != this) {
+                            Point oldp = lastMouseEventPeer.windowToLocal(x, y, lastWindowPeer);
+                            // Additionally translate from this to lastWindowPeer coordinates
+                            Rectangle lr = lastWindowPeer.getBounds();
+                            oldp.x += r.x - lr.x;
+                            oldp.y += r.y - lr.y;
+                            postEvent(new MouseEvent(lastMouseEventPeer.getTarget(),
+                                                     MouseEvent.MOUSE_EXITED,
+                                                     when, modifiers,
+                                                     oldp.x, oldp.y, screenX, screenY,
+                                                     clickCount, popupTrigger, button));
+                        } else {
+                            Point oldp = lastMouseEventPeer.windowToLocal(x, y, this);
+                            postEvent(new MouseEvent(lastMouseEventPeer.getTarget(),
+                                                     MouseEvent.MOUSE_EXITED,
+                                                     when, modifiers,
+                                                     oldp.x, oldp.y, screenX, screenY,
+                                                     clickCount, popupTrigger, button));
+                        }
+                    }
+                    if (targetPeer != null && targetPeer.isEnabled() && id != MouseEvent.MOUSE_ENTERED) {
+                        Point newp = targetPeer.windowToLocal(x, y, curWindowPeer);
+                        postEvent(new MouseEvent(targetPeer.getTarget(),
+                                                 MouseEvent.MOUSE_ENTERED,
                                                  when, modifiers,
-                                                 oldp.x, oldp.y, screenX, screenY,
-                                                 clickCount, popupTrigger, button));
-                    } else {
-                        Point oldp = lastMouseEventPeer.windowToLocal(x, y, this);
-                        postEvent(new MouseEvent(lastMouseEventPeer.getTarget(),
-                                                 MouseEvent.MOUSE_EXITED,
-                                                 when, modifiers,
-                                                 oldp.x, oldp.y, screenX, screenY,
+                                                 newp.x, newp.y, screenX, screenY,
                                                  clickCount, popupTrigger, button));
                     }
                 }
                 lastMouseEventPeer = targetPeer;
-                if (targetPeer != null && targetPeer.isEnabled() && id != MouseEvent.MOUSE_ENTERED) {
-                    Point newp = targetPeer.windowToLocal(x, y, curWindowPeer);
-                    postEvent(new MouseEvent(targetPeer.getTarget(),
-                                             MouseEvent.MOUSE_ENTERED,
-                                             when, modifiers,
-                                             newp.x, newp.y, screenX, screenY,
-                                             clickCount, popupTrigger, button));
-                }
             }
             // TODO: fill "bdata" member of AWTEvent
 
@@ -802,9 +786,8 @@ public class LWWindowPeer
                 }
                 mouseClickButtons &= ~eventButtonMask;
             }
-
-            notifyUpdateCursor();
         }
+        notifyUpdateCursor();
     }
 
     public void dispatchMouseWheelEvent(long when, int x, int y, int modifiers,
@@ -885,17 +868,6 @@ public class LWWindowPeer
         return 0;
     }
 
-    private static GraphicsConfiguration getScreenGraphicsConfig(int screen) {
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice[] gds = ge.getScreenDevices();
-        if (screen >= gds.length) {
-            // This could happen during device addition/removal. Use
-            // the default screen device in this case
-            return ge.getDefaultScreenDevice().getDefaultConfiguration();
-        }
-        return gds[screen].getDefaultConfiguration();
-    }
-
     /*
      * This method is called when window's graphics config is changed from
      * the app code (e.g. when the window is made non-opaque) or when
@@ -910,7 +882,7 @@ public class LWWindowPeer
             }
             // If window's graphics config is changed from the app code, the
             // config correspond to the same device as before; when the window
-            // is moved by user, screenOn is updated in checkIfOnNewScreen().
+            // is moved by user, graphicsDevice is updated in checkIfOnNewScreen().
             // In either case, there's nothing to do with screenOn here
             graphicsConfig = gc;
         }
@@ -919,16 +891,17 @@ public class LWWindowPeer
     }
 
     private void checkIfOnNewScreen() {
-        int windowScreen = platformWindow.getScreenImOn();
+        GraphicsDevice newGraphicsDevice = platformWindow.getGraphicsDevice();
         synchronized (getStateLock()) {
-            if (windowScreen == screenOn) {
+            if (graphicsDevice == newGraphicsDevice) {
                 return;
             }
-            screenOn = windowScreen;
+            graphicsDevice = newGraphicsDevice;
         }
 
         // TODO: DisplayChangedListener stuff
-        final GraphicsConfiguration newGC = getScreenGraphicsConfig(windowScreen);
+        final GraphicsConfiguration newGC = newGraphicsDevice.getDefaultConfiguration();
+
         if (!setGraphicsConfig(newGC)) return;
 
         SunToolkit.executeOnEventHandlerThread(getTarget(), new Runnable() {
@@ -1075,6 +1048,10 @@ public class LWWindowPeer
         return lastMouseEventPeer != null ? lastMouseEventPeer.getWindowPeerOrSelf() : null;
     }
 
+    public static LWComponentPeer<?, ?> getPeerUnderCursor() {
+        return lastMouseEventPeer;
+    }
+
     /*
      * Requests platform to set native focus on a frame/dialog.
      * In case of a simple window, triggers appropriate java focus change.
@@ -1089,11 +1066,7 @@ public class LWWindowPeer
             return false;
         }
 
-        // Cross-app activation requests are not allowed.
-        if (cause != CausedFocusEvent.Cause.MOUSE_EVENT &&
-            !((LWToolkit)Toolkit.getDefaultToolkit()).isApplicationActive())
-        {
-            focusLog.fine("the app is inactive, so the request is rejected");
+        if (platformWindow.rejectFocusRequest(cause)) {
             return false;
         }
 

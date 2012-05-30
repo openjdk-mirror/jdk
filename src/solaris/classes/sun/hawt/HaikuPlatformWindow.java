@@ -102,6 +102,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void dispose() {
+    	System.err.println("Disposing " + peerType + " " + hashCode());
         nativeDispose(nativeWindow);
     }
 
@@ -118,12 +119,6 @@ class HaikuPlatformWindow implements PlatformWindow {
     @Override
     public void setBounds(int x, int y, int width, int height) {
         nativeSetBounds(nativeWindow, x, y, width, height);
-    }
-
-    @Override
-    public int getScreenImOn() {
-    	// no multi-head support
-        return 0;
     }
 
     @Override
@@ -184,11 +179,25 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     @Override
+    public boolean rejectFocusRequest(CausedFocusEvent.Cause cause) {
+    	return false;
+    }
+
+    @Override
     public boolean requestWindowFocus() {
         nativeFocus(nativeWindow);
         return true;
     }    
-    
+
+    @Override
+    public void setModalBlocked(boolean blocked) {
+    }
+
+    @Override
+    public GraphicsDevice getGraphicsDevice() {
+        return getGraphicsConfiguration().getDevice();
+    }
+
     @Override
     public boolean isActive() {
         return false;
@@ -306,7 +315,7 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     public void eventActivate(boolean activated) {
-        peer.notifyActivation(activated);
+        //peer.notifyActivation(activated);
     }
 
     public void eventKey(int id, long when, int modifiers, int keyCode,
@@ -326,13 +335,14 @@ class HaikuPlatformWindow implements PlatformWindow {
         boolean popup = button == MouseEvent.BUTTON2 ||
             (button == MouseEvent.BUTTON1 &&
             (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0);
-        System.err.println("Mouse down button: " + button);
+        System.err.println("Mouse down button: " + button + " " + hashCode());
         peer.dispatchMouseEvent(MouseEvent.MOUSE_PRESSED, when, button,
             x, y, screenX, screenY, modifiers, clicks, popup, null);
     }
 
     private void handleMouseUp(long when, int modifiers, int x, int y,
             int screenX, int screenY, int clicks, int button) {
+        System.err.println("Mouse up button: " + button + " " + hashCode());
         peer.dispatchMouseEvent(MouseEvent.MOUSE_RELEASED, when, button,
             x, y, screenX, screenY, modifiers, clicks, false, null);
     }

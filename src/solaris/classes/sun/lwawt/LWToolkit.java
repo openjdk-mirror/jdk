@@ -230,27 +230,29 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
         PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.FRAME);
         return createDelegatedPeer(target, platformComponent, platformWindow);
     }
+/*
+    public LWWindowPeer createEmbeddedFrame(CEmbeddedFrame target) {
+        PlatformComponent platformComponent = createPlatformComponent();
+        PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.EMBEDDEDFRAME);
+        return createDelegatedPeer(target, platformComponent, platformWindow);
+    }
 
-    //public LWWindowPeer createEmbeddedFrame(CEmbeddedFrame target) {
-    //    PlatformComponent platformComponent = createPlatformComponent();
-    //    PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.EMBEDDEDFRAME);
-    //    return createDelegatedPeer(target, platformComponent, platformWindow);
-    //}
-
-    //CPrinterDialogPeer createCPrinterDialog(CPrinterDialog target) {
-    //    PlatformComponent platformComponent = createPlatformComponent();
-    //    PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.DIALOG);
-    //    CPrinterDialogPeer peer = new CPrinterDialogPeer(target, platformComponent, platformWindow);
-    //    targetCreatedPeer(target, peer);
-    //    return peer;
-    //}
+    CPrinterDialogPeer createCPrinterDialog(CPrinterDialog target) {
+        PlatformComponent platformComponent = createPlatformComponent();
+        PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.DIALOG);
+        CPrinterDialogPeer peer = new CPrinterDialogPeer(target, platformComponent, platformWindow);
+        targetCreatedPeer(target, peer);
+        return peer;
+    }
+*/
 
     @Override
     public DialogPeer createDialog(Dialog target) {
-        //if (target instanceof CPrinterDialog) {
-        //    return createCPrinterDialog((CPrinterDialog)target);
-        //}
-
+/*
+        if (target instanceof CPrinterDialog) {
+            return createCPrinterDialog((CPrinterDialog)target);
+        }
+*/
         PlatformComponent platformComponent = createPlatformComponent();
         PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.DIALOG);
         return createDelegatedPeer(target, platformComponent, platformWindow);
@@ -396,22 +398,24 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
         return GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().getColorModel();
     }
 
+/*
     @Override
     public boolean isDesktopSupported() {
         return true;
     }
 
-    //@Override
-    //protected DesktopPeer createDesktopPeer(Desktop target) {
-    //   return new CDesktopPeer();
-    //}
+    @Override
+    protected DesktopPeer createDesktopPeer(Desktop target) {
+       return new CDesktopPeer();
+    }
 
-    //@Override
-    //public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) {
-    //    DragSourceContextPeer dscp = CDragSourceContextPeer.createDragSourceContextPeer(dge);
+    @Override
+    public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) {
+        DragSourceContextPeer dscp = CDragSourceContextPeer.createDragSourceContextPeer(dge);
 
-    //    return dscp;
-    //}
+        return dscp;
+    }
+*/
 
     @Override
     public KeyboardFocusManagerPeer createKeyboardFocusManagerPeer(KeyboardFocusManager manager) {
@@ -520,11 +524,6 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
     public static void postEvent(AWTEvent event) {
         postEvent(targetToAppContext(event.getSource()), event);
     }
-
-    /*
-     * Returns true if the application (one of its windows) owns keyboard focus.
-     */
-    public abstract boolean isApplicationActive();
 
     // use peer's back buffer to implement non-opaque windows.
     @Override
