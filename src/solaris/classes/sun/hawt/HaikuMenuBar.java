@@ -46,13 +46,14 @@ public class HaikuMenuBar extends HaikuMenuComponent implements MenuBarPeer {
 
     @Override
     public void addHelpMenu(Menu menu) {
-        addMenu(menu);
+    	// unused -- I think?
+    	//HaikuMenu peer = (HaikuMenu)menu.getPeer();
+        //nativeAddMenu(getModel(), peer.getModel());
     }
 
     @Override
     public void addMenu(Menu menu) {
-    	HaikuMenu peer = (HaikuMenu)menu.getPeer();
-        nativeAddMenu(getModel(), peer.getModel());
+    	// unused
     }
 
     @Override

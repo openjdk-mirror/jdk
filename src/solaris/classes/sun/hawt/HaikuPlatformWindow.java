@@ -66,6 +66,7 @@ class HaikuPlatformWindow implements PlatformWindow {
     private native void nativeSetMenuBar(long nativeWindow, long menuBarPtr);
     private native void nativeSetMinimumSize(long nativeWindow, int width,
         int height);
+    private native void nativeGetInsets(long nativeWindow, Insets insets);
 
     static {
         initIDs();
@@ -83,11 +84,9 @@ class HaikuPlatformWindow implements PlatformWindow {
     public void initialize(Window target, LWWindowPeer peer, PlatformWindow owner) {
         this.peer = peer;
         this.target = target;
-        if (owner instanceof HaikuPlatformWindow) {
-            this.owner = (HaikuPlatformWindow)owner;
-        }
+        this.owner = (HaikuPlatformWindow)owner;
 
-        nativeWindow = nativeInit(peerType != PeerType.SIMPLEWINDOW);
+        nativeWindow = nativeInit(peerType == PeerType.SIMPLEWINDOW);
     }
 
     @Override
@@ -130,8 +129,10 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public Insets getInsets() {
-    	// todo
-        return new Insets(0, 0, 0, 0);
+    	Insets insets = new Insets(0, 0, 0, 0);
+    	nativeGetInsets(nativeWindow, insets);
+    	System.err.println(insets);
+    	return insets;
     }
 
     @Override
@@ -185,6 +186,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public boolean requestWindowFocus() {
+    	System.err.println("requesting focus");
         nativeFocus(nativeWindow);
         return true;
     }    
@@ -290,14 +292,8 @@ class HaikuPlatformWindow implements PlatformWindow {
         peer.notifyExpose(x, y, width, height);
     }
 
-    public void eventResize(int width, int height) {
-        Rectangle bounds = peer.getBounds();
-        peer.notifyReshape(bounds.x, bounds.y, width, height);
-    }
-
-    public void eventMove(int x, int y) {
-        Rectangle bounds = peer.getBounds();
-        peer.notifyReshape(x, y, bounds.width, bounds.height);
+    public void eventReshape(int x, int y, int width, int height) {
+        peer.notifyReshape(x, y, width, height);
     }
 
     public void eventMaximize(boolean maximize) {
@@ -315,7 +311,7 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     public void eventActivate(boolean activated) {
-        //peer.notifyActivation(activated);
+        peer.notifyActivation(activated);
     }
 
     public void eventKey(int id, long when, int modifiers, int keyCode,

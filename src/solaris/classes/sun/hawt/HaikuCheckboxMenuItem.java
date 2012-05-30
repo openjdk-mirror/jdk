@@ -25,16 +25,16 @@
 
 package sun.hawt;
 
-import java.awt.CheckboxMenuItem;
-import java.awt.EventQueue;
+import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.awt.peer.CheckboxMenuItemPeer;
 
 import sun.awt.SunToolkit;
+import sun.lwawt.LWToolkit;
 
 public class HaikuCheckboxMenuItem extends HaikuMenuItem implements CheckboxMenuItemPeer {
 
-    private native long nativeCreateCheckboxMenuItem();
+    private native long nativeCreateCheckboxMenuItem(long menuItemPtr);
     private native void nativeSetState(long modelPtr, boolean state);
 
     HaikuCheckboxMenuItem(CheckboxMenuItem target) {
@@ -44,7 +44,9 @@ public class HaikuCheckboxMenuItem extends HaikuMenuItem implements CheckboxMenu
 
     @Override
     protected long createModel() {
-        return nativeCreateCheckboxMenuItem();
+        HaikuMenuComponent parent = (HaikuMenuComponent)
+        	LWToolkit.targetToPeer(getTarget().getParent());
+        return nativeCreateCheckboxMenuItem(parent.getModel());
     }
 
     @Override

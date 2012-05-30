@@ -33,6 +33,7 @@
 
 #include <kernel/OS.h>
 #include <MenuBar.h>
+#include <MenuItem.h>
 #include <View.h>
 #include <Window.h>
 
@@ -43,6 +44,10 @@ static jfieldID rectXField;
 static jfieldID rectYField;
 static jfieldID rectWidthField;
 static jfieldID rectHeightField;
+static jfieldID insetsLeftField;
+static jfieldID insetsTopField;
+static jfieldID insetsRightField;
+static jfieldID insetsBottomField;
 
 extern "C" {
 
@@ -63,6 +68,12 @@ Java_sun_hawt_HaikuPlatformWindow_initIDs
     rectYField = env->GetFieldID(rectClazz, "y", "I");
     rectWidthField = env->GetFieldID(rectClazz, "width", "I");
     rectHeightField = env->GetFieldID(rectClazz, "height", "I");
+
+    jclass insetsClazz = env->FindClass("java/awt/Insets");
+    insetsLeftField = env->GetFieldID(insetsClazz, "left", "I");
+    insetsTopField = env->GetFieldID(insetsClazz, "top", "I");
+    insetsRightField = env->GetFieldID(insetsClazz, "right", "I");
+    insetsBottomField = env->GetFieldID(insetsClazz, "bottom", "I");
 }
 
 
@@ -237,10 +248,11 @@ Java_sun_hawt_HaikuPlatformWindow_nativeToBack
 
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeSetMenuBar(JNIEnv *env, jobject thiz,
-	jlong nativeWindow, jlong menuBarPtr)
+	jlong nativeWindow, jlong menuBarItemPtr)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	BMenuBar* menuBar = (BMenuBar*)menuBarPtr;
+	BMenuItem* menuBarItem = (BMenuItem*)jlong_to_ptr(menuBarItemPtr);
+	BMenuBar* menuBar = (BMenuBar*)menuBarItem->Submenu();
 
 	if (!window->LockLooper())
 		return;
@@ -263,6 +275,20 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
 	window->UnlockLooper();
 }
 
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jobject insets)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+	window->GetInsets(env, insets);
+	window->UnlockLooper();
+}
+
+
 }
 
 
@@ -272,13 +298,14 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
  * Blocking
  */
 
-PlatformWindow::PlatformWindow(jobject platformWindow, bool decorated)
+PlatformWindow::PlatformWindow(jobject platformWindow, bool simpleWindow)
 	:
-	BWindow(BRect(0, 0, 0, 0), NULL, decorated ? B_TITLED_WINDOW_LOOK
-		: B_NO_BORDER_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
-		decorated ? 0 : 0/*B_AVOID_FOCUS*/),
+	BWindow(BRect(0, 0, 0, 0), NULL, simpleWindow ? B_NO_BORDER_WINDOW_LOOK
+		: B_TITLED_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
+		simpleWindow ? B_AVOID_FOCUS : 0),
 	fView(platformWindow),
-	fPlatformWindow(platformWindow)
+	fPlatformWindow(platformWindow),
+	fMenuBar(NULL)
 {
 	AddChild(&fView);
 
@@ -333,22 +360,37 @@ PlatformWindow::Dispose(JNIEnv* env)
 void
 PlatformWindow::SetMenuBar(BMenuBar* menuBar)
 {
-	if (fMenuBar != NULL)
-		RemoveChild(fMenuBar);
-
-	// todo use layout? how easy is it to change layout?
 	if (menuBar != NULL) {
-		AddChild(fMenuBar);
+		AddChild(menuBar);
 		BRect bounds = menuBar->Bounds();
 		fView.MoveTo(0, bounds.bottom + 1);
+		ResizeBy(0, bounds.bottom);
 	} else {
 		fView.MoveTo(0, 0);
+		if (fMenuBar != NULL)
+			ResizeBy(0, -fMenuBar->Bounds().bottom);
 	}
 
+	if (fMenuBar != NULL)
+		RemoveChild(fMenuBar);
 	fMenuBar = menuBar;
-	
 }
 
+
+void
+PlatformWindow::GetInsets(JNIEnv* env, jobject insets)
+{
+	int topInset = 0;
+	if (fMenuBar != NULL) {
+		BRect bounds = fMenuBar->Bounds();
+		topInset = bounds.IntegerHeight() + 1;
+	}
+
+	env->SetIntField(insets, insetsLeftField, (jint)0);
+	env->SetIntField(insets, insetsTopField, (jint)topInset);
+	env->SetIntField(insets, insetsRightField, (jint)0);
+	env->SetIntField(insets, insetsBottomField, (jint)0);
+}
 
 void
 PlatformWindow::Focus()
@@ -361,10 +403,8 @@ PlatformWindow::Focus()
 void
 PlatformWindow::FrameMoved(BPoint origin)
 {
-	int x = origin.x;
-	int y = origin.y;
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventMove", "(II)V", x, y);
+	_Reshape();
 	LockLooper();
 	BWindow::FrameMoved(origin);
 }
@@ -373,10 +413,8 @@ PlatformWindow::FrameMoved(BPoint origin)
 void
 PlatformWindow::FrameResized(float width, float height)
 {
-	int w = width + 1;
-	int h = height + 1;
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventResize", "(II)V", w, h);
+	_Reshape();
 	LockLooper();
 	BWindow::FrameResized(width, height);
 }
@@ -405,7 +443,7 @@ PlatformWindow::QuitRequested()
 void
 PlatformWindow::WindowActivated(bool active)
 {
-	DoCallback(fPlatformWindow, "eventActivate", "(Z)V", active);
+	//DoCallback(fPlatformWindow, "eventActivate", "(Z)V", active);
 	BWindow::WindowActivated(active);
 }
 
@@ -419,4 +457,16 @@ PlatformWindow::Zoom(BPoint origin, float width, float height)
 	DoCallback(fPlatformWindow, "eventMaximize", "(Z)V", fMaximized);
 	
 	BWindow::Zoom(origin, width, height);
+}
+
+
+void
+PlatformWindow::_Reshape()
+{
+	BRect frame = Frame();
+	int x = frame.left;
+	int y = frame.top;
+	int width = frame.IntegerWidth() + 1;
+	int height = frame.IntegerHeight() + 1;
+	DoCallback(fPlatformWindow, "eventReshape", "(IIII)V", x, y, width, height);
 }

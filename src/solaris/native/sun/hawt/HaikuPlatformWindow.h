@@ -42,6 +42,7 @@ public:
 			void			Dispose(JNIEnv* env);
 			void			Focus();
 			void			SetMenuBar(BMenuBar* menuBar);
+			void			GetInsets(JNIEnv* env, jobject insets);
 
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
@@ -49,6 +50,10 @@ public:
 	virtual	bool			QuitRequested();
 	virtual	void			WindowActivated(bool active);
 	virtual	void			Zoom(BPoint origin, float width, float height);
+
+private:
+			void			_Reshape();
+
 private:
 			ContentView		fView;
 			bool			fMaximized;

@@ -28,14 +28,14 @@ package sun.hawt;
 import sun.awt.SunToolkit;
 import sun.lwawt.LWToolkit;
 
-import java.awt.MenuContainer;
-import java.awt.MenuItem;
+import java.awt.*;
 import java.awt.event.*;
 import java.awt.peer.MenuItemPeer;
 
 public class HaikuMenuItem extends HaikuMenuComponent implements MenuItemPeer {
 
-    private native long nativeCreateMenuItem(boolean separator);
+    private native long nativeCreateMenuItem(long menuItemPtr,
+        boolean separator);
     private native void nativeSetLabel(long itemPtr, String label);
     private native void nativeSetEnabled(long itemPtr, boolean enabled);
 
@@ -57,7 +57,9 @@ public class HaikuMenuItem extends HaikuMenuComponent implements MenuItemPeer {
 
     @Override
     protected long createModel() {
-        return nativeCreateMenuItem(isSeparator());
+        HaikuMenuComponent parent = (HaikuMenuComponent)
+        	LWToolkit.targetToPeer(getTarget().getParent());
+        return nativeCreateMenuItem(parent.getModel(), isSeparator());
     }
 
     @Override

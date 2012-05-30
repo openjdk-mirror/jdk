@@ -77,6 +77,7 @@ ContentView::Draw(BRect updateRect)
 {
 	DeferredDraw(updateRect);
 
+	ConvertToParent(&updateRect);
 	jint x = updateRect.left;
 	jint y = updateRect.top;
 	jint width = updateRect.right - updateRect.left + 1;
@@ -119,7 +120,7 @@ ContentView::KeyUp(const char* bytes, int32 numBytes)
 void
 ContentView::MakeFocus(bool focused)
 {
-	//DoCallback(fPlatformWindow, "eventFocus", "(Z)V", focused);
+	DoCallback(fPlatformWindow, "eventActivate", "(Z)V", focused);
 	BView::MakeFocus(focused);
 }
 

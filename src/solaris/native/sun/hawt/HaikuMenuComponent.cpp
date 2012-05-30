@@ -42,10 +42,15 @@ extern sem_id appSem;
  * Signature: ()J
  */
 JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuMenu_nativeCreateMenu(JNIEnv *env, jobject thiz)
+Java_sun_hawt_HaikuMenu_nativeCreateMenu(JNIEnv *env, jobject thiz, jlong menuItemPtr)
 {
 	BMenu* menu = new BMenu("awtMenu");
 	BMenuItem* item = new BMenuItem(menu);
+	
+	BMenuItem* parentItem = (BMenuItem*)jlong_to_ptr(menuItemPtr);
+	BMenu* parentMenu = parentItem->Submenu();
+	parentMenu->AddItem(item);
+
 	return ptr_to_jlong(item);
 }
 
@@ -61,12 +66,12 @@ Java_sun_hawt_HaikuMenu_nativeSetLabel(JNIEnv *env, jobject thiz,
 	BMenuItem* menuItem = (BMenuItem*)jlong_to_ptr(menuPtr);
 	BMenu* menu = menuItem->Submenu();
 
-	const char* name = env->GetStringUTFChars(label, NULL);
-	if (name == NULL)
+	const char* nativeLabel = env->GetStringUTFChars(label, NULL);
+	if (nativeLabel == NULL)
 		return;
 
-	menu->SetName(name);
-	env->ReleaseStringUTFChars(label, name);
+	menuItem->SetLabel(nativeLabel);
+	env->ReleaseStringUTFChars(label, nativeLabel);
 }
 
 /*
@@ -135,7 +140,8 @@ JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuMenuBar_nativeCreateMenuBar(JNIEnv *env, jobject thiz)
 {
 	BMenuBar* bar = new BMenuBar(BRect(0, 0, 0, 0), "awtMenuBar");
-	return ptr_to_jlong(bar);
+	BMenuItem* item = new BMenuItem(bar);
+	return ptr_to_jlong(item);
 }
 
 /*
@@ -145,9 +151,10 @@ Java_sun_hawt_HaikuMenuBar_nativeCreateMenuBar(JNIEnv *env, jobject thiz)
  */
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuMenuBar_nativeAddMenu(JNIEnv *env, jobject thiz,
-	jlong menuBarPtr, jlong menuPtr)
+	jlong menuBarItemPtr, jlong menuPtr)
 {
-	BMenuBar* menuBar = (BMenuBar*)jlong_to_ptr(menuBarPtr);
+	BMenuItem* menuBarItem = (BMenuItem*)jlong_to_ptr(menuBarItemPtr);
+	BMenuBar* menuBar = (BMenuBar*)menuBarItem->Submenu();
 	BMenuItem* menuItem = (BMenuItem*)jlong_to_ptr(menuPtr);
 	menuBar->AddItem(menuItem);
 }
@@ -159,9 +166,10 @@ Java_sun_hawt_HaikuMenuBar_nativeAddMenu(JNIEnv *env, jobject thiz,
  */
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuMenuBar_nativeDelMenu(JNIEnv *env, jobject thiz,
-	jlong menuBarPtr, jint index)
+	jlong menuBarItemPtr, jint index)
 {
-	BMenuBar* menuBar = (BMenuBar*)jlong_to_ptr(menuBarPtr);
+	BMenuItem* menuBarItem = (BMenuItem*)jlong_to_ptr(menuBarItemPtr);
+	BMenuBar* menuBar = (BMenuBar*)menuBarItem->Submenu();
 	menuBar->RemoveItem(index);
 }
 
@@ -172,14 +180,18 @@ Java_sun_hawt_HaikuMenuBar_nativeDelMenu(JNIEnv *env, jobject thiz,
  */
 JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuMenuItem_nativeCreateMenuItem(JNIEnv *env, jobject thiz,
-	jboolean separator)
+	jlong menuItemPtr, jboolean separator)
 {
 	BMessage* msg = new BMessage('menu');
 	jobject peer = env->NewWeakGlobalRef(thiz);
-	msg->AddPointer("peer", &peer);
+	msg->AddPointer("peer", (void*)peer);
 	
 	BMenuItem* item = new BMenuItem("awtMenuItem", msg);
-	
+
+	BMenuItem* parentItem = (BMenuItem*)jlong_to_ptr(menuItemPtr);
+	BMenu* parentMenu = parentItem->Submenu();
+	parentMenu->AddItem(item);
+
 	// Wait for be_app to get created
 	acquire_sem(appSem);
 	release_sem(appSem);
@@ -198,12 +210,12 @@ Java_sun_hawt_HaikuMenuItem_nativeSetLabel(JNIEnv *env, jobject thiz,
 {
 	BMenuItem* menuItem = (BMenuItem*)jlong_to_ptr(itemPtr);
 
-	const char* name = env->GetStringUTFChars(label, NULL);
-	if (name == NULL)
+	const char* nativeLabel = env->GetStringUTFChars(label, NULL);
+	if (nativeLabel == NULL)
 		return;
 
-	menuItem->SetLabel(name);
-	env->ReleaseStringUTFChars(label, name);
+	menuItem->SetLabel(nativeLabel);
+	env->ReleaseStringUTFChars(label, nativeLabel);
 }
 
 /*
@@ -226,17 +238,21 @@ Java_sun_hawt_HaikuMenuItem_nativeSetEnabled(JNIEnv *env, jobject thiz,
  */
 JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuCheckboxMenuItem_nativeCreateCheckboxMenuItem(JNIEnv *env,
-	jobject thiz, jboolean separator)
+	jobject thiz, jlong menuItemPtr)
 {
 	BMessage* msg = new BMessage('menu');
 	jobject peer = env->NewWeakGlobalRef(thiz);
-	msg->AddPointer("peer", &peer);
+	msg->AddPointer("peer", (void*)peer);
 
 	// We add this bool so the handler knows to do the extra stuff
 	msg->AddBool("checkbox", true);
 
 	BMenuItem* item = new BMenuItem("awtMenuItem", msg);
-	
+
+	BMenuItem* parentItem = (BMenuItem*)jlong_to_ptr(menuItemPtr);
+	BMenu* parentMenu = parentItem->Submenu();
+	parentMenu->AddItem(item);
+
 	// Wait for be_app to get created
 	acquire_sem(appSem);
 	release_sem(appSem);
