@@ -70,7 +70,7 @@ Drawable::Allocate(int width, int height)
 		delete newSurface;
 		return false;
 	}
-
+	printf("Reallocating drawable %d %d\n", width, height);
 	if (fSurface != NULL) {
 		// blit the contents of the old bitmap to the new one
 		BRect bounds = fSurface->Bounds();

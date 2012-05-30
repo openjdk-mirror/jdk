@@ -39,7 +39,6 @@ public:
 			void			DeferredDraw(BRect updateRect);
 
 	virtual	void			Draw(BRect updateRect);
-	virtual	void			FrameResized(float width, float height);
 	virtual	void			KeyDown(const char* bytes, int32 numBytes);
 	virtual	void			KeyUp(const char* bytes, int32 numBytes);
 	virtual	void			MakeFocus(bool focused);
@@ -59,6 +58,7 @@ private:
 			Drawable		fDrawable;
 			jobject			fPlatformWindow;
 			uint32			fPreviousButtons;
+			BPoint			fPreviousPoint;
 };
 
 #endif	/* CONTENT_VIEW_H */

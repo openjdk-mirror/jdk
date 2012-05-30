@@ -54,7 +54,6 @@ public:
 	virtual	void			FrameResized(float width, float height);
 	virtual	void			Minimize(bool minimize);
 	virtual	bool			QuitRequested();
-	virtual	void			WindowActivated(bool active);
 	virtual	void			Zoom(BPoint origin, float width, float height);
 	
 			BRect			ViewFromFrame(BRect rect);
@@ -66,7 +65,7 @@ public:
 			BPoint			TranslateToFrame(BPoint point);
 
 private:
-			void			_Reshape();
+			void			_Reshape(bool resize);
 			void			_UpdateInsets();
 
 private:

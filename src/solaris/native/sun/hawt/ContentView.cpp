@@ -34,9 +34,6 @@
 
 #include "HaikuPlatformWindow.h"
 
-// The amount of extra size we give the drawable
-// so we're not reallocating it all the time
-static const int kResizeBuffer = 100;
 
 ContentView::ContentView(jobject platformWindow)
 	:
@@ -45,7 +42,7 @@ ContentView::ContentView(jobject platformWindow)
 	fDrawable(this),
 	fPlatformWindow(platformWindow)
 {
-	get_mouse(NULL, &fPreviousButtons);
+	get_mouse(&fPreviousPoint, &fPreviousButtons);
 }
 
 
@@ -93,32 +90,6 @@ ContentView::Draw(BRect updateRect)
 	jint width = updateRect.IntegerWidth() + 1;
 	jint height = updateRect.IntegerHeight() + 1;
 	DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
-}
-
-
-void
-ContentView::FrameResized(float width, float height)
-{
-	int w = width + 1;
-	int h = height + 1;
-
-    // Drawable resizing logic is as follows:
-    // If the new dimensions are within 50 of the drawable size,
-    // increase the drawable size by 100 so we have a buffer of
-    // 50 pixels before we need to reallocate the bitmap.
-    // If the new dimensions are without 100 of the drawable size,
-    // decrease the drawable size by 50, because we're probably
-    // being resized smaller. 
-	if (fDrawable.Lock()) {
-		
-		if (!fDrawable.IsValid()
-				|| w + kResizeBuffer > fDrawable.Width() || h + kResizeBuffer > fDrawable.Height()) {
-			fDrawable.Allocate(w + kResizeBuffer, h + kResizeBuffer);
-		} else if (w + kResizeBuffer < fDrawable.Width() || h + kResizeBuffer < fDrawable.Height()) {
-			fDrawable.Allocate(w + kResizeBuffer, h + kResizeBuffer);
-		} 
-		fDrawable.Unlock();
-	}
 }
 
 
@@ -243,11 +214,15 @@ ContentView::_HandleKeyEvent(BMessage* message)
 void
 ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 {
+	// Get out early if this message is useless
+	int32 buttons = 0;
+	message->FindInt32("buttons", &buttons);
+	if (point == fPreviousPoint && (buttons ^ fPreviousButtons) == 0)
+		return;
+
 	BPoint screenPoint = ConvertToScreen(point);
 	int64 when = 0;
 	message->FindInt64("when", &when);
-	int32 buttons = 0;
-	message->FindInt32("buttons", &buttons);
 	int32 clicks = 0;
 	message->FindInt32("clicks", &clicks);
 	int32 modifiers = 0;
@@ -257,6 +232,7 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	int pressed = buttons & ~fPreviousButtons;
 	int released = ~buttons & fPreviousButtons;
 	fPreviousButtons = buttons;
+	fPreviousPoint = point;
 
 	jint javaPressed = ConvertButtonsToJava(pressed);
 	jint javaReleased = ConvertButtonsToJava(released);

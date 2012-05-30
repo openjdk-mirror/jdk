@@ -37,6 +37,10 @@
 #include <View.h>
 #include <Window.h>
 
+// The amount of extra size we give the drawable
+// so we're not reallocating it all the time
+static const int kResizeBuffer = 100;
+
 static jfieldID pointXField;
 static jfieldID pointYField;
 static jfieldID rectXField;
@@ -425,7 +429,7 @@ PlatformWindow::Focus()
 void
 PlatformWindow::FrameMoved(BPoint origin)
 {
-	_Reshape();
+	_Reshape(false);
 	BWindow::FrameMoved(origin);
 }
 
@@ -433,7 +437,7 @@ PlatformWindow::FrameMoved(BPoint origin)
 void
 PlatformWindow::FrameResized(float width, float height)
 {
-	_Reshape();
+	_Reshape(true);
 	BWindow::FrameResized(width, height);
 }
 
@@ -521,15 +525,34 @@ PlatformWindow::TranslateToFrame(BPoint point)
 }
 
 void
-PlatformWindow::_Reshape()
+PlatformWindow::_Reshape(bool resize)
 {
 	BRect bounds = Frame();
+
 	// transform bounds to include the decorations
 	BRect frame = TransformToFrame(bounds);
 	int x = frame.left;
 	int y = frame.top;
 	int width = frame.IntegerWidth() + 1;
 	int height = frame.IntegerHeight() + 1;
+
+	int w = width + 1;
+	int h = height + 1;
+
+	if (resize) {
+		Drawable* drawable = fView.GetDrawable();
+		if (drawable->Lock()) {
+			if (!drawable->IsValid()
+					|| w > drawable->Width()
+					|| h > drawable->Height()
+					|| w + kResizeBuffer * 2 < drawable->Width()
+					|| h + kResizeBuffer * 2 < drawable->Height()) {
+				drawable->Allocate(w + kResizeBuffer, h + kResizeBuffer);
+			}
+			drawable->Unlock();
+		}
+	}
+
 	DoCallback(fPlatformWindow, "eventReshape", "(IIII)V", x, y, width, height);
 }
 
