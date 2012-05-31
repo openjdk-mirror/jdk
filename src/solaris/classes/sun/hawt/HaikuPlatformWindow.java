@@ -101,7 +101,6 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void dispose() {
-        System.err.println("Disposing " + peerType + " " + hashCode());
         nativeDispose(nativeWindow);
     }
 
@@ -131,7 +130,6 @@ class HaikuPlatformWindow implements PlatformWindow {
     public Insets getInsets() {
         Insets insets = new Insets(0, 0, 0, 0);
         nativeGetInsets(nativeWindow, insets);
-        System.err.println(insets);
         return insets;
     }
 
@@ -186,7 +184,6 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public boolean requestWindowFocus() {
-        System.err.println("requesting focus");
         nativeFocus(nativeWindow);
         return true;
     }    
@@ -216,7 +213,7 @@ class HaikuPlatformWindow implements PlatformWindow {
             long drawable = nativeGetDrawable(nativeWindow);
             surfaceData = new HaikuWindowSurfaceData(
                 HaikuWindowSurfaceData.typeDefault, getColorModel(),
-                peer.getBounds(), getGraphicsConfiguration(), this, drawable);
+                getGraphicsConfiguration(), this, drawable);
         }
         return surfaceData;
     }
@@ -241,6 +238,10 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     public Rectangle getBounds() {
         return peer.getBounds();
+    }
+
+    public Window getTarget() {
+    	return target;
     }
 
     // =======================================

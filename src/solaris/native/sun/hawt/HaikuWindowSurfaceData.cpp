@@ -60,16 +60,6 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
     operations->sdOps.Release = &HaikuRelease;
     operations->sdOps.Unlock = &HaikuUnlock;
     operations->drawable = (Drawable*)drawable;
-
-    // initial set up on the drawable maybe not neccessary
-    if (operations->drawable->Lock()) {
-        if (!operations->drawable->IsValid()
-                || width > operations->drawable->Width()
-                || height > operations->drawable->Height()) {
-            operations->drawable->Allocate(width, height);
-        }
-        operations->drawable->Unlock();
-    }
 }
 
 static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
@@ -81,7 +71,7 @@ static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
     if (!operations->drawable->Lock())
         return SD_FAILURE;
 
-    if (lockflags & SD_LOCK_RD_WR) {
+    if ((lockflags & SD_LOCK_RD_WR) != 0 && operations->drawable->IsValid()) {
         SurfaceDataBounds* bounds = &rasInfo->bounds;
 
         int width = operations->drawable->Width();

@@ -25,12 +25,9 @@
  
 package sun.hawt;
 
-import java.awt.GraphicsConfiguration;
-import java.awt.Rectangle;
-import java.awt.image.ColorModel;
-import java.awt.image.Raster;
-
-import sun.java2d.SurfaceData;
+import java.awt.*;
+import java.awt.image.*;
+import sun.java2d.*;
 import sun.java2d.loops.SurfaceType;
 
 class HaikuWindowSurfaceData extends SurfaceData {
@@ -42,35 +39,33 @@ class HaikuWindowSurfaceData extends SurfaceData {
         initIDs();
     }
 
-    private Rectangle bounds;
     private GraphicsConfiguration config;
     private HaikuPlatformWindow window;
 
     private static final native void initIDs();
-    private native final void initOps(long drawable, int width, int height);
+    private native final void initOps(long drawable);
 
     HaikuWindowSurfaceData(SurfaceType surfaceType, ColorModel colorModel,
-    		Rectangle bounds, GraphicsConfiguration config,
-    		HaikuPlatformWindow window, long drawable) {
+            GraphicsConfiguration config, HaikuPlatformWindow window,
+            long drawable) {
         super(surfaceType, colorModel);
 
-        this.bounds = bounds;
         this.config = config;
         this.window = window;
 
-        initOps(drawable, bounds.width, bounds.height);
+        initOps(drawable);
     }
 
     @Override
     public Rectangle getBounds() {
-    	Rectangle bounds = window.getBounds();
+        Rectangle bounds = window.getBounds();
         bounds.x = bounds.y = 0;
         return bounds;
     }
 
     @Override
     public Object getDestination() {
-        return (Object)window;
+        return (Object)window.getTarget();
     }
 
     @Override
@@ -87,7 +82,5 @@ class HaikuWindowSurfaceData extends SurfaceData {
     public SurfaceData getReplacement() {
         throw new UnsupportedOperationException("Not supported.");
     }
-
-
 
 }
