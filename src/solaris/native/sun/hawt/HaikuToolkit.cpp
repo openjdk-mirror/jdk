@@ -29,7 +29,16 @@
 #include <dlfcn.h>
 #include <kernel/OS.h>
 
+#include "java_awt_SystemColor.h"
+
 #include "AwtApplication.h"
+
+static uint32 RgbColorToInt(rgb_color color) {
+	return ((color.alpha & 0xFF) << 24)
+		| ((color.red & 0xFF) << 16)
+		| ((color.green & 0xFF) << 8)
+		| ((color.blue & 0xFF));
+}
 
 extern "C" {
 
@@ -60,6 +69,52 @@ Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
     awtApp->Run();
     delete awtApp;
     return;
+}
+
+/*
+ * Class:     sun_hawt_HaikuToolkit
+ * Method:    nativeLoadSystemColors
+ * Signature: ([I)V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuToolkit_nativeLoadSystemColors(JNIEnv *env, jobject thiz,
+	jintArray systemColors)
+{
+    jint* colors = env->GetIntArrayElements(systemColors, NULL);
+    if (colors == NULL)
+    	return;
+    
+    colors[java_awt_SystemColor_DESKTOP]                 = RgbColorToInt(ui_color(B_DESKTOP_COLOR));
+    colors[java_awt_SystemColor_ACTIVE_CAPTION]          = RgbColorToInt(ui_color(B_WINDOW_TAB_COLOR));
+    colors[java_awt_SystemColor_ACTIVE_CAPTION_TEXT]     = RgbColorToInt(ui_color(B_WINDOW_TEXT_COLOR));
+    colors[java_awt_SystemColor_ACTIVE_CAPTION_BORDER]   = RgbColorToInt(ui_color(B_WINDOW_TAB_COLOR));
+    colors[java_awt_SystemColor_INACTIVE_CAPTION]        = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TAB_COLOR));
+    colors[java_awt_SystemColor_INACTIVE_CAPTION_TEXT]   = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TEXT_COLOR));
+    colors[java_awt_SystemColor_INACTIVE_CAPTION_BORDER] = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TAB_COLOR));
+
+    colors[java_awt_SystemColor_WINDOW]              = RgbColorToInt(ui_color(B_PANEL_BACKGROUND_COLOR));
+    colors[java_awt_SystemColor_WINDOW_BORDER]       = RgbColorToInt(ui_color(B_WINDOW_BORDER_COLOR));
+    colors[java_awt_SystemColor_WINDOW_TEXT]         = RgbColorToInt(ui_color(B_PANEL_TEXT_COLOR));
+    colors[java_awt_SystemColor_MENU]                = RgbColorToInt(ui_color(B_MENU_BACKGROUND_COLOR));
+    colors[java_awt_SystemColor_MENU_TEXT]           = RgbColorToInt(ui_color(B_MENU_ITEM_TEXT_COLOR));
+    colors[java_awt_SystemColor_TEXT]                = RgbColorToInt(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
+    colors[java_awt_SystemColor_TEXT_TEXT]           = RgbColorToInt(ui_color(B_DOCUMENT_TEXT_COLOR));
+    colors[java_awt_SystemColor_TEXT_HIGHLIGHT]      = 0xFF000000; // black
+    colors[java_awt_SystemColor_TEXT_HIGHLIGHT_TEXT] = 0xFFFFFFFF; // white
+    colors[java_awt_SystemColor_TEXT_INACTIVE_TEXT]  = 0xFFCCCCCC; // gray
+    
+    rgb_color controlColor                            = ui_color(B_CONTROL_BACKGROUND_COLOR);
+    colors[java_awt_SystemColor_CONTROL]              = RgbColorToInt(controlColor);
+    colors[java_awt_SystemColor_CONTROL_TEXT]         = RgbColorToInt(ui_color(B_CONTROL_TEXT_COLOR));
+    colors[java_awt_SystemColor_CONTROL_HIGHLIGHT]    = RgbColorToInt(tint_color(controlColor, B_LIGHTEN_1_TINT));
+    colors[java_awt_SystemColor_CONTROL_LT_HIGHLIGHT] = RgbColorToInt(tint_color(controlColor, B_LIGHTEN_2_TINT));
+    colors[java_awt_SystemColor_CONTROL_SHADOW]       = RgbColorToInt(tint_color(controlColor, B_DARKEN_1_TINT));
+    colors[java_awt_SystemColor_CONTROL_DK_SHADOW]    = RgbColorToInt(tint_color(controlColor, B_DARKEN_2_TINT));
+    colors[java_awt_SystemColor_SCROLLBAR]            = RgbColorToInt(tint_color(controlColor, B_DARKEN_3_TINT));
+    colors[java_awt_SystemColor_INFO]                 = RgbColorToInt(ui_color(B_TOOL_TIP_BACKGROUND_COLOR));
+    colors[java_awt_SystemColor_INFO_TEXT]            = RgbColorToInt(ui_color(B_TOOL_TIP_TEXT_COLOR));
+
+	env->ReleaseIntArrayElements(systemColors, colors, 0);
 }
 
 /*

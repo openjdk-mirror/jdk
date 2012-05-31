@@ -46,6 +46,7 @@ public class HaikuToolkit extends LWToolkit {
 
 	private static native void nativeInit();
     private native void nativeRunMessage();
+    private native void nativeLoadSystemColors(int[] systemColors);
     private native void nativeBeep();
 
 	static {
@@ -61,16 +62,20 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
+    protected void loadSystemColors(int[] systemColors) {
+        if (systemColors == null)
+            return;
+
+        nativeLoadSystemColors(systemColors);
+    }
+
+    @Override
     protected PlatformWindow createPlatformWindow(PeerType peerType) {
-    	//System.err.println("Creating platform window " + peerType);
         if (peerType == PeerType.EMBEDDEDFRAME) {
-        	System.err.println("Creating embedddedframe!!");
+        	System.err.println("Creating embedded frame!");
         	return null;
-            //return new CPlatformEmbeddedFrame();
         } else {
-        	HaikuPlatformWindow win = new HaikuPlatformWindow(peerType);
-        	System.err.println("Created " + peerType + " " + win.hashCode());
-            return win;
+        	return new HaikuPlatformWindow(peerType);
         }
     }
 
