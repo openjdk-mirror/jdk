@@ -39,7 +39,7 @@ void
 AwtApplication::MessageReceived(BMessage* message)
 {
 	switch (message->what) {
-		case 'menu': {
+		case kMenuMessage: {
 			void* peerPointer;
 			if (message->FindPointer("peer", &peerPointer) != B_OK)
 				break;

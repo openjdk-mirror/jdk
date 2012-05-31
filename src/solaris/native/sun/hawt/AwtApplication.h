@@ -27,6 +27,9 @@
 
 #include <Application.h>
 
+const int32 kMenuMessage = 'menu';
+const int32 kFileMessage = 'file';
+
 class AwtApplication : public BApplication {
 public:
 					AwtApplication(const char* signature);

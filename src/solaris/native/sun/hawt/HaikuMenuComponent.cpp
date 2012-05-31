@@ -32,6 +32,8 @@
 #include <MenuItem.h>
 #include <PopUpMenu.h>
 
+#include "AwtApplication.h"
+
 extern "C" {
 
 extern sem_id appSem;
@@ -182,7 +184,7 @@ JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuMenuItem_nativeCreateMenuItem(JNIEnv *env, jobject thiz,
 	jlong menuItemPtr, jboolean separator)
 {
-	BMessage* msg = new BMessage('menu');
+	BMessage* msg = new BMessage(kMenuMessage);
 	jobject peer = env->NewWeakGlobalRef(thiz);
 	msg->AddPointer("peer", (void*)peer);
 	
@@ -240,7 +242,7 @@ JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuCheckboxMenuItem_nativeCreateCheckboxMenuItem(JNIEnv *env,
 	jobject thiz, jlong menuItemPtr)
 {
-	BMessage* msg = new BMessage('menu');
+	BMessage* msg = new BMessage(kMenuMessage);
 	jobject peer = env->NewWeakGlobalRef(thiz);
 	msg->AddPointer("peer", (void*)peer);
 
