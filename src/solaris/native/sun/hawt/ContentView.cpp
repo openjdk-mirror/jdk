@@ -54,15 +54,6 @@ ContentView::GetDrawable()
 
 
 void
-ContentView::Focus()
-{
-	LockLooper();
-	MakeFocus(true);
-	UnlockLooper();
-}
-
-
-void
 ContentView::DeferredDraw(BRect updateRect)
 {
 	// updateRect includes the menu and the decorations, and indicates
@@ -268,14 +259,10 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 
 	jint mods = ConvertInputModifiersToJava(modifiers) | javaButtons;
 
-	// Drop the lock when doing this callback, because the MouseEvent
-	// constructor will call getLocationOnScreen which may call native code.
-	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIIII)V", id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
 		javaReleased, javaButtons);
-	LockLooper();
 }
 
 
@@ -306,9 +293,7 @@ ContentView::_HandleWheelEvent(BMessage* message)
 	    scrollType = java_awt_event_MouseWheelEvent_WHEEL_BLOCK_SCROLL;
 
 	jint scrollAmount = 3;
-	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIIID)V",
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		scrollType, scrollAmount, (jint)wheelRotation, (jdouble)wheelRotation);
-	LockLooper();
 }

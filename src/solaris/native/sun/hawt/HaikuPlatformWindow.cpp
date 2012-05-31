@@ -163,8 +163,11 @@ Java_sun_hawt_HaikuPlatformWindow_nativeDispose
   (JNIEnv *env, jobject thiz, jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	
-	window->LockLooper();
+
+	if (!window->LockLooper())
+		// Uh-oh, leak the window?
+		return;
+
 	window->Dispose(env);
 }
 
@@ -423,7 +426,7 @@ void
 PlatformWindow::Focus()
 {
 	Activate();
-	fView.Focus();
+	fView.MakeFocus(true);
 }
 
 

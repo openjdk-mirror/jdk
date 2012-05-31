@@ -34,8 +34,6 @@ public:
 							ContentView(jobject platformWindow);
 
 			Drawable*		GetDrawable();
-			void			Focus();
-
 			void			DeferredDraw(BRect updateRect);
 
 	virtual	void			Draw(BRect updateRect);
