@@ -144,6 +144,10 @@ ContentView::MouseDown(BPoint point)
 void
 ContentView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 {
+	// If the mouse entered the view we should reset our previous buttons
+	if (transit == B_ENTERED_VIEW)
+		get_mouse(NULL, &fPreviousButtons);
+
 	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
 	BView::MouseMoved(point, transit, message);
 }
