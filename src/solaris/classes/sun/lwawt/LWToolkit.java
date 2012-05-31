@@ -260,11 +260,8 @@ public abstract class LWToolkit extends SunToolkit implements Runnable {
 
     @Override
     public FileDialogPeer createFileDialog(FileDialog target) {
-    	PlatformComponent platformComponent = createPlatformComponent();
-    	PlatformWindow platformWindow = createPlatformWindow(LWWindowPeer.PeerType.DIALOG);
-        LWFileDialogPeer peer = new LWFileDialogPeer(target, platformComponent, platformWindow);
+        FileDialogPeer peer = createFileDialogPeer(target);
         targetCreatedPeer(target, peer);
-        peer.initialize();
         return peer;
     }
 
