@@ -557,7 +557,9 @@ PlatformWindow::_Reshape(bool resize)
 		}
 	}
 
+	UnlockLooper();
 	DoCallback(fPlatformWindow, "eventReshape", "(IIII)V", x, y, width, height);
+	LockLooper();
 }
 
 
