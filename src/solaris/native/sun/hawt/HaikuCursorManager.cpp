@@ -26,8 +26,14 @@
 #include <jni.h>
 #include <jni_util.h>
 
+#include "java_awt_Cursor.h"
+
+#include <Application.h>
+#include <Cursor.h>
 #include <InterfaceDefs.h>
 #include <Point.h>
+
+#include "Utilities.h"
 
 static jfieldID pointXField;
 static jfieldID pointYField;
@@ -61,6 +67,31 @@ Java_sun_hawt_HaikuCursorManager_nativeGetCursorPosition(JNIEnv* env,
         env->SetIntField(point, pointXField, (jint)location.x);
         env->SetIntField(point, pointYField, (jint)location.y);
     }
+}
+
+/*
+ * Class:     sun_hawt_HaikuCursorManager
+ * Method:    nativeSetCursor
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuCursorManager_nativeSetCursor(JNIEnv* env, jclass clazz,
+	jint type)
+{
+	const BCursor* cursor;
+
+	// Not many cursors to choose from on Haiku
+	switch (type) {
+		case java_awt_Cursor_TEXT_CURSOR:
+			cursor = B_CURSOR_I_BEAM;
+			break;
+		default:
+			cursor = B_CURSOR_SYSTEM_DEFAULT;
+			break;
+	}
+
+	WaitForBeApp();
+	be_app->SetCursor(cursor);
 }
 
 }

@@ -25,13 +25,14 @@
 
 #include <jni.h>
 
+#include "java_awt_SystemColor.h"
+
 #include <Beep.h>
 #include <dlfcn.h>
 #include <kernel/OS.h>
 
-#include "java_awt_SystemColor.h"
-
 #include "AwtApplication.h"
+#include "Utilities.h"
 
 static uint32 RgbColorToInt(rgb_color color) {
 	return ((color.alpha & 0xFF) << 24)
@@ -43,7 +44,6 @@ static uint32 RgbColorToInt(rgb_color color) {
 extern "C" {
 
 JavaVM* jvm;
-sem_id appSem = -1;
 
 /*
  * Class:     sun_hawt_HaikuToolkit
@@ -53,7 +53,6 @@ sem_id appSem = -1;
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jclass clazz)
 {
-	appSem = create_sem(0, "awtAppSem");
 }
 
 /*
@@ -65,7 +64,7 @@ JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
 {
     BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
-    release_sem(appSem);
+    CreatedBeApp();
     awtApp->Run();
     delete awtApp;
     return;

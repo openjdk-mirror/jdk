@@ -37,6 +37,8 @@
 #include <View.h>
 #include <Window.h>
 
+#include "Utilities.h"
+
 // The amount of extra size we give the drawable
 // so we're not reallocating it all the time
 static const int kResizeBuffer = 200;
@@ -53,9 +55,6 @@ static jfieldID insetsRightField;
 static jfieldID insetsBottomField;
 
 extern "C" {
-
-
-extern sem_id appSem;
 
 
 JNIEXPORT void JNICALL
@@ -84,9 +83,7 @@ JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeInit(JNIEnv *env, jobject thiz,
 	jboolean simpleWindow)
 {
-	// Wait for be_app to get created
-	acquire_sem(appSem);
-	release_sem(appSem);
+	WaitForBeApp();
 
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
 	PlatformWindow* window = new PlatformWindow(javaWindow,	simpleWindow);

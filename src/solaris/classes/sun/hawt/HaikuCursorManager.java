@@ -34,6 +34,7 @@ public class HaikuCursorManager extends LWCursorManager {
 
     private static native void initIDs();
     private static native void nativeGetCursorPosition(Point position);
+    private static native void nativeSetCursor(int type);
 
     static {
         initIDs();
@@ -45,7 +46,7 @@ public class HaikuCursorManager extends LWCursorManager {
     public static HaikuCursorManager getInstance() {
         return cursorManager;
     }
-    
+
     @Override
     protected Point getCursorPosition() {
         Point position = new Point();
@@ -55,6 +56,7 @@ public class HaikuCursorManager extends LWCursorManager {
 
     @Override
     protected void setCursor(Cursor cursor) {
-        // todo
+        int type = cursor != null ? cursor.getType() : Cursor.DEFAULT_CURSOR;
+        nativeSetCursor(type);
     }
 }

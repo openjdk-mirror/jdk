@@ -33,10 +33,9 @@
 #include <PopUpMenu.h>
 
 #include "AwtApplication.h"
+#include "Utilities.h"
 
 extern "C" {
-
-extern sem_id appSem;
 
 /*
  * Class:     sun_hawt_HaikuMenu
@@ -194,9 +193,7 @@ Java_sun_hawt_HaikuMenuItem_nativeCreateMenuItem(JNIEnv *env, jobject thiz,
 	BMenu* parentMenu = parentItem->Submenu();
 	parentMenu->AddItem(item);
 
-	// Wait for be_app to get created
-	acquire_sem(appSem);
-	release_sem(appSem);
+	WaitForBeApp();
 	item->SetTarget(be_app);
 	return ptr_to_jlong(item);
 }
@@ -255,9 +252,7 @@ Java_sun_hawt_HaikuCheckboxMenuItem_nativeCreateCheckboxMenuItem(JNIEnv *env,
 	BMenu* parentMenu = parentItem->Submenu();
 	parentMenu->AddItem(item);
 
-	// Wait for be_app to get created
-	acquire_sem(appSem);
-	release_sem(appSem);
+	WaitForBeApp();
 	item->SetTarget(be_app);
 	return ptr_to_jlong(item);
 }
