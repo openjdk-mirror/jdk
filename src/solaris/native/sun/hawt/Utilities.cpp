@@ -34,11 +34,18 @@
 #include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_MouseEvent.h"
 
-void
-DoCallback(jobject obj, const char* name, const char* description, ...)
+JNIEnv*
+GetEnv()
 {
     JNIEnv* env = NULL;
     jvm->AttachCurrentThread((void**)&env, NULL);
+    return env;
+}
+
+void
+DoCallback(jobject obj, const char* name, const char* description, ...)
+{
+    JNIEnv* env = GetEnv();
     va_list args;
     va_start(args, description);
     JNU_CallMethodByNameV(env, NULL, obj, name, description, args);

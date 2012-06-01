@@ -34,6 +34,8 @@ class AwtApplication : public BApplication {
 public:
 					AwtApplication(const char* signature);
 	virtual	void	MessageReceived(BMessage* msg);
+private:
+			void	_HandleFileMessage(BMessage* msg);
 };
 
 #endif	/* AWT_APPLICATION_H */

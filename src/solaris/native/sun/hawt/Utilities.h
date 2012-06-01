@@ -48,6 +48,7 @@ struct Rectangle {
 	int x, y, width, height;
 };
 
+JNIEnv* GetEnv();
 void DoCallback(jobject obj, const char* name, const char* description, ...);
 
 class BString;
