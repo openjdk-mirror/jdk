@@ -23,7 +23,12 @@
  * questions.
  */
 
+#include <jlong.h>
 #include <jni.h>
+
+#include <Clipboard.h>
+
+#include "sun_hawt_HaikuClipboard.h"
 
 extern "C" {
 
@@ -32,37 +37,128 @@ extern "C" {
  * Method:    nativeGetClipboardFormats
  * Signature: ()[Ljava/lang/String;
  */
-JNIEXPORT jobject JNICALL
+JNIEXPORT jobjectArray JNICALL
 Java_sun_hawt_HaikuClipboard_nativeGetFormats(JNIEnv *env, jobject thiz)
 {
-	// JNI create string array blah blah
-	return NULL;
+	BClipboard* clipboard = new BClipboard("system");
+	if (!clipboard->Lock())
+		return NULL;
+
+	jclass stringClazz = env->FindClass("java/lang/String");
+	if (stringClazz == NULL)
+		return NULL;
+
+	BMessage* clip = clipboard->Data();
+	int32 count = clip->CountNames(B_MIME_TYPE);
+
+	jobjectArray result = env->NewObjectArray(count, stringClazz, NULL);
+	if (result == NULL) {
+		clipboard->Unlock();
+		return NULL;
+	}
+
+	char* nameFound;
+	for (int32 i = 0; clip->GetInfo(B_MIME_TYPE, i, &nameFound, NULL, NULL)
+			== B_OK; i++) {
+		jstring name = env->NewStringUTF(nameFound);
+		if (name == NULL) {
+			clipboard->Unlock();
+			return NULL;
+		}
+		env->SetObjectArrayElement(result, i, name);
+		env->DeleteLocalRef(name);
+	}
+
+	clipboard->Unlock();
+	return result;
 }
 
 /*
  * Class:     sun_hawt_HaikuClipboard
- * Method:    nativeGetClipboardData
+ * Method:    nativeGetData
  * Signature: (Ljava/lang/String;)[B
  */
 JNIEXPORT jbyteArray JNICALL
 Java_sun_hawt_HaikuClipboard_nativeGetData(JNIEnv *env, jobject thiz,
     jstring format)
 {
-	// JNI do shit
-	return NULL;
+	BClipboard* clipboard = new BClipboard("system");
+	if (!clipboard->Lock())
+		return NULL;
+
+	const char* mimeType = env->GetStringUTFChars(format, NULL);
+	if (mimeType == NULL) {
+		clipboard->Unlock();
+		return NULL;
+	}
+
+	BMessage* clip = clipboard->Data();
+
+	ssize_t length;
+	const void* data;
+	status_t result = clip->FindData(mimeType, B_MIME_TYPE, 0, &data, &length);
+	env->ReleaseStringUTFChars(format, mimeType);
+
+	if (result != B_OK) {
+		clipboard->Unlock();
+		return NULL;
+	}
+
+	jbyteArray bytes = env->NewByteArray(length);
+	if (bytes == NULL) {
+		clipboard->Unlock();
+		return NULL;
+	}
+
+	env->SetByteArrayRegion(bytes, 0, length, (jbyte*)data);
+	return bytes;	
+}
+
+/*
+ * Class:     sun_hawt_HaikuClipboard
+ * Method:    nativeLockAndClear
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL
+Java_sun_hawt_HaikuClipboard_nativeLockAndClear(JNIEnv *env, jobject thiz)
+{
+	BClipboard* clipboard = new BClipboard("system");
+	clipboard->Lock();
+	clipboard->Clear();
+	return ptr_to_jlong(clipboard);
 }
 
 /*
  * Class:     sun_hawt_HaikuClipboard
  * Method:    nativeSetData
- * Signature: ([BLjava/lang/String;)V
+ * Signature: (J[BLjava/lang/String;)V
  */
-JNIEXPORT jstring JNICALL
-Java_sun_hawt_HaikuClipboard_nativeSetData(JNIEnv *env, jbyteArray data,
-    jstring format)
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuClipboard_nativeSetData(JNIEnv *env, jobject thiz,
+	jlong nativeClipboard, jbyteArray data, jstring format)
 {
-	// JNI do other shit
-	return NULL;
+	BClipboard* clipboard = (BClipboard*)jlong_to_ptr(nativeClipboard);
+	BMessage* clip = clipboard->Data();
+	const char* mimeType = env->GetStringUTFChars(format, NULL);
+	
+	jsize length = env->GetArrayLength(data);
+	jbyte* bytes = env->GetByteArrayElements(data, 0);
+	clip->AddData(mimeType, B_MIME_TYPE, bytes, length);
+	clipboard->Commit();
+}
+
+/*
+ * Class:     sun_hawt_HaikuClipboard
+ * Method:    nativeUnlock
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuClipboard_nativeUnlock(JNIEnv *env, jobject thiz,
+	jlong nativeClipboard)
+{
+	BClipboard* clipboard = (BClipboard*)jlong_to_ptr(nativeClipboard);
+	clipboard->Unlock();
+	delete clipboard;
 }
 
 }

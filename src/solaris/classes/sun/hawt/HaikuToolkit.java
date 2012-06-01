@@ -203,7 +203,6 @@ public class HaikuToolkit extends LWToolkit {
         return new HaikuPlatformFont(name, style);
     }
 
-
     @Override
     public RobotPeer createRobot(Robot target, GraphicsDevice screen) {
         throw new UnsupportedOperationException("Not supported yet.");
@@ -225,7 +224,10 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     protected boolean syncNativeQueue(long timeout) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    	// This should wait until all events that should be generated
+    	// in response to user events have been generated.
+    	// I don't know if BWindow::Sync fits the bill.
+        return false;
     }
 
     @Override

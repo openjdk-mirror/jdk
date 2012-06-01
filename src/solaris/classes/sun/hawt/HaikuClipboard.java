@@ -35,7 +35,10 @@ public class HaikuClipboard extends SunClipboard {
 
     private native String[] nativeGetFormats();
     private native byte[] nativeGetData(String format) throws IOException;
-    private native void nativeSetData(byte[] data, String format);
+    private native long nativeLockAndClear();
+    private native void nativeSetData(long nativeClipboard, byte[] data,
+        String format);
+    private native void nativeUnlock(long nativeClipboard);
 
     public HaikuClipboard(String name) {
         super(name);
@@ -64,31 +67,37 @@ public class HaikuClipboard extends SunClipboard {
             DataTransferer.getInstance();
         Map<Long, DataFlavor> formatMap = transferer.
             getFormatsForTransferable(contents, flavorMap);
+        
+        if (formatMap.keySet().size() > 0) {
+        	long nativeClipboard = nativeLockAndClear();
+            for (long format : formatMap.keySet()) {
+                DataFlavor flavor = formatMap.get(format);
 
-        for (long format : formatMap.keySet()) {
-            DataFlavor flavor = formatMap.get(format);
-
-            try {
-                byte[] bytes = transferer.
-                    translateTransferable(contents, flavor, format);
-                nativeSetData(bytes, transferer.getNativeForFormat(format));
-            } catch (IOException e) {
-                // Fix 4696186: don't print exception if data with
-                // javaJVMLocalObjectMimeType failed to serialize.
-                // May remove this if-check when 5078787 is fixed.
-                if (!(flavor.isMimeTypeEqual(
-                        DataFlavor.javaJVMLocalObjectMimeType) &&
-                        e instanceof java.io.NotSerializableException)) {
-                    e.printStackTrace();
+                try {
+                    byte[] bytes = transferer.
+                        translateTransferable(contents, flavor, format);
+                    nativeSetData(nativeClipboard, bytes,
+                        transferer.getNativeForFormat(format));
+                } catch (IOException e) {
+                    // Fix 4696186: don't print exception if data with
+                    // javaJVMLocalObjectMimeType failed to serialize.
+                    // May remove this if-check when 5078787 is fixed.
+                    if (!(flavor.isMimeTypeEqual(
+                            DataFlavor.javaJVMLocalObjectMimeType) &&
+                            e instanceof java.io.NotSerializableException)) {
+                        e.printStackTrace();
+                    }
                 }
             }
+            nativeUnlock(nativeClipboard);
         }
     }
 
     @Override
     protected long[] getClipboardFormats() {
         String[] nativeFormats = nativeGetFormats();
-        if (nativeFormats == null) nativeFormats = new String[0];
+        if (nativeFormats == null)
+            nativeFormats = new String[0];
 
         long[] temporary = new long[nativeFormats.length];
         HaikuDataTransferer transferer =
@@ -97,7 +106,7 @@ public class HaikuClipboard extends SunClipboard {
         for (String nativeFormat : nativeFormats)
             temporary[length++] = transferer.getFormatForNativeAsLong(
                 nativeFormat);
-        
+
         long[] formats = new long[length];
         System.arraycopy(temporary, 0, formats, 0, length);
         return formats;
