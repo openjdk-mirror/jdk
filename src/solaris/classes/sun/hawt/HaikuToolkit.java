@@ -130,7 +130,7 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     protected FileDialogPeer createFileDialogPeer(FileDialog target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return new HaikuFileDialog(target);
     }
 
     @Override

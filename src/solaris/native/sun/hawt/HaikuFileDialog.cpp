@@ -97,7 +97,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;ZZZLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuDesktopPeer_nativeCreate(JNIEnv *env, jobject thiz,
+Java_sun_hawt_HaikuFileDialog_nativeShowDialog(JNIEnv *env, jobject thiz,
 	jstring title, jboolean saveMode, jboolean multipleMode,
 	jboolean filterFilenames, jstring directory)
 {
