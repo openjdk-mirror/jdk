@@ -25,7 +25,9 @@
 
 #include "AwtApplication.h"
 
+#include <FilePanel.h>
 #include <MenuItem.h>
+#include <Path.h>
 
 #include "Utilities.h"
 
@@ -75,83 +77,99 @@ AwtApplication::MessageReceived(BMessage* message)
 void
 AwtApplication::_HandleFileMessage(BMessage* msg)
 {
+	// We might as well free the and ref filter now since all
+	// the interesting stuff is in the message
+	void* panelPtr;
+	if (msg->FindPointer("panel", &panelPtr) == B_OK) {
+		BFilePanel* panel = (BFilePanel*)panelPtr;
+		delete panel;
+	}
+	void* filterPtr;
+	if (msg->FindPointer("filter", &filterPtr) == B_OK) {
+		BRefFilter* filter = (BRefFilter*)filterPtr;
+		if (filter != NULL) {
+			delete filter;
+		}
+	}
+
 	JNIEnv* env = GetEnv();
 
-	// Try to get out early
 	jclass stringClazz = env->FindClass("Ljava/lang/String;");
-	void* peerPointer;
-	if (message->FindPointer("peer", &peerPointer) != B_OK
-			|| stringClazz == NULL) {
-		void* panelPtr;
-		if (message->FindPointer("panel", &panelPtr)) {
-			BFilePanel* panel = (BFilePanel*)panelPtr;
-			// alert ref filter not deleted!
-			delete panel;
-		}
+	jobject peer;
+
+	void* peerPtr;
+	if (msg->FindPointer("peer", &peerPtr) != B_OK)
 		return;
-	}
-	
-	jobject peer = (jobject)peerPointer; // PEER WEAK GLOBAL REF
 
-	// Managing JNI refs in here is bad...
-	jobjectArray result = NULL;
+	peer = (jobject)peerPtr;
+
 	if (msg->what == kFileMessage) {
- // REF STRING CLAZZ #1
-		if (stringClazz != NULL) {
-
-			bool save = false;
-			msg->FindBool("save", &save);
+		bool save = false;
+		if (msg->FindBool("save", &save) == B_OK) {
 			if (save) {
-				// File saved, we get a dir ref in "directory" and a leaf
-				// string in "name".
-				entry_ref dir;
-				const char* leaf;
-				if (msg->FindRef("directory", &dir) == B_OK
-						&& msg->FindString("name", &leaf) == B_OK) {
-					BPath path = BPath(dir);
-					path.append(leaf);
-						result = env->NewObjectArray(1, stringClazz, NULL); // REF OBJ ARR #1
-						if (result != NULL) {
-							jstring file = env->NewStringUTF(path.Path()); // REF NEW STR #1
-							if (file != NULL) {
-								env->SetObjectArrayElement(result, 0, file);
-								env->DeleteLocalRef(file); // DEL NEW STR # 1
-							}
-						}
-					}
-				} else {
-					// Files opened, we get some number of refs (hopefully)
-					type_code typeFound;
-					int32 count;
-					if (msg->GetInfo("refs", &typeFound, &count) == B_OK) {
-						if (typeFound == B_REF_TYPE && count > 0) {
-							result = env->NewObjectArray(count, stringClazz, NULL) // REF OBJ ARR #2
-							if (result != NULL) {
-								entry_ref file;
-								for (int i = 0; i < count; i++) {
-									msg->FindRef("refs", i, &file);
-									BPath path = BPath(file);
-									jstring file = env->NewStringUTF(path.Path()); // REF NEW STR #2
-									if (file != NULL) {
-										env->SetObjectArrayElement(result, i, file);
-										env->DeleteLocalRef(file); // DEL NEW STR #2
-									}
-								}
-							}
-						}
+				_HandleSaveMessage(msg, env, peer, stringClazz);
+			} else {
+				_HandleOpenMessage(msg, env, peer, stringClazz);
+			}
+		}
+	} else {
+		DoCallback(peer, "done", "([Ljava/lang/String;)V", NULL);
+	}
+
+	env->DeleteLocalRef(stringClazz);
+	env->DeleteWeakGlobalRef(peer);
+
+}
+
+void
+AwtApplication::_HandleOpenMessage(BMessage* msg, JNIEnv* env, jobject peer,
+	jclass stringClazz)
+{
+	// Files opened, we get some number of refs (hopefully)
+	type_code typeFound;
+	int32 count;
+	if (msg->GetInfo("refs", &typeFound, &count) == B_OK) {
+		if (typeFound == B_REF_TYPE && count > 0) {
+			jobjectArray result = env->NewObjectArray(count, stringClazz, NULL);
+			if (result != NULL) {
+				entry_ref ref;
+				for (int i = 0; i < count; i++) {
+					msg->FindRef("refs", i, &ref);
+					BPath path = BPath(&ref);
+					jstring file = env->NewStringUTF(path.Path());
+					if (file != NULL) {
+						env->SetObjectArrayElement(result, i, file);
+						env->DeleteLocalRef(file);
 					}
 				}
-				
-				env->DeleteLocalRef(stringClazz); // DEL STRING CLAZZ #1
+				DoCallback(peer, "done", "([Ljava/lang/String;)V", result);
+				env->DeleteLocalRef(result);
 			}
-			env->DeleteWeakGlobalRef(peer); // DEL PEER GLOBAL WEAK
 		}
 	}
-	
-	// so in the end, if we failed for some reason above or the dialog
-	// was cancelled, we pass back null
-	DoCallback(peer, "done", "([Ljava/lang/String;)V", result);
-	
-	if (result != NULL)
-		env->DeleteLocalRef(result); // DEL OBJ ARR #1/#2
+}
+
+void
+AwtApplication::_HandleSaveMessage(BMessage* msg, JNIEnv* env, jobject peer,
+	jclass stringClazz)
+{
+	// File saved, we get a dir ref in "directory" and a leaf
+	// string in "name".
+	entry_ref dir;
+	const char* leaf;
+	if (msg->FindRef("directory", &dir) == B_OK
+			&& msg->FindString("name", &leaf) == B_OK) {
+		BPath path = BPath(&dir);
+		path.Append(leaf);
+		jobjectArray result = env->NewObjectArray(1, stringClazz, NULL);
+		if (result != NULL) {
+			jstring file = env->NewStringUTF(path.Path());
+			if (file != NULL) {
+				env->SetObjectArrayElement(result, 0, file);
+				env->DeleteLocalRef(file);
+			}
+			DoCallback(peer, "done", "([Ljava/lang/String;)V", result);
+			env->DeleteLocalRef(result);
+		}
+	}
 }

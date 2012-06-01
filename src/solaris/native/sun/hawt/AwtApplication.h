@@ -25,10 +25,12 @@
 #ifndef AWT_APPLICATION_H
 #define	AWT_APPLICATION_H
 
+#include <jni.h>
+
 #include <Application.h>
 
-const int32 kMenuMessage = 'menu';
-const int32 kFileMessage = 'file';
+const uint32 kMenuMessage = 'menu';
+const uint32 kFileMessage = 'file';
 
 class AwtApplication : public BApplication {
 public:
@@ -36,6 +38,10 @@ public:
 	virtual	void	MessageReceived(BMessage* msg);
 private:
 			void	_HandleFileMessage(BMessage* msg);
+			void	_HandleOpenMessage(BMessage* msg, JNIEnv* env,
+						jobject peer, jclass stringClazz);
+			void	_HandleSaveMessage(BMessage* msg, JNIEnv* env,
+						jobject peer, jclass stringClazz);
 };
 
 #endif	/* AWT_APPLICATION_H */

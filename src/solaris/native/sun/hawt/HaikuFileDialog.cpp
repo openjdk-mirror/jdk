@@ -121,12 +121,18 @@ Java_sun_hawt_HaikuFileDialog_nativeShowDialog(JNIEnv *env, jobject thiz,
 	if (filterFilenames)
 		filter = new RefFilter(peer);
 	
-	BMessage* message = new BMessage(kFileMessage);
-	message->AddPointer("peer", peer);
-	message->AddBool("save", saveMode);
 
     BFilePanel* panel = new BFilePanel(saveMode ? B_SAVE_PANEL : B_OPEN_PANEL,
-    	NULL, refPtr, 0, multipleMode, message, filter);
+    	NULL, refPtr, 0, multipleMode, NULL, filter);
+
+	BMessage* message = new BMessage(kFileMessage);
+	message->AddPointer("peer", peer);
+	message->AddPointer("panel", panel);
+	message->AddPointer("filter", filter);
+	message->AddBool("save", saveMode);
+	panel->SetMessage(message);
+	delete message;
+
     panel->Window()->SetTitle(titleString);
 	panel->Show();
 	
