@@ -270,11 +270,14 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
-    public Map<TextAttribute, ?> mapInputMethodHighlight(InputMethodHighlight highlight) throws HeadlessException {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public Map mapInputMethodHighlight(InputMethodHighlight highlight)
+            throws HeadlessException {
+        return null;
     }
 
-    public InputMethodDescriptor getInputMethodAdapterDescriptor() throws AWTException {
+    @Override
+    public InputMethodDescriptor getInputMethodAdapterDescriptor()
+            throws AWTException {
         return null;
     }
 
