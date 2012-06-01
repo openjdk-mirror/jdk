@@ -101,7 +101,6 @@ ContentView::KeyUp(const char* bytes, int32 numBytes)
 void
 ContentView::MakeFocus(bool focused)
 {
-	DoCallback(fPlatformWindow, "eventActivate", "(Z)V", focused);
 	BView::MakeFocus(focused);
 }
 
@@ -179,29 +178,19 @@ ContentView::_HandleKeyEvent(BMessage* message)
 		(jlong)(when / 1000), mods, keyCode, keyLocation);
 
 	BString bytes;
-	if (message->FindString("bytes", &bytes) == B_OK) {
-		// Don't really get what this is about
-		// I just copied it from the 1.4.2 port  vvvvvvvvv
-		
-		// If we hava a key field that's non-zero, respond on KEY_UP.
-		// If we don't have a key field (key is zero), we need to fire on KEY_DOWN.
-		if ((key != 0 && (message->what == B_KEY_UP || message->what == B_UNMAPPED_KEY_UP)) ||
-		    (key == 0 && (message->what == B_KEY_DOWN || message->what == B_UNMAPPED_KEY_DOWN)))
-		{
-			id = java_awt_event_KeyEvent_KEY_TYPED;
-			keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
-			keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
+	if (message->what == B_KEY_DOWN
+			&& message->FindString("bytes", &bytes) == B_OK) {
+		id = java_awt_event_KeyEvent_KEY_TYPED;
+		keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
+		keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
 			
-    		JNIEnv* env = NULL;
-    		jvm->AttachCurrentThread((void**)&env, NULL);
-			jstring keyChar = env->NewStringUTF(bytes.String());
-			if (keyChar == NULL)
-				return;
-
-			DoCallback(fPlatformWindow, "eventKeyTyped",
-				"(JILjava/lang/String;)V", (jlong)(when / 1000), mods, keyChar);
-			env->DeleteLocalRef(keyChar);
-		}
+   		JNIEnv* env = GetEnv();
+		jstring keyChar = env->NewStringUTF(bytes.String());
+		if (keyChar == NULL)
+			return;
+		DoCallback(fPlatformWindow, "eventKeyTyped",
+			"(JILjava/lang/String;)V", (jlong)(when / 1000), mods, keyChar);
+		env->DeleteLocalRef(keyChar);
 	}
 }
 

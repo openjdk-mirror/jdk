@@ -325,9 +325,11 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     public void eventKeyTyped(long when, int modifiers, String keyChar) {
-        peer.dispatchKeyEvent(KeyEvent.KEY_TYPED, when, modifiers,
-            KeyEvent.VK_UNDEFINED, keyChar.charAt(0),
-            KeyEvent.KEY_LOCATION_UNKNOWN);
+    	if (keyChar.length() > 0) {
+            peer.dispatchKeyEvent(KeyEvent.KEY_TYPED, when, modifiers,
+                KeyEvent.VK_UNDEFINED, keyChar.charAt(0),
+                KeyEvent.KEY_LOCATION_UNKNOWN);
+    	}
     }
 
     private void handleMouseDown(long when, int modifiers, int x, int y,
