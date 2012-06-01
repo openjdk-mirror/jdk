@@ -50,7 +50,7 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initIDs
 }
 
 JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
-  (JNIEnv* env, jobject thiz, jlong drawable, jint width, jint height)
+  (JNIEnv* env, jobject thiz, jlong drawable)
 {
     HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)
         SurfaceData_InitOps(env, thiz, sizeof(HaikuWindowSurfaceDataOps));

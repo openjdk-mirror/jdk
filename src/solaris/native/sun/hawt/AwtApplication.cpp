@@ -28,6 +28,7 @@
 #include <FilePanel.h>
 #include <MenuItem.h>
 #include <Path.h>
+#include <Window.h>
 
 #include "Utilities.h"
 
@@ -72,7 +73,6 @@ AwtApplication::MessageReceived(BMessage* message)
 	}
 	BApplication::MessageReceived(message);
 }
-
 
 void
 AwtApplication::_HandleFileMessage(BMessage* msg)

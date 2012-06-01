@@ -47,16 +47,6 @@ JavaVM* jvm;
 
 /*
  * Class:     sun_hawt_HaikuToolkit
- * Method:    nativeInit
- * Signature: ()V
- */
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jclass clazz)
-{
-}
-
-/*
- * Class:     sun_hawt_HaikuToolkit
  * Method:    nativeRunMessage
  * Signature: ()V
  */
@@ -67,7 +57,20 @@ Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
     CreatedBeApp();
     awtApp->Run();
     delete awtApp;
-    return;
+}
+
+/*
+ * Class:     sun_hawt_HaikuToolkit
+ * Method:    nativeShutdown
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuToolkit_nativeShutdown(JNIEnv *env, jobject thiz)
+{
+    WaitForBeApp();
+    be_app->LockLooper();
+    be_app->Quit();
+    be_app->UnlockLooper();
 }
 
 /*

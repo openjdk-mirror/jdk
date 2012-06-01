@@ -50,6 +50,7 @@ public:
 			void			SetMenuBar(BMenuBar* menuBar);
 			Insets			GetInsets();
 
+	virtual	void			WindowActivated(bool activated);
 	virtual	void			FrameMoved(BPoint origin);
 	virtual	void			FrameResized(float width, float height);
 	virtual	void			Minimize(bool minimize);
@@ -69,7 +70,7 @@ private:
 			void			_UpdateInsets();
 
 private:
-			ContentView		fView;
+			ContentView*	fView;
 			bool			fMaximized;
 			jobject			fPlatformWindow;
 			BMenuBar*		fMenuBar;

@@ -44,8 +44,8 @@ public class HaikuToolkit extends LWToolkit {
 
     private HaikuClipboard clipboard;
 
-	private static native void nativeInit();
     private native void nativeRunMessage();
+    private native void nativeShutdown();
     private native void nativeLoadSystemColors(int[] systemColors);
     private native void nativeBeep();
 
@@ -56,8 +56,6 @@ public class HaikuToolkit extends LWToolkit {
     public HaikuToolkit() {
         super();
         SunToolkit.setDataTransfererClassName("sun.hawt.HaikuDataTransferer");
-
-		nativeInit();
         init();
     }
 
@@ -99,6 +97,7 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     protected void platformShutdown() {
+    	nativeShutdown();
     }
 
     @Override

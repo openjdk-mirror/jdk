@@ -312,25 +312,25 @@ PlatformWindow::PlatformWindow(jobject platformWindow, bool simpleWindow)
 	BWindow(BRect(0, 0, 0, 0), NULL, simpleWindow ? B_NO_BORDER_WINDOW_LOOK
 		: B_TITLED_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
 		simpleWindow ? B_AVOID_FOCUS : 0),
-	fView(platformWindow),
+	fView(new ContentView(platformWindow)),
 	fPlatformWindow(platformWindow),
 	fMenuBar(NULL),
 	fInsets(GetInsets())
 {
-	AddChild(&fView);
+	AddChild(fView);
 
 	// After this initial bounds set the view will size itself
 	// to match the frame
 	BRect frame = Bounds();
-	fView.MoveTo(0, 0);
-	fView.ResizeTo(frame.IntegerWidth(), frame.IntegerHeight());
+	fView->MoveTo(0, 0);
+	fView->ResizeTo(frame.IntegerWidth(), frame.IntegerHeight());
 }
 
 
 Drawable*
 PlatformWindow::GetDrawable()
 {
-	return fView.GetDrawable();
+	return fView->GetDrawable();
 }
 
 
@@ -361,7 +361,6 @@ PlatformWindow::SetState(int state)
 void
 PlatformWindow::Dispose(JNIEnv* env)
 {
-	RemoveChild(&fView);
 	env->DeleteWeakGlobalRef(fPlatformWindow);
 	Quit();
 }
@@ -373,9 +372,9 @@ PlatformWindow::SetMenuBar(BMenuBar* menuBar)
 	if (menuBar != NULL) {
 		AddChild(menuBar);
 		BRect bounds = menuBar->Bounds();
-		fView.MoveTo(0, bounds.bottom + 1);
+		fView->MoveTo(0, bounds.bottom + 1);
 	} else {
-		fView.MoveTo(0, 0);
+		fView->MoveTo(0, 0);
 	}
 
 	if (fMenuBar != NULL)
@@ -423,7 +422,14 @@ void
 PlatformWindow::Focus()
 {
 	Activate();
-	fView.MakeFocus(true);
+}
+
+
+void
+PlatformWindow::WindowActivated(bool activated)
+{
+	fView->MakeFocus(activated);
+	DoCallback(fPlatformWindow, "eventActivate", "(Z)V", activated);
 }
 
 
@@ -541,7 +547,7 @@ PlatformWindow::_Reshape(bool resize)
 	int h = height + 1;
 
 	if (resize) {
-		Drawable* drawable = fView.GetDrawable();
+		Drawable* drawable = fView->GetDrawable();
 		if (drawable->Lock()) {
 			if (!drawable->IsValid()
 					|| w > drawable->Width()
