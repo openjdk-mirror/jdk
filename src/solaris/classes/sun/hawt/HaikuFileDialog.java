@@ -31,8 +31,7 @@ import java.awt.event.*;
 import java.awt.image.*;
 import java.util.List;
 import java.io.*;
-
-import sun.awt.AWTAccessor;
+import sun.awt.*;
 import sun.java2d.pipe.Region;
 
 class HaikuFileDialog implements FileDialogPeer {
@@ -59,11 +58,11 @@ class HaikuFileDialog implements FileDialogPeer {
             if (saveMode) {
             	title = "Save";
             } else {
-            	title = "Open"
+            	title = "Open";
             }
         }
 
-        nativeRunFileDialog(title, dialogMode, target.isMultipleMode(),
+        nativeShowDialog(title, saveMode, target.isMultipleMode(),
             target.getFilenameFilter() != null, target.getDirectory());
     }
 
@@ -82,49 +81,49 @@ class HaikuFileDialog implements FileDialogPeer {
      * If the file dialog has a file filter, ask it if inFilename is acceptable.
      * If the dialog doesn't have a file filter return true.
      */
-    private boolean queryFilenameFilter(final String inFilename) {
-        boolean ret = false;
+    private boolean acceptFile(String filename) {
 
-        final FilenameFilter ff = target.getFilenameFilter();
-        File fileObj = new File(inFilename);
+        FilenameFilter filter = target.getFilenameFilter();
+        if (filter == null)
+            return true;
 
-        // Directories are never filtered by the FileDialog.
-        if (!fileObj.isDirectory()) {
-            File directoryObj = new File(fileObj.getParent());
-            String nameOnly = fileObj.getName();
-            ret = ff.accept(directoryObj, nameOnly);
-        }
-        return ret;
+        File file = new File(filename);
+        if (file.isDirectory())
+            return true;
+
+        File directory = new File(file.getParent());
+        String name = file.getName();
+        return filter.accept(directory, name);
     }
 
     // Native callback
     private void done(String[] filenames) {
         String directory = null;
         String file = null;
-        File[] files = null;
+        String[] files = null;
 
         if (filenames != null) {
             // the dialog wasn't cancelled
             int count = filenames.length;
-            files = new File[count];
+            files = new String[count];
             for (int i = 0; i < count; i++) {
-                files[i] = new File(filenames[i]);
+                files[i] = new File(filenames[i]).getName();
             }
 
-            directory = files[0].getParent();
+            directory = new File(filenames[0]).getParent();
             // make sure directory always ends in '/'
             if (!directory.endsWith(File.separator)) {
                 directory = directory + File.separator;
             }
 
-            file = files[0].getName(); // pick any file
+            file = new File(filenames[0]).getName(); // pick any file
         }
 
         // store results back in component
         AWTAccessor.FileDialogAccessor accessor = AWTAccessor.getFileDialogAccessor();
         accessor.setDirectory(target, directory);
         accessor.setFile(target, file);
-        accessor.setFiles(target, files);
+        accessor.setFiles(target, directory, filenames);
         
         // dispose?
     }

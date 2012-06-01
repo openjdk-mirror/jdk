@@ -176,6 +176,7 @@ FILES_cpp = \
 	HaikuClipboard.cpp \
 	HaikuCursorManager.cpp \
 	HaikuDesktopPeer.cpp \
+	HaikuFileDialog.cpp \
 	HaikuFontManager.cpp \
 	HaikuGraphicsConfig.cpp \
 	HaikuGraphicsDevice.cpp \

@@ -95,7 +95,7 @@ include FILES_export_haiku.gmk
 
 FILES_c = $(FILES_2D_c)
 OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
-OTHER_LDLIBS = $(JVMLIB) -lbe -lstdc++
+OTHER_LDLIBS = $(JVMLIB) -lbe -ltracker -lstdc++
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HAIKU
 endif # PLATFORM

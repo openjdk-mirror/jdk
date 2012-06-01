@@ -27,7 +27,8 @@
 
 #include <Entry.h>
 #include <FilePanel.h>
-#include <RefFilter.h>
+#include <Path.h>
+#include <Window.h>
 
 #include "AwtApplication.h"
 
@@ -36,12 +37,12 @@ public:
 						RefFilter(jobject peer);
 
 	virtual	bool		Filter(const entry_ref* ref, BNode* node,
-							struct stat* st, const char* filetype);
+							stat_beos* st, const char* filetype);
 private:
 			jobject		fPeer;
 			jmethodID	fAcceptMethod;
 			JNIEnv*		fEnv;
-}
+};
 
 
 RefFilter::RefFilter(jobject peer)
@@ -53,8 +54,13 @@ RefFilter::RefFilter(jobject peer)
 }
 
 
+extern "C" {
+extern JavaVM* jvm;
+}
+
+
 bool
-RefFilter::Filter(const entry_ref* ref, BNode* node, struct stat* st,
+RefFilter::Filter(const entry_ref* ref, BNode* node, stat_beos* st,
 	const char* filetype)
 {
 	if (fEnv == NULL) {
@@ -63,35 +69,38 @@ RefFilter::Filter(const entry_ref* ref, BNode* node, struct stat* st,
 
 	if (fAcceptMethod == NULL) {
 		jclass clazz = fEnv->GetObjectClass(fPeer);
-		fAcceptMethod = fEnv->(clazz, "acceptFile", "(Ljava/lang/String;)Z");
+		fAcceptMethod = fEnv->GetMethodID(clazz, "acceptFile",
+			"(Ljava/lang/String;)Z");
 		// if this fails just let everything through
 		if (fAcceptMethod == NULL)
 			return true;
 	}
-	
-	// Get string path from entry_ref
-	// Convert to jstring
-	// Call method
-	// Return result etc
-	jboolean accept = fEnv->CallBooleanMethod(fPeer, fAcceptMethod
+
+	BEntry entry = BEntry(ref);
+	BPath path;
+	entry.GetPath(&path);
+	const char* pathString = path.Path();
+
+	jstring javaString = fEnv->NewStringUTF(pathString);
+	jboolean accept = fEnv->CallBooleanMethod(fPeer, fAcceptMethod,
+		javaString);
+	fEnv->DeleteLocalRef(javaString);
+	return accept;
 }
 						
 
 extern "C" {
-
 
 /*
  * Class:     sun_hawt_HaikuFileDialog
  * Method:    nativeShowDialog
  * Signature: (Ljava/lang/String;ZZZLjava/lang/String;)V
  */
-JNIEXPORT jvoid JNICALL
+JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuDesktopPeer_nativeCreate(JNIEnv *env, jobject thiz,
 	jstring title, jboolean saveMode, jboolean multipleMode,
 	jboolean filterFilenames, jstring directory)
 {
-	const char* titleString = env->GetStringUTFChars(title, NULL);
-	
 	entry_ref* refPtr = NULL;
 	entry_ref ref;
 	if (directory != NULL) {
@@ -100,17 +109,28 @@ Java_sun_hawt_HaikuDesktopPeer_nativeCreate(JNIEnv *env, jobject thiz,
 		    return;
 		if (get_ref_for_path(dirString, &ref) == B_OK)
 			refPtr = &ref;
+		env->ReleaseStringUTFChars(directory, dirString);
 	}
 
-	// Setup ref filter if neccessary
+	const char* titleString = env->GetStringUTFChars(title, NULL);
+	if (titleString == NULL)
+		return;
+
+	jobject peer = env->NewWeakGlobalRef(thiz);
+	RefFilter* filter = NULL;
+	if (filterFilenames)
+		filter = new RefFilter(peer);
+	
+	BMessage* message = new BMessage(kFileMessage);
+	message->AddPointer("peer", peer);
+	message->AddBool("save", saveMode);
 
     BFilePanel* panel = new BFilePanel(saveMode ? B_SAVE_PANEL : B_OPEN_PANEL,
-    	NULL, refPtr, 0, multipleMode, new BMessage(kFileMessage), 
-
-	FileDialog* dialog = new FileDialog(dirString, saveMode, multipleMode, thiz); 
-	env->ReleaseStringUTFChars(directory, dirString);
-
-	return ptr_to_jlong(dialog);
+    	NULL, refPtr, 0, multipleMode, message, filter);
+    panel->Window()->SetTitle(titleString);
+	panel->Show();
+	
+	env->ReleaseStringUTFChars(title, titleString);
 }
 
 }
