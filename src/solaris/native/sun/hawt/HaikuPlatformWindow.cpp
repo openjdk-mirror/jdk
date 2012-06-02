@@ -106,7 +106,6 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetBounds(JNIEnv *env, jobject thiz,
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	BRect frameRect = BRect(x, y, x + width - 1, y + height - 1);
-
 	if (!window->LockLooper())
 		return;
 
@@ -517,7 +516,7 @@ PlatformWindow::TransformFromFrame(BRect rect)
 		topInsets -= fMenuBar->Bounds().IntegerHeight() + 1;
 
 	return BRect(rect.left + fInsets.left, rect.top + topInsets,
-		rect.right - fInsets.left, rect.bottom - topInsets);
+		rect.right - fInsets.right, rect.bottom - fInsets.bottom);
 }
 
 

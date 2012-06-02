@@ -186,7 +186,7 @@ class HaikuPlatformWindow implements PlatformWindow {
     public boolean requestWindowFocus() {
         nativeFocus(nativeWindow);
         return true;
-    }    
+    }
 
     @Override
     public void setModalBlocked(boolean blocked) {
