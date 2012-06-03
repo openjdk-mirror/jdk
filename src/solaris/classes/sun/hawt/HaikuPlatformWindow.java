@@ -47,6 +47,8 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     private PeerType peerType;
 
+    private LWWindowPeer blocker;
+
     private static native void initIDs();
     private native long nativeInit(boolean simpleWindow);
     private native long nativeGetDrawable(long nativeWindow);
@@ -67,6 +69,9 @@ class HaikuPlatformWindow implements PlatformWindow {
     private native void nativeSetMinimumSize(long nativeWindow, int width,
         int height);
     private native void nativeGetInsets(long nativeWindow, Insets insets);
+    private native boolean nativeIsActive(long nativeWindow);
+    private native void nativeSetBlocked(long nativeWindow, long nativeBlocker,
+        boolean blocked);
 
     static {
         initIDs();
@@ -190,6 +195,20 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void setModalBlocked(boolean blocked) {
+        if (blocked) {
+            assert blocker == null : "Setting a new blocker on an already blocked window";
+            blocker = peer.getFirstBlocker();
+            assert blocker != null : "Being asked to block but have no blocker";
+        } else {
+            assert blocker != null : "Being asked to unblock but have no blocker";
+        }
+
+        long nativeBlocker = blocker.getPlatformWindow().getLayerPtr();
+        nativeSetBlocked(nativeWindow, nativeBlocker, blocked);
+
+        if (!blocked) {
+            blocker = null;
+        }
     }
 
     @Override
@@ -199,7 +218,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public boolean isActive() {
-        return false;
+        return nativeIsActive(nativeWindow);
     }
 
     @Override

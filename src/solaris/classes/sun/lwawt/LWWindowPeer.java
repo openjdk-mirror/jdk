@@ -1211,6 +1211,15 @@ public class LWWindowPeer
         }
     }
 
+    /**
+     * Returns the closest modal blocker of this window.
+     */
+    public LWWindowPeer getFirstBlocker() {
+        synchronized (getPeerTreeLock()) {
+            return blocker;
+        }
+    }
+
     public void enterFullScreenMode() {
         platformWindow.enterFullScreenMode();
     }

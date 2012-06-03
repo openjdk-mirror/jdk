@@ -303,6 +303,44 @@ Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env,
 }
 
 
+JNIEXPORT jboolean JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeIsActive(JNIEnv *env,
+	jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->IsActive();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetBlocked(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jlong nativeBlocker,
+	jboolean blocked)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	PlatformWindow* blocker = (PlatformWindow*)jlong_to_ptr(nativeBlocker);
+	if (!blocker->LockLooper()) {
+		window->UnlockLooper();
+		return;
+	}
+
+	if (blocked) {
+		blocker->SetFeel(B_MODAL_SUBSET_WINDOW_FEEL);
+		blocker->AddToSubset(window);
+	} else {
+		blocker->RemoveFromSubset(window);
+		// Need to set the feel back to normal after we've stopped blocking
+		// everything, or?
+	}
+
+	window->UnlockLooper();
+	blocker->UnlockLooper();
+}
+
+
 }
 
 
