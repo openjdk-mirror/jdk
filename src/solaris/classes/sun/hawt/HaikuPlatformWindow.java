@@ -49,6 +49,8 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     private LWWindowPeer blocker;
 
+    private Point location = new Point();
+
     private static native void initIDs();
     private native long nativeInit(boolean simpleWindow);
     private native void nativeRun(long nativeWindow);
@@ -127,9 +129,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public Point getLocationOnScreen() {
-        Point location = new Point();
-        nativeGetLocation(nativeWindow, location);
-        return location;
+        return (Point)location.clone();
     }
 
     @Override
@@ -317,6 +317,9 @@ class HaikuPlatformWindow implements PlatformWindow {
     }
 
     public void eventReshape(int x, int y, int width, int height) {
+        location.x = x;
+        location.y = y;
+
         peer.notifyReshape(x, y, width, height);
     }
 
