@@ -42,6 +42,7 @@ ContentView::ContentView(jobject platformWindow)
 	fDrawable(this),
 	fPlatformWindow(platformWindow)
 {
+//	SetEventMask(B_POINTER_EVENTS);
 	get_mouse(&fPreviousPoint, &fPreviousButtons);
 }
 

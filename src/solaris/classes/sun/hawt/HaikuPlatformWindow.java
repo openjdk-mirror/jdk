@@ -51,6 +51,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     private static native void initIDs();
     private native long nativeInit(boolean simpleWindow);
+    private native void nativeRun(long nativeWindow);
     private native long nativeGetDrawable(long nativeWindow);
     private native void nativeSetBounds(long nativeWindow, int x, int y,
         int width, int height);
@@ -90,8 +91,8 @@ class HaikuPlatformWindow implements PlatformWindow {
         this.peer = peer;
         this.target = target;
         this.owner = (HaikuPlatformWindow)owner;
-
         nativeWindow = nativeInit(peerType == PeerType.SIMPLEWINDOW);
+        nativeRun(nativeWindow);
     }
 
     @Override

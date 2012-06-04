@@ -91,12 +91,31 @@ Java_sun_hawt_HaikuPlatformWindow_nativeInit(JNIEnv *env, jobject thiz,
 }
 
 
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeRun(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	window->Hide();
+	window->Show();
+	window->UnlockLooper();
+}
+
+
 JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeGetDrawable
   (JNIEnv *env, jobject thiz, jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	return ptr_to_jlong(window->GetDrawable());
+	if (!window->LockLooper())
+		return 0;
+
+	Drawable* drawable = window->GetDrawable();
+	window->UnlockLooper();
+	return ptr_to_jlong(drawable);
 }
 
 
