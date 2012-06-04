@@ -116,8 +116,9 @@ public class HaikuToolkit extends LWToolkit {
     @Override
     public Clipboard createPlatformClipboard() {
         synchronized (this) {
-            if (clipboard == null)
+            if (clipboard == null) {
                 clipboard = new HaikuClipboard("System");
+            }
         }
         return clipboard;
     }

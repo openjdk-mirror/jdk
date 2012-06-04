@@ -242,11 +242,6 @@ class HaikuPlatformWindow implements PlatformWindow {
     public SurfaceData replaceSurfaceData() {
         return getScreenSurface();
     }
-    
-    @Override
-    public Image createBackBuffer() {
-        return null;
-    }
 
     public ColorModel getColorModel() {
         return getGraphicsConfiguration().getColorModel();
@@ -296,6 +291,11 @@ class HaikuPlatformWindow implements PlatformWindow {
     @Override
     public FontMetrics getFontMetrics(Font f) {
         (new RuntimeException("unimplemented")).printStackTrace();
+        return null;
+    }
+
+    @Override
+    public Image createBackBuffer() {
         return null;
     }
 

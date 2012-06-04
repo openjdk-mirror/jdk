@@ -38,6 +38,24 @@
 extern "C" {
 
 /*
+ * Class:     sun_hawt_HaikuMenuComponent
+ * Method:    nativeDispose
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuMenuComponent_nativeDispose(JNIEnv *env, jobject thiz,
+	jlong itemPtr)
+{
+	BMenuItem* item = (BMenuItem*)jlong_to_ptr(itemPtr);
+	BMenu* parent = item->Menu();
+	if (parent != NULL) {
+		parent->RemoveItem(item);
+	}
+
+	delete item;
+}
+
+/*
  * Class:     sun_hawt_HaikuMenu
  * Method:    nativeCreateMenu
  * Signature: ()J
@@ -187,7 +205,12 @@ Java_sun_hawt_HaikuMenuItem_nativeCreateMenuItem(JNIEnv *env, jobject thiz,
 	jobject peer = env->NewWeakGlobalRef(thiz);
 	msg->AddPointer("peer", (void*)peer);
 	
-	BMenuItem* item = new BMenuItem("awtMenuItem", msg);
+	BMenuItem* item;
+	if (separator) {
+		item = new BSeparatorItem();
+	} else {
+		item = new BMenuItem("awtMenuItem", msg);
+	}
 
 	BMenuItem* parentItem = (BMenuItem*)jlong_to_ptr(menuItemPtr);
 	BMenu* parentMenu = parentItem->Submenu();
