@@ -67,7 +67,7 @@ public class HaikuClipboard extends SunClipboard {
             DataTransferer.getInstance();
         Map<Long, DataFlavor> formatMap = transferer.
             getFormatsForTransferable(contents, flavorMap);
-        
+
         if (formatMap.keySet().size() > 0) {
         	long nativeClipboard = nativeLockAndClear();
             for (long format : formatMap.keySet()) {

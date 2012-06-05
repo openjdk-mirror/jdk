@@ -49,6 +49,7 @@ public:
 			void			Focus();
 			void			SetMenuBar(BMenuBar* menuBar);
 			Insets			GetInsets();
+			void			DragMessage(BMessage* message);
 
 	virtual	void			WindowActivated(bool activated);
 	virtual	void			FrameMoved(BPoint origin);

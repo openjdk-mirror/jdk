@@ -171,8 +171,7 @@ public class HaikuToolkit extends LWToolkit {
     @Override
     public DragSourceContextPeer createDragSourceContextPeer(
             DragGestureEvent dge) throws InvalidDnDOperationException {
-        throw new UnsupportedOperationException("Not supported yet.");
-        //return HaikuDragSourceContextPeer.createDragSourceContextPeer(dge);
+        return HaikuDragSourceContextPeer.createDragSourceContextPeer(dge);
     }
 
     @Override
