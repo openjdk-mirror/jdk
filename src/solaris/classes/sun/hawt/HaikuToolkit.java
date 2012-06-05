@@ -169,8 +169,10 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
-    public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) throws InvalidDnDOperationException {
+    public DragSourceContextPeer createDragSourceContextPeer(
+            DragGestureEvent dge) throws InvalidDnDOperationException {
         throw new UnsupportedOperationException("Not supported yet.");
+        //return HaikuDragSourceContextPeer.createDragSourceContextPeer(dge);
     }
 
     @Override
@@ -180,12 +182,12 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public TrayIconPeer createTrayIcon(TrayIcon target) throws HeadlessException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return null;
     }
 
     @Override
     public SystemTrayPeer createSystemTray(SystemTray target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return null;
     }
 
     class HaikuPlatformFont extends PlatformFont {
