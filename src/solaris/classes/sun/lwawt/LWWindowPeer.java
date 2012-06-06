@@ -754,6 +754,18 @@ public class LWWindowPeer
                 // mouseClickButtons is updated below, after MOUSE_CLICK is sent
             }
 
+            // Check if the event was sent to the 'wrong' window.
+            if (targetPeer != null) {
+                LWWindowPeer targetWindowPeer = targetPeer.getWindowPeerOrSelf();
+                if (curWindowPeer != targetWindowPeer) {
+                    // If it was, we need to correct the coordinates.
+                    Rectangle lr = targetWindowPeer.getBounds();
+                    x += r.x - lr.x;
+                    y += r.y - lr.y;
+                    curWindowPeer = targetWindowPeer;
+                }
+            }
+
             // check if we receive mouseEvent from outside the window's bounds
             // it can be either mouseDragged or mouseReleased
             if (curWindowPeer == null) {

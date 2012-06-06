@@ -360,14 +360,12 @@ class HaikuPlatformWindow implements PlatformWindow {
         boolean popup = button == MouseEvent.BUTTON2 ||
             (button == MouseEvent.BUTTON1 &&
             (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0);
-        System.err.println("Mouse down button: " + button + " " + hashCode());
         peer.dispatchMouseEvent(MouseEvent.MOUSE_PRESSED, when, button,
             x, y, screenX, screenY, modifiers, clicks, popup, null);
     }
 
     private void handleMouseUp(long when, int modifiers, int x, int y,
             int screenX, int screenY, int clicks, int button) {
-        System.err.println("Mouse up button: " + button + " " + hashCode());
         peer.dispatchMouseEvent(MouseEvent.MOUSE_RELEASED, when, button,
             x, y, screenX, screenY, modifiers, clicks, false, null);
     }
