@@ -40,7 +40,7 @@ import sun.awt.datatransfer.*;
 
 public class HaikuDataTransferer extends DataTransferer {
 
-    // This is how we generate our unique longs for natives...    
+    // This is how we generate our unique longs for natives.  
     private static long index = 0;
 
     private static final Map<Long, String> formatToNative;
@@ -49,12 +49,18 @@ public class HaikuDataTransferer extends DataTransferer {
     private static HaikuDataTransferer transferer;
     private ToolkitThreadBlockedHandler handler;
 
-    public final long FORMAT_INVALID  = addNative("");
-    public final long FORMAT_STRING   = addNative("text/plain");
-    public final long FORMAT_URI_LIST = addNative("text/uri-list");
-    public final long FORMAT_JPEG     = addNative("image/jpeg");
-    public final long FORMAT_PNG      = addNative("image/png");
-    public final long FORMAT_TIFF     = addNative("image/tiff");
+    public final long FORMAT_INVALID   = addNative("");
+    public final long FORMAT_STRING    = addNative("text/plain");
+    public final long FORMAT_URI_LIST  = addNative("text/uri-list");
+    public final long FORMAT_JPEG      = addNative("image/jpeg");
+    public final long FORMAT_PNG       = addNative("image/png");
+    public final long FORMAT_TIFF      = addNative("image/tiff");
+
+    // We use this invalid mime-type to denote files received
+    // in a "refs" field, as received from tracker or similar.
+    // For transfering to and from native we use a UTF-8 string
+    // of filenames separated by colons.
+    public final long FORMAT_FILE_LIST = addNative("refs");
 
     static {
         Map<Long, String> formatMap = new HashMap<>();
@@ -91,13 +97,13 @@ public class HaikuDataTransferer extends DataTransferer {
 
     @Override
     public boolean isLocaleDependentTextFormat(long format) {
-        // todo: find out what this actually means
+        // TODO: find out what this actually means
         return format == FORMAT_STRING;
     }
 
     @Override
     public boolean isFileFormat(long format) {
-        return format == FORMAT_URI_LIST;
+        return format == FORMAT_FILE_LIST;
     }
 
     @Override
@@ -108,7 +114,19 @@ public class HaikuDataTransferer extends DataTransferer {
 
     @Override
     protected boolean isURIListFormat(long format) {
-        return format == FORMAT_URI_LIST;
+        String nat = getNativeForFormat(format);
+        if (nat == null) {
+            return false;
+        }
+        try {
+            DataFlavor df = new DataFlavor(nat);
+            if (df.getPrimaryType().equals("text") && df.getSubType().equals("uri-list")) {
+                return true;
+            }
+        } catch (Exception e) {
+            // Not a MIME format.
+        }
+        return false;
     }
 
     @Override
@@ -123,8 +141,9 @@ public class HaikuDataTransferer extends DataTransferer {
 
     @Override
     public ToolkitThreadBlockedHandler getToolkitThreadBlockedHandler() {
-        if (handler == null)
+        if (handler == null) {
             handler = new HaikuToolkitThreadBlockedHandler();
+        }
         return handler;
     }
 
@@ -160,9 +179,13 @@ public class HaikuDataTransferer extends DataTransferer {
 
     @Override
     protected String[] dragQueryFile(final byte[] bytes) {
-        // Confusing name, but this should translate a list of files given
-        // by the platform (i.e. Tracker) into an array of filename strings.
-        return null;
+        // Bytes is (hopefully) a UTF-8 string of paths separated by colons.
+        try {
+            String paths = new String(bytes, "UTF-8");
+            return paths.split(":");
+        } catch (UnsupportedEncodingException e) {
+        }
+        return new String[0];
     }
 
     /**
@@ -202,13 +225,12 @@ public class HaikuDataTransferer extends DataTransferer {
     @Override
     protected ByteArrayOutputStream convertFileListToBytes(
             ArrayList<String> fileList) throws IOException {
-        // This should do the opposite of dragQueryFile. Need to investigate
-        // what format Tracker provides files in for d&d
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         for (int i = 0; i < fileList.size(); i++) {
-            byte[] bytes = fileList.get(i).getBytes();
+            byte[] bytes = fileList.get(i).getBytes("UTF-8");
             bos.write(bytes, 0, bytes.length);
-            bos.write(0);
+            // Paths are separated by colons
+            bos.write(58);
         }
         return bos;
     }
