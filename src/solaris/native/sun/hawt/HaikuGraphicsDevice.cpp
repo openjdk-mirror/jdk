@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,62 +23,52 @@
  * questions.
  */
 
-#include "sun_hawt_HaikuGraphicsDevice.h"
+#include <jni.h>
 
 #include <Screen.h>
 
-static void getScreenDPI(screen_id displayID, double* _horizontal,
-        double* _vertical) {
-	BScreen screen(displayID);
-    if (!screen.IsValid()) {
-    	return;
-    }
+#include "Utilities.h"
+
+extern "C" {
+
+/*
+ * Class:	 sun_hawt_HaikuGraphicsDevice
+ * Method:	nativeGetScreenResolution
+ * Signature: (I)D
+ */
+JNIEXPORT jdouble JNICALL
+Java_sun_hawt_HaikuGraphicsDevice_nativeGetScreenResolution(JNIEnv *env,
+	jclass clazz, jint displayID)
+{
+	screen_id id;
+	id.id = displayID;
+
+	// Wait for be_app to get created
+	WaitForBeApp();
+
+	BScreen screen(id);
+	if (!screen.IsValid()) {
+		return 0;
+	}
 
 	// This doesn't work with the VirtualBox screen, but
 	// I'm guessing it's OK elsewhere.
-    monitor_info info;
-    if (screen.GetMonitorInfo(&info) != B_OK) {
-    	return;
-    }
+	monitor_info info;
+	if (screen.GetMonitorInfo(&info) != B_OK) {
+		return 0;
+	}
 
 	// 2.54 cm == 1 inch
 	double width = info.width / 2.54;
 	double height = info.height / 2.54;
 
-	if (width != 0 && _horizontal != NULL)
-        *_horizontal = (screen.Frame().Width() + 1) / width;
-	if (height != 0 && _vertical != NULL)
-		*_vertical = (screen.Frame().Width() + 1) / height;
-}
+	double horizontal = 0, vertical = 0;
+	if (width != 0)
+		horizontal = (screen.Frame().Width() + 1) / width;
+	if (height != 0)
+		vertical = (screen.Frame().Width() + 1) / height;
 
-extern "C" {
-
-/*
- * Class:     sun_hawt_HaikuGraphicsDevice
- * Method:    nativeGetXResolution
- * Signature: (I)D
- */
-JNIEXPORT jdouble JNICALL
-Java_sun_hawt_HaikuGraphicsDevice_nativeGetXResolution
-  (JNIEnv *env, jclass clazz, jint displayID)
-{
-	double horz = 0;
-	getScreenDPI(B_MAIN_SCREEN_ID, &horz, NULL);
-    return horz;
-}
-
-/*
- * Class:     sun_hawt_HaikuGraphicsDevice
- * Method:    nativeGetYResolution
- * Signature: (I)D
- */
-JNIEXPORT jdouble JNICALL
-Java_sun_hawt_HaikuGraphicsDevice_nativeGetYResolution
-  (JNIEnv *env, jclass clazz, jint displayID)
-{
-	double vert = 0;
-	getScreenDPI(B_MAIN_SCREEN_ID, NULL, &vert);
-	return vert;
+	return (horizontal + vertical) / 2;
 }
 
 }

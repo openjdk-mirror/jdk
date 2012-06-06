@@ -25,59 +25,16 @@
 
 package sun.hawt;
 
-import java.awt.DisplayMode;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsDevice;
-import java.util.ArrayList;
+import java.awt.Dimension;
+import java.awt.peer.SystemTrayPeer;
 
-public class HaikuGraphicsDevice extends GraphicsDevice {
+public class HaikuSystemTray implements SystemTrayPeer {
 
-    private final int displayID;
-    private final HaikuGraphicsConfig config;
-
-    private native double nativeGetScreenResolution(int displayID);
-
-    public HaikuGraphicsDevice(int displayID) {
-        this.displayID = displayID;
-        config = new HaikuGraphicsConfig(this);
+    HaikuSystemTray() {
     }
 
     @Override
-    public GraphicsConfiguration[] getConfigurations() {
-        return new GraphicsConfiguration[] { config };
-    }
-
-    @Override
-    public GraphicsConfiguration getDefaultConfiguration() {
-        return config;
-    }
-
-    @Override
-    public String getIDstring() {
-        return "Display " + this.displayID;
-    }
-
-    @Override
-    public int getType() {
-        return TYPE_RASTER_SCREEN;
-    }
-
-    @Override
-    public boolean isDisplayChangeSupported() {
-        return false;
-    }
-
-    @Override
-    public boolean isFullScreenSupported() {
-        return false;
-    }
-
-    public int getDisplayID() {
-        return displayID;
-    }
-
-    public double getScreenResolution() {
-        double res = nativeGetScreenResolution(displayID);
-        return res != 0.0 ? res : 72.0;
+    public Dimension getTrayIconSize() {
+        return new Dimension(16, 16);
     }
 }

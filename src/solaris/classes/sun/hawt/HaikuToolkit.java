@@ -186,7 +186,9 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public SystemTrayPeer createSystemTray(SystemTray target) {
-        return null;
+        SystemTrayPeer peer = new HaikuSystemTray();
+        targetCreatedPeer(target, peer);
+        return peer;
     }
 
     class HaikuPlatformFont extends PlatformFont {
@@ -195,6 +197,7 @@ public class HaikuToolkit extends LWToolkit {
             super(name, style);
         }
 
+        @Override
         protected char getMissingGlyphCharacter() {
             return (char)0xfff8;
         }
@@ -206,8 +209,8 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
-    public RobotPeer createRobot(Robot target, GraphicsDevice screen) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public RobotPeer createRobot(Robot target, GraphicsDevice device) {
+        return new HaikuRobot(target, device);
     }
 
     @Override
@@ -259,12 +262,6 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public void sync() {
-    }
-
-    @Override
-    public PrintJob getPrintJob(Frame frame, String jobtitle,
-                                Properties props) {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override

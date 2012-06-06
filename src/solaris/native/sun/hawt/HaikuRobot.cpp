@@ -25,57 +25,55 @@
 
 #include <jni.h>
 
+#include <Bitmap.h>
 #include <Screen.h>
 
 #include "Utilities.h"
 
-static jfieldID rectXField;
-static jfieldID rectYField;
-static jfieldID rectWidthField;
-static jfieldID rectHeightField;
-
 extern "C" {
 
 /*
- * Class:     sun_hawt_HaikuGraphicsConfig
- * Method:    initIDs
- * Signature: ()V
+ * Class:     sun_hawt_HaikuRobot
+ * Method:    nativeGetPixels
+ * Signature: (IIIII[I)V
  */
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuGraphicsConfig_initIDs(JNIEnv *env, jclass clazz)
+Java_sun_hawt_HaikuRobot_nativeGetPixels(JNIEnv *env, jclass clazz,
+	jint displayID, jint x, jint y, jint width, jint height,
+	jintArray pixels)
 {
-    jclass rectangleClazz = env->FindClass("java/awt/Rectangle");
-    rectXField = env->GetFieldID(rectangleClazz, "x", "I");
-    rectYField = env->GetFieldID(rectangleClazz, "y", "I");
-    rectWidthField = env->GetFieldID(rectangleClazz, "width", "I");
-    rectHeightField = env->GetFieldID(rectangleClazz, "height", "I");
-}
+	if (env->GetArrayLength(pixels) < width * height)
+		return;
 
-/*
- * Class:     sun_hawt_HaikuGraphicsConfig
- * Method:    nativeGetBounds
- * Signature: (ILjava/awt/Rectangle;)V
- */
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuGraphicsConfig_nativeGetBounds(JNIEnv *env,
-	jclass clazz, jint displayID, jobject bounds)
-{
-	screen_id id;
-	id.id = displayID;
+	jint* pixelData = env->GetIntArrayElements(pixels, NULL);
+	if (pixelData == NULL)
+		return;
 
-	// Wait for be_app to get created
 	WaitForBeApp();
 
-    BScreen screen(id);
-    if (!screen.IsValid()) {
+	screen_id id;
+	id.id = displayID;
+	BScreen screen(id);
+	if (!screen.IsValid())
     	return;
-    }
 
-    BRect frame = screen.Frame();
-    env->SetIntField(bounds, rectXField, frame.left);
-    env->SetIntField(bounds, rectYField, frame.top);
-    env->SetIntField(bounds, rectWidthField, frame.IntegerWidth() + 1);
-    env->SetIntField(bounds, rectHeightField, frame.IntegerHeight() + 1);
+	BRect bounds(x, y, x + width - 1, y + height - 1);
+	// We allocate our own bitmap to ensure we get the right colour space
+	BBitmap bitmap(BRect(0, 0, width - 1, height - 1), B_RGBA32);
+	if (!bitmap.IsValid())
+		return;
+
+	screen.ReadBitmap(&bitmap, false, &bounds);
+	int32* bitmapData = (int32*)bitmap.Bits();
+	int bytesPerRow = bitmap.BytesPerRow();
+
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+			// RobotPeer doesn't mention any endianness so I'm just
+			// going to copy the integer value of the pixel
+			*pixelData++ = bitmapData[i + j * bytesPerRow];
+		}
+	}
 }
 
 }
