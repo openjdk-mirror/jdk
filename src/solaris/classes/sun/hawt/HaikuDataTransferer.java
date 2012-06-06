@@ -31,6 +31,7 @@ import sun.awt.image.ImageRepresentation;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.*;
@@ -180,12 +181,8 @@ public class HaikuDataTransferer extends DataTransferer {
     @Override
     protected String[] dragQueryFile(final byte[] bytes) {
         // Bytes is (hopefully) a UTF-8 string of paths separated by colons.
-        try {
-            String paths = new String(bytes, "UTF-8");
-            return paths.split(":");
-        } catch (UnsupportedEncodingException e) {
-        }
-        return new String[0];
+        String paths = new String(bytes, Charset.forName("UTF-8"));
+        return paths.split(":");
     }
 
     /**
