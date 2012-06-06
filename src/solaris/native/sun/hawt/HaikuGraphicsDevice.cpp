@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,43 +32,41 @@
 extern "C" {
 
 /*
- * Class:	 sun_hawt_HaikuGraphicsDevice
- * Method:	nativeGetScreenResolution
- * Signature: (I)D
+ * Class:     sun_hawt_HaikuGraphicsDevice
+ * Method:    nativeGetYResolution
+ * Signature: ([D)V
  */
-JNIEXPORT jdouble JNICALL
+JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuGraphicsDevice_nativeGetScreenResolution(JNIEnv *env,
-	jclass clazz, jint displayID)
+	jclass clazz, jint displayID, jdoubleArray resolution)
 {
-	screen_id id;
-	id.id = displayID;
-
 	// Wait for be_app to get created
 	WaitForBeApp();
 
+	screen_id id;
+	id.id = displayID;
 	BScreen screen(id);
-	if (!screen.IsValid()) {
-		return 0;
-	}
+	if (!screen.IsValid())
+		return;
 
 	// This doesn't work with the VirtualBox screen, but
 	// I'm guessing it's OK elsewhere.
 	monitor_info info;
-	if (screen.GetMonitorInfo(&info) != B_OK) {
-		return 0;
-	}
+	if (screen.GetMonitorInfo(&info) != B_OK)
+		return;
 
 	// 2.54 cm == 1 inch
 	double width = info.width / 2.54;
 	double height = info.height / 2.54;
 
-	double horizontal = 0, vertical = 0;
-	if (width != 0)
-		horizontal = (screen.Frame().Width() + 1) / width;
-	if (height != 0)
-		vertical = (screen.Frame().Width() + 1) / height;
-
-	return (horizontal + vertical) / 2;
+	if (width != 0) {
+		jdouble xRes = (screen.Frame().Width() + 1) / width;
+		env->SetDoubleArrayRegion(resolution, 0, 1, &xRes);
+	}
+	if (height != 0) {
+		jdouble yRes = (screen.Frame().Width() + 1) / height;
+		env->SetDoubleArrayRegion(resolution, 1, 1, &yRes);
+	}
 }
 
 }

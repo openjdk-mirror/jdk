@@ -35,7 +35,8 @@ public class HaikuGraphicsDevice extends GraphicsDevice {
     private final int displayID;
     private final HaikuGraphicsConfig config;
 
-    private native double nativeGetScreenResolution(int displayID);
+    private native double nativeGetScreenResolution(int displayID,
+        double[] resolution);
 
     public HaikuGraphicsDevice(int displayID) {
         this.displayID = displayID;
@@ -76,8 +77,22 @@ public class HaikuGraphicsDevice extends GraphicsDevice {
         return displayID;
     }
 
+    public double getXResolution() {
+        double[] resolution = new double[2];
+        nativeGetScreenResolution(displayID, resolution);
+        return resolution[0] != 0.0 ? resolution[0] : 72.0;
+    }
+
+    public double getYResolution() {
+        double[] resolution = new double[2];
+        nativeGetScreenResolution(displayID, resolution);
+        return resolution[1] != 0.0 ? resolution[1] : 72.0;
+    }
+
     public double getScreenResolution() {
-        double res = nativeGetScreenResolution(displayID);
-        return res != 0.0 ? res : 72.0;
+        double[] resolution = new double[2];
+        nativeGetScreenResolution(displayID, resolution);
+        double res = (resolution[0] + resolution[1]) / 2;
+        return res == 0.0 ? res : 72.0;
     }
 }
