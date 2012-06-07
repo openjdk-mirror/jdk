@@ -550,11 +550,11 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
         Rectangle oldBounds;
         synchronized (getStateLock()) {
             oldBounds = new Rectangle(bounds);
-            if ((op & (SET_LOCATION | SET_BOUNDS)) != 0) {
+            if (op == SET_LOCATION || op == SET_BOUNDS) {
                 bounds.x = x;
                 bounds.y = y;
             }
-            if ((op & (SET_SIZE | SET_BOUNDS)) != 0) {
+            if (op == SET_SIZE || op == SET_BOUNDS) {
                 bounds.width = w;
                 bounds.height = h;
             }

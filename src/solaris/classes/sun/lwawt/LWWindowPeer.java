@@ -330,12 +330,19 @@ public class LWWindowPeer
 
     @Override
     public void setBounds(int x, int y, int w, int h, int op) {
-        if ((op & SET_CLIENT_SIZE) != 0) {
+        if (op == SET_CLIENT_SIZE) {
             // SET_CLIENT_SIZE is only applicable to window peers, so handle it here
             // instead of pulling 'insets' field up to LWComponentPeer
             // no need to add insets since Window's notion of width and height includes insets.
-            op &= ~SET_CLIENT_SIZE;
-            op |= SET_SIZE;
+
+            // The Window's notion of width and height does indeed include insets, but a
+            // a SET_CLIENT_SIZE op doesn't take that into account. So we still need to
+            // add the insets here.
+            Insets insets = getInsets();
+            w += insets.left + insets.right;
+            h += insets.top + insets.bottom;
+
+            op = SET_SIZE;
         }
 
         if (w < MINIMUM_WIDTH) {
