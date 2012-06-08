@@ -121,8 +121,6 @@ Java_sun_hawt_HaikuCursorManager_nativeSetCursor(JNIEnv* env, jclass clazz,
 			break;
 	}
 
-	WaitForBeApp();
-
 	BCursor cursor(id);
 	be_app->SetCursor(&cursor);
 }

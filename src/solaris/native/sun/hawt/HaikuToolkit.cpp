@@ -45,6 +45,13 @@ extern "C" {
 
 JavaVM* jvm;
 
+JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM* vm, void *reserved)
+{
+	jvm = vm;
+	return JNI_VERSION_1_2;
+}
+
 /*
  * Class:     sun_hawt_HaikuToolkit
  * Method:    nativeInit
@@ -53,9 +60,13 @@ JavaVM* jvm;
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jobject thiz)
 {
-    BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
-    CreatedBeApp();
-    be_app->UnlockLooper();
+	BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
+
+	// The application is run from the other thread so we have to unlock
+	// it here. I've had problems doing this with loopers before (see
+	// PlatformWindow and the stacked Hide/Show), but it seems to be OK
+	// here.
+	be_app->UnlockLooper();
 }
 
 /*
@@ -66,11 +77,9 @@ Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jobject thiz)
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
 {
-    //BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
-    //CreatedBeApp();
-    be_app->LockLooper();
-    be_app->Run();
-    delete be_app;
+	be_app->LockLooper();
+	be_app->Run();
+	delete be_app;
 }
 
 /*
@@ -81,10 +90,9 @@ Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeShutdown(JNIEnv *env, jobject thiz)
 {
-    WaitForBeApp();
-    be_app->LockLooper();
-    be_app->Quit();
-    be_app->UnlockLooper();
+	be_app->LockLooper();
+	be_app->Quit();
+	be_app->UnlockLooper();
 }
 
 /*
@@ -96,39 +104,39 @@ JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeLoadSystemColors(JNIEnv *env, jobject thiz,
 	jintArray systemColors)
 {
-    jint* colors = env->GetIntArrayElements(systemColors, NULL);
-    if (colors == NULL)
-    	return;
-    
-    colors[java_awt_SystemColor_DESKTOP]                 = RgbColorToInt(ui_color(B_DESKTOP_COLOR));
-    colors[java_awt_SystemColor_ACTIVE_CAPTION]          = RgbColorToInt(ui_color(B_WINDOW_TAB_COLOR));
-    colors[java_awt_SystemColor_ACTIVE_CAPTION_TEXT]     = RgbColorToInt(ui_color(B_WINDOW_TEXT_COLOR));
-    colors[java_awt_SystemColor_ACTIVE_CAPTION_BORDER]   = RgbColorToInt(ui_color(B_WINDOW_TAB_COLOR));
-    colors[java_awt_SystemColor_INACTIVE_CAPTION]        = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TAB_COLOR));
-    colors[java_awt_SystemColor_INACTIVE_CAPTION_TEXT]   = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TEXT_COLOR));
-    colors[java_awt_SystemColor_INACTIVE_CAPTION_BORDER] = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TAB_COLOR));
+	jint* colors = env->GetIntArrayElements(systemColors, NULL);
+	if (colors == NULL)
+		return;
+	
+	colors[java_awt_SystemColor_DESKTOP]                 = RgbColorToInt(ui_color(B_DESKTOP_COLOR));
+	colors[java_awt_SystemColor_ACTIVE_CAPTION]          = RgbColorToInt(ui_color(B_WINDOW_TAB_COLOR));
+	colors[java_awt_SystemColor_ACTIVE_CAPTION_TEXT]     = RgbColorToInt(ui_color(B_WINDOW_TEXT_COLOR));
+	colors[java_awt_SystemColor_ACTIVE_CAPTION_BORDER]   = RgbColorToInt(ui_color(B_WINDOW_TAB_COLOR));
+	colors[java_awt_SystemColor_INACTIVE_CAPTION]        = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TAB_COLOR));
+	colors[java_awt_SystemColor_INACTIVE_CAPTION_TEXT]   = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TEXT_COLOR));
+	colors[java_awt_SystemColor_INACTIVE_CAPTION_BORDER] = RgbColorToInt(ui_color(B_WINDOW_INACTIVE_TAB_COLOR));
 
-    colors[java_awt_SystemColor_WINDOW]              = RgbColorToInt(ui_color(B_PANEL_BACKGROUND_COLOR));
-    colors[java_awt_SystemColor_WINDOW_BORDER]       = RgbColorToInt(ui_color(B_WINDOW_BORDER_COLOR));
-    colors[java_awt_SystemColor_WINDOW_TEXT]         = RgbColorToInt(ui_color(B_PANEL_TEXT_COLOR));
-    colors[java_awt_SystemColor_MENU]                = RgbColorToInt(ui_color(B_MENU_BACKGROUND_COLOR));
-    colors[java_awt_SystemColor_MENU_TEXT]           = RgbColorToInt(ui_color(B_MENU_ITEM_TEXT_COLOR));
-    colors[java_awt_SystemColor_TEXT]                = RgbColorToInt(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
-    colors[java_awt_SystemColor_TEXT_TEXT]           = RgbColorToInt(ui_color(B_DOCUMENT_TEXT_COLOR));
-    colors[java_awt_SystemColor_TEXT_HIGHLIGHT]      = 0xFF000000; // black
-    colors[java_awt_SystemColor_TEXT_HIGHLIGHT_TEXT] = 0xFFFFFFFF; // white
-    colors[java_awt_SystemColor_TEXT_INACTIVE_TEXT]  = 0xFFCCCCCC; // gray
-    
-    rgb_color controlColor                            = ui_color(B_CONTROL_BACKGROUND_COLOR);
-    colors[java_awt_SystemColor_CONTROL]              = RgbColorToInt(controlColor);
-    colors[java_awt_SystemColor_CONTROL_TEXT]         = RgbColorToInt(ui_color(B_CONTROL_TEXT_COLOR));
-    colors[java_awt_SystemColor_CONTROL_HIGHLIGHT]    = RgbColorToInt(tint_color(controlColor, B_LIGHTEN_1_TINT));
-    colors[java_awt_SystemColor_CONTROL_LT_HIGHLIGHT] = RgbColorToInt(tint_color(controlColor, B_LIGHTEN_2_TINT));
-    colors[java_awt_SystemColor_CONTROL_SHADOW]       = RgbColorToInt(tint_color(controlColor, B_DARKEN_1_TINT));
-    colors[java_awt_SystemColor_CONTROL_DK_SHADOW]    = RgbColorToInt(tint_color(controlColor, B_DARKEN_2_TINT));
-    colors[java_awt_SystemColor_SCROLLBAR]            = RgbColorToInt(tint_color(controlColor, B_DARKEN_3_TINT));
-    colors[java_awt_SystemColor_INFO]                 = RgbColorToInt(ui_color(B_TOOL_TIP_BACKGROUND_COLOR));
-    colors[java_awt_SystemColor_INFO_TEXT]            = RgbColorToInt(ui_color(B_TOOL_TIP_TEXT_COLOR));
+	colors[java_awt_SystemColor_WINDOW]              = RgbColorToInt(ui_color(B_PANEL_BACKGROUND_COLOR));
+	colors[java_awt_SystemColor_WINDOW_BORDER]       = RgbColorToInt(ui_color(B_WINDOW_BORDER_COLOR));
+	colors[java_awt_SystemColor_WINDOW_TEXT]         = RgbColorToInt(ui_color(B_PANEL_TEXT_COLOR));
+	colors[java_awt_SystemColor_MENU]                = RgbColorToInt(ui_color(B_MENU_BACKGROUND_COLOR));
+	colors[java_awt_SystemColor_MENU_TEXT]           = RgbColorToInt(ui_color(B_MENU_ITEM_TEXT_COLOR));
+	colors[java_awt_SystemColor_TEXT]                = RgbColorToInt(ui_color(B_DOCUMENT_BACKGROUND_COLOR));
+	colors[java_awt_SystemColor_TEXT_TEXT]           = RgbColorToInt(ui_color(B_DOCUMENT_TEXT_COLOR));
+	colors[java_awt_SystemColor_TEXT_HIGHLIGHT]      = 0xFF000000; // black
+	colors[java_awt_SystemColor_TEXT_HIGHLIGHT_TEXT] = 0xFFFFFFFF; // white
+	colors[java_awt_SystemColor_TEXT_INACTIVE_TEXT]  = 0xFFCCCCCC; // gray
+	
+	rgb_color controlColor                            = ui_color(B_CONTROL_BACKGROUND_COLOR);
+	colors[java_awt_SystemColor_CONTROL]              = RgbColorToInt(controlColor);
+	colors[java_awt_SystemColor_CONTROL_TEXT]         = RgbColorToInt(ui_color(B_CONTROL_TEXT_COLOR));
+	colors[java_awt_SystemColor_CONTROL_HIGHLIGHT]    = RgbColorToInt(tint_color(controlColor, B_LIGHTEN_1_TINT));
+	colors[java_awt_SystemColor_CONTROL_LT_HIGHLIGHT] = RgbColorToInt(tint_color(controlColor, B_LIGHTEN_2_TINT));
+	colors[java_awt_SystemColor_CONTROL_SHADOW]       = RgbColorToInt(tint_color(controlColor, B_DARKEN_1_TINT));
+	colors[java_awt_SystemColor_CONTROL_DK_SHADOW]    = RgbColorToInt(tint_color(controlColor, B_DARKEN_2_TINT));
+	colors[java_awt_SystemColor_SCROLLBAR]            = RgbColorToInt(tint_color(controlColor, B_DARKEN_3_TINT));
+	colors[java_awt_SystemColor_INFO]                 = RgbColorToInt(ui_color(B_TOOL_TIP_BACKGROUND_COLOR));
+	colors[java_awt_SystemColor_INFO_TEXT]            = RgbColorToInt(ui_color(B_TOOL_TIP_TEXT_COLOR));
 
 	env->ReleaseIntArrayElements(systemColors, colors, 0);
 }
@@ -144,13 +152,6 @@ Java_sun_hawt_HaikuToolkit_nativeBeep(JNIEnv *env, jobject thiz)
 	beep();
 }
 
-JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM* vm, void *reserved)
-{
-	jvm = vm;
-    return JNI_VERSION_1_2;
-}
-
 // Here are a bunch of symbols that various Java classes need.
 // We don't need to provide implementations for them.
 
@@ -158,18 +159,18 @@ JNIEXPORT void JNICALL
 Java_sun_awt_SunToolkit_closeSplashScreen
   (JNIEnv *env, jclass clazz)
 {
-    typedef void (*SplashClose_t)();
-    SplashClose_t splashClose;
-    void* hSplashLib = dlopen(0, RTLD_LAZY);
-    if (!hSplashLib) {
-        return;
-    }
-    splashClose = (SplashClose_t)dlsym(hSplashLib,
-        "SplashClose");
-    if (splashClose) {
-        splashClose();
-    }
-    dlclose(hSplashLib);
+	typedef void (*SplashClose_t)();
+	SplashClose_t splashClose;
+	void* hSplashLib = dlopen(0, RTLD_LAZY);
+	if (!hSplashLib) {
+		return;
+	}
+	splashClose = (SplashClose_t)dlsym(hSplashLib,
+		"SplashClose");
+	if (splashClose) {
+		splashClose();
+	}
+	dlclose(hSplashLib);
 }
 
 JNIEXPORT void JNICALL

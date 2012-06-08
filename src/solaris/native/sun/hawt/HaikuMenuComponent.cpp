@@ -216,7 +216,6 @@ Java_sun_hawt_HaikuMenuItem_nativeCreateMenuItem(JNIEnv *env, jobject thiz,
 	BMenu* parentMenu = parentItem->Submenu();
 	parentMenu->AddItem(item);
 
-	WaitForBeApp();
 	item->SetTarget(be_app);
 	return ptr_to_jlong(item);
 }
@@ -275,7 +274,6 @@ Java_sun_hawt_HaikuCheckboxMenuItem_nativeCreateCheckboxMenuItem(JNIEnv *env,
 	BMenu* parentMenu = parentItem->Submenu();
 	parentMenu->AddItem(item);
 
-	WaitForBeApp();
 	item->SetTarget(be_app);
 	return ptr_to_jlong(item);
 }

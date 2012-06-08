@@ -63,9 +63,6 @@ Java_sun_hawt_HaikuGraphicsConfig_nativeGetBounds(JNIEnv *env,
 	screen_id id;
 	id.id = displayID;
 
-	// Wait for be_app to get created
-	WaitForBeApp();
-
     BScreen screen(id);
     if (!screen.IsValid()) {
     	return;

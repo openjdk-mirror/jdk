@@ -83,8 +83,6 @@ JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeInit(JNIEnv *env, jobject thiz,
 	jboolean simpleWindow)
 {
-	WaitForBeApp();
-
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
 	PlatformWindow* window = new PlatformWindow(javaWindow,	simpleWindow);
 	return ptr_to_jlong(window);

@@ -49,8 +49,6 @@ Java_sun_hawt_HaikuRobot_nativeGetPixels(JNIEnv *env, jclass clazz,
 	if (pixelData == NULL)
 		return;
 
-	WaitForBeApp();
-
 	screen_id id;
 	id.id = displayID;
 	BScreen screen(id);

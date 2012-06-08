@@ -40,9 +40,6 @@ JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuGraphicsDevice_nativeGetScreenResolution(JNIEnv *env,
 	jclass clazz, jint displayID, jdoubleArray resolution)
 {
-	// Wait for be_app to get created
-	WaitForBeApp();
-
 	screen_id id;
 	id.id = displayID;
 	BScreen screen(id);
