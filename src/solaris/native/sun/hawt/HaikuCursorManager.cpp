@@ -88,7 +88,8 @@ Java_sun_hawt_HaikuCursorManager_nativeSetCursor(JNIEnv* env, jclass clazz,
 			id = B_CURSOR_ID_SYSTEM_DEFAULT;
 			break;
 		case java_awt_Cursor_E_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_EAST;
+		case java_awt_Cursor_W_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_EAST_WEST;
 			break;
 		case java_awt_Cursor_HAND_CURSOR:
 			// Not sure which one to go with here...
@@ -98,28 +99,19 @@ Java_sun_hawt_HaikuCursorManager_nativeSetCursor(JNIEnv* env, jclass clazz,
 			id = B_CURSOR_ID_MOVE;
 			break;
 		case java_awt_Cursor_N_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_NORTH;
+		case java_awt_Cursor_S_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_NORTH_SOUTH;
 			break;
 		case java_awt_Cursor_NE_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_NORTH_EAST;
+		case java_awt_Cursor_SW_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_NORTH_EAST_SOUTH_WEST;
 			break;
 		case java_awt_Cursor_NW_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_NORTH_WEST;
-			break;
-		case java_awt_Cursor_S_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_SOUTH;
-			break;
 		case java_awt_Cursor_SE_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_SOUTH_EAST;
-			break;
-		case java_awt_Cursor_SW_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_SOUTH_WEST;
+			id = B_CURSOR_ID_RESIZE_NORTH_WEST_SOUTH_EAST;
 			break;
 		case java_awt_Cursor_TEXT_CURSOR:
 			id = B_CURSOR_ID_I_BEAM;
-			break;
-		case java_awt_Cursor_W_RESIZE_CURSOR:
-			id = B_CURSOR_ID_RESIZE_WEST;
 			break;
 		case java_awt_Cursor_WAIT_CURSOR:
 			id = B_CURSOR_ID_PROGRESS;
