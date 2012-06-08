@@ -27,121 +27,121 @@
 
 #include "sun_hawt_HaikuWindowSurfaceData.h"
 
-#include <Bitmap.h>
-
 #include "Drawable.h"
-#include "HaikuWindowSurfaceData.h"
 #include "SurfaceData.h"
 
 extern "C" {
 
-static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
-                    SurfaceDataRasInfo* rasInfo, jint lockFlags);
-static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
-                          SurfaceDataRasInfo* rasInfo);
-static void HaikuRelease(JNIEnv* env, SurfaceDataOps* ops,
-                       SurfaceDataRasInfo* rasInfo);
-static void HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops,
-                      SurfaceDataRasInfo* rasInfo);
+typedef struct {
+   	SurfaceDataOps	sdOps;
+	Drawable* 		drawable;
+	jint			x;
+	jint			y;
+	jint			width;
+	jint			height;
+	jint 			lockflags;
+} HaikuWindowSurfaceDataOps;
 
-JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initIDs
-  (JNIEnv *env, jclass clazz)
+static jint
+HaikuLock(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo,
+	jint lockflags)
+{
+	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
+
+	// lock now because we're going to be messing with the drawable
+	if (!operations->drawable->Lock())
+		return SD_FAILURE;
+
+	if ((lockflags & SD_LOCK_RD_WR) != 0 && operations->drawable->IsValid()) {
+		SurfaceDataBounds* bounds = &rasInfo->bounds;
+
+		int width = operations->drawable->Width();
+		int height = operations->drawable->Height();
+		// Could clip away insets here
+		if (bounds->x1 < 0)
+			bounds->x1 = 0;
+		if (bounds->y1 < 0)
+			bounds->y1 = 0;
+		if (bounds->x2 > width)
+			bounds->x2 = width;
+		if (bounds->y2 > height)
+			bounds->y2 = height;
+
+		if (bounds->x2 > bounds->x1 && bounds->y2 > bounds->y1) {
+			operations->lockflags = lockflags;
+			return SD_SUCCESS;
+		}
+	}
+
+	operations->drawable->Unlock();
+	return SD_FAILURE;
+}
+
+static void
+HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
+{
+	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
+	Drawable* drawable = operations->drawable;
+
+	if (drawable->IsValid() && (operations->lockflags & SD_LOCK_RD_WR)) {
+		rasInfo->rasBase = drawable->Bits();
+		rasInfo->pixelStride = drawable->BytesPerPixel();
+		rasInfo->pixelBitOffset = 0;
+		rasInfo->scanStride = drawable->BytesPerRow();
+	} else {
+		// fail if they didn't lock or the drawable isn't valid
+		rasInfo->rasBase = NULL;
+		rasInfo->pixelStride = 0;
+		rasInfo->pixelBitOffset = 0;
+		rasInfo->scanStride = 0;
+	}
+}
+
+static void
+HaikuRelease(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
 {
 }
 
-JNIEXPORT void JNICALL Java_sun_hawt_HaikuWindowSurfaceData_initOps
-  (JNIEnv* env, jobject thiz, jlong drawable)
+static void
+HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
 {
-    HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)
-        SurfaceData_InitOps(env, thiz, sizeof(HaikuWindowSurfaceDataOps));
+	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
 
-    operations->sdOps.Lock = &HaikuLock;
-    operations->sdOps.GetRasInfo = &HaikuGetRasInfo;
-    operations->sdOps.Release = &HaikuRelease;
-    operations->sdOps.Unlock = &HaikuUnlock;
-    operations->drawable = (Drawable*)drawable;
+	// Must drop the lock before invalidating because otherwise
+	// we can deadlock with FrameResized. Invalidate wants
+	// the looper lock which FrameResized holds and FrameResized
+	// wants (indirectly) the Drawable lock which we hold.
+	operations->drawable->Unlock();
+
+	//printf("unlocking drawable: %p\n", operations->drawable);
+	// If we were locked for writing the view needs
+	// to redraw now.
+	if (operations->lockflags & SD_LOCK_WRITE) {
+		int x = rasInfo->bounds.x1;
+		int y = rasInfo->bounds.y1;
+		int w = rasInfo->bounds.x2 - x;
+		int h = rasInfo->bounds.y2 - y;
+		operations->drawable->Invalidate(Rectangle(x, y, w, h));
+	}
 }
 
-static jint HaikuLock(JNIEnv* env, SurfaceDataOps* ops,
-    SurfaceDataRasInfo* rasInfo, jint lockflags)
-{
-    HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
-
-    // lock now because we're going to be messing with the drawable
-    if (!operations->drawable->Lock())
-        return SD_FAILURE;
-
-    if ((lockflags & SD_LOCK_RD_WR) != 0 && operations->drawable->IsValid()) {
-        SurfaceDataBounds* bounds = &rasInfo->bounds;
-
-        int width = operations->drawable->Width();
-        int height = operations->drawable->Height();
-        // Could clip away insets here
-        if (bounds->x1 < 0)
-            bounds->x1 = 0;
-        if (bounds->y1 < 0)
-            bounds->y1 = 0;
-        if (bounds->x2 > width)
-            bounds->x2 = width;
-        if (bounds->y2 > height)
-            bounds->y2 = height;
-
-        if (bounds->x2 > bounds->x1 && bounds->y2 > bounds->y1) {
-            operations->lockflags = lockflags;
-            return SD_SUCCESS;
-        }
-    }
-
-    operations->drawable->Unlock();
-    return SD_FAILURE;
-}
-
-static void HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops,
-        SurfaceDataRasInfo* rasInfo)
-{
-    HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
-    Drawable* drawable = operations->drawable;
-
-    if (drawable->IsValid() && (operations->lockflags & SD_LOCK_RD_WR)) {
-        rasInfo->rasBase = drawable->Bits();
-        rasInfo->pixelStride = drawable->BytesPerPixel();
-        rasInfo->pixelBitOffset = 0;
-        rasInfo->scanStride = drawable->BytesPerRow();
-    } else {
-        // fail if they didn't lock or the drawable isn't valid
-        rasInfo->rasBase = NULL;
-        rasInfo->pixelStride = 0;
-        rasInfo->pixelBitOffset = 0;
-        rasInfo->scanStride = 0;
-    }
-}
-
-static void HaikuRelease(JNIEnv* env, SurfaceDataOps* ops,
-        SurfaceDataRasInfo* rasInfo)
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuWindowSurfaceData_initIDs(JNIEnv *env, jclass clazz)
 {
 }
 
-static void HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops,
-        SurfaceDataRasInfo* rasInfo)
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuWindowSurfaceData_initOps(JNIEnv* env, jobject thiz,
+	jlong drawable)
 {
-    HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
+	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)
+		SurfaceData_InitOps(env, thiz, sizeof(HaikuWindowSurfaceDataOps));
 
-    // Must drop the lock before invalidating because otherwise
-    // we can deadlock with FrameResized. Invalidate wants
-    // the looper lock which FrameResized holds and FrameResized
-    // wants (indirectly) the Drawable lock which we hold.
-    operations->drawable->Unlock();
-
-    //printf("unlocking drawable: %p\n", operations->drawable);
-    // If we were locked for writing the view needs
-    // to redraw now.
-    if (operations->lockflags & SD_LOCK_WRITE) {
-        int x = rasInfo->bounds.x1;
-        int y = rasInfo->bounds.y1;
-        int w = rasInfo->bounds.x2 - x;
-        int h = rasInfo->bounds.y2 - y;
-        operations->drawable->Invalidate(Rectangle(x, y, w, h));
-    }
+	operations->sdOps.Lock = &HaikuLock;
+	operations->sdOps.GetRasInfo = &HaikuGetRasInfo;
+	operations->sdOps.Release = &HaikuRelease;
+	operations->sdOps.Unlock = &HaikuUnlock;
+	operations->drawable = (Drawable*)drawable;
 }
 
 }
