@@ -78,20 +78,61 @@ JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuCursorManager_nativeSetCursor(JNIEnv* env, jclass clazz,
 	jint type)
 {
-	const BCursor* cursor;
+	BCursorID id;
 
-	// Not many cursors to choose from on Haiku
 	switch (type) {
+		case java_awt_Cursor_CROSSHAIR_CURSOR:
+			id = B_CURSOR_ID_CROSS_HAIR;
+			break;
+		case java_awt_Cursor_DEFAULT_CURSOR:
+			id = B_CURSOR_ID_SYSTEM_DEFAULT;
+			break;
+		case java_awt_Cursor_E_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_EAST;
+			break;
+		case java_awt_Cursor_HAND_CURSOR:
+			// Not sure which one to go with here...
+			id = B_CURSOR_ID_FOLLOW_LINK;
+			break;
+		case java_awt_Cursor_MOVE_CURSOR:
+			id = B_CURSOR_ID_MOVE;
+			break;
+		case java_awt_Cursor_N_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_NORTH;
+			break;
+		case java_awt_Cursor_NE_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_NORTH_EAST;
+			break;
+		case java_awt_Cursor_NW_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_NORTH_WEST;
+			break;
+		case java_awt_Cursor_S_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_SOUTH;
+			break;
+		case java_awt_Cursor_SE_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_SOUTH_EAST;
+			break;
+		case java_awt_Cursor_SW_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_SOUTH_WEST;
+			break;
 		case java_awt_Cursor_TEXT_CURSOR:
-			cursor = B_CURSOR_I_BEAM;
+			id = B_CURSOR_ID_I_BEAM;
+			break;
+		case java_awt_Cursor_W_RESIZE_CURSOR:
+			id = B_CURSOR_ID_RESIZE_WEST;
+			break;
+		case java_awt_Cursor_WAIT_CURSOR:
+			id = B_CURSOR_ID_PROGRESS;
 			break;
 		default:
-			cursor = B_CURSOR_SYSTEM_DEFAULT;
+			id = B_CURSOR_ID_SYSTEM_DEFAULT;
 			break;
 	}
 
 	WaitForBeApp();
-	be_app->SetCursor(cursor);
+
+	BCursor cursor(id);
+	be_app->SetCursor(&cursor);
 }
 
 }
