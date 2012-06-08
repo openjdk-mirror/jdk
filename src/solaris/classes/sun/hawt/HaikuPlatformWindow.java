@@ -351,63 +351,22 @@ class HaikuPlatformWindow implements PlatformWindow {
     	}
     }
 
-    private void handleMouseDown(long when, int modifiers, int x, int y,
-            int screenX, int screenY, int clicks, int button) {
-        boolean popup = button == MouseEvent.BUTTON2 ||
-            (button == MouseEvent.BUTTON1 &&
-            (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0);
-        peer.dispatchMouseEvent(MouseEvent.MOUSE_PRESSED, when, button,
-            x, y, screenX, screenY, modifiers, clicks, popup, null);
-    }
-
-    private void handleMouseUp(long when, int modifiers, int x, int y,
-            int screenX, int screenY, int clicks, int button) {
-        peer.dispatchMouseEvent(MouseEvent.MOUSE_RELEASED, when, button,
-            x, y, screenX, screenY, modifiers, clicks, false, null);
-    }
-
-    private void handleMouseDrag(long when, int modifiers, int x, int y,
-            int screenX, int screenY, int clicks, int button) {
-        peer.dispatchMouseEvent(MouseEvent.MOUSE_DRAGGED, when, button,
-            x, y, screenX, screenY, modifiers, clicks, false, null);
-    }
-
     public void eventMouse(int id, long when, int modifiers, int x, int y,
-            int screenX, int screenY, int clicks, int pressed, int released,
-            int buttons) {
+            int screenX, int screenY, int clicks, int button) {
         // Mouse event coordinates are in view-space, so we need
         // to translate them.
         Insets insets = peer.getInsets();
         x += insets.left;
         y += insets.top;
 
-        // Mouse up/down is weird on Haiku so we check what buttons
-        // exactly have changed with every mouse message and then
-        // fire off the appropriate events.
-        if ((pressed & MouseEvent.BUTTON1_DOWN_MASK) != 0)
-            handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
-        if ((pressed & MouseEvent.BUTTON2_DOWN_MASK) != 0)
-            handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
-        if ((pressed & MouseEvent.BUTTON3_DOWN_MASK) != 0)
-            handleMouseDown(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
-        if ((released & MouseEvent.BUTTON1_DOWN_MASK) != 0)
-            handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
-        if ((released & MouseEvent.BUTTON2_DOWN_MASK) != 0)
-            handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
-        if ((released & MouseEvent.BUTTON3_DOWN_MASK) != 0)
-            handleMouseUp(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
+        // Popup = press button 2 or ctrl press button 1
+        boolean popup = id == MouseEvent.MOUSE_PRESSED
+            && (button == MouseEvent.BUTTON2 ||
+	               (button == MouseEvent.BUTTON1 &&
+    	       (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0));
 
-        if (id == MouseEvent.MOUSE_DRAGGED) {
-            if ((buttons & MouseEvent.BUTTON1_DOWN_MASK) != 0)
-                handleMouseDrag(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON1);
-            if ((buttons & MouseEvent.BUTTON2_DOWN_MASK) != 0)
-                handleMouseDrag(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON2);
-            if ((buttons & MouseEvent.BUTTON3_DOWN_MASK) != 0)
-                handleMouseDrag(when, modifiers, x, y, screenX, screenY, clicks, MouseEvent.BUTTON3);
-        } else if (id != MouseEvent.MOUSE_PRESSED && id != MouseEvent.MOUSE_RELEASED) {
-            peer.dispatchMouseEvent(id, when, MouseEvent.NOBUTTON, x, y, screenX, screenY,
-                modifiers, clicks, false, null);
-        }
+        peer.dispatchMouseEvent(id, when, button, x, y, screenX, screenY,
+            modifiers, clicks, popup, null);
     }
 
     public void eventWheel(long when, int modifiers, int x, int y, int scrollType,

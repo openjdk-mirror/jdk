@@ -202,26 +202,23 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	// Get out early if this message is useless
 	int32 buttons = 0;
 	message->FindInt32("buttons", &buttons);
-	if (point == fPreviousPoint && (buttons ^ fPreviousButtons) == 0)
+	int32 buttonChange = buttons ^ fPreviousButtons;
+	if (point == fPreviousPoint && buttonChange == 0)
 		return;
+
+	fPreviousPoint = point;
+	fPreviousButtons = buttons;
 
 	BPoint screenPoint = ConvertToScreen(point);
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 clicks = 0;
 	message->FindInt32("clicks", &clicks);
+
 	int32 modifiers = 0;
 	if (message->FindInt32("modifiers", &modifiers) != B_OK)
 		modifiers = ::modifiers();
-
-	int pressed = buttons & ~fPreviousButtons;
-	int released = ~buttons & fPreviousButtons;
-	fPreviousButtons = buttons;
-	fPreviousPoint = point;
-
-	jint javaPressed = ConvertButtonsToJava(pressed);
-	jint javaReleased = ConvertButtonsToJava(released);
-	jint javaButtons = ConvertButtonsToJava(buttons);
+	jint mods = ConvertInputModifiersToJava(modifiers) | ConvertMouseMaskToJava(buttons);
 
 	jint id = 0;
 	switch (message->what) {
@@ -247,12 +244,16 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 			break;
 	}
 
-	jint mods = ConvertInputModifiersToJava(modifiers) | javaButtons;
+	jint button = java_awt_event_MouseEvent_NOBUTTON;
+	if (id == java_awt_event_MouseEvent_MOUSE_PRESSED
+			|| id == java_awt_event_MouseEvent_MOUSE_RELEASED)
+		button = ConvertMouseButtonToJava(buttonChange);
+	else if (id == java_awt_event_MouseEvent_MOUSE_DRAGGED)
+		button = ConvertMouseButtonToJava(buttons);
 
-	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIIIII)V", id,
+	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIII)V", id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
-		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, javaPressed,
-		javaReleased, javaButtons);
+		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, button);
 }
 
 

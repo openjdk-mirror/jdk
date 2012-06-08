@@ -62,7 +62,20 @@ DoCallback(jobject obj, const char* name, const char* description, ...)
 }
 
 jint
-ConvertButtonsToJava(int32 buttons)
+ConvertMouseButtonToJava(int32 buttons)
+{
+	if (buttons & B_PRIMARY_MOUSE_BUTTON)
+		return java_awt_event_MouseEvent_BUTTON1;
+	else if (buttons & B_SECONDARY_MOUSE_BUTTON)
+		return java_awt_event_MouseEvent_BUTTON2;
+	else if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		return java_awt_event_MouseEvent_BUTTON3;
+	else
+		return java_awt_event_MouseEvent_NOBUTTON;
+}
+
+jint
+ConvertMouseMaskToJava(int32 buttons)
 {
 	jint javaButtons = 0;
 	if (buttons & B_PRIMARY_MOUSE_BUTTON)
