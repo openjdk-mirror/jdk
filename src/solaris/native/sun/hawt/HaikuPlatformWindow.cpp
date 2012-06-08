@@ -26,10 +26,10 @@
 #include <jlong.h>
 #include <jni.h>
 
-#include "HaikuPlatformWindow.h"
-
 #include "sun_hawt_HaikuPlatformWindow.h"
 #include "java_awt_Frame.h"
+
+#include "HaikuPlatformWindow.h"
 
 #include <kernel/OS.h>
 #include <MenuBar.h>
@@ -58,8 +58,7 @@ extern "C" {
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_initIDs
-  (JNIEnv *env, jclass clazz)
+Java_sun_hawt_HaikuPlatformWindow_initIDs(JNIEnv *env, jclass clazz)
 {
     jclass pointClazz = env->FindClass("java/awt/Point");
     pointXField = env->GetFieldID(pointClazz, "x", "I");
@@ -93,6 +92,12 @@ JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuPlatformWindow_nativeRun(JNIEnv *env, jobject thiz,
 	jlong nativeWindow)
 {
+	// The point of this nativeRun method is to get the window looper
+	// unlocked so other functions here can access it. The problem with
+	// doing that in nativeInit, however, is that the Hide/Show stack
+	// triggers a resize event to be sent up to Java, at which point
+	// it doesn't have a valid nativeWindow pointer, so we split it up
+	// like this.
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	if (!window->LockLooper())
 		return;
@@ -104,8 +109,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeRun(JNIEnv *env, jobject thiz,
 
 
 JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetDrawable
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+Java_sun_hawt_HaikuPlatformWindow_nativeGetDrawable(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	if (!window->LockLooper())
@@ -155,8 +160,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetVisible(JNIEnv *env, jobject thiz,
 }
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetLocation
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jobject point)
+Java_sun_hawt_HaikuPlatformWindow_nativeGetLocation(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jobject point)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	
@@ -172,8 +177,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeGetLocation
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeDispose
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+Java_sun_hawt_HaikuPlatformWindow_nativeDispose(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
@@ -186,8 +191,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeDispose
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeFocus
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+Java_sun_hawt_HaikuPlatformWindow_nativeFocus(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
@@ -212,8 +217,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetWindowState(JNIEnv *env,
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean resizable)
+Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jboolean resizable)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
@@ -228,8 +233,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jstring title)
+Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jstring title)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
@@ -246,8 +251,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeToFront
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+Java_sun_hawt_HaikuPlatformWindow_nativeToFront(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
@@ -259,8 +264,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeToFront
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeToBack
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
+Java_sun_hawt_HaikuPlatformWindow_nativeToBack(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
@@ -303,8 +308,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env,
-	jobject thiz, jlong nativeWindow, jobject javaInsets)
+Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jobject javaInsets)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
@@ -321,8 +326,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env,
 
 
 JNIEXPORT jboolean JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeIsActive(JNIEnv *env,
-	jobject thiz, jlong nativeWindow)
+Java_sun_hawt_HaikuPlatformWindow_nativeIsActive(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	return window->IsActive();
