@@ -127,6 +127,7 @@ ContentView::MessageReceived(BMessage* message)
 void
 ContentView::MouseDown(BPoint point)
 {
+	SetMouseEventMask(B_POINTER_EVENTS, 0);
 	_HandleMouseEvent(Window()->CurrentMessage(), point);
 	BView::MouseDown(point);
 }
