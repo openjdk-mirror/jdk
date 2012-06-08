@@ -44,6 +44,7 @@ public class HaikuToolkit extends LWToolkit {
 
     private HaikuClipboard clipboard;
 
+    private native void nativeInit();
     private native void nativeRunMessage();
     private native void nativeShutdown();
     private native void nativeLoadSystemColors(int[] systemColors);
@@ -56,6 +57,13 @@ public class HaikuToolkit extends LWToolkit {
     public HaikuToolkit() {
         super();
         SunToolkit.setDataTransfererClassName("sun.hawt.HaikuDataTransferer");
+
+        // We need to create the BApplication now so that other supporting
+        // classes can get access to be_app before the message loop is
+        // running.
+        nativeInit();
+
+        // This kicks of the toolkit thread and runs platformRunMessage
         init();
     }
 

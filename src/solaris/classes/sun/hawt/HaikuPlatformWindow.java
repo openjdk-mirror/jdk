@@ -41,15 +41,11 @@ class HaikuPlatformWindow implements PlatformWindow {
     private Window target;
     private LWWindowPeer peer;
     private HaikuPlatformWindow owner;
-
     private long nativeWindow;
     private HaikuWindowSurfaceData surfaceData;
-
     private PeerType peerType;
-
     private LWWindowPeer blocker;
-
-    private Point location = new Point();
+    private final Point location = new Point();
 
     private static native void initIDs();
     private native long nativeInit(boolean simpleWindow);
@@ -177,7 +173,6 @@ class HaikuPlatformWindow implements PlatformWindow {
         //nativeSetMinimumSize(nativeWindow, width, height);
     }
 
-
     @Override
     public void setWindowState(int windowState) {
         nativeSetWindowState(nativeWindow, windowState);
@@ -204,6 +199,7 @@ class HaikuPlatformWindow implements PlatformWindow {
             assert blocker != null : "Being asked to unblock but have no blocker";
         }
 
+        System.err.format("This is %d Setting blocked %b by %d%n", hashCode(), blocked, blocker.getPlatformWindow().hashCode());
         long nativeBlocker = blocker.getPlatformWindow().getLayerPtr();
         nativeSetBlocked(nativeWindow, nativeBlocker, blocked);
 

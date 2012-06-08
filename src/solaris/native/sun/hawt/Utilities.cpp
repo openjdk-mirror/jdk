@@ -39,14 +39,14 @@ static sem_id appSem = create_sem(0, "awtAppSem");
 void
 CreatedBeApp()
 {
-	release_sem(appSem);
+	//release_sem(appSem);
 }
 
 void
 WaitForBeApp()
 {	
-	acquire_sem(appSem);
-	release_sem(appSem);
+	//acquire_sem(appSem);
+	//release_sem(appSem);
 }
 
 JNIEnv*

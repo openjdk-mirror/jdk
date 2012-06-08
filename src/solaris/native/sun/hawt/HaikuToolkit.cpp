@@ -47,16 +47,30 @@ JavaVM* jvm;
 
 /*
  * Class:     sun_hawt_HaikuToolkit
+ * Method:    nativeInit
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jobject thiz)
+{
+    BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
+    CreatedBeApp();
+    be_app->UnlockLooper();
+}
+
+/*
+ * Class:     sun_hawt_HaikuToolkit
  * Method:    nativeRunMessage
  * Signature: ()V
  */
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
 {
-    BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
-    CreatedBeApp();
-    awtApp->Run();
-    delete awtApp;
+    //BApplication* awtApp = new AwtApplication("application/x-vnd.java-awt-app");
+    //CreatedBeApp();
+    be_app->LockLooper();
+    be_app->Run();
+    delete be_app;
 }
 
 /*
