@@ -69,11 +69,11 @@ include $(BUILDDIR)/common/internal/ImportComponents.gmk
 #    NOTE: javadoc will not complete without these larger settings.
 #    WARNING: This could cause thrashing on low memory machines.
 ifeq ($(ARCH_DATA_MODEL),64)
-  MAX_VM_MEMORY = 1024
+  MAX_VM_MEMORY = 1536
 else ifeq ($(ARCH),universal)
-  MAX_VM_MEMORY = 1024
+  MAX_VM_MEMORY = 1536
 else
-  MAX_VM_MEMORY = 512
+  MAX_VM_MEMORY = 768
 endif
 
 # List of all possible directories for javadoc to look for sources
