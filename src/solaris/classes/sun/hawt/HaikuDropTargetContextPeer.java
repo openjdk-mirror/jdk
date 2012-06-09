@@ -34,24 +34,44 @@ final class HaikuDropTargetContextPeer extends SunDropTargetContextPeer {
     // When we're dropped on we put the native pointer to the
     // message here
     private long nativeMessage = 0;
+    private Component target;
 
-    private static HaikuDropTargetContextPeer getDropTargetContextPeer() {
-        return new HaikuDropTargetContextPeer();
+    private native void nativeDisposeMessage(long nativeMessage);
+
+    private HaikuDropTargetContextPeer(long nativeMessage, Component target) {
+        super();
+        
+        this.nativeMessage = nativeMessage;
+        this.target = target;
     }
 
-    private HaikuDropTargetContextPeer() {
-        super();
+    private static HaikuDropTargetContextPeer createDropTargetContextPeer(
+            long nativeMessage, int x, int y, Component target) {
+        HaikuDropTargetContextPeer peer = new HaikuDropTargetContextPeer(
+            nativeMessage, target);
+        // 1. Get actions, formats, etc from native message.
+        // 2. Post enter event.
+        // 3. Return peer.
+        
+        return peer;
+    }
+
+    private void handleMotion(int x, int y) {
+    	// 1. Get (cache?) actions, formats, etc from native message.
+    	// 2. Post motion event.
+    }
+
+    private void handleExit() {
+        handleExitMessage(target, nativeMessage);
     }
 
     protected Object getNativeData(long format) {
-        // get data in format
-
-        // I guess we report the formats in one of the upcalls
+        // 1. Get data from native message
         return null;
     }
 
     protected void doDropDone(boolean success, int dropAction, boolean isLocal) {
-        // ... nothing to do?
-        // We've had data dropped on us whether Java likes it or not
+    	// TODO need to dispose in other places too
+        nativeDisposeMessage(nativeMessage);
     }
 }

@@ -291,11 +291,11 @@ public abstract class SunDropTargetContextPeer implements DropTargetContextPeer,
         return local != null || getJVMLocalSourceTransferable() != null;
     }
 
-    private int handleEnterMessage(final Component component,
-                                   final int x, final int y,
-                                   final int dropAction,
-                                   final int actions, final long[] formats,
-                                   final long nativeCtxt) {
+    protected int handleEnterMessage(final Component component,
+                                     final int x, final int y,
+                                     final int dropAction,
+                                     final int actions, final long[] formats,
+                                     final long nativeCtxt) {
         return postDropTargetEvent(component, x, y, dropAction, actions,
                                    formats, nativeCtxt,
                                    SunDropTargetEvent.MOUSE_ENTERED,
@@ -349,8 +349,8 @@ public abstract class SunDropTargetContextPeer implements DropTargetContextPeer,
      * upcall to handle exit messages
      */
 
-    private void handleExitMessage(final Component component,
-                                   final long nativeCtxt) {
+    protected void handleExitMessage(final Component component,
+                                     final long nativeCtxt) {
         /*
          * Even though the return value is irrelevant for this event, it is
          * dispatched synchronously to fix 4393148 properly.
@@ -417,11 +417,11 @@ public abstract class SunDropTargetContextPeer implements DropTargetContextPeer,
         }
     }
 
-    private int handleMotionMessage(final Component component,
-                                    final int x, final int y,
-                                    final int dropAction,
-                                    final int actions, final long[] formats,
-                                    final long nativeCtxt) {
+    protected int handleMotionMessage(final Component component,
+                                      final int x, final int y,
+                                      final int dropAction,
+                                      final int actions, final long[] formats,
+                                      final long nativeCtxt) {
         return postDropTargetEvent(component, x, y, dropAction, actions,
                                    formats, nativeCtxt,
                                    SunDropTargetEvent.MOUSE_DRAGGED,
@@ -490,11 +490,11 @@ public abstract class SunDropTargetContextPeer implements DropTargetContextPeer,
      * upcall to handle the Drop message
      */
 
-    private void handleDropMessage(final Component component,
-                                   final int x, final int y,
-                                   final int dropAction, final int actions,
-                                   final long[] formats,
-                                   final long nativeCtxt) {
+    protected void handleDropMessage(final Component component,
+                                     final int x, final int y,
+                                     final int dropAction, final int actions,
+                                     final long[] formats,
+                                     final long nativeCtxt) {
         postDropTargetEvent(component, x, y, dropAction, actions,
                             formats, nativeCtxt,
                             SunDropTargetEvent.MOUSE_DROPPED,

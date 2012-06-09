@@ -352,7 +352,7 @@ ContentView::_HandleDnDMessage(uint32 transit, const BMessage* dragMessage,
 		jclass clazz = env->FindClass("sun/hawt/HaikuDropTargetContextPeer");
 		jmethodID getContext = env->GetStaticMethodID(clazz,
 			"createDropTargetContextPeer",
-			"(JII)Lsun/hawt/HaikuDropTargetContextPeer;");
+			"(JIILjava/awt/Component;)Lsun/hawt/HaikuDropTargetContextPeer;");
 		if (getContext == NULL) {
 			// !!!
 			return;
@@ -371,7 +371,7 @@ ContentView::_HandleDnDMessage(uint32 transit, const BMessage* dragMessage,
 		DoCallback(fDropTargetContext, "handleMotion", "(II)V", (jint)x,
 			(jint)y);
 	} else if (transit == B_EXITED_VIEW) {
-		DoCallback(fDropTargetContext, "handleExit", "(II)V", (jint)x,
+		DoCallback(fDropTargetContext, "handleExit", "()V", (jint)x,
 			(jint)y);
 
 		// Now we need to get rid of the context as any re-entry could be
@@ -390,10 +390,32 @@ ContentView::_HandleDnDDrop(BMessage* message)
 	// Hopefully this message matches the one already passed up
 	// to the context. If it doesn't...!
 
+	BPoint dropPoint = message->DropPoint();
 	if (fDropTargetContext == NULL) {
-		BPoint dropPoint = message->DropPoint();
-		DoCallback(fDropTargetContext, "handleDrop", "(II)V", (jint)dropPoint.x,
-			(jint)dropPoint.y);
-		GetEnv()->DeleteGlobalRef(fDropTargetContext);
+		JNIEnv* env = GetEnv();
+
+		// Get a new drop target context for this action
+		jclass clazz = env->FindClass("sun/hawt/HaikuDropTargetContextPeer");
+		jmethodID getContext = env->GetStaticMethodID(clazz,
+			"createDropTargetContextPeer",
+			"(JII)Lsun/hawt/HaikuDropTargetContextPeer;");
+		if (getContext == NULL) {
+			// !!!
+			return;
+		}
+
+		// We create a copy of the drag message, because java expects to be
+		// able to query it for formats and data before it the user even
+		// drops it
+		BMessage* copyMessage = new BMessage(*message);
+		// The static method handles the handle
+		jobject localContext = env->CallStaticObjectMethod(clazz, getContext,
+			ptr_to_jlong(copyMessage), (jint)dropPoint.x, (jint)dropPoint.y);
+		fDropTargetContext = env->NewGlobalRef(localContext);
+		env->DeleteLocalRef(localContext);		
 	}
+
+	DoCallback(fDropTargetContext, "handleDrop", "(II)V", (jint)dropPoint.x,
+		(jint)dropPoint.y);
+	GetEnv()->DeleteGlobalRef(fDropTargetContext);
 }
