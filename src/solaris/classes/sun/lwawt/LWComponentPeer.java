@@ -64,6 +64,8 @@ import javax.swing.RepaintManager;
 
 import com.sun.java.swing.SwingUtilities3;
 
+import sun.hawt.HaikuPlatformWindow;
+
 public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     implements ComponentPeer, DropTargetPeer
 {
@@ -132,7 +134,7 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     private Component delegateDropTarget;
     private final Object dropTargetLock = new Object();
 
-    private int fNumDropTargets = 0;
+    private int dropTargets = 0;
 
     private PlatformComponent platformComponent;
 
@@ -1017,7 +1019,6 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     // DropTargetPeer Method
     @Override
     public void addDropTarget(DropTarget dt) {
-/*
         LWWindowPeer winPeer = getWindowPeerOrSelf();
         if (winPeer != null && winPeer != this) {
             // We need to register the DropTarget in the
@@ -1027,23 +1028,16 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
             synchronized (dropTargetLock) {
                 // 10-14-02 VL: Windows WComponentPeer would add (or remove) the drop target only
                 // if it's the first (or last) one for the component. Otherwise this call is a no-op.
-                if (++fNumDropTargets == 1) {
-                    // Having a non-null drop target would be an error but let's check just in case:
-                    if (fDropTarget != null)
-                        System.err.println("CComponent.addDropTarget(): current drop target is non-null.");
-
-                    // Create a new drop target:
-                    fDropTarget = CDropTarget.createDropTarget(dt, target, this);
+                if (++dropTargets == 1) {
+                    ((HaikuPlatformWindow)getPlatformWindow()).addDropTarget(target);
                 }
             }
         }
-*/
     }
 
     // DropTargetPeer Method
     @Override
     public void removeDropTarget(DropTarget dt) {
-/*
         LWWindowPeer winPeer = getWindowPeerOrSelf();
         if (winPeer != null && winPeer != this) {
             // We need to unregister the DropTarget in the
@@ -1053,18 +1047,11 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
             synchronized (dropTargetLock){
                 // 10-14-02 VL: Windows WComponentPeer would add (or remove) the drop target only
                 // if it's the first (or last) one for the component. Otherwise this call is a no-op.
-                if (--fNumDropTargets == 0) {
-                    // Having a null drop target would be an error but let's check just in case:
-                    if (fDropTarget != null) {
-                        // Dispose of the drop target:
-                        fDropTarget.dispose();
-                        fDropTarget = null;
-                    } else
-                        System.err.println("CComponent.removeDropTarget(): current drop target is null.");
+                if (--dropTargets == 0) {
+                    ((HaikuPlatformWindow)getPlatformWindow()).removeDropTarget();
                 }
             }
         }
-*/
     }
 
     // ---- PEER NOTIFICATIONS ---- //

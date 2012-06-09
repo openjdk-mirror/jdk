@@ -40,10 +40,25 @@ ContentView::ContentView(jobject platformWindow)
 	BView(BRect(0, 0, 0, 0), NULL, B_FOLLOW_ALL,
 		B_WILL_DRAW | B_FRAME_EVENTS | B_NAVIGABLE),
 	fDrawable(this),
-	fPlatformWindow(platformWindow)
+	fPlatformWindow(platformWindow),
+	fDropTargetComponent(NULL),
+	fDropTargetContext(NULL)
 {
 //	SetEventMask(B_POINTER_EVENTS);
 	get_mouse(&fPreviousPoint, &fPreviousButtons);
+}
+
+
+void
+ContentView::AddDropTarget(jobject target) {
+	fDropTargetComponent = target;
+}
+
+
+void
+ContentView::RemoveDropTarget() {
+	GetEnv()->DeleteWeakGlobalRef(fDropTargetComponent);
+	fDropTargetComponent = NULL;
 }
 
 
@@ -120,6 +135,11 @@ ContentView::MessageReceived(BMessage* message)
 		default:
 			break;
 	}
+
+	if (message->WasDropped() && fDropTargetComponent != NULL) {
+		_HandleDnDDrop(message);
+	}
+
 	BView::MessageReceived(message);
 }
 
@@ -140,7 +160,7 @@ ContentView::MouseMoved(BPoint point, uint32 transit, const BMessage* message)
 	if (transit == B_ENTERED_VIEW)
 		get_mouse(NULL, &fPreviousButtons);
 
-	_HandleMouseEvent(Window()->CurrentMessage(), point, transit);
+	_HandleMouseEvent(Window()->CurrentMessage(), point, transit, message);
 	BView::MouseMoved(point, transit, message);
 }
 
@@ -198,7 +218,8 @@ ContentView::_HandleKeyEvent(BMessage* message)
 
 
 void
-ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
+ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit,
+	const BMessage* dragMessage)
 {
 	// Get out early if this message is useless
 	int32 buttons = 0;
@@ -216,10 +237,13 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit)
 	int32 clicks = 0;
 	message->FindInt32("clicks", &clicks);
 
+   	_HandleDnDMessage(transit, dragMessage, screenPoint.x, screenPoint.y);
+
 	int32 modifiers = 0;
 	if (message->FindInt32("modifiers", &modifiers) != B_OK)
 		modifiers = ::modifiers();
-	jint mods = ConvertInputModifiersToJava(modifiers) | ConvertMouseMaskToJava(buttons);
+	jint mods = ConvertInputModifiersToJava(modifiers)
+		| ConvertMouseMaskToJava(buttons);
 
 	jint id = 0;
 	switch (message->what) {
@@ -288,4 +312,88 @@ ContentView::_HandleWheelEvent(BMessage* message)
 	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIIID)V",
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		scrollType, scrollAmount, (jint)wheelRotation, (jdouble)wheelRotation);
+}
+
+
+void
+ContentView::_HandleDnDMessage(uint32 transit, const BMessage* dragMessage,
+	int x, int y)
+{
+	if (fDropTargetComponent == NULL)
+		return;
+
+	JNIEnv* env = GetEnv();
+	if (dragMessage == NULL) {
+		// Clear out the drop target context if there's no drag message --
+		// there must been a drop or an exit that we missed somehow
+		if (fDropTargetContext != NULL) {
+			// TODO Need to dispose context as it may hold a pointer to
+			// a native message
+			env->DeleteGlobalRef(fDropTargetContext);
+			fDropTargetContext = NULL;
+		}
+		return;
+	}
+
+	if (transit == B_ENTERED_VIEW || fDropTargetContext == NULL) {
+		// Note maybe store something in the message so we don't have to
+		// recreate the context everytime a drag enters? Anything we add
+		// to the drag message might not be retained though...
+
+		// Get rid of the old drop target context
+		if (fDropTargetContext != NULL) {
+			// TODO Need to dispose context as it may hold a pointer to
+			// a native message
+			env->DeleteGlobalRef(fDropTargetContext);
+			fDropTargetContext = NULL;
+		}
+
+		// Get a new drop target context for this action
+		jclass clazz = env->FindClass("sun/hawt/HaikuDropTargetContextPeer");
+		jmethodID getContext = env->GetStaticMethodID(clazz,
+			"createDropTargetContextPeer",
+			"(JII)Lsun/hawt/HaikuDropTargetContextPeer;");
+		if (getContext == NULL) {
+			// !!!
+			return;
+		}
+
+		// We create a copy of the drag message, because java expects to be
+		// able to query it for formats and data before it the user even
+		// drops it
+		BMessage* copyMessage = new BMessage(*dragMessage);
+		// The static method handles the handle
+		jobject localContext = env->CallStaticObjectMethod(clazz, getContext,
+			ptr_to_jlong(copyMessage), (jint)x, (jint)y);
+		fDropTargetContext = env->NewGlobalRef(localContext);
+		env->DeleteLocalRef(localContext);
+	} else if (transit == B_INSIDE_VIEW) {
+		DoCallback(fDropTargetContext, "handleMotion", "(II)V", (jint)x,
+			(jint)y);
+	} else if (transit == B_EXITED_VIEW) {
+		DoCallback(fDropTargetContext, "handleExit", "(II)V", (jint)x,
+			(jint)y);
+
+		// Now we need to get rid of the context as any re-entry could be
+		// a new DnD operation
+		env->DeleteGlobalRef(fDropTargetContext);
+		fDropTargetContext = NULL;
+	}
+}
+
+
+void
+ContentView::_HandleDnDDrop(BMessage* message)
+{
+	// TODO
+
+	// Hopefully this message matches the one already passed up
+	// to the context. If it doesn't...!
+
+	if (fDropTargetContext == NULL) {
+		BPoint dropPoint = message->DropPoint();
+		DoCallback(fDropTargetContext, "handleDrop", "(II)V", (jint)dropPoint.x,
+			(jint)dropPoint.y);
+		GetEnv()->DeleteGlobalRef(fDropTargetContext);
+	}
 }

@@ -35,6 +35,8 @@ public:
 
 			Drawable*		GetDrawable();
 			void			DeferredDraw(BRect updateRect);
+			void			AddDropTarget(jobject target);
+			void			RemoveDropTarget();
 
 	virtual	void			Draw(BRect updateRect);
 	virtual	void			KeyDown(const char* bytes, int32 numBytes);
@@ -49,14 +51,20 @@ public:
 private:
 			void			_HandleKeyEvent(BMessage* message);
 			void			_HandleMouseEvent(BMessage* message, BPoint point,
-								uint32 transit = 0);
+								uint32 transit = 0,
+								const BMessage* dragMessage = NULL);
 			void			_HandleWheelEvent(BMessage* message);
+			void			_HandleDnDMessage(uint32 transit,
+								const BMessage* dragMessage, int x, int y);
+			void			_HandleDnDDrop(BMessage* message);
 
 private:
 			Drawable		fDrawable;
 			jobject			fPlatformWindow;
 			uint32			fPreviousButtons;
 			BPoint			fPreviousPoint;
+			jobject			fDropTargetComponent;
+			jobject			fDropTargetContext;
 };
 
 #endif	/* CONTENT_VIEW_H */

@@ -49,7 +49,10 @@ public:
 			void			Focus();
 			void			SetMenuBar(BMenuBar* menuBar);
 			Insets			GetInsets();
+			ContentView*	GetContentView();
 			void			DragMessage(BMessage* message);
+			void			AddDropTarget(jobject target);
+			void			RemoveDropTarget();
 
 	virtual	void			WindowActivated(bool activated);
 	virtual	void			FrameMoved(BPoint origin);

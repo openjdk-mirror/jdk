@@ -36,7 +36,7 @@ import sun.lwawt.LWWindowPeer.PeerType;
 
 import sun.java2d.*;
 
-class HaikuPlatformWindow implements PlatformWindow {
+public class HaikuPlatformWindow implements PlatformWindow {
 
     private Window target;
     private LWWindowPeer peer;
@@ -71,6 +71,9 @@ class HaikuPlatformWindow implements PlatformWindow {
     private native boolean nativeIsActive(long nativeWindow);
     private native void nativeSetBlocked(long nativeWindow, long nativeBlocker,
         boolean blocked);
+
+    private native void nativeAddDropTarget(long nativeWindow, Component target);
+    private native void nativeRemoveDropTarget(long nativeWindow);
 
     static {
         initIDs();
@@ -253,6 +256,14 @@ class HaikuPlatformWindow implements PlatformWindow {
 
     public Window getTarget() {
     	return target;
+    }
+
+    public void addDropTarget(Component target) {
+        nativeAddDropTarget(nativeWindow, target);
+    }
+
+    public void removeDropTarget() {
+        nativeRemoveDropTarget(nativeWindow);
     }
 
     // =======================================

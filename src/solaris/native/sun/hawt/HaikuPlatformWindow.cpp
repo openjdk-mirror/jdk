@@ -335,9 +335,8 @@ Java_sun_hawt_HaikuPlatformWindow_nativeIsActive(JNIEnv *env, jobject thiz,
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetBlocked(JNIEnv *env,
-	jobject thiz, jlong nativeWindow, jlong nativeBlocker,
-	jboolean blocked)
+Java_sun_hawt_HaikuPlatformWindow_nativeSetBlocked(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jlong nativeBlocker, jboolean blocked)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	if (!window->LockLooper())
@@ -360,6 +359,34 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetBlocked(JNIEnv *env,
 
 	window->UnlockLooper();
 	blocker->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeAddDropTarget(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jobject target)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	jobject targetRef = env->NewWeakGlobalRef(target);
+	window->AddDropTarget(targetRef);
+
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeRemoveDropTarget(JNIEnv *env,
+	jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	window->RemoveDropTarget();
+	window->UnlockLooper();
 }
 
 
@@ -497,6 +524,19 @@ PlatformWindow::DragMessage(BMessage* message)
 	fView->DragMessage(message, rect);
 }
 
+
+void
+PlatformWindow::AddDropTarget(jobject target)
+{
+	fView->AddDropTarget(target);
+}
+
+
+void
+PlatformWindow::RemoveDropTarget()
+{
+	fView->RemoveDropTarget();
+}
 
 void
 PlatformWindow::WindowActivated(bool activated)
