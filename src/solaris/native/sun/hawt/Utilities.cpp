@@ -67,9 +67,9 @@ ConvertMouseButtonToJava(int32 buttons)
 	if (buttons & B_PRIMARY_MOUSE_BUTTON)
 		return java_awt_event_MouseEvent_BUTTON1;
 	else if (buttons & B_SECONDARY_MOUSE_BUTTON)
-		return java_awt_event_MouseEvent_BUTTON2;
-	else if (buttons & B_TERTIARY_MOUSE_BUTTON)
 		return java_awt_event_MouseEvent_BUTTON3;
+	else if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		return java_awt_event_MouseEvent_BUTTON2;
 	else
 		return java_awt_event_MouseEvent_NOBUTTON;
 }
@@ -81,9 +81,9 @@ ConvertMouseMaskToJava(int32 buttons)
 	if (buttons & B_PRIMARY_MOUSE_BUTTON)
 		javaButtons |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
 	if (buttons & B_SECONDARY_MOUSE_BUTTON)
-		javaButtons |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
-	if (buttons & B_TERTIARY_MOUSE_BUTTON)
 		javaButtons |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+	if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		javaButtons |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
 	return javaButtons;
 }
 

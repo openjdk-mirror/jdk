@@ -361,7 +361,7 @@ class HaikuPlatformWindow implements PlatformWindow {
 
         // Popup = press button 2 or ctrl press button 1
         boolean popup = id == MouseEvent.MOUSE_PRESSED
-            && (button == MouseEvent.BUTTON2 ||
+            && (button == MouseEvent.BUTTON3 ||
 	               (button == MouseEvent.BUTTON1 &&
     	       (modifiers & MouseEvent.CTRL_DOWN_MASK) != 0));
 
