@@ -137,6 +137,7 @@ ContentView::MessageReceived(BMessage* message)
 	}
 
 	if (message->WasDropped() && fDropTargetComponent != NULL) {
+		message->PrintToStream();
 		_HandleDnDDrop(message);
 	}
 

@@ -36,6 +36,7 @@ class AwtApplication : public BApplication {
 public:
 					AwtApplication(const char* signature);
 	virtual	void	MessageReceived(BMessage* msg);
+	virtual	void	ReadyToRun();
 private:
 			void	_HandleFileMessage(BMessage* msg);
 			void	_HandleOpenMessage(BMessage* msg, JNIEnv* env,

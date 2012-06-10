@@ -33,6 +33,11 @@ import sun.awt.datatransfer.*;
 
 public class HaikuClipboard extends SunClipboard {
 
+    private static HaikuClipboard clipboard;
+
+    private boolean owned = false;
+    private int clipboardViewers = 0;
+
     private native String[] nativeGetFormats();
     private native byte[] nativeGetData(String format) throws IOException;
     private native long nativeLockAndClear();
@@ -40,8 +45,15 @@ public class HaikuClipboard extends SunClipboard {
         String format);
     private native void nativeUnlock(long nativeClipboard);
 
-    public HaikuClipboard(String name) {
+    private HaikuClipboard(String name) {
         super(name);
+    }
+
+    public static synchronized HaikuClipboard createClipboard() {
+        if (clipboard == null) {
+            clipboard = new HaikuClipboard("System");
+        }
+        return clipboard;
     }
 
     @Override
@@ -55,7 +67,6 @@ public class HaikuClipboard extends SunClipboard {
 
     @Override
     protected void setContentsNative(Transferable contents) {
-
         // Don't use delayed Clipboard rendering for the Transferable's data.
         // If we did that, we would call Transferable.getTransferData on
         // the Toolkit thread, which is a security hole.
@@ -90,6 +101,9 @@ public class HaikuClipboard extends SunClipboard {
                 }
             }
             nativeUnlock(nativeClipboard);
+            synchronized(this) {
+                owned = true;
+            }
         }
     }
 
@@ -122,11 +136,30 @@ public class HaikuClipboard extends SunClipboard {
 
     @Override
     protected void registerClipboardViewerChecked() {
-        // todo
+        clipboardViewers++;
     }
 
     @Override
     protected void unregisterClipboardViewerChecked() {
-        // todo
+        if (clipboardViewers > 0) {
+            clipboardViewers--;
+        }
+    }
+
+    /**
+     * Called by native code when the clipboard contents have changed.
+     */
+    private static void clipboardChanged() {
+    	HaikuClipboard clipboard = createClipboard();
+    	synchronized(clipboard) {
+            if (clipboard.owned) {
+                clipboard.lostOwnershipImpl();
+                clipboard.owned = false;
+            }
+        }
+
+        if (clipboard.clipboardViewers > 0) {
+            clipboard.checkChange(clipboard.getClipboardFormats());
+        }
     }
 }

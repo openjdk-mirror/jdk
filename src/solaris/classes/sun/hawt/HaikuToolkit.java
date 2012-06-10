@@ -42,8 +42,6 @@ import sun.lwawt.LWWindowPeer.PeerType;
 
 public class HaikuToolkit extends LWToolkit {
 
-    private HaikuClipboard clipboard;
-
     private native void nativeInit();
     private native void nativeRunMessage();
     private native void nativeShutdown();
@@ -123,12 +121,7 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public Clipboard createPlatformClipboard() {
-        synchronized (this) {
-            if (clipboard == null) {
-                clipboard = new HaikuClipboard("System");
-            }
-        }
-        return clipboard;
+        return HaikuClipboard.createClipboard();
     }
 
     @Override

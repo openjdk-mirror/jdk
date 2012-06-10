@@ -25,6 +25,7 @@
 
 #include "AwtApplication.h"
 
+#include <Clipboard.h>
 #include <FilePanel.h>
 #include <MenuItem.h>
 #include <Path.h>
@@ -37,6 +38,8 @@ AwtApplication::AwtApplication(const char* signature)
 	BApplication(signature)
 {
 }
+
+DECLARE_JAVA_CLASS(haikuClipboardClazz, "sun/hawt/HaikuClipboard")
 
 void
 AwtApplication::MessageReceived(BMessage* message)
@@ -70,8 +73,21 @@ AwtApplication::MessageReceived(BMessage* message)
 		case B_CANCEL:
 			_HandleFileMessage(message);
 			break;
+		case B_CLIPBOARD_CHANGED: {
+			JNIEnv* env = GetEnv();
+			DECLARE_STATIC_VOID_JAVA_METHOD(clipChange, haikuClipboardClazz,
+				"clipboardChanged", "()V");
+			env->CallStaticVoidMethod(clazz, clipChange);
+		}
+			
 	}
 	BApplication::MessageReceived(message);
+}
+
+void
+AwtApplication::ReadyToRun()
+{
+	be_clipboard->StartWatching(be_app_messenger);
 }
 
 void
