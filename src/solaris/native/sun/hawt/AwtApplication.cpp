@@ -85,6 +85,15 @@ AwtApplication::MessageReceived(BMessage* message)
 	BApplication::MessageReceived(message);
 }
 
+bool
+AwtApplication::QuitRequested()
+{
+	be_clipboard->StopWatching(be_app_messenger);
+
+	BApplication::QuitRequested();
+	return true;
+}
+
 void
 AwtApplication::ReadyToRun()
 {

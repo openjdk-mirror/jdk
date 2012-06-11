@@ -121,3 +121,21 @@ Drawable::Invalidate(Rectangle rect)
 		}
 	}
 }
+
+extern "C" {
+
+/*
+ * Class:     sun_hawt_HaikuDrawable
+ * Method:    nativeAllocate
+ * Signature: (II)J
+ */
+JNIEXPORT jlong JNICALL
+Java_sun_hawt_HaikuDrawable_nativeAllocate(JNIEnv *env, jobject thiz,
+	jint width, jint height)
+{
+	Drawable* drawable = new Drawable();
+	drawable->Allocate(width, height);
+	return ptr_to_jlong(drawable);
+}
+
+}

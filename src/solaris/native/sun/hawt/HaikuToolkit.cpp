@@ -28,8 +28,9 @@
 #include "java_awt_SystemColor.h"
 
 #include <Beep.h>
-#include <dlfcn.h>
 #include <kernel/OS.h>
+
+#include <dlfcn.h>
 
 #include "AwtApplication.h"
 #include "Utilities.h"
@@ -90,9 +91,7 @@ Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeShutdown(JNIEnv *env, jobject thiz)
 {
-	be_app->LockLooper();
-	be_app->Quit();
-	be_app->UnlockLooper();
+	be_app->PostMessage(B_QUIT_REQUESTED);
 }
 
 /*

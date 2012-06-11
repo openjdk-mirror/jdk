@@ -281,5 +281,4 @@ public class HaikuToolkit extends LWToolkit {
             throws AWTException {
         return null;
     }
-
 }

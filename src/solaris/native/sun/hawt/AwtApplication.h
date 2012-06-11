@@ -36,6 +36,7 @@ class AwtApplication : public BApplication {
 public:
 							AwtApplication(const char* signature);
 	virtual	void			MessageReceived(BMessage* msg);
+	virtual	bool			QuitRequested();
 	virtual	void			ReadyToRun();
 private:
 			void			_HandleFileMessage(BMessage* msg);
