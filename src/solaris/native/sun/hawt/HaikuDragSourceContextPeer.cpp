@@ -77,7 +77,7 @@ Java_sun_hawt_HaikuDragSourceContextPeer_nativeStartDrag(JNIEnv *env,
 		return JNI_FALSE;
 
 	// Use a 64x64 outline
-	window->DragMessage(&message);
+	window->StartDrag(&message, env->NewGlobalRef(thiz));
 	window->UnlockLooper();
 
 	return JNI_TRUE;

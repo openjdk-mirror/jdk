@@ -31,6 +31,7 @@ import java.awt.event.*;
 import java.awt.image.*;
 import java.util.List;
 import java.io.*;
+
 import sun.awt.*;
 import sun.java2d.pipe.Region;
 
@@ -68,18 +69,17 @@ class HaikuFileDialog implements FileDialogPeer {
 
     @Override
     public void setVisible(boolean visible) {
-    	// We run this like the Mac version except async
         if (visible) {
             run();
         }
-        // We hide ourself before "show" returns - setVisible(false)
-        // doesn't apply
+        // The Mac version of this doesn't bother with setVisible(false),
+        // probably because setVisible(true) blocks. Following suit for now.
     }
 
-    /**
-     * A callback method.
-     * If the file dialog has a file filter, ask it if inFilename is acceptable.
-     * If the dialog doesn't have a file filter return true.
+    /*
+     * Upcall from native code to determine whether the given filename
+     * should be accepted or not. Returns true if acceptable, and false
+     * if the file should be filtered out.
      */
     private boolean acceptFile(String filename) {
 
@@ -96,7 +96,10 @@ class HaikuFileDialog implements FileDialogPeer {
         return filter.accept(directory, name);
     }
 
-    // Native callback
+    /*
+     * Upcall from native code indicating that the dialog has been
+     * closed.
+     */
     private void done(String[] filenames) {
         String directory = null;
         String file = null;
@@ -125,8 +128,13 @@ class HaikuFileDialog implements FileDialogPeer {
         accessor.setFile(target, file);
         accessor.setFiles(target, directory, filenames);
         
-        // dispose?
+        // The native resources are already disposed
     }
+
+    /*
+     * These methods are unimplemented because we get all this stuff from
+     * the target when we are about to be shown.
+     */
 
     @Override
     public void setDirectory(String directory) {
@@ -139,6 +147,11 @@ class HaikuFileDialog implements FileDialogPeer {
     @Override
     public void setFilenameFilter(FilenameFilter filter) {
     }
+
+    /*
+     * The Windows and Mac toolkits don't implement any of the below
+     * functionality, so it's unlikely any apps rely on it.
+     */
 
     @Override
     public void blockWindows(List<Window> windows) {

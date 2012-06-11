@@ -34,15 +34,15 @@ const uint32 kFileMessage = 'file';
 
 class AwtApplication : public BApplication {
 public:
-					AwtApplication(const char* signature);
-	virtual	void	MessageReceived(BMessage* msg);
-	virtual	void	ReadyToRun();
+							AwtApplication(const char* signature);
+	virtual	void			MessageReceived(BMessage* msg);
+	virtual	void			ReadyToRun();
 private:
-			void	_HandleFileMessage(BMessage* msg);
-			void	_HandleOpenMessage(BMessage* msg, JNIEnv* env,
-						jobject peer, jclass stringClazz);
-			void	_HandleSaveMessage(BMessage* msg, JNIEnv* env,
-						jobject peer, jclass stringClazz);
+			void			_HandleFileMessage(BMessage* msg);
+			jobjectArray	_HandleOpenMessage(BMessage* msg, JNIEnv* env,
+								jobject peer, jclass stringClazz);
+			jobjectArray	_HandleSaveMessage(BMessage* msg, JNIEnv* env,
+								jobject peer, jclass stringClazz);
 };
 
 #endif	/* AWT_APPLICATION_H */

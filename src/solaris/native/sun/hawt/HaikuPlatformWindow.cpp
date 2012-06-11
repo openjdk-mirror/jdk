@@ -513,15 +513,9 @@ PlatformWindow::Focus()
 
 
 void
-PlatformWindow::DragMessage(BMessage* message)
+PlatformWindow::StartDrag(BMessage* message, jobject dragSource)
 {
-	BPoint mouse;
-	get_mouse(&mouse, NULL);
-	fView->ConvertFromScreen(&mouse);
-
-	// Create a 128x128 outline centred around the mouse
-	BRect rect(mouse.x - 64, mouse.y - 64, mouse.x + 63, mouse.y + 63);
-	fView->DragMessage(message, rect);
+	fView->StartDrag(message, dragSource);
 }
 
 

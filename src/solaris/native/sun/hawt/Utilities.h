@@ -68,30 +68,7 @@ jint ConvertInputModifiersToJava(uint32 modifiers);
  * Go look at the Windows DnD stuff for example usage.
  */
 
-jthrowable
-safe_ExceptionOccurred(JNIEnv *env) throw (std::bad_alloc) {
-    jthrowable xcp = env->ExceptionOccurred();
-    if (xcp != NULL) {
-        env->ExceptionClear(); // if we don't do this, FindClass will fail
-
-        jclass outofmem = env->FindClass("java/lang/OutOfMemoryError");
-        DASSERT(outofmem != NULL);
-        jboolean isOutofmem = env->IsInstanceOf(xcp, outofmem);
-
-        env->DeleteLocalRef(outofmem);
-
-        if (isOutofmem) {
-            env->DeleteLocalRef(xcp);
-            throw std::bad_alloc();
-        } else {
-            // rethrow exception
-            env->Throw(xcp);
-            return xcp;
-        }
-    }
-
-    return NULL;
-}
+jthrowable safe_ExceptionOccurred(JNIEnv *env) throw (std::bad_alloc);
 
 /*
  * NOTE: You need these macros only if you take care of performance, since they

@@ -31,10 +31,12 @@
 #include <Window.h>
 
 #include "AwtApplication.h"
+#include "Utilities.h"
 
 class RefFilter : public BRefFilter {
 public:
 						RefFilter(jobject peer);
+	virtual				~RefFilter();
 
 	virtual	bool		Filter(const entry_ref* ref, BNode* node,
 							stat_beos* st, const char* filetype);
@@ -54,8 +56,10 @@ RefFilter::RefFilter(jobject peer)
 }
 
 
-extern "C" {
-extern JavaVM* jvm;
+RefFilter::~RefFilter()
+{
+	// The peer ref is released in AwtApplication when the file
+	// dialog is closed.
 }
 
 
@@ -63,14 +67,19 @@ bool
 RefFilter::Filter(const entry_ref* ref, BNode* node, stat_beos* st,
 	const char* filetype)
 {
+	// NOTE this code assumes that for each instance Filter will
+	// always be called from the same thread.
 	if (fEnv == NULL) {
-    	jvm->AttachCurrentThread((void**)&fEnv, NULL);
+		// TODO must detach thread when done
+    	fEnv = GetEnv();
 	}
 
 	if (fAcceptMethod == NULL) {
 		jclass clazz = fEnv->GetObjectClass(fPeer);
+		// Should this method ID be made a global ref?
 		fAcceptMethod = fEnv->GetMethodID(clazz, "acceptFile",
 			"(Ljava/lang/String;)Z");
+		fEnv->DeleteLocalRef(clazz);
 		// if this fails just let everything through
 		if (fAcceptMethod == NULL)
 			return true;
@@ -87,7 +96,7 @@ RefFilter::Filter(const entry_ref* ref, BNode* node, stat_beos* st,
 	fEnv->DeleteLocalRef(javaString);
 	return accept;
 }
-						
+
 
 extern "C" {
 

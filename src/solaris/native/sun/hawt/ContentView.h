@@ -37,6 +37,7 @@ public:
 			void			DeferredDraw(BRect updateRect);
 			void			AddDropTarget(jobject target);
 			void			RemoveDropTarget();
+			void			StartDrag(BMessage* message, jobject dragSource);
 
 	virtual	void			Draw(BRect updateRect);
 	virtual	void			KeyDown(const char* bytes, int32 numBytes);
@@ -65,6 +66,7 @@ private:
 			BPoint			fPreviousPoint;
 			jobject			fDropTargetComponent;
 			jobject			fDropTargetContext;
+			jobject			fDragSourceContext;
 };
 
 #endif	/* CONTENT_VIEW_H */

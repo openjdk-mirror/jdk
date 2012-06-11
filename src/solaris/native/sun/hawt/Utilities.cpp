@@ -61,6 +61,32 @@ DoCallback(jobject obj, const char* name, const char* description, ...)
     va_end(args);
 }
 
+
+jthrowable
+safe_ExceptionOccurred(JNIEnv *env) throw (std::bad_alloc) {
+    jthrowable xcp = env->ExceptionOccurred();
+    if (xcp != NULL) {
+        env->ExceptionClear(); // if we don't do this, FindClass will fail
+
+        jclass outofmem = env->FindClass("java/lang/OutOfMemoryError");
+        DASSERT(outofmem != NULL);
+        jboolean isOutofmem = env->IsInstanceOf(xcp, outofmem);
+
+        env->DeleteLocalRef(outofmem);
+
+        if (isOutofmem) {
+            env->DeleteLocalRef(xcp);
+            throw std::bad_alloc();
+        } else {
+            // rethrow exception
+            env->Throw(xcp);
+            return xcp;
+        }
+    }
+
+    return NULL;
+}
+
 jint
 ConvertMouseButtonToJava(int32 buttons)
 {

@@ -78,6 +78,7 @@ AwtApplication::MessageReceived(BMessage* message)
 			DECLARE_STATIC_VOID_JAVA_METHOD(clipChange, haikuClipboardClazz,
 				"clipboardChanged", "()V");
 			env->CallStaticVoidMethod(clazz, clipChange);
+			break;
 		}
 			
 	}
@@ -110,7 +111,6 @@ AwtApplication::_HandleFileMessage(BMessage* msg)
 
 	JNIEnv* env = GetEnv();
 
-	jclass stringClazz = env->FindClass("Ljava/lang/String;");
 	jobject peer;
 
 	void* peerPtr;
@@ -119,53 +119,69 @@ AwtApplication::_HandleFileMessage(BMessage* msg)
 
 	peer = (jobject)peerPtr;
 
+	jobjectArray result = NULL;
 	if (msg->what == kFileMessage) {
-		bool save = false;
-		if (msg->FindBool("save", &save) == B_OK) {
-			if (save) {
-				_HandleSaveMessage(msg, env, peer, stringClazz);
-			} else {
-				_HandleOpenMessage(msg, env, peer, stringClazz);
+		jclass stringClazz = env->FindClass("Ljava/lang/String;");
+		if (stringClazz != NULL) {
+			bool save = false;
+			if (msg->FindBool("save", &save) == B_OK) {
+				if (save) {
+					result = _HandleSaveMessage(msg, env, peer, stringClazz);
+				} else {
+					result = _HandleOpenMessage(msg, env, peer, stringClazz);
+				}
 			}
+			env->DeleteLocalRef(stringClazz);
 		}
-	} else {
-		DoCallback(peer, "done", "([Ljava/lang/String;)V", NULL);
 	}
 
-	env->DeleteLocalRef(stringClazz);
+	// We do the upcall in all cases; we treat failure cases above as if
+	// the user canceled the dialog
+	DoCallback(peer, "done", "([Ljava/lang/String;)V", result);
+
+	if (result != NULL) {
+		env->DeleteLocalRef(result);
+	}
+
 	env->DeleteWeakGlobalRef(peer);
 
 }
 
-void
+jobjectArray
 AwtApplication::_HandleOpenMessage(BMessage* msg, JNIEnv* env, jobject peer,
 	jclass stringClazz)
 {
 	// Files opened, we get some number of refs (hopefully)
 	type_code typeFound;
 	int32 count;
-	if (msg->GetInfo("refs", &typeFound, &count) == B_OK) {
-		if (typeFound == B_REF_TYPE && count > 0) {
-			jobjectArray result = env->NewObjectArray(count, stringClazz, NULL);
-			if (result != NULL) {
-				entry_ref ref;
-				for (int i = 0; i < count; i++) {
-					msg->FindRef("refs", i, &ref);
-					BPath path = BPath(&ref);
-					jstring file = env->NewStringUTF(path.Path());
-					if (file != NULL) {
-						env->SetObjectArrayElement(result, i, file);
-						env->DeleteLocalRef(file);
-					}
-				}
-				DoCallback(peer, "done", "([Ljava/lang/String;)V", result);
-				env->DeleteLocalRef(result);
-			}
+	if (msg->GetInfo("refs", &typeFound, &count) != B_OK)
+		return NULL;
+
+	if (typeFound != B_REF_TYPE || count < 1)
+		return NULL;
+
+	jobjectArray result = env->NewObjectArray(count, stringClazz, NULL);
+	if (result == NULL)
+		return NULL;
+
+	entry_ref ref;
+	for (int i = 0; i < count; i++) {
+		msg->FindRef("refs", i, &ref);
+		BPath path = BPath(&ref);
+		jstring file = env->NewStringUTF(path.Path());
+		if (file == NULL) {
+			env->DeleteLocalRef(result);
+			return NULL;
 		}
+
+		env->SetObjectArrayElement(result, i, file);
+		env->DeleteLocalRef(file);
 	}
+
+	return result;
 }
 
-void
+jobjectArray
 AwtApplication::_HandleSaveMessage(BMessage* msg, JNIEnv* env, jobject peer,
 	jclass stringClazz)
 {
@@ -173,19 +189,25 @@ AwtApplication::_HandleSaveMessage(BMessage* msg, JNIEnv* env, jobject peer,
 	// string in "name".
 	entry_ref dir;
 	const char* leaf;
-	if (msg->FindRef("directory", &dir) == B_OK
-			&& msg->FindString("name", &leaf) == B_OK) {
-		BPath path = BPath(&dir);
-		path.Append(leaf);
-		jobjectArray result = env->NewObjectArray(1, stringClazz, NULL);
-		if (result != NULL) {
-			jstring file = env->NewStringUTF(path.Path());
-			if (file != NULL) {
-				env->SetObjectArrayElement(result, 0, file);
-				env->DeleteLocalRef(file);
-			}
-			DoCallback(peer, "done", "([Ljava/lang/String;)V", result);
-			env->DeleteLocalRef(result);
-		}
+	if (msg->FindRef("directory", &dir) != B_OK
+			|| msg->FindString("name", &leaf) != B_OK)
+		return NULL;
+
+	BPath path = BPath(&dir);
+	path.Append(leaf);
+	jobjectArray result = env->NewObjectArray(1, stringClazz, NULL);
+
+	if (result == NULL)
+		return NULL;
+
+	jstring file = env->NewStringUTF(path.Path());
+	if (file == NULL) {
+		env->DeleteLocalRef(result);
+		return NULL;
 	}
+
+	env->SetObjectArrayElement(result, 0, file);
+	env->DeleteLocalRef(file);
+
+	return result;
 }

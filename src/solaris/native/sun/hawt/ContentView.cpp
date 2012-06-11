@@ -42,7 +42,8 @@ ContentView::ContentView(jobject platformWindow)
 	fDrawable(this),
 	fPlatformWindow(platformWindow),
 	fDropTargetComponent(NULL),
-	fDropTargetContext(NULL)
+	fDropTargetContext(NULL),
+	fDragSourceContext(NULL)
 {
 //	SetEventMask(B_POINTER_EVENTS);
 	get_mouse(&fPreviousPoint, &fPreviousButtons);
@@ -50,15 +51,36 @@ ContentView::ContentView(jobject platformWindow)
 
 
 void
-ContentView::AddDropTarget(jobject target) {
+ContentView::AddDropTarget(jobject target)
+{
 	fDropTargetComponent = target;
 }
 
 
 void
-ContentView::RemoveDropTarget() {
+ContentView::RemoveDropTarget()
+{
 	GetEnv()->DeleteWeakGlobalRef(fDropTargetComponent);
 	fDropTargetComponent = NULL;
+}
+
+
+void
+ContentView::StartDrag(BMessage* message, jobject dragSource)
+{
+	fDragSourceContext = dragSource;
+
+	// TODO use the provided image instead of this rectangle
+	BPoint mouse;
+	get_mouse(&mouse, NULL);
+	ConvertFromScreen(&mouse);
+	BRect rect(mouse.x - 64, mouse.y - 64, mouse.x + 63, mouse.y + 63);
+
+	// We add this field to the message so we can identify replies
+	// that indicate that the drag is over.
+	message->AddBool("java:drag_source_message", true);
+	printf("dragging right here..\n");
+	DragMessage(message, rect, this);
 }
 
 
@@ -121,9 +143,13 @@ ContentView::MakeFocus(bool focused)
 }
 
 
+DECLARE_JAVA_CLASS(dragSourceClazz, "sun/hawt/HaikuDragSourceContextPeer")
+
+
 void
 ContentView::MessageReceived(BMessage* message)
 {
+			printf("Got some message!\n");
 	switch (message->what) {
 		case B_UNMAPPED_KEY_DOWN:
 		case B_UNMAPPED_KEY_UP:
@@ -132,8 +158,23 @@ ContentView::MessageReceived(BMessage* message)
 		case B_MOUSE_WHEEL_CHANGED:
 			_HandleWheelEvent(message);
 			break;
+		case B_NO_REPLY:
+			printf("Got no reply message.\n");
+			printf("IsReply value is: %d\n", (int)message->IsReply());
 		default:
 			break;
+	}
+	
+	// A reply is sent for our drag message -- either by the view it gets
+	// dropped on or when the message is destroyed
+	if (message->IsReply()) {
+		printf("Got reply message!\n");
+		if (message->Previous()->HasBool("java:drag_source_message")) {
+			JNIEnv* env = GetEnv();
+			DECLARE_VOID_JAVA_METHOD(dragDone, dragSourceClazz, "dragDone",
+				"()V");
+			env->CallVoidMethod(fDragSourceContext, dragDone);
+		}
 	}
 
 	if (message->WasDropped() && fDropTargetComponent != NULL) {
@@ -238,7 +279,7 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit,
 	int32 clicks = 0;
 	message->FindInt32("clicks", &clicks);
 
-   	_HandleDnDMessage(transit, dragMessage, screenPoint.x, screenPoint.y);
+   	//_HandleDnDMessage(transit, dragMessage, screenPoint.x, screenPoint.y);
 
 	int32 modifiers = 0;
 	if (message->FindInt32("modifiers", &modifiers) != B_OK)

@@ -51,6 +51,9 @@ public final class HaikuDragSourceContextPeer extends SunDragSourceContextPeer {
 
     public static HaikuDragSourceContextPeer createDragSourceContextPeer(
             DragGestureEvent dge) throws InvalidDnDOperationException {
+        // TODO consider the case in which a new drag operation is started
+        // while another is ongoing. Where does the drag end event get
+        // delivered and what effect does it have?
         instance.setTrigger(dge);
         return instance;
     }

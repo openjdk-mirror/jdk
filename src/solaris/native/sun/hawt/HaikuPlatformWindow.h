@@ -49,8 +49,7 @@ public:
 			void			Focus();
 			void			SetMenuBar(BMenuBar* menuBar);
 			Insets			GetInsets();
-			ContentView*	GetContentView();
-			void			DragMessage(BMessage* message);
+			void			StartDrag(BMessage* message, jobject dragSource);
 			void			AddDropTarget(jobject target);
 			void			RemoveDropTarget();
 
