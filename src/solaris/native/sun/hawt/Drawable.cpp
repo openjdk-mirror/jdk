@@ -130,12 +130,37 @@ extern "C" {
  * Signature: (II)J
  */
 JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuDrawable_nativeAllocate(JNIEnv *env, jobject thiz,
-	jint width, jint height)
+Java_sun_hawt_HaikuDrawable_nativeAllocate(JNIEnv *env, jobject thiz)
 {
-	Drawable* drawable = new Drawable();
-	drawable->Allocate(width, height);
+	Drawable* drawable = new(std::nothrow) Drawable();
 	return ptr_to_jlong(drawable);
+}
+
+/*
+ * Class:     sun_hawt_HaikuDrawable
+ * Method:    nativeResize
+ * Signature: (JII)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_sun_hawt_HaikuDrawable_nativeResize(JNIEnv *env, jobject thiz,
+	jlong nativeDrawable, jint width, jint height)
+{
+	Drawable* drawable = (Drawable*)jlong_to_ptr(nativeDrawable);
+	drawable->Allocate(width, height);
+	return drawable->IsValid();
+}
+
+/*
+ * Class:     sun_hawt_HaikuDrawable
+ * Method:    nativeDispose
+ * Signature: (J)V
+ */
+JNIEXPORT jboolean JNICALL
+Java_sun_hawt_HaikuDrawable_nativeDispose(JNIEnv *env, jobject thiz,
+	jlong nativeDrawable)
+{
+	Drawable* drawable = (Drawable*)jlong_to_ptr(nativeDrawable);
+	delete drawable;
 }
 
 }
