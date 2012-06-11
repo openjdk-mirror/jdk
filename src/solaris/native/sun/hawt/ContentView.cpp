@@ -79,7 +79,6 @@ ContentView::StartDrag(BMessage* message, jobject dragSource)
 	// We add this field to the message so we can identify replies
 	// that indicate that the drag is over.
 	message->AddBool("java:drag_source_message", true);
-	printf("dragging right here..\n");
 	DragMessage(message, rect, this);
 }
 
@@ -149,7 +148,6 @@ DECLARE_JAVA_CLASS(dragSourceClazz, "sun/hawt/HaikuDragSourceContextPeer")
 void
 ContentView::MessageReceived(BMessage* message)
 {
-			printf("Got some message!\n");
 	switch (message->what) {
 		case B_UNMAPPED_KEY_DOWN:
 		case B_UNMAPPED_KEY_UP:
@@ -158,9 +156,6 @@ ContentView::MessageReceived(BMessage* message)
 		case B_MOUSE_WHEEL_CHANGED:
 			_HandleWheelEvent(message);
 			break;
-		case B_NO_REPLY:
-			printf("Got no reply message.\n");
-			printf("IsReply value is: %d\n", (int)message->IsReply());
 		default:
 			break;
 	}
@@ -168,7 +163,6 @@ ContentView::MessageReceived(BMessage* message)
 	// A reply is sent for our drag message -- either by the view it gets
 	// dropped on or when the message is destroyed
 	if (message->IsReply()) {
-		printf("Got reply message!\n");
 		if (message->Previous()->HasBool("java:drag_source_message")) {
 			JNIEnv* env = GetEnv();
 			DECLARE_VOID_JAVA_METHOD(dragDone, dragSourceClazz, "dragDone",
