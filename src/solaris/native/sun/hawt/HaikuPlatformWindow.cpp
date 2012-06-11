@@ -224,10 +224,13 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable(JNIEnv *env,
 
 	if (!window->LockLooper())
 		return;
-	if (resizable)
-		window->SetFlags(window->Flags() | B_NOT_RESIZABLE);
-	else
+
+	if (resizable) {
 		window->SetFlags(window->Flags() & ~B_NOT_RESIZABLE);
+	} else {
+		window->SetFlags(window->Flags() | B_NOT_RESIZABLE);
+	}
+
 	window->UnlockLooper();
 }
 
