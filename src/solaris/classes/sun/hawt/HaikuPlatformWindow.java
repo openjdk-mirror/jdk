@@ -173,7 +173,7 @@ public class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void setMinimumSize(int width, int height) {
-        //nativeSetMinimumSize(nativeWindow, width, height);
+        nativeSetMinimumSize(nativeWindow, width, height);
     }
 
     @Override

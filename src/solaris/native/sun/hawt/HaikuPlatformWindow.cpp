@@ -300,12 +300,18 @@ Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
+	BRect frameSize(0, 0, width - 1, height - 1);
+
 	if (!window->LockLooper())
 		return;
-	// todo insets
+
+	BRect clientSize = window->TransformFromFrame(frameSize);
+
 	float maxWidth, maxHeight;
 	window->GetSizeLimits(NULL, &maxWidth, NULL, &maxHeight);
-	window->SetSizeLimits(width, maxWidth, height, maxHeight);
+	window->SetSizeLimits(clientSize.IntegerWidth(), maxWidth,
+		clientSize.IntegerHeight(), maxHeight);
+
 	window->UnlockLooper();
 }
 
