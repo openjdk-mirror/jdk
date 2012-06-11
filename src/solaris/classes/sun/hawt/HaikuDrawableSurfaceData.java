@@ -30,27 +30,57 @@ import java.awt.image.*;
 import sun.java2d.*;
 import sun.java2d.loops.SurfaceType;
 
-class HaikuWindowSurfaceData extends HaikuDrawableSurfaceData {
+class HaikuDrawableSurfaceData extends SurfaceData {
 
-    private HaikuPlatformWindow window;
+    static SurfaceType typeDefault =
+            SurfaceType.IntArgb.deriveSubType("Haiku-ARGB");
 
-    HaikuWindowSurfaceData(SurfaceType surfaceType, ColorModel colorModel,
-            GraphicsConfiguration config, long drawable,
-            HaikuPlatformWindow window) {
-        super(surfaceType, colorModel, config, drawable);
+    static {
+        initIDs();
+    }
 
-        this.window = window;
+    private GraphicsConfiguration config;
+    private long drawable;
+
+    private static final native void initIDs();
+    private native final void initOps(long drawable);
+    private native final void nativeGetBounds(long drawable, Rectangle bounds);
+
+    HaikuDrawableSurfaceData(SurfaceType surfaceType, ColorModel colorModel,
+            GraphicsConfiguration config, long drawable) {
+        super(surfaceType, colorModel);
+
+        this.config = config;
+        this.drawable = drawable;
+
+        initOps(drawable);
     }
 
     @Override
     public Rectangle getBounds() {
-        Rectangle bounds = window.getBounds();
-        bounds.x = bounds.y = 0;
+        Rectangle bounds = new Rectangle();
+        nativeGetBounds(drawable, bounds);
         return bounds;
     }
 
     @Override
     public Object getDestination() {
-        return (Object)window.getTarget();
+        return null;
     }
+
+    @Override
+    public GraphicsConfiguration getDeviceConfiguration() {
+        return config;
+    }
+
+    @Override
+    public Raster getRaster(int arg0, int arg1, int arg2, int arg3) {
+        throw new UnsupportedOperationException("Not supported.");
+    }
+
+    @Override
+    public SurfaceData getReplacement() {
+        throw new UnsupportedOperationException("Not supported.");
+    }
+
 }

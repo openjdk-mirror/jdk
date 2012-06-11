@@ -25,10 +25,15 @@
 
 #include <jni.h>
 
-#include "sun_hawt_HaikuWindowSurfaceData.h"
+#include "sun_hawt_HaikuDrawableSurfaceData.h"
 
 #include "Drawable.h"
 #include "SurfaceData.h"
+
+static jfieldID rectXField;
+static jfieldID rectYField;
+static jfieldID rectWidthField;
+static jfieldID rectHeightField;
 
 extern "C" {
 
@@ -40,13 +45,13 @@ typedef struct {
 	jint			width;
 	jint			height;
 	jint 			lockflags;
-} HaikuWindowSurfaceDataOps;
+} HaikuDrawableSurfaceDataOps;
 
 static jint
 HaikuLock(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo,
 	jint lockflags)
 {
-	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
+	HaikuDrawableSurfaceDataOps* operations = (HaikuDrawableSurfaceDataOps*)ops;
 
 	// lock now because we're going to be messing with the drawable
 	if (!operations->drawable->Lock())
@@ -80,7 +85,7 @@ HaikuLock(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo,
 static void
 HaikuGetRasInfo(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
 {
-	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
+	HaikuDrawableSurfaceDataOps* operations = (HaikuDrawableSurfaceDataOps*)ops;
 	Drawable* drawable = operations->drawable;
 
 	if (drawable->IsValid() && (operations->lockflags & SD_LOCK_RD_WR)) {
@@ -105,7 +110,7 @@ HaikuRelease(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
 static void
 HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
 {
-	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)ops;
+	HaikuDrawableSurfaceDataOps* operations = (HaikuDrawableSurfaceDataOps*)ops;
 
 	// Must drop the lock before invalidating because otherwise
 	// we can deadlock with FrameResized. Invalidate wants
@@ -126,22 +131,48 @@ HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
 }
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuWindowSurfaceData_initIDs(JNIEnv *env, jclass clazz)
+Java_sun_hawt_HaikuDrawableSurfaceData_initIDs(JNIEnv *env, jclass clazz)
 {
+    jclass rectClazz = env->FindClass("java/awt/Rectangle");
+    rectXField = env->GetFieldID(rectClazz, "x", "I");
+    rectYField = env->GetFieldID(rectClazz, "y", "I");
+    rectWidthField = env->GetFieldID(rectClazz, "width", "I");
+    rectHeightField = env->GetFieldID(rectClazz, "height", "I");
+
 }
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuWindowSurfaceData_initOps(JNIEnv* env, jobject thiz,
+Java_sun_hawt_HaikuDrawableSurfaceData_initOps(JNIEnv* env, jobject thiz,
 	jlong drawable)
 {
-	HaikuWindowSurfaceDataOps* operations = (HaikuWindowSurfaceDataOps*)
-		SurfaceData_InitOps(env, thiz, sizeof(HaikuWindowSurfaceDataOps));
+	HaikuDrawableSurfaceDataOps* operations = (HaikuDrawableSurfaceDataOps*)
+		SurfaceData_InitOps(env, thiz, sizeof(HaikuDrawableSurfaceDataOps));
 
 	operations->sdOps.Lock = &HaikuLock;
 	operations->sdOps.GetRasInfo = &HaikuGetRasInfo;
 	operations->sdOps.Release = &HaikuRelease;
 	operations->sdOps.Unlock = &HaikuUnlock;
 	operations->drawable = (Drawable*)drawable;
+}
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuDrawableSurfaceData_nativeGetBounds(JNIEnv* env, jobject thiz,
+	jlong drawable, jobject bounds)
+{
+	Drawable* nativeDrawable = (Drawable*)jlong_to_ptr(drawable);
+	
+	if (!nativeDrawable->Lock())
+		return;
+
+	if (nativeDrawable->IsValid()) {
+		env->SetIntField(bounds, rectXField, (jint)0);
+		env->SetIntField(bounds, rectYField, (jint)0);
+		env->SetIntField(bounds, rectWidthField, (jint)nativeDrawable->Width());
+		env->SetIntField(bounds, rectHeightField,
+			(jint)nativeDrawable->Height());
+	}
+
+	nativeDrawable->Unlock();
 }
 
 }

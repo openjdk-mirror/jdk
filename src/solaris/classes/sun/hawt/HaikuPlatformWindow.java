@@ -160,6 +160,8 @@ public class HaikuPlatformWindow implements PlatformWindow {
 
     @Override
     public void setAlwaysOnTop(boolean value) {
+        // Can be enabled by setting the B_FLOATING_ALL_WINDOW_FEEL feel
+        // but this will cancel out any blocking state.
     }
     
     @Override
@@ -232,7 +234,7 @@ public class HaikuPlatformWindow implements PlatformWindow {
             long drawable = nativeGetDrawable(nativeWindow);
             surfaceData = new HaikuWindowSurfaceData(
                 HaikuWindowSurfaceData.typeDefault, getColorModel(),
-                getGraphicsConfiguration(), this, drawable);
+                getGraphicsConfiguration(), drawable, this);
         }
         return surfaceData;
     }
