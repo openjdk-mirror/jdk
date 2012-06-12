@@ -90,4 +90,8 @@ public class HaikuDrawable {
         nativeDispose(nativeDrawable);
         nativeDrawable = 0;
     }
+
+    public long getNativeDrawable() {
+        return nativeDrawable;
+    }
 }

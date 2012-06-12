@@ -114,6 +114,14 @@ public class HaikuPlatformWindow implements PlatformWindow {
     @Override
     public void setVisible(boolean visible) {
         nativeSetVisible(nativeWindow, visible);
+        if (visible) {
+            // Bug: it seems that bounds changes while the window
+            // is not visible fail somehow and we end up with the
+            // default bounds
+            Rectangle bounds = peer.getBounds();
+            nativeSetBounds(nativeWindow, bounds.x, bounds.y, bounds.width,
+                bounds.height);
+        }
     }
 
     @Override
