@@ -155,7 +155,7 @@ Java_sun_hawt_HaikuDrawable_nativeResize(JNIEnv *env, jobject thiz,
  * Method:    nativeDispose
  * Signature: (J)V
  */
-JNIEXPORT jboolean JNICALL
+JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuDrawable_nativeDispose(JNIEnv *env, jobject thiz,
 	jlong nativeDrawable)
 {
