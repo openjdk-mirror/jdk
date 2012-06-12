@@ -70,6 +70,8 @@ Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jobject thiz)
 	be_app->UnlockLooper();
 }
 
+DECLARE_JAVA_CLASS(toolkitClazz, "sun/hawt/HaikuToolkit")
+
 /*
  * Class:     sun_hawt_HaikuToolkit
  * Method:    nativeRunMessage
@@ -78,7 +80,16 @@ Java_sun_hawt_HaikuToolkit_nativeInit(JNIEnv *env, jobject thiz)
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuToolkit_nativeRunMessage(JNIEnv *env, jobject thiz)
 {
-	be_app->LockLooper();
+	if (!be_app->Lock()) {
+		// NOTE I can't figure out how we're supposed to quit properly
+		// here. There must be some way to tell AWT that we've been quit
+		// or the system is shutting down.
+		// Maybe we should just System.exit(0) ?
+		DECLARE_VOID_JAVA_METHOD(shutdown, toolkitClazz, "shutdown", "()V");
+		env->CallVoidMethod(thiz, shutdown);
+		return;
+	}
+
 	be_app->Run();
 	delete be_app;
 }
