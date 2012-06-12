@@ -119,8 +119,7 @@ public class HaikuPlatformWindow implements PlatformWindow {
             // is not visible fail somehow and we end up with the
             // default bounds
             Rectangle bounds = peer.getBounds();
-            nativeSetBounds(nativeWindow, bounds.x, bounds.y, bounds.width,
-                bounds.height);
+            setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
         }
     }
 
