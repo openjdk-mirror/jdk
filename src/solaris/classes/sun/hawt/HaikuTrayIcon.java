@@ -46,12 +46,15 @@ public class HaikuTrayIcon implements TrayIconPeer {
 
     private Frame popupParent = new Frame();
 
-    private native long nativeCreate(long drawable);
-    private native void nativeSetToolTip(long nativeTrayIcon, String tooltip);
-    private native void nativeGetIconLocation(long nativeTrayIcon,
-        Point location);
+    private static final int NO_ICON = 1;
+    private static final int INFO_ICON = 2;
+    private static final int WARNING_ICON = 3;
+    private static final int ERROR_ICON = 4;
+
+    private native long nativeCreate(long nativeDrawable);
+    private native void nativeSetToolTip(long nativeTrayIcon, String toolTip);
     private native void nativeDisplayMessage(String caption, String text,
-        MessageType messageType);
+        int messageType);
     private native void nativeUpdate(long nativeTrayIcon);
     private native void nativeDispose(long nativeTrayIcon);
 
@@ -138,20 +141,19 @@ public class HaikuTrayIcon implements TrayIconPeer {
     @Override
     public void displayMessage(final String caption, final String text,
             final String messageType) {
-
-        MessageType type = messageTypeForName(messageType);
+        int type = messageTypeForName(messageType);
         nativeDisplayMessage(caption, text, type);
     }
 
-    private static MessageType messageTypeForName(String messageType) {
+    private static int messageTypeForName(String messageType) {
         if (messageType.equals("ERROR")) {
-            return MessageType.ERROR;
+            return ERROR_ICON;
         } else if (messageType.equals("WARNING")) {
-            return MessageType.WARNING;
+            return WARNING_ICON;
         } else if (messageType.equals("INFO")) {
-        	return MessageType.INFO;
+        	return INFO_ICON;
         } else {
-            return MessageType.NONE;
+            return NO_ICON;
         }
     }
 }

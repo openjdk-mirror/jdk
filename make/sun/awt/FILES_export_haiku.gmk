@@ -104,9 +104,8 @@ FILES_export = \
 	sun/hawt/HaikuGraphicsDevice.java \
 	sun/hawt/HaikuGraphicsEnvironment.java \
 	sun/hawt/HaikuPlatformWindow.java \
-	sun/hawt/HaikuSurfaceManagerFactory.java \
 	sun/hawt/HaikuToolkit.java \
-	sun/hawt/HaikuVolatileSurfaceManager.java
+	sun/hawt/HaikuTrayIcon.java
 
 FILES_export2 = \
 	java/awt/AlphaComposite.java \

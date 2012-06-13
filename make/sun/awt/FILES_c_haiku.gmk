@@ -117,6 +117,7 @@ FILES_cpp = \
 	HaikuPlatformWindow.cpp \
 	HaikuRobot.cpp \
 	HaikuToolkit.cpp \
+	HaikuTrayIcon.cpp \
 	HaikuWindowSurfaceData.cpp \
 	Utilities.cpp
 
