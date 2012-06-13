@@ -69,6 +69,7 @@ public class HaikuTrayIcon implements TrayIconPeer {
     @Override
     public void dispose() {
         nativeDispose(nativeTrayIcon);
+        icon.dispose();
         HaikuToolkit.targetDisposedPeer(target, this);
         target = null;
     }
