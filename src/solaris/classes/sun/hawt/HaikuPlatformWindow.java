@@ -326,10 +326,9 @@ public class HaikuPlatformWindow implements PlatformWindow {
     // =====================
 
     public void eventRepaint(int x, int y, int width, int height) {
-        // The repaint event coordinates are in view-space, so we need
-        // to translate them.
-        Insets insets = peer.getInsets();
-        peer.notifyExpose(x + insets.left, y + insets.top, width, height);
+        //peer.notifyExpose(x, y, width, height);
+        Rectangle bounds = peer.getBounds();
+        peer.notifyExpose(0, 0, bounds.width, bounds. height);
     }
 
     public void eventReshape(int x, int y, int width, int height) {

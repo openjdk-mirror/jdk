@@ -91,16 +91,20 @@ ContentView::GetDrawable()
 
 
 void
-ContentView::DeferredDraw(BRect updateRect)
+ContentView::DeferredDraw(BRect frameRect)
 {
-	// updateRect includes the menu and the decorations, and indicates
-	// the region of the bitmap we should draw. However we also need the
-	// corresponding region of view-space to draw in.
-	BRect viewRect = ((PlatformWindow*)Window())->ViewFromFrame(updateRect);
-	if (!fDrawable.Lock())
+	// frameRect is in decorator frame space and indicates which region
+	// of the bitmap we need to paint. We need to find the corresponding
+	// region of the content view
+	BRect viewRect = ((PlatformWindow*)Window())->ViewFromFrame(frameRect);
+	if (!fDrawable.Lock()) {
 		return;
-	if (fDrawable.IsValid())
-		DrawBitmapAsync(fDrawable.GetBitmap(), updateRect, viewRect);
+	}
+
+	if (fDrawable.IsValid()) {
+		DrawBitmapAsync(fDrawable.GetBitmap(), frameRect, viewRect);
+	}
+
 	fDrawable.Unlock();
 }
 
@@ -111,12 +115,12 @@ ContentView::Draw(BRect updateRect)
 	// updateRect is in view-space here. We need to translate to frame-space
 	// in order to deal with the bitmap's insets
 	BRect rect = ((PlatformWindow*)Window())->ViewToFrame(updateRect);
-	DeferredDraw(updateRect);
+	DeferredDraw(rect);
 
-	jint x = updateRect.left;
-	jint y = updateRect.top;
-	jint width = updateRect.IntegerWidth() + 1;
-	jint height = updateRect.IntegerHeight() + 1;
+	jint x = rect.left;
+	jint y = rect.top;
+	jint width = rect.IntegerWidth() + 1;
+	jint height = rect.IntegerHeight() + 1;
 	DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
 }
 
