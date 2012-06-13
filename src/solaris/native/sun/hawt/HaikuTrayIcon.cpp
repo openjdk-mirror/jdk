@@ -39,6 +39,7 @@
 #include <Resources.h>
 #include <View.h>
 
+#include "Drawable.h"
 #include "Utilities.h"
 
 // Stole this from BAlert
@@ -136,36 +137,38 @@ static const int kTrayIconSize = 16;
 
 class TrayIcon : public BView {
 public:
-					TrayIcon(jobject peer);
-	virtual			~TrayIcon() { }
+						TrayIcon(jobject peer, Drawable* drawable);
+	virtual				~TrayIcon() { }
 
-			void	SetId(int32 id) { fId = id; }
-			int32	GetId() { return fId; }
+			void		SetId(int32 id) { fId = id; }
+			int32		GetId() { return fId; }
 
-	virtual	void	DetachedFromWindow();
-	virtual	void	MouseDown(BPoint point);
-	virtual	void	MouseMoved(BPoint point, uint32 transit,
-						const BMessage* dragMessage);
-	virtual	void	MouseUp(BPoint point);
-
-private:
-			void	_HandleMouseEvent(BPoint point);
-			JNIEnv*	_GetEnv();
+	virtual	void		DetachedFromWindow();
+	virtual	void		Draw(BRect updateRect);
+	virtual	void		MouseDown(BPoint point);
+	virtual	void		MouseMoved(BPoint point, uint32 transit,
+							const BMessage* dragMessage);
+	virtual	void		MouseUp(BPoint point);
 
 private:
-			jobject	fPeer;
+			void		_HandleMouseEvent(BPoint point);
+			JNIEnv*		_GetEnv();
 
-			uint32	fId;
+private:
+			jobject		fPeer;
+			Drawable*	fDrawable;
+			uint32		fId;
 
-			uint32	fPreviousButtons;
-			BPoint	fPreviousPoint;
+			uint32		fPreviousButtons;
+			BPoint		fPreviousPoint;
 };
 
-TrayIcon::TrayIcon(jobject peer)
+TrayIcon::TrayIcon(jobject peer, Drawable* drawable)
 	:
 	BView(BRect(0, 0, kTrayIconSize - 1, kTrayIconSize - 1), "awtTrayIcon",
 		B_FOLLOW_ALL, B_WILL_DRAW),
-	fPeer(peer)
+	fPeer(peer),
+	fDrawable(drawable)
 {
 }
 
@@ -180,6 +183,17 @@ TrayIcon::DetachedFromWindow()
 
 	// It's critical we don't reattach this thread, see below
 	fPeer = NULL;
+}
+
+void
+TrayIcon::Draw(BRect updateRect)
+{
+	if (fDrawable->Lock()) {
+		if (fDrawable->IsValid()) {
+			DrawBitmapAsync(fDrawable->GetBitmap(), updateRect, updateRect);
+		}
+		fDrawable->Unlock();
+	}
 }
 
 void
@@ -298,7 +312,8 @@ Java_sun_hawt_HaikuTrayIcon_nativeCreate(JNIEnv *env, jobject thiz,
 		return 0;
 	}
 
-	TrayIcon* icon = new TrayIcon(peer);
+	Drawable* drawable = (Drawable*)jlong_to_ptr(nativeDrawable);
+	TrayIcon* icon = new TrayIcon(peer, drawable);
 
 	int32 id;
 	BDeskbar().AddItem(icon, &id);
