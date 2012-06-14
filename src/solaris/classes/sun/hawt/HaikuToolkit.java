@@ -61,7 +61,7 @@ public class HaikuToolkit extends LWToolkit {
         // running.
         nativeInit();
 
-        // This kicks of the toolkit thread and runs platformRunMessage
+        // This kicks off the toolkit thread and runs platformRunMessage
         init();
     }
 
@@ -177,12 +177,14 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public boolean isTraySupported() {
-        return false;
+        return true;
     }
 
     @Override
     public TrayIconPeer createTrayIcon(TrayIcon target) throws HeadlessException {
-        return null;
+        TrayIconPeer peer = new HaikuTrayIcon(target);
+        targetCreatedPeer(target, peer);
+        return peer;
     }
 
     @Override

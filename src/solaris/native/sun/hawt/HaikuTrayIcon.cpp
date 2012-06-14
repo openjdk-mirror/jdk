@@ -29,6 +29,7 @@
 #include "sun_hawt_HaikuTrayIcon.h"
 
 #include <Alert.h>
+#include <Application.h>
 #include <Bitmap.h>
 #include <Deskbar.h>
 #include <File.h>
@@ -133,102 +134,124 @@ GetIcon(alert_type alertType)
 	return icon;
 }
 
+static const int kMsgSetToolTip = 'sett';
+static const int kMsgSetBitmap = 'setb';
+static const int kMsgIconMessenger = 'msgr';
+
 static const int kTrayIconSize = 16;
 
-class TrayIcon : public BView {
+class TrayIconProxy : public BHandler {
 public:
-						TrayIcon(jobject peer, Drawable* drawable);
-	virtual				~TrayIcon() { }
+						TrayIconProxy(jobject peer, Drawable* drawable);
+						~TrayIconProxy();
 
 			void		SetId(int32 id) { fId = id; }
 			int32		GetId() { return fId; }
 
-	virtual	void		DetachedFromWindow();
-	virtual	void		Draw(BRect updateRect);
-	virtual	void		MouseDown(BPoint point);
-	virtual	void		MouseMoved(BPoint point, uint32 transit,
-							const BMessage* dragMessage);
-	virtual	void		MouseUp(BPoint point);
+			void		WaitForLink();
+			void		SetToolTip(const char* tip);
+			void		UpdateBitmap();
+
+	virtual	void		MessageReceived(BMessage* message);
 
 private:
-			void		_HandleMouseEvent(BPoint point);
-			JNIEnv*		_GetEnv();
+			void		_HandleMouseEvent(BMessage* message);
 
 private:
 			jobject		fPeer;
 			Drawable*	fDrawable;
+			BMessenger	fIconMessenger;
 			uint32		fId;
+			sem_id		fLinkSem;
 
 			uint32		fPreviousButtons;
 			BPoint		fPreviousPoint;
 };
 
-TrayIcon::TrayIcon(jobject peer, Drawable* drawable)
+TrayIconProxy::TrayIconProxy(jobject peer, Drawable* drawable)
 	:
-	BView(BRect(0, 0, kTrayIconSize - 1, kTrayIconSize - 1), "awtTrayIcon",
-		B_FOLLOW_ALL, B_WILL_DRAW),
+	BHandler("trayIconProxy"),
 	fPeer(peer),
 	fDrawable(drawable)
 {
+	fLinkSem = create_sem(0, "trayIconProxyLinkSem");
 }
 
-void
-TrayIcon::DetachedFromWindow()
+TrayIconProxy::~TrayIconProxy()
 {
-	_GetEnv()->DeleteWeakGlobalRef(fPeer);
-
-	// We've been removed from the deskbar, we need to detach this
-	// thread from the VM because it belongs to the deskbar
-	jvm->DetachCurrentThread();
-
-	// It's critical we don't reattach this thread, see below
-	fPeer = NULL;
+	GetEnv()->DeleteWeakGlobalRef(fPeer);
+	delete_sem(fLinkSem);
 }
 
 void
-TrayIcon::Draw(BRect updateRect)
+TrayIconProxy::WaitForLink()
+{
+	while (acquire_sem(fLinkSem) == B_INTERRUPTED);
+	release_sem(fLinkSem);
+}
+
+/*
+ * NOTE
+ * Call WaitForLink before calling any of the following functions
+ */
+
+void
+TrayIconProxy::SetToolTip(const char* tip)
+{
+	BMessage message(kMsgSetToolTip);
+	message.AddString("tip", tip);
+	fIconMessenger.SendMessage(&message);
+}
+
+void
+TrayIconProxy::UpdateBitmap()
 {
 	if (fDrawable->Lock()) {
 		if (fDrawable->IsValid()) {
-			DrawBitmapAsync(fDrawable->GetBitmap(), updateRect, updateRect);
+			BMessage message(kMsgSetBitmap);
+
+			BMessage bitmapArchive;
+			BBitmap* bitmap = fDrawable->GetBitmap();
+			bitmap->Archive(&bitmapArchive, true);
+			message.AddMessage("bitmapArchive", &bitmapArchive);
+
+			fIconMessenger.SendMessage(&message);
 		}
 		fDrawable->Unlock();
 	}
 }
 
 void
-TrayIcon::MouseDown(BPoint point)
+TrayIconProxy::MessageReceived(BMessage* message)
 {
-	_HandleMouseEvent(point);
-}
-
-void
-TrayIcon::MouseMoved(BPoint point, uint32 transit, const BMessage* dragMessage)
-{
-	_HandleMouseEvent(point);
-}
-
-void
-TrayIcon::MouseUp(BPoint point)
-{
-	_HandleMouseEvent(point);
+	switch (message->what) {
+		case kMsgIconMessenger: {
+			// There are a lot of error cases here where there's
+			// no appropriate way to propogate the error back to Java.
+			// So I just assume that everything works fine...
+			
+			message->FindMessenger("iconMessenger", &fIconMessenger);
+			release_sem(fLinkSem);
+			break;
+		}
+		case B_MOUSE_DOWN:
+		case B_MOUSE_MOVED:
+		case B_MOUSE_UP:
+			_HandleMouseEvent(message);
+			break;
+		default:
+			break;
+	}
+	BHandler::MessageReceived(message);
 }
 
 DECLARE_JAVA_CLASS(trayIconClazz, "sun/hawt/HaikuTrayIcon")
 
 void
-TrayIcon::_HandleMouseEvent(BPoint point)
+TrayIconProxy::_HandleMouseEvent(BMessage* message)
 {
-	// In the off-chance that that we get some mouse event after
-	// being removed from the window we don't want to attach the
-	// thread again so we check if the peer is null to avoid that
-	if (fPeer == NULL) {
-		return;
-	}
-
-	// This is based on the ContentView version, but it's slightly
-	// different as we don't handle mouse entered, exit, dragged
-	BMessage* message = Window()->CurrentMessage();
+	BPoint point;
+	message->FindPoint("screenPoint", &point);
 
 	// Get out early if this message is useless
 	int32 buttons = 0;
@@ -240,7 +263,6 @@ TrayIcon::_HandleMouseEvent(BPoint point)
 	fPreviousPoint = point;
 	fPreviousButtons = buttons;
 
-	BPoint screenPoint = ConvertToScreen(point);
 	int64 when = 0;
 	message->FindInt64("when", &when);
 	int32 clicks = 0;
@@ -272,27 +294,163 @@ TrayIcon::_HandleMouseEvent(BPoint point)
 			|| id == java_awt_event_MouseEvent_MOUSE_RELEASED)
 		button = ConvertMouseButtonToJava(buttonChange);
 
-	JNIEnv* env = _GetEnv();
+	JNIEnv* env = GetEnv();
 
 	DECLARE_VOID_JAVA_METHOD(handleMouse, trayIconClazz, "handleMouseEvent",
 		"(IJIIIII)V");
 	env->CallVoidMethod(fPeer, handleMouse, id, (jlong)(when / 1000), mods,
-		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, button);
+		(jint)point.x, (jint)point.y, (jint)clicks, button);
 }
 
-// NOTE
-// Thread attaching/detaching in here is quite delecate. We don't want
-// to leave the deskbar thread attached because it will block AWT auto
-// shutdown. Please be careful.
-JNIEnv*
-TrayIcon::_GetEnv()
-{
-	JNIEnv* env;
-	if (jvm->GetEnv((void**)&env, JNI_VERSION_1_2) == JNI_EDETACHED) {
-		jvm->AttachCurrentThread((void**)&env, NULL);
-	}
+class TrayIcon : public BView {
+public:
+						TrayIcon(BMessenger proxyMessenger);
+						TrayIcon(BMessage* archive);
+						~TrayIcon();
 
-	return env;
+	virtual	TrayIcon*	Instantiate(BMessage* archive);
+	virtual	status_t	Archive(BMessage* message, bool deep) const;
+
+	virtual	void		AttachedToWindow();
+	virtual	void		DetachedFromWindow();
+	virtual	void		Draw(BRect updateRect);
+	virtual	void		MessageReceived(BMessage* message);
+	virtual	void		MouseDown(BPoint point);
+	virtual	void		MouseMoved(BPoint point, uint32 transit,
+							const BMessage* dragMessage);
+	virtual	void		MouseUp(BPoint point);
+
+private:
+			void		_HandleMouseEvent(BPoint point);
+
+private:
+			BMessenger	fProxyMessenger;
+			BBitmap*	fBitmap;
+};
+
+TrayIcon::TrayIcon(BMessenger proxyMessenger)
+	:
+	BView(BRect(0, 0, kTrayIconSize - 1, kTrayIconSize - 1), "awtTrayIcon",
+		B_FOLLOW_ALL, B_WILL_DRAW),
+	fProxyMessenger(proxyMessenger),
+	fBitmap(NULL)
+{
+}
+
+TrayIcon::TrayIcon(BMessage* archive)
+	:
+	BView(archive)
+{
+	archive->FindMessenger("proxyMessenger", &fProxyMessenger);
+}
+
+TrayIcon::~TrayIcon()
+{
+	if (fBitmap != NULL) {
+		delete fBitmap;
+		fBitmap = NULL;
+	}
+}
+
+TrayIcon*
+TrayIcon::Instantiate(BMessage* archive)
+{
+	if (!validate_instantiation(archive, "TrayIcon"))
+		return NULL;
+
+	return new(std::nothrow) TrayIcon(archive);
+}
+
+status_t
+TrayIcon::Archive(BMessage* archive, bool deep) const
+{
+	status_t status = BView::Archive(archive, deep);
+	if (status == B_OK)
+		status = archive->AddString("class", "TrayIcon");
+	if (status == B_OK)
+		status = archive->AddMessenger("proxyMessenger", fProxyMessenger);
+
+	return status;
+}
+
+void
+TrayIcon::AttachedToWindow()
+{
+	BMessage message(kMsgIconMessenger);
+	
+	BMessenger iconMessenger(this);
+	message.AddMessenger("iconMessenger", iconMessenger);
+	fProxyMessenger.SendMessage(&message);
+}
+
+void
+TrayIcon::DetachedFromWindow()
+{
+	// ...
+}
+
+void
+TrayIcon::Draw(BRect updateRect)
+{
+	if (fBitmap != NULL)
+		DrawBitmapAsync(fBitmap, updateRect, updateRect);
+}
+
+void
+TrayIcon::MessageReceived(BMessage* message)
+{
+	switch (message->what) {
+		case kMsgSetBitmap: {
+			BMessage archive;
+			if (message->FindMessage("bitmapArchive", &archive) == B_OK) {
+				BBitmap* bitmap = new BBitmap(&archive);
+				if (bitmap->IsValid()) {
+					if (fBitmap != NULL) {
+						delete fBitmap;
+					}
+					fBitmap = bitmap;
+				}
+			}
+			break;
+		}
+		case kMsgSetToolTip: {
+			const char* tip;
+			message->FindString("tip", &tip);
+			SetToolTip(tip);
+			break;
+		}
+		default:
+			break;
+	}
+	TrayIcon::MessageReceived(message);
+}
+
+void
+TrayIcon::MouseDown(BPoint point)
+{
+	_HandleMouseEvent(point);
+}
+
+void
+TrayIcon::MouseMoved(BPoint point, uint32 transit, const BMessage* dragMessage)
+{
+	_HandleMouseEvent(point);
+}
+
+void
+TrayIcon::MouseUp(BPoint point)
+{
+	_HandleMouseEvent(point);
+}
+
+void
+TrayIcon::_HandleMouseEvent(BPoint point)
+{
+	ConvertToScreen(&point);
+
+	BMessage* message = Window()->CurrentMessage();
+	message->AddPoint("screenPoint", point);
+	fProxyMessenger.SendMessage(message);
 }
 
 extern "C" {
@@ -306,20 +464,29 @@ JNIEXPORT jlong JNICALL
 Java_sun_hawt_HaikuTrayIcon_nativeCreate(JNIEnv *env, jobject thiz,
 	jlong nativeDrawable)
 {
-	// released in TrayIcon::DetachedFromWindow()
+	// released in TrayIconProxy destructor
 	jobject peer = env->NewWeakGlobalRef(thiz);
 	if (peer == NULL) {
 		return 0;
 	}
 
 	Drawable* drawable = (Drawable*)jlong_to_ptr(nativeDrawable);
-	TrayIcon* icon = new TrayIcon(peer, drawable);
+	TrayIconProxy* proxy = new TrayIconProxy(peer, drawable);
+	be_app->AddHandler(proxy);
+
+	BMessenger proxyMessenger(proxy);
+	TrayIcon icon(proxyMessenger);
 
 	int32 id;
-	BDeskbar().AddItem(icon, &id);
-	icon->SetId(id);
+	BDeskbar deskbar;
+	deskbar.AddItem(&icon, &id);
+	proxy->SetId(id);
 
-	return ptr_to_jlong(icon);
+	// Wait for the proxy to establish the link with the icon
+	// in the deskbar before returning to Java
+	proxy->WaitForLink();
+
+	return ptr_to_jlong(proxy);
 }
 
 /*
@@ -329,15 +496,15 @@ Java_sun_hawt_HaikuTrayIcon_nativeCreate(JNIEnv *env, jobject thiz,
  */
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuTrayIcon_nativeSetToolTip(JNIEnv *env, jobject thiz,
-	jlong nativeTrayIcon, jstring toolTip)
+	jlong nativeTrayIconProxy, jstring toolTip)
 {
 	const char* tip = env->GetStringUTFChars(toolTip, NULL);
 	if (tip == NULL) {
 		return;
 	}
 
-	TrayIcon* icon = (TrayIcon*)jlong_to_ptr(nativeTrayIcon);
-	icon->SetToolTip(tip);
+	TrayIconProxy* proxy = (TrayIconProxy*)jlong_to_ptr(nativeTrayIconProxy);
+	proxy->SetToolTip(tip);
 	env->ReleaseStringUTFChars(toolTip, tip);
 }
 
@@ -392,10 +559,10 @@ Java_sun_hawt_HaikuTrayIcon_nativeDisplayMessage(JNIEnv *env, jobject thiz,
  */
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuTrayIcon_nativeUpdate(JNIEnv *env, jobject thiz,
-	jlong nativeTrayIcon)
+	jlong nativeTrayIconProxy)
 {
-	TrayIcon* icon = (TrayIcon*)jlong_to_ptr(nativeTrayIcon);
-	icon->Invalidate();
+	TrayIconProxy* proxy = (TrayIconProxy*)jlong_to_ptr(nativeTrayIconProxy);
+	proxy->UpdateBitmap();
 }
 
 /*
@@ -405,12 +572,15 @@ Java_sun_hawt_HaikuTrayIcon_nativeUpdate(JNIEnv *env, jobject thiz,
  */
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuTrayIcon_nativeDispose(JNIEnv *env, jobject thiz,
-	jlong nativeTrayIcon)
+	jlong nativeTrayIconProxy)
 {
-	TrayIcon* icon = (TrayIcon*)jlong_to_ptr(nativeTrayIcon);
+	TrayIconProxy* proxy = (TrayIconProxy*)jlong_to_ptr(nativeTrayIconProxy);
 
 	// Not much we can do if this fails
-	BDeskbar().RemoveItem(icon->GetId());
+	BDeskbar().RemoveItem(proxy->GetId());
+
+	be_app->RemoveHandler(proxy);
+	delete proxy;
 }
 
 }
