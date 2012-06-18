@@ -177,7 +177,7 @@ public class HaikuToolkit extends LWToolkit {
 
     @Override
     public boolean isTraySupported() {
-        return true;
+        return false;
     }
 
     @Override
