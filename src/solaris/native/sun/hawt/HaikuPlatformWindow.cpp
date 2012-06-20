@@ -84,6 +84,7 @@ Java_sun_hawt_HaikuPlatformWindow_nativeInit(JNIEnv *env, jobject thiz,
 {
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
 	PlatformWindow* window = new PlatformWindow(javaWindow,	simpleWindow);
+	window->blocked_windows = 0;
 	return ptr_to_jlong(window);
 }
 
@@ -344,30 +345,51 @@ Java_sun_hawt_HaikuPlatformWindow_nativeIsActive(JNIEnv *env, jobject thiz,
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetBlocked(JNIEnv *env, jobject thiz,
-	jlong nativeWindow, jlong nativeBlocker, jboolean blocked)
+Java_sun_hawt_HaikuPlatformWindow_nativeBlock(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jlong nativeBlockee)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 	if (!window->LockLooper())
 		return;
 
-	PlatformWindow* blocker = (PlatformWindow*)jlong_to_ptr(nativeBlocker);
-	if (!blocker->LockLooper()) {
+	PlatformWindow* blockee = (PlatformWindow*)jlong_to_ptr(nativeBlockee);
+	if (!blockee->LockLooper()) {
 		window->UnlockLooper();
 		return;
 	}
 
-	if (blocked) {
-		blocker->SetFeel(B_MODAL_SUBSET_WINDOW_FEEL);
-		blocker->AddToSubset(window);
-	} else {
-		blocker->RemoveFromSubset(window);
-		// Need to set the feel back to normal after we've stopped blocking
-		// everything, or?
+	if (window->blocked_windows++ == 0) {
+		window->SetFeel(B_MODAL_SUBSET_WINDOW_FEEL);
 	}
+	window->AddToSubset(blockee);
 
 	window->UnlockLooper();
-	blocker->UnlockLooper();
+	blockee->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeUnblock(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jlong nativeBlockee)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	PlatformWindow* blockee = (PlatformWindow*)jlong_to_ptr(nativeBlockee);
+	if (!blockee->LockLooper()) {
+		window->UnlockLooper();
+		return;
+	}
+
+	if (--window->blocked_windows == 0) {
+		window->SetFeel(B_NORMAL_WINDOW_FEEL);
+	}
+	window->RemoveFromSubset(blockee);
+//	window->SetFlags(
+
+	window->UnlockLooper();
+	blockee->UnlockLooper();
 }
 
 

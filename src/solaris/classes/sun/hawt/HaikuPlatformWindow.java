@@ -29,6 +29,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
 import java.awt.peer.*;
+import java.util.*;
 
 import sun.awt.*;
 import sun.lwawt.*;
@@ -44,7 +45,11 @@ public class HaikuPlatformWindow implements PlatformWindow {
     private long nativeWindow;
     private HaikuWindowSurfaceData surfaceData;
     private PeerType peerType;
-    private LWWindowPeer blocker;
+
+    private HaikuPlatformWindow blocker;
+    private Set<HaikuPlatformWindow> blockedWindows = new HashSet<HaikuPlatformWindow>();
+    private Set<HaikuPlatformWindow> currentBlocked = new HashSet<HaikuPlatformWindow>();
+
     private final Point location = new Point();
 
     private static native void initIDs();
@@ -69,8 +74,8 @@ public class HaikuPlatformWindow implements PlatformWindow {
         int height);
     private native void nativeGetInsets(long nativeWindow, Insets insets);
     private native boolean nativeIsActive(long nativeWindow);
-    private native void nativeSetBlocked(long nativeWindow, long nativeBlocker,
-        boolean blocked);
+    private native void nativeBlock(long nativeWindow, long nativeBlockee);
+    private native void nativeUnblock(long nativeWindow, long nativeBlockee);
 
     private native void nativeAddDropTarget(long nativeWindow, Component target);
     private native void nativeRemoveDropTarget(long nativeWindow);
@@ -202,25 +207,6 @@ public class HaikuPlatformWindow implements PlatformWindow {
     }
 
     @Override
-    public void setModalBlocked(boolean blocked) {
-        if (blocked) {
-            assert blocker == null : "Setting a new blocker on an already blocked window";
-            blocker = peer.getFirstBlocker();
-            assert blocker != null : "Being asked to block but have no blocker";
-        } else {
-            assert blocker != null : "Being asked to unblock but have no blocker";
-        }
-
-        System.err.format("This is %d Setting blocked %b by %d%n", hashCode(), blocked, blocker.getPlatformWindow().hashCode());
-        long nativeBlocker = blocker.getPlatformWindow().getLayerPtr();
-        nativeSetBlocked(nativeWindow, nativeBlocker, blocked);
-
-        if (!blocked) {
-            blocker = null;
-        }
-    }
-
-    @Override
     public GraphicsDevice getGraphicsDevice() {
         return getGraphicsConfiguration().getDevice();
     }
@@ -273,6 +259,80 @@ public class HaikuPlatformWindow implements PlatformWindow {
 
     public void removeDropTarget() {
         nativeRemoveDropTarget(nativeWindow);
+    }
+
+    // ================
+    // Blocking support
+    // ================
+
+    @Override
+    public void setModalBlocked(boolean blocked) {
+        if (blocked) {
+            assert blocker == null : "Setting a new blocker on an already blocked window";
+
+            // unblock our windows, but keep them in the blockee list as we
+            // may need to reblock them later when our blocker goes away
+            for (HaikuPlatformWindow window : blockedWindows) {
+                doUnblock(window);
+            }
+
+            blocker = (HaikuPlatformWindow)peer.getFirstBlocker().
+                getPlatformWindow();
+            assert blocker != null : "Being asked to block but have no blocker";
+            blocker.block(this);
+
+            for (HaikuPlatformWindow window : blockedWindows) {
+                blocker.block(window);
+            }
+        } else {
+            assert blocker != null : "Being asked to unblock but have no blocker";
+            blocker.unblock(this);
+            blocker = null;
+
+            for (HaikuPlatformWindow window : blockedWindows) {
+                doBlock(window);
+            }
+        }
+    }
+
+    private void block(HaikuPlatformWindow window) {
+        if (!blockedWindows.contains(window)) {
+            blockedWindows.add(window);
+
+            // we can't have a hierarchy of modal windows, so we need to
+            // propogate the block up to the foremost blocker
+            if (blocker != null) {
+                blocker.block(window);
+            } else {
+                doBlock(window);
+            }
+        }
+    }
+
+    private void unblock(HaikuPlatformWindow window) {
+        if (blockedWindows.contains(window)) {
+            blockedWindows.remove(window);
+
+            if (blocker != null) {
+                blocker.unblock(window);
+            } else {
+                doUnblock(window);
+            }
+        }
+    }
+
+    private void doBlock(HaikuPlatformWindow window) {
+        if (!currentBlocked.contains(window)) {
+            currentBlocked.add(window);
+            nativeBlock(nativeWindow, window.getLayerPtr());
+        }
+    }
+
+    private void doUnblock(HaikuPlatformWindow window) {
+        if (currentBlocked.contains(window)) {
+            nativeUnblock(nativeWindow, window.getLayerPtr());
+            currentBlocked.remove(window);
+        }
     }
 
     // =======================================

@@ -68,6 +68,9 @@ public:
 			BRect			TransformToFrame(BRect rect);
 			BPoint			TranslateToFrame(BPoint point);
 
+public:
+			int				blocked_windows;
+
 private:
 			void			_Reshape(bool resize);
 			void			_UpdateInsets();
