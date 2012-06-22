@@ -109,6 +109,9 @@ ContentView::DeferredDraw(BRect frameRect)
 }
 
 
+DECLARE_JAVA_CLASS(platformWindowClazz, "sun/hawt/HaikuPlatformWindow")
+
+
 void
 ContentView::Draw(BRect updateRect)
 {
@@ -121,7 +124,11 @@ ContentView::Draw(BRect updateRect)
 	jint y = rect.top;
 	jint width = rect.IntegerWidth() + 1;
 	jint height = rect.IntegerHeight() + 1;
-	DoCallback(fPlatformWindow, "eventRepaint", "(IIII)V", x, y, width, height);
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventRepaint, platformWindowClazz,
+		"eventRepaint", "(IIII)V");
+	env->CallVoidMethod(fPlatformWindow, eventRepaint, x, y, width, height);
 }
 
 
@@ -236,8 +243,12 @@ ContentView::_HandleKeyEvent(BMessage* message)
 
 	mods = ConvertInputModifiersToJava(modifiers);
 	ConvertKeyCodeToJava(key, modifiers, &keyCode, &keyLocation);
-	DoCallback(fPlatformWindow, "eventKey", "(IJIII)V", id,
-		(jlong)(when / 1000), mods, keyCode, keyLocation);
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventKey, platformWindowClazz,
+		"eventKey", "(IJIII)V");
+	env->CallVoidMethod(fPlatformWindow, eventKey, id, (jlong)(when / 1000),
+		mods, keyCode, keyLocation);
 
 	BString bytes;
 	if (message->what == B_KEY_DOWN
@@ -245,13 +256,15 @@ ContentView::_HandleKeyEvent(BMessage* message)
 		id = java_awt_event_KeyEvent_KEY_TYPED;
 		keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
 		keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
-			
-   		JNIEnv* env = GetEnv();
+
 		jstring keyChar = env->NewStringUTF(bytes.String());
 		if (keyChar == NULL)
 			return;
-		DoCallback(fPlatformWindow, "eventKeyTyped",
-			"(JILjava/lang/String;)V", (jlong)(when / 1000), mods, keyChar);
+
+		DECLARE_VOID_JAVA_METHOD(eventKeyTyped, platformWindowClazz,
+			"eventKeyTyped", "(JILjava/lang/String;)V");
+		env->CallVoidMethod(fPlatformWindow, eventKeyTyped,
+			(jlong)(when / 1000), mods, keyChar);
 		env->DeleteLocalRef(keyChar);
 	}
 }
@@ -316,7 +329,10 @@ ContentView::_HandleMouseEvent(BMessage* message, BPoint point, uint32 transit,
 	else if (id == java_awt_event_MouseEvent_MOUSE_DRAGGED)
 		button = ConvertMouseButtonToJava(buttons);
 
-	DoCallback(fPlatformWindow, "eventMouse", "(IJIIIIIII)V", id,
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventMouse, platformWindowClazz,
+		"eventMouse", "(IJIIIIIII)V");
+	env->CallVoidMethod(fPlatformWindow, eventMouse, id,
 		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
 		(jint)screenPoint.x, (jint)screenPoint.y, (jint)clicks, button);
 }
@@ -349,9 +365,13 @@ ContentView::_HandleWheelEvent(BMessage* message)
 	    scrollType = java_awt_event_MouseWheelEvent_WHEEL_BLOCK_SCROLL;
 
 	jint scrollAmount = 3;
-	DoCallback(fPlatformWindow, "eventWheel", "(JIIIIIID)V",
-		(jlong)(when / 1000), mods, (jint)point.x, (jint)point.y,
-		scrollType, scrollAmount, (jint)wheelRotation, (jdouble)wheelRotation);
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventWheel, platformWindowClazz,
+		"eventWheel", "(JIIIIIID)V");
+	env->CallVoidMethod(fPlatformWindow, eventWheel, (jlong)(when / 1000),
+		mods, (jint)point.x, (jint)point.y, scrollType, scrollAmount,
+		(jint)wheelRotation, (jdouble)wheelRotation);
 }
 
 

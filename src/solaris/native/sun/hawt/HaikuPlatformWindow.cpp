@@ -386,7 +386,6 @@ Java_sun_hawt_HaikuPlatformWindow_nativeUnblock(JNIEnv *env, jobject thiz,
 		window->SetFeel(B_NORMAL_WINDOW_FEEL);
 	}
 	window->RemoveFromSubset(blockee);
-//	window->SetFlags(
 
 	window->UnlockLooper();
 	blockee->UnlockLooper();
@@ -563,11 +562,19 @@ PlatformWindow::RemoveDropTarget()
 	fView->RemoveDropTarget();
 }
 
+
+DECLARE_JAVA_CLASS(platformWindowClazz, "sun/hawt/HaikuPlatformWindow")
+
+
 void
 PlatformWindow::WindowActivated(bool activated)
 {
 	fView->MakeFocus(activated);
-	DoCallback(fPlatformWindow, "eventActivate", "(Z)V", activated);
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventActivate, platformWindowClazz,
+		"eventActivate", "(Z)V");
+	env->CallVoidMethod(fPlatformWindow, eventActivate, activated);
 }
 
 
@@ -590,7 +597,11 @@ PlatformWindow::FrameResized(float width, float height)
 void
 PlatformWindow::Minimize(bool minimize)
 {
-	DoCallback(fPlatformWindow, "eventMinimize", "(Z)V", minimize);
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventMinimize, platformWindowClazz,
+		"eventMinimize", "(Z)V");
+	env->CallVoidMethod(fPlatformWindow, eventMinimize, minimize);
+
 	BWindow::Minimize(minimize);
 }
 
@@ -598,7 +609,10 @@ PlatformWindow::Minimize(bool minimize)
 bool
 PlatformWindow::QuitRequested()
 {
-	DoCallback(fPlatformWindow, "eventWindowClosing", "()V");
+	JNIEnv* env = GetEnv();
+	DECLARE_JBOOLEAN_JAVA_METHOD(eventWindowClosing, platformWindowClazz,
+		"eventWindowClosing", "()V");
+	env->CallVoidMethod(fPlatformWindow, eventWindowClosing);
 	
 	// According to WindowEvent docs, we should ignore the
 	// user's request to quit and send an event to the peer.
@@ -613,7 +627,11 @@ PlatformWindow::Zoom(BPoint origin, float width, float height)
 	// For whatever reason, there is no getter for this
 	// so we record the state ourselves.
 	fMaximized = !fMaximized;
-	DoCallback(fPlatformWindow, "eventMaximize", "(Z)V", fMaximized);
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventMaximize, platformWindowClazz,
+		"eventMaximize", "(Z)V");
+	env->CallVoidMethod(fPlatformWindow, eventMaximize, fMaximized);
 	
 	BWindow::Zoom(origin, width, height);
 }
@@ -698,8 +716,14 @@ PlatformWindow::_Reshape(bool resize)
 		}
 	}
 
+	// Should probably execute handler on EDT instead of unlocking here
 	UnlockLooper();
-	DoCallback(fPlatformWindow, "eventReshape", "(IIII)V", x, y, width, height);
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventReshape, platformWindowClazz,
+		"eventReshape", "(IIII)V");
+	env->CallVoidMethod(fPlatformWindow, eventReshape, x, y, width, height);
+
 	LockLooper();
 }
 
@@ -708,6 +732,10 @@ void
 PlatformWindow::_UpdateInsets()
 {
 	fInsets = GetInsets();
-	DoCallback(fPlatformWindow, "updateInsets", "(IIII)V", fInsets.left,
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(updateInsets, platformWindowClazz,
+		"updateInsets", "(IIII)V");
+	env->CallVoidMethod(fPlatformWindow, updateInsets, fInsets.left,
 		fInsets.top, fInsets.right, fInsets.bottom);
 }

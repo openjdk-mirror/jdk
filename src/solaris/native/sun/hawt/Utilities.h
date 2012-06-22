@@ -181,6 +181,29 @@ get_ ## javaclazz(JNIEnv* env) {                                               \
         }                                                                      \
     }
 
+#define DECLARE_JBOOLEAN_JAVA_METHOD(method, javaclazz, name, signature)       \
+    static jmethodID method = NULL;                                            \
+                                                                               \
+    if (JNU_IsNull(env, method)) {                                             \
+        jclass clazz = get_ ## javaclazz(env);                                 \
+                                                                               \
+        if (JNU_IsNull(env, clazz)) {                                          \
+            return JNI_FALSE;                                                  \
+        }                                                                      \
+                                                                               \
+        method = env->GetMethodID(clazz, name, signature);                     \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+                                                                               \
+        if (JNU_IsNull(env, method)) {                                         \
+            DASSERT(FALSE);                                                    \
+            return JNI_FALSE;                                                  \
+        }                                                                      \
+    }
+
 #define DECLARE_OBJECT_JAVA_METHOD(method, javaclazz, name, signature)         \
     static jmethodID method = NULL;                                            \
                                                                                \
