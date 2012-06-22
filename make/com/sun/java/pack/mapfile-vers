@@ -26,7 +26,12 @@
 
 # Define library interface.
 
-SUNWprivate_1.1 {
+# On older SuSE releases the linker will complain about:
+# Invalid version tag `SUNWprivate_1.1'. Only anonymous version tag is allowed in executable
+# So we better completely omit the version for now.
+#
+
+{
 	global:
 	    Java_com_sun_java_util_jar_pack_NativeUnpack_finish;
 	    Java_com_sun_java_util_jar_pack_NativeUnpack_getNextFile;

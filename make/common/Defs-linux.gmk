@@ -200,6 +200,8 @@ CFLAGS_REQUIRED_sparc   += -m32 -mcpu=v9
 LDFLAGS_COMMON_sparc    += -m32 -mcpu=v9
 CFLAGS_REQUIRED_arm     += -fsigned-char -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_ppc     += -fsigned-char -D_BIG_ENDIAN
+CFLAGS_REQUIRED_ppc64   += -m64
+LDFLAGS_COMMON_ppc64    += -m64 -L/lib64 -Wl,-melf64ppc
 ifeq ($(ZERO_BUILD), true)
   CFLAGS_REQUIRED       =  $(ZERO_ARCHFLAG)
   ifeq ($(ZERO_ENDIANNESS), little)
@@ -429,7 +431,7 @@ override LIBTHREAD               =
 override LIBDL                   = -ldl
 override MOOT_PRIORITIES         = true
 override NO_INTERRUPTIBLE_IO     = true
-ifeq ($(ARCH), amd64)
+ifeq ($(ARCH), $(findstring $(ARCH), amd64 ppc64))
 override OPENWIN_LIB             = $(OPENWIN_HOME)/lib64
 else
 override OPENWIN_LIB             = $(OPENWIN_HOME)/lib

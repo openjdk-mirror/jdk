@@ -86,6 +86,10 @@ else
     CPPFLAGS += -DX_ARCH=X_PPC
   endif # ARCH ppc
 
+  ifeq ($(ARCH), ppc64)
+    CPPFLAGS += -DX_ARCH=X_PPC
+  endif # ARCH ppc64
+
 endif
 
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2004, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -22,15 +22,22 @@
 # or visit www.oracle.com if you need additional information or have any
 # questions.
 #
-
-# Define library interface.
-
+#
+# Specify what global symbols we export.  Note that we're not really
+# interested in declaring a version, simply scoping the file is sufficient.
+#
 # On older SuSE releases the linker will complain about:
 # Invalid version tag `SUNWprivate_1.1'. Only anonymous version tag is allowed in executable
 # So we better completely omit the version for now.
 #
 
 {
+	global:
+		main;		# Provides basic adb symbol offsets
+		environ;	# Public symbols and required by Java run time
+		_environ;
+		__environ_lock;
+
 	local:
-	    *;
+		*;
 };
