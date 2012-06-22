@@ -111,12 +111,11 @@ Drawable::BytesPerPixel()
 
 
 void
-Drawable::Invalidate(Rectangle rect)
+Drawable::Invalidate(BRect rect)
 {
 	if (fView != NULL) {
 		if (fView->LockLooper()) {
-			fView->DeferredDraw(BRect(rect.x, rect.y,
-				rect.x + rect.width - 1, rect.y + rect.height - 1));
+			fView->DeferredDraw(rect);
 			fView->UnlockLooper();
 		}
 	}

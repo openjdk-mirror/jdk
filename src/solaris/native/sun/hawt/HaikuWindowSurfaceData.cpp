@@ -118,15 +118,11 @@ HaikuUnlock(JNIEnv* env, SurfaceDataOps* ops, SurfaceDataRasInfo* rasInfo)
 	// wants (indirectly) the Drawable lock which we hold.
 	operations->drawable->Unlock();
 
-	//printf("unlocking drawable: %p\n", operations->drawable);
 	// If we were locked for writing the view needs
 	// to redraw now.
 	if (operations->lockflags & SD_LOCK_WRITE) {
-		int x = rasInfo->bounds.x1;
-		int y = rasInfo->bounds.y1;
-		int w = rasInfo->bounds.x2 - x;
-		int h = rasInfo->bounds.y2 - y;
-		operations->drawable->Invalidate(Rectangle(x, y, w, h));
+		operations->drawable->Invalidate(BRect(rasInfo->bounds.x1,
+			rasInfo->bounds.y1, rasInfo->bounds.x2 - 1, rasInfo->bounds.y2 - 1));
 	}
 }
 

@@ -28,6 +28,7 @@
 
 #include <Bitmap.h>
 #include <Locker.h>
+#include <Rect.h>
 #include <SupportDefs.h>
 
 #include "Utilities.h"
@@ -54,7 +55,7 @@ public:
 
 	BBitmap*		GetBitmap() { return fSurface; }
 	
-	void			Invalidate(Rectangle rect);
+	void			Invalidate(BRect rect);
 private:
 	BBitmap*		fSurface;
 	ContentView*	fView;

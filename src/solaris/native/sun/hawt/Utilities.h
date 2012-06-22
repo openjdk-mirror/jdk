@@ -39,17 +39,6 @@ extern JavaVM* jvm;
 
 }
 
-struct Point {
-	Point(int x, int y) : x(x), y(y) { }
-	int x, y;
-};
-
-struct Rectangle {
-	Rectangle(int x, int y, int width, int height) : x(x), y(y),
-		width(width), height(height) { }
-	int x, y, width, height;
-};
-
 JNIEnv* GetEnv();
 void DoCallback(jobject obj, const char* name, const char* description, ...);
 
