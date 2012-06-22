@@ -29,17 +29,45 @@
 #include <String.h>
 #include <View.h>
 
+#include <pthread.h>
+
 #include "java_awt_Event.h"
 #include "java_awt_event_InputEvent.h"
 #include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_MouseEvent.h"
 
+static pthread_key_t envKey;
+static pthread_once_t envKeyOnce = PTHREAD_ONCE_INIT;
+
+static void
+EnvDestructor(void*)
+{
+	jvm->DetachCurrentThread();
+}
+
+static void
+InitKey()
+{
+	pthread_key_create(&envKey, EnvDestructor);
+}
+
 JNIEnv*
 GetEnv()
 {
-    JNIEnv* env = NULL;
-    jvm->AttachCurrentThread((void**)&env, NULL);
-    return env;
+	pthread_once(&envKeyOnce, InitKey);
+
+	// We don't bother getting the value from TLS because GetEnv is
+	// faster. We use TLS in order to detach the current thread in
+	// the thread-specific destructor.
+	JNIEnv* env = NULL;
+	jvm->GetEnv((void**)&env, JNI_VERSION_1_2);
+
+	if (env == NULL) {
+		jvm->AttachCurrentThread((void**)&env, NULL);
+		pthread_setspecific(envKey, env);
+	}
+
+	return env;
 }
 
 void
