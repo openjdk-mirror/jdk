@@ -42,16 +42,12 @@ public:
 							stat_beos* st, const char* filetype);
 private:
 			jobject		fPeer;
-			jmethodID	fAcceptMethod;
-			JNIEnv*		fEnv;
 };
 
 
 RefFilter::RefFilter(jobject peer)
 	:
-	fPeer(peer),
-	fAcceptMethod(NULL),
-	fEnv(NULL)
+	fPeer(peer)
 {
 }
 
@@ -62,41 +58,28 @@ RefFilter::~RefFilter()
 	// dialog is closed.
 }
 
+DECLARE_JAVA_CLASS(fileDialogClazz, "sun/hawt/HaikuFileDialog")
 
 bool
 RefFilter::Filter(const entry_ref* ref, BNode* node, stat_beos* st,
 	const char* filetype)
 {
-	// NOTE this code assumes that for each instance Filter will
-	// always be called from the same thread.
-	if (fEnv == NULL) {
-		// TODO must detach thread when done
-    	fEnv = GetEnv();
-	}
-
-	if (fAcceptMethod == NULL) {
-		jclass clazz = fEnv->GetObjectClass(fPeer);
-		// Should this method ID be made a global ref?
-		fAcceptMethod = fEnv->GetMethodID(clazz, "acceptFile",
-			"(Ljava/lang/String;)Z");
-		fEnv->DeleteLocalRef(clazz);
-		// if this fails just let everything through
-		if (fAcceptMethod == NULL)
-			return true;
-	}
+	JNIEnv* env = GetEnv();
 
 	BEntry entry = BEntry(ref);
 	BPath path;
 	entry.GetPath(&path);
 	const char* pathString = path.Path();
 
-	jstring javaString = fEnv->NewStringUTF(pathString);
-	jboolean accept = fEnv->CallBooleanMethod(fPeer, fAcceptMethod,
-		javaString);
-	fEnv->DeleteLocalRef(javaString);
+	jstring javaString = env->NewStringUTF(pathString);
+	DECLARE_JBOOLEAN_JAVA_METHOD(acceptMethod, fileDialogClazz,	"acceptFile",
+		"(Ljava/lang/String;)Z");
+	bool accept = env->CallBooleanMethod(fPeer, acceptMethod, javaString);
+
+	env->DeleteLocalRef(javaString);
+
 	return accept;
 }
-
 
 extern "C" {
 
