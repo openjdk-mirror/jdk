@@ -25,8 +25,6 @@
 
 #include <jni.h>
 
-#include "sun_hawt_HaikuGraphicsConfig.h"
-
 #include <Screen.h>
 
 #include "Utilities.h"
@@ -43,21 +41,13 @@ extern "C" {
  * Method:    initIDs
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_sun_hawt_HaikuGraphicsConfig_initIDs
-  (JNIEnv *env, jclass clazz)
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuGraphicsConfig_initIDs(JNIEnv *env, jclass clazz)
 {
     jclass rectangleClazz = env->FindClass("java/awt/Rectangle");
-    if (env->ExceptionCheck())
-    	return;
     rectXField = env->GetFieldID(rectangleClazz, "x", "I");
-    if (env->ExceptionCheck())
-    	return;
-    rectYField = env->GetFieldID(rectangleClazz, "y", "I");	
-    if (env->ExceptionCheck())
-    	return;
+    rectYField = env->GetFieldID(rectangleClazz, "y", "I");
     rectWidthField = env->GetFieldID(rectangleClazz, "width", "I");
-    if (env->ExceptionCheck())
-    	return;
     rectHeightField = env->GetFieldID(rectangleClazz, "height", "I");
 }
 
@@ -66,11 +56,13 @@ JNIEXPORT void JNICALL Java_sun_hawt_HaikuGraphicsConfig_initIDs
  * Method:    nativeGetBounds
  * Signature: (ILjava/awt/Rectangle;)V
  */
-JNIEXPORT void JNICALL Java_sun_hawt_HaikuGraphicsConfig_nativeGetBounds
-  (JNIEnv *env, jclass clazz, jint displayID, jobject bounds)
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuGraphicsConfig_nativeGetBounds(JNIEnv *env,
+	jclass clazz, jint displayID, jobject bounds)
 {
 	screen_id id;
 	id.id = displayID;
+
     BScreen screen(id);
     if (!screen.IsValid()) {
     	return;

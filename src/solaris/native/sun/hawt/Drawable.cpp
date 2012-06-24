@@ -30,9 +30,8 @@
 #include <Rect.h>
 #include <View.h>
 
-#include "PlatformView.h"
+#include "ContentView.h"
 
-#include <stdio.h>
 
 Drawable::Drawable()
 	:
@@ -43,7 +42,7 @@ Drawable::Drawable()
 }
 
 
-Drawable::Drawable(PlatformView* view)
+Drawable::Drawable(ContentView* view)
 	:
 	BLocker(),
 	fSurface(NULL),
@@ -78,9 +77,7 @@ Drawable::Allocate(int width, int height)
 		int blitWidth =  width > oldWidth ? oldWidth : width;
 		int oldHeight = bounds.IntegerHeight() + 1;
 		int blitHeight = height > oldHeight ? oldHeight : height;
-		
-		// It doesn't really matter if this fails; new stuff will get drawn
-		// in soon enough.
+
 		newSurface->ImportBits(fSurface, BPoint(0, 0), BPoint(0, 0), blitWidth,
 			blitHeight);
 
@@ -114,13 +111,55 @@ Drawable::BytesPerPixel()
 
 
 void
-Drawable::Invalidate(Rectangle rect)
+Drawable::Invalidate(BRect rect)
 {
 	if (fView != NULL) {
 		if (fView->LockLooper()) {
-			fView->DeferredDraw(BRect(rect.x, rect.y,
-				rect.x + rect.width - 1, rect.y + rect.height - 1));
+			fView->DeferredDraw(rect);
 			fView->UnlockLooper();
 		}
 	}
+}
+
+extern "C" {
+
+/*
+ * Class:     sun_hawt_HaikuDrawable
+ * Method:    nativeAllocate
+ * Signature: (II)J
+ */
+JNIEXPORT jlong JNICALL
+Java_sun_hawt_HaikuDrawable_nativeAllocate(JNIEnv *env, jobject thiz)
+{
+	Drawable* drawable = new(std::nothrow) Drawable();
+	return ptr_to_jlong(drawable);
+}
+
+/*
+ * Class:     sun_hawt_HaikuDrawable
+ * Method:    nativeResize
+ * Signature: (JII)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_sun_hawt_HaikuDrawable_nativeResize(JNIEnv *env, jobject thiz,
+	jlong nativeDrawable, jint width, jint height)
+{
+	Drawable* drawable = (Drawable*)jlong_to_ptr(nativeDrawable);
+	drawable->Allocate(width, height);
+	return drawable->IsValid();
+}
+
+/*
+ * Class:     sun_hawt_HaikuDrawable
+ * Method:    nativeDispose
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuDrawable_nativeDispose(JNIEnv *env, jobject thiz,
+	jlong nativeDrawable)
+{
+	Drawable* drawable = (Drawable*)jlong_to_ptr(nativeDrawable);
+	delete drawable;
+}
+
 }

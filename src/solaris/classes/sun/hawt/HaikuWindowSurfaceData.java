@@ -25,69 +25,32 @@
  
 package sun.hawt;
 
-import java.awt.GraphicsConfiguration;
-import java.awt.Rectangle;
-import java.awt.image.ColorModel;
-import java.awt.image.Raster;
-
-import sun.java2d.SurfaceData;
+import java.awt.*;
+import java.awt.image.*;
+import sun.java2d.*;
 import sun.java2d.loops.SurfaceType;
 
-class HaikuWindowSurfaceData extends SurfaceData {
+class HaikuWindowSurfaceData extends HaikuDrawableSurfaceData {
 
-    static SurfaceType typeDefault =
-            SurfaceType.IntArgb.deriveSubType("Haiku-ARGB");
-
-    static {
-        initIDs();
-    }
-
-    private Rectangle bounds;
-    private GraphicsConfiguration config;
     private HaikuPlatformWindow window;
 
-    private static final native void initIDs();
-    private native final void initOps(long drawable, int width, int height);
-
     HaikuWindowSurfaceData(SurfaceType surfaceType, ColorModel colorModel,
-    		Rectangle bounds, GraphicsConfiguration config,
-    		HaikuPlatformWindow window, long drawable) {
-        super(surfaceType, colorModel);
+            GraphicsConfiguration config, long drawable,
+            HaikuPlatformWindow window) {
+        super(surfaceType, colorModel, config, drawable);
 
-        this.bounds = bounds;
-        this.config = config;
         this.window = window;
-
-        initOps(drawable, bounds.width, bounds.height);
     }
 
     @Override
     public Rectangle getBounds() {
-    	Rectangle bounds = window.getBounds();
+        Rectangle bounds = window.getBounds();
         bounds.x = bounds.y = 0;
         return bounds;
     }
 
     @Override
     public Object getDestination() {
-        return (Object)window;
+        return (Object)window.getTarget();
     }
-
-    @Override
-    public GraphicsConfiguration getDeviceConfiguration() {
-        return config;
-    }
-
-    @Override
-    public Raster getRaster(int arg0, int arg1, int arg2, int arg3) {
-        throw new UnsupportedOperationException("Not supported.");
-    }
-
-    @Override
-    public SurfaceData getReplacement() {
-        throw new UnsupportedOperationException("Not supported.");
-    }
-
-
-
 }

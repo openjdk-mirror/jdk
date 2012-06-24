@@ -84,7 +84,7 @@ ifeq ($(PLATFORM), haiku)
 # from sun/awt and sun/java2d, but we don't want the native source. This
 # prune should take care of most of it though.
 #
-AUTO_FILES_JAVA_DIRS += sun/hawt
+AUTO_FILES_JAVA_DIRS += sun/hawt sun/lwawt
 AUTO_JAVA_PRUNE += motif X11 AWTCharset.java
 
 #
@@ -95,7 +95,7 @@ include FILES_export_haiku.gmk
 
 FILES_c = $(FILES_2D_c)
 OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
-OTHER_LDLIBS = $(JVMLIB) -lbe -lstdc++
+OTHER_LDLIBS = $(JVMLIB) -lbe -ltracker -lstdc++
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HAIKU
 endif # PLATFORM

@@ -27,14 +27,21 @@
 #include <jni.h>
 
 #include "sun_hawt_HaikuPlatformWindow.h"
+#include "java_awt_Frame.h"
+
+#include "HaikuPlatformWindow.h"
 
 #include <kernel/OS.h>
+#include <MenuBar.h>
+#include <MenuItem.h>
 #include <View.h>
 #include <Window.h>
 
-#include "HaikuPlatformWindow.h"
-#include "PlatformFrame.h"
-#include "PlatformView.h"
+#include "Utilities.h"
+
+// The amount of extra size we give the drawable
+// so we're not reallocating it all the time
+static const int kResizeBuffer = 200;
 
 static jfieldID pointXField;
 static jfieldID pointYField;
@@ -42,222 +49,693 @@ static jfieldID rectXField;
 static jfieldID rectYField;
 static jfieldID rectWidthField;
 static jfieldID rectHeightField;
+static jfieldID insetsLeftField;
+static jfieldID insetsTopField;
+static jfieldID insetsRightField;
+static jfieldID insetsBottomField;
 
 extern "C" {
 
-extern sem_id appSem;
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_initIDs
-  (JNIEnv *env, jclass clazz)
+Java_sun_hawt_HaikuPlatformWindow_initIDs(JNIEnv *env, jclass clazz)
 {
     jclass pointClazz = env->FindClass("java/awt/Point");
-    if (env->ExceptionCheck())
-    	return;
     pointXField = env->GetFieldID(pointClazz, "x", "I");
-    if (env->ExceptionCheck()) 
-    	return;
     pointYField = env->GetFieldID(pointClazz, "y", "I");
-    if (env->ExceptionCheck()) 
-    	return;
 
     jclass rectClazz = env->FindClass("java/awt/Rectangle");
-    if (env->ExceptionCheck())
-    	return;
     rectXField = env->GetFieldID(rectClazz, "x", "I");
-    if (env->ExceptionCheck()) 
-    	return;
     rectYField = env->GetFieldID(rectClazz, "y", "I");
-    if (env->ExceptionCheck())
-    	return;
     rectWidthField = env->GetFieldID(rectClazz, "width", "I");
-    if (env->ExceptionCheck()) 
-    	return;
     rectHeightField = env->GetFieldID(rectClazz, "height", "I");
+
+    jclass insetsClazz = env->FindClass("java/awt/Insets");
+    insetsLeftField = env->GetFieldID(insetsClazz, "left", "I");
+    insetsTopField = env->GetFieldID(insetsClazz, "top", "I");
+    insetsRightField = env->GetFieldID(insetsClazz, "right", "I");
+    insetsBottomField = env->GetFieldID(insetsClazz, "bottom", "I");
 }
 
-JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeInitFrame
-  (JNIEnv *env, jobject thiz, jint x, jint y, jint width, jint height,
-   jboolean decorated)
-{
-	// Wait for be_app to get created
-	acquire_sem(appSem);
-	release_sem(appSem);
 
-	// TODO release global ref in frame/view dispose
+JNIEXPORT jlong JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeInit(JNIEnv *env, jobject thiz,
+	jboolean simpleWindow)
+{
 	jobject javaWindow = env->NewWeakGlobalRef(thiz);
-	PlatformWindow* window = new PlatformFrame(javaWindow,
-		decorated == JNI_TRUE);
-	window->SetBounds(Rectangle(x, y, width, height));
+	PlatformWindow* window = new PlatformWindow(javaWindow,	simpleWindow);
+	window->blocked_windows = 0;
 	return ptr_to_jlong(window);
 }
 
 
-JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeInitView
-  (JNIEnv *env, jobject thiz, jint x, jint y, jint width, jint height,
-   jlong parent)
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeRun(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
-	// Wait for be_app to get created
-	acquire_sem(appSem);
-	release_sem(appSem);
+	// The point of this nativeRun method is to get the window looper
+	// unlocked so other functions here can access it. The problem with
+	// doing that in nativeInit, however, is that the Hide/Show stack
+	// triggers a resize event to be sent up to Java, at which point
+	// it doesn't have a valid nativeWindow pointer, so we split it up
+	// like this.
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
 
-	// TODO release global ref in frame/view dispose
-	jobject javaWindow = env->NewWeakGlobalRef(thiz);
-	PlatformWindow* window = new PlatformView(javaWindow, false);
+	window->Hide();
+	window->Show();
+	window->UnlockLooper();
+}
 
-	PlatformWindow* parentWindow = (PlatformWindow*)jlong_to_ptr(parent);
-	if (parentWindow != NULL) {
-		PlatformView* parentContainer = parentWindow->GetContainer();
-		window->SetParent(parentContainer);
+
+JNIEXPORT jlong JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeGetDrawable(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return 0;
+
+	Drawable* drawable = window->GetDrawable();
+	window->UnlockLooper();
+	return ptr_to_jlong(drawable);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetBounds(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jint x, jint y, jint width, jint height)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	BRect frameRect = BRect(x, y, x + width - 1, y + height - 1);
+	if (!window->LockLooper())
+		return;
+
+	// given coordinates include the decorator frame, transform to
+	// the client area
+	BRect rect = window->TransformFromFrame(frameRect);
+	window->MoveTo(rect.left, rect.top);
+	window->ResizeTo(rect.IntegerWidth(), rect.IntegerHeight());
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetVisible(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jboolean visible)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+
+	if (visible) {
+		while (window->IsHidden())
+			window->Show();
+	} else {
+		while (!window->IsHidden())
+			window->Hide();
+	}
+	window->UnlockLooper();
+}
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeGetLocation(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jobject point)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	
+	if (!window->LockLooper())
+		return;
+	BRect frame = window->Frame();
+    BPoint location = window->TranslateToFrame(BPoint(frame.left, frame.top));
+	window->UnlockLooper();
+
+	env->SetIntField(point, pointXField, (jint)location.x);
+	env->SetIntField(point, pointYField, (jint)location.y);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeDispose(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		// Uh-oh, leak the window?
+		return;
+
+	window->Dispose(env);
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeFocus(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+	window->Focus();
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetWindowState(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jint windowState)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+	window->SetState(windowState);
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jboolean resizable)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+
+	if (resizable) {
+		window->SetFlags(window->Flags() & ~B_NOT_RESIZABLE);
+	} else {
+		window->SetFlags(window->Flags() | B_NOT_RESIZABLE);
 	}
 
-	window->SetBounds(Rectangle(x, y, width, height));
-	return ptr_to_jlong(window);
-}
-
-
-JNIEXPORT jlong JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetDrawable
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	return ptr_to_jlong(window->GetDrawable());
-}
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetBounds
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jobject bounds)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	Rectangle rect = window->GetBounds();
-
-	env->SetIntField(bounds, rectXField, rect.x);
-	env->SetIntField(bounds, rectYField, rect.y);
-	env->SetIntField(bounds, rectWidthField, rect.width);
-	env->SetIntField(bounds, rectHeightField, rect.height);
-}
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetBounds
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jint x, jint y,
-   jint width, jint height)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	window->SetBounds(Rectangle(x, y, width, height));
-}
-
-
-JNIEXPORT jboolean JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetVisible
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	return window->GetVisible();
-}
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetVisible
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean visible)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	window->SetVisible(visible == JNI_TRUE);
-}
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetLocation
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jobject point)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	Point location = window->GetLocation();
-
-	env->SetIntField(point, pointXField, location.x);
-	env->SetIntField(point, pointYField, location.y);
+	window->UnlockLooper();
 }
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetLocationOnScreen
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jobject point)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	Point location = window->GetLocationOnScreen();
-
-	env->SetIntField(point, pointXField, location.x);
-	env->SetIntField(point, pointYField, location.y);
-}
-
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeDispose
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	window->Dispose();
-}
-
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeFocus
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	printf("Native focusing for: %p\n", window);
-	window->Focus();
-}
-
-
-JNIEXPORT jint JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeGetState
-  (JNIEnv *env, jobject thiz, jlong nativeWindow)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	return window->GetState();
-}
-
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetState
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jint state)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	return window->SetState(state);
-}
-
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetResizable
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean resizable)
-{
-	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	return window->SetResizable(resizable == JNI_TRUE);
-}
-
-
-JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jstring title)
+Java_sun_hawt_HaikuPlatformWindow_nativeSetTitle(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jstring title)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
 
-	printf("set title native\n");
 	const char* name = env->GetStringUTFChars(title, NULL);
 	if (name == NULL)
 		return;
 
-	window->SetName(name);
+	if (!window->LockLooper())
+		return;
+	window->SetTitle(name);
+	window->UnlockLooper();
 	env->ReleaseStringUTFChars(title, name);
 }
 
 
 JNIEXPORT void JNICALL
-Java_sun_hawt_HaikuPlatformWindow_nativeSendTo
-  (JNIEnv *env, jobject thiz, jlong nativeWindow, jboolean front)
+Java_sun_hawt_HaikuPlatformWindow_nativeToFront(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
 {
 	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
-	window->SendTo(front == JNI_TRUE);
+
+	if (!window->LockLooper())
+		return;
+	window->Activate();
+	window->UnlockLooper();
 }
 
 
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeToBack(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+	window->SendBehind(NULL);
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetMenuBar(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jlong menuBarItemPtr)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	BMenuItem* menuBarItem = (BMenuItem*)jlong_to_ptr(menuBarItemPtr);
+	BMenuBar* menuBar = (BMenuBar*)menuBarItem->Submenu();
+
+	if (!window->LockLooper())
+		return;
+	window->SetMenuBar(menuBar);
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeSetMinimumSize(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jint width, jint height)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	BRect frameSize(0, 0, width - 1, height - 1);
+
+	if (!window->LockLooper())
+		return;
+
+	BRect clientSize = window->TransformFromFrame(frameSize);
+
+	float maxWidth, maxHeight;
+	window->GetSizeLimits(NULL, &maxWidth, NULL, &maxHeight);
+	window->SetSizeLimits(clientSize.IntegerWidth(), maxWidth,
+		clientSize.IntegerHeight(), maxHeight);
+
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeGetInsets(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jobject javaInsets)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+
+	if (!window->LockLooper())
+		return;
+	Insets insets = window->GetInsets();
+	window->UnlockLooper();
+
+	env->SetIntField(javaInsets, insetsLeftField, (jint)insets.left);
+	env->SetIntField(javaInsets, insetsTopField, (jint)insets.top);
+	env->SetIntField(javaInsets, insetsRightField, (jint)insets.right);
+	env->SetIntField(javaInsets, insetsBottomField, (jint)insets.bottom);
+}
+
+
+JNIEXPORT jboolean JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeIsActive(JNIEnv *env, jobject thiz,
+	jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	return window->IsActive();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeBlock(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jlong nativeBlockee)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	PlatformWindow* blockee = (PlatformWindow*)jlong_to_ptr(nativeBlockee);
+	if (!blockee->LockLooper()) {
+		window->UnlockLooper();
+		return;
+	}
+
+	if (window->blocked_windows++ == 0) {
+		window->SetFeel(B_MODAL_SUBSET_WINDOW_FEEL);
+	}
+	window->AddToSubset(blockee);
+
+	window->UnlockLooper();
+	blockee->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeUnblock(JNIEnv *env, jobject thiz,
+	jlong nativeWindow, jlong nativeBlockee)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	PlatformWindow* blockee = (PlatformWindow*)jlong_to_ptr(nativeBlockee);
+	if (!blockee->LockLooper()) {
+		window->UnlockLooper();
+		return;
+	}
+
+	if (--window->blocked_windows == 0) {
+		window->SetFeel(B_NORMAL_WINDOW_FEEL);
+	}
+	window->RemoveFromSubset(blockee);
+
+	window->UnlockLooper();
+	blockee->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeAddDropTarget(JNIEnv *env,
+	jobject thiz, jlong nativeWindow, jobject target)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	jobject targetRef = env->NewWeakGlobalRef(target);
+	window->AddDropTarget(targetRef);
+
+	window->UnlockLooper();
+}
+
+
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuPlatformWindow_nativeRemoveDropTarget(JNIEnv *env,
+	jobject thiz, jlong nativeWindow)
+{
+	PlatformWindow* window = (PlatformWindow*)jlong_to_ptr(nativeWindow);
+	if (!window->LockLooper())
+		return;
+
+	window->RemoveDropTarget();
+	window->UnlockLooper();
+}
+
+
+}
+
+
+PlatformWindow::PlatformWindow(jobject platformWindow, bool simpleWindow)
+	:
+	BWindow(BRect(0, 0, 0, 0), NULL, simpleWindow ? B_NO_BORDER_WINDOW_LOOK
+		: B_TITLED_WINDOW_LOOK, B_NORMAL_WINDOW_FEEL,
+		simpleWindow ? B_AVOID_FOCUS : 0),
+	fView(new ContentView(platformWindow)),
+	fPlatformWindow(platformWindow),
+	fMenuBar(NULL),
+	fInsets(GetInsets())
+{
+	AddChild(fView);
+
+	// After this initial bounds set the view will size itself
+	// to match the frame
+	BRect frame = Bounds();
+	fView->MoveTo(0, 0);
+	fView->ResizeTo(frame.IntegerWidth(), frame.IntegerHeight());
+}
+
+
+Drawable*
+PlatformWindow::GetDrawable()
+{
+	return fView->GetDrawable();
+}
+
+
+void
+PlatformWindow::SetState(int state)
+{
+	// Should a maximize cancel out a minimize?
+	// Or should it be 'behind-the-scenes' maximized,
+	// so it shows as maximized when it becomes unminimized?
+	
+	if ((state & java_awt_Frame_ICONIFIED) != 0)
+		Minimize(true);
+
+	if ((state & java_awt_Frame_MAXIMIZED_BOTH) != 0) {
+		if (!fMaximized)
+			BWindow::Zoom();
+	}
+
+	// Normal should cancel out the two other states
+	if ((state & java_awt_Frame_NORMAL) != 0) {
+		Minimize(false);
+		if (fMaximized)
+			BWindow::Zoom();
+	}
+}
+
+
+void
+PlatformWindow::Dispose(JNIEnv* env)
+{
+	env->DeleteWeakGlobalRef(fPlatformWindow);
+	Quit();
+}
+
+
+void
+PlatformWindow::SetMenuBar(BMenuBar* menuBar)
+{
+	if (menuBar != NULL) {
+		AddChild(menuBar);
+		BRect bounds = menuBar->Bounds();
+		fView->MoveTo(0, bounds.bottom + 1);
+	} else {
+		fView->MoveTo(0, 0);
+	}
+
+	if (fMenuBar != NULL)
+		RemoveChild(fMenuBar);
+	fMenuBar = menuBar;
+
+	// The insets probably changed
+	_UpdateInsets();
+}
+
+
+Insets
+PlatformWindow::GetInsets()
+{
+	float borderWidth = 5.0;
+	float tabHeight = 21.0;
+
+	BMessage settings;
+	if (GetDecoratorSettings(&settings) == B_OK) {
+		BRect tabRect;
+		if (settings.FindRect("tab frame", &tabRect) == B_OK)
+			tabHeight = tabRect.Height();
+		settings.FindFloat("border width", &borderWidth);
+	} else {
+		// probably no-border window look
+		if (Look() == B_NO_BORDER_WINDOW_LOOK) {
+			borderWidth = 0.0;
+			tabHeight = 0.0;
+		}
+		// else use fall-back values from above
+	}
+
+	int menuHeight = 0;
+	if (fMenuBar != NULL) {
+		BRect bounds = fMenuBar->Bounds();
+		menuHeight = bounds.IntegerHeight() + 1;
+	}
+
+	// +1's here?
+	return Insets(borderWidth, tabHeight + borderWidth + menuHeight,
+		borderWidth, borderWidth);
+}
+
+
+void
+PlatformWindow::Focus()
+{
+	Activate();
+}
+
+
+void
+PlatformWindow::StartDrag(BMessage* message, jobject dragSource)
+{
+	fView->StartDrag(message, dragSource);
+}
+
+
+void
+PlatformWindow::AddDropTarget(jobject target)
+{
+	fView->AddDropTarget(target);
+}
+
+
+void
+PlatformWindow::RemoveDropTarget()
+{
+	fView->RemoveDropTarget();
+}
+
+
+DECLARE_JAVA_CLASS(platformWindowClazz, "sun/hawt/HaikuPlatformWindow")
+
+
+void
+PlatformWindow::WindowActivated(bool activated)
+{
+	fView->MakeFocus(activated);
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventActivate, platformWindowClazz,
+		"eventActivate", "(Z)V");
+	env->CallVoidMethod(fPlatformWindow, eventActivate, activated);
+}
+
+
+void
+PlatformWindow::FrameMoved(BPoint origin)
+{
+	_Reshape(false);
+	BWindow::FrameMoved(origin);
+}
+
+
+void
+PlatformWindow::FrameResized(float width, float height)
+{
+	_Reshape(true);
+	BWindow::FrameResized(width, height);
+}
+
+
+void
+PlatformWindow::Minimize(bool minimize)
+{
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventMinimize, platformWindowClazz,
+		"eventMinimize", "(Z)V");
+	env->CallVoidMethod(fPlatformWindow, eventMinimize, minimize);
+
+	BWindow::Minimize(minimize);
+}
+
+
+bool
+PlatformWindow::QuitRequested()
+{
+	JNIEnv* env = GetEnv();
+	DECLARE_JBOOLEAN_JAVA_METHOD(eventWindowClosing, platformWindowClazz,
+		"eventWindowClosing", "()V");
+	env->CallVoidMethod(fPlatformWindow, eventWindowClosing);
+	
+	// According to WindowEvent docs, we should ignore the
+	// user's request to quit and send an event to the peer.
+	// AWT will then decide what to do.
+	return false;
+}
+
+
+void
+PlatformWindow::Zoom(BPoint origin, float width, float height)
+{
+	// For whatever reason, there is no getter for this
+	// so we record the state ourselves.
+	fMaximized = !fMaximized;
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventMaximize, platformWindowClazz,
+		"eventMaximize", "(Z)V");
+	env->CallVoidMethod(fPlatformWindow, eventMaximize, fMaximized);
+	
+	BWindow::Zoom(origin, width, height);
+}
+
+
+BRect
+PlatformWindow::ViewFromFrame(BRect rect)
+{
+	return BRect(rect.left - fInsets.left, rect.top - fInsets.top,
+		rect.right - fInsets.left, rect.bottom - fInsets.top);
+}
+
+
+BRect
+PlatformWindow::ViewToFrame(BRect rect)
+{
+	return BRect(rect.left + fInsets.left, rect.top + fInsets.top,
+		rect.right + fInsets.left, rect.bottom + fInsets.top);
+}
+
+
+BRect
+PlatformWindow::TransformToFrame(BRect rect)
+{
+	int topInsets = fInsets.top;
+	if (fMenuBar != NULL)
+		topInsets -= fMenuBar->Bounds().IntegerHeight() + 1;
+
+	return BRect(rect.left - fInsets.left, rect.top - topInsets,
+		rect.right + fInsets.right, rect.bottom + fInsets.bottom);
+}
+
+
+BRect
+PlatformWindow::TransformFromFrame(BRect rect)
+{
+	int topInsets = fInsets.top;
+	if (fMenuBar != NULL)
+		topInsets -= fMenuBar->Bounds().IntegerHeight() + 1;
+
+	return BRect(rect.left + fInsets.left, rect.top + topInsets,
+		rect.right - fInsets.right, rect.bottom - fInsets.bottom);
+}
+
+
+BPoint
+PlatformWindow::TranslateToFrame(BPoint point)
+{
+	int topInsets = fInsets.top;
+	if (fMenuBar != NULL)
+		topInsets -= fMenuBar->Bounds().IntegerHeight() + 1;
+
+	return BPoint(point.x - fInsets.left, point.y - topInsets);
+}
+
+void
+PlatformWindow::_Reshape(bool resize)
+{
+	BRect bounds = Frame();
+
+	// transform bounds to include the decorations
+	BRect frame = TransformToFrame(bounds);
+	int x = frame.left;
+	int y = frame.top;
+	int width = frame.IntegerWidth() + 1;
+	int height = frame.IntegerHeight() + 1;
+
+	int w = width + 1;
+	int h = height + 1;
+
+	if (resize) {
+		Drawable* drawable = fView->GetDrawable();
+		if (drawable->Lock()) {
+			if (!drawable->IsValid()
+					|| w > drawable->Width()
+					|| h > drawable->Height()
+					|| w + kResizeBuffer * 2 < drawable->Width()
+					|| h + kResizeBuffer * 2 < drawable->Height()) {
+				drawable->Allocate(w + kResizeBuffer, h + kResizeBuffer);
+			}
+			drawable->Unlock();
+		}
+	}
+
+	// Should probably execute handler on EDT instead of unlocking here
+	UnlockLooper();
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(eventReshape, platformWindowClazz,
+		"eventReshape", "(IIII)V");
+	env->CallVoidMethod(fPlatformWindow, eventReshape, x, y, width, height);
+
+	LockLooper();
+}
+
+
+void
+PlatformWindow::_UpdateInsets()
+{
+	fInsets = GetInsets();
+
+	JNIEnv* env = GetEnv();
+	DECLARE_VOID_JAVA_METHOD(updateInsets, platformWindowClazz,
+		"updateInsets", "(IIII)V");
+	env->CallVoidMethod(fPlatformWindow, updateInsets, fInsets.left,
+		fInsets.top, fInsets.right, fInsets.bottom);
 }

@@ -22,46 +22,42 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-#ifndef PLATFORM_FRAME_H
-#define	PLATFORM_FRAME_H
 
-#include <Window.h>
+package sun.hawt;
 
-#include "HaikuPlatformWindow.h"
-#include "PlatformView.h"
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.peer.MenuBarPeer;
 
-class PlatformFrame : public BWindow, public PlatformWindow {
-public:
-							PlatformFrame(jobject platformWindow,
-								bool decorated);
+public class HaikuMenuBar extends HaikuMenuComponent implements MenuBarPeer {
 
-			Rectangle		GetBounds();
-			PlatformView*	GetContainer();
-			Drawable*		GetDrawable();
-			Point			GetLocation();
-			Point			GetLocationOnScreen();
-			int				GetState();
-			void			SetBounds(Rectangle bounds);
-			void			SetName(const char* name);
-			void			SetResizable(bool resizable);
-			void			SetState(int state);
-			bool			GetVisible();
-			void			SetVisible(bool visible);
-			void			Dispose();
-			void			Focus();
-			void			SendTo(bool front);
+    private native long nativeCreateMenuBar();
+    private native void nativeAddMenu(long menuBarPtr, long menuPtr);
+    private native void nativeDelMenu(long menuBarPtr, int index);
 
-	// Overriden BWindow hooks
-	virtual	void			FrameMoved(BPoint origin);
-	virtual	void			FrameResized(float width, float height);
-	virtual	void			Minimize(bool minimize);
-	virtual	bool			QuitRequested();
-	virtual	void			WindowActivated(bool active);
-	virtual	void			Zoom(BPoint origin, float width, float height);
-private:
-			PlatformView	fView;
-			bool			fMaximized;
-			jobject			fPlatformWindow;
-};
+    public HaikuMenuBar(MenuBar target) {
+        super(target);
+    }
 
-#endif	/* PLATFORM_FRAME_H */
+    @Override
+    protected long createModel() {
+        return nativeCreateMenuBar();
+    }
+
+    @Override
+    public void addHelpMenu(Menu menu) {
+    	// unused -- I think?
+    	//HaikuMenu peer = (HaikuMenu)menu.getPeer();
+        //nativeAddMenu(getModel(), peer.getModel());
+    }
+
+    @Override
+    public void addMenu(Menu menu) {
+    	// unused
+    }
+
+    @Override
+    public void delMenu(int index) {
+        nativeDelMenu(getModel(), index);
+    }
+}

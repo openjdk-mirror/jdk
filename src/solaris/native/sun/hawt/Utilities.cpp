@@ -27,16 +27,53 @@
 
 #include <InterfaceDefs.h>
 #include <String.h>
+#include <View.h>
+
+#include <pthread.h>
 
 #include "java_awt_Event.h"
-#include "java_awt_event_KeyEvent.h"
 #include "java_awt_event_InputEvent.h"
+#include "java_awt_event_KeyEvent.h"
+#include "java_awt_event_MouseEvent.h"
+
+static pthread_key_t envKey;
+static pthread_once_t envKeyOnce = PTHREAD_ONCE_INIT;
+
+static void
+EnvDestructor(void*)
+{
+	jvm->DetachCurrentThread();
+}
+
+static void
+InitKey()
+{
+	pthread_key_create(&envKey, EnvDestructor);
+}
+
+JNIEnv*
+GetEnv()
+{
+	pthread_once(&envKeyOnce, InitKey);
+
+	// We don't bother getting the value from TLS because GetEnv is
+	// faster. We use TLS in order to detach the current thread in
+	// the thread-specific destructor.
+	JNIEnv* env = NULL;
+	jvm->GetEnv((void**)&env, JNI_VERSION_1_2);
+
+	if (env == NULL) {
+		jvm->AttachCurrentThread((void**)&env, NULL);
+		pthread_setspecific(envKey, env);
+	}
+
+	return env;
+}
 
 void
 DoCallback(jobject obj, const char* name, const char* description, ...)
 {
-    JNIEnv* env = NULL;
-    jvm->AttachCurrentThread((void**)&env, NULL);
+    JNIEnv* env = GetEnv();
     va_list args;
     va_start(args, description);
     JNU_CallMethodByNameV(env, NULL, obj, name, description, args);
@@ -52,6 +89,57 @@ DoCallback(jobject obj, const char* name, const char* description, ...)
     va_end(args);
 }
 
+
+jthrowable
+safe_ExceptionOccurred(JNIEnv *env) throw (std::bad_alloc) {
+    jthrowable xcp = env->ExceptionOccurred();
+    if (xcp != NULL) {
+        env->ExceptionClear(); // if we don't do this, FindClass will fail
+
+        jclass outofmem = env->FindClass("java/lang/OutOfMemoryError");
+        DASSERT(outofmem != NULL);
+        jboolean isOutofmem = env->IsInstanceOf(xcp, outofmem);
+
+        env->DeleteLocalRef(outofmem);
+
+        if (isOutofmem) {
+            env->DeleteLocalRef(xcp);
+            throw std::bad_alloc();
+        } else {
+            // rethrow exception
+            env->Throw(xcp);
+            return xcp;
+        }
+    }
+
+    return NULL;
+}
+
+jint
+ConvertMouseButtonToJava(int32 buttons)
+{
+	if (buttons & B_PRIMARY_MOUSE_BUTTON)
+		return java_awt_event_MouseEvent_BUTTON1;
+	else if (buttons & B_SECONDARY_MOUSE_BUTTON)
+		return java_awt_event_MouseEvent_BUTTON3;
+	else if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		return java_awt_event_MouseEvent_BUTTON2;
+	else
+		return java_awt_event_MouseEvent_NOBUTTON;
+}
+
+jint
+ConvertMouseMaskToJava(int32 buttons)
+{
+	jint javaButtons = 0;
+	if (buttons & B_PRIMARY_MOUSE_BUTTON)
+		javaButtons |= java_awt_event_MouseEvent_BUTTON1_DOWN_MASK;
+	if (buttons & B_SECONDARY_MOUSE_BUTTON)
+		javaButtons |= java_awt_event_MouseEvent_BUTTON3_DOWN_MASK;
+	if (buttons & B_TERTIARY_MOUSE_BUTTON)
+		javaButtons |= java_awt_event_MouseEvent_BUTTON2_DOWN_MASK;
+	return javaButtons;
+}
 
 int32
 ConvertKeyCodeToNative(jint jkeycode) {

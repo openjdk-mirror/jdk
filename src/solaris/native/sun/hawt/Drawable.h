@@ -28,16 +28,17 @@
 
 #include <Bitmap.h>
 #include <Locker.h>
+#include <Rect.h>
 #include <SupportDefs.h>
 
 #include "Utilities.h"
 
-class PlatformView;
+class ContentView;
 
 class Drawable : public BLocker {
 public:
 					Drawable();
-					Drawable(PlatformView* view);
+					Drawable(ContentView* view);
 					~Drawable();
 
 	bool			Allocate(int width, int height);
@@ -54,10 +55,10 @@ public:
 
 	BBitmap*		GetBitmap() { return fSurface; }
 	
-	void			Invalidate(Rectangle rect);
+	void			Invalidate(BRect rect);
 private:
 	BBitmap*		fSurface;
-	PlatformView*	fView;
+	ContentView*	fView;
 };
 
 #endif	/* DRAWABLE_H */

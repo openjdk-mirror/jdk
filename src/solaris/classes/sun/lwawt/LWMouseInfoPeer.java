@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,31 +23,38 @@
  * questions.
  */
 
-package sun.hawt;
+package sun.lwawt;
 
-import sun.awt.peer.cacio.CacioEventPump;
+import java.awt.Point;
+import java.awt.Window;
 
-/**
- * Dummy event pump for Haiku that simply runs the BApplication.
- * Native frames and views dispatch the events.
- * @author Hamish Morrison
- */
-class HaikuEventPump extends CacioEventPump<Object> {
+import java.awt.peer.MouseInfoPeer;
 
-    static {
-        initIDs();
-    }
+public class LWMouseInfoPeer implements MouseInfoPeer {
 
-    private static native void initIDs();
-    private native void runApplication();
-
-    @Override
-    protected Object fetchNativeEvent() {
-        runApplication();
-        return null;
+    public LWMouseInfoPeer() {
     }
 
     @Override
-    protected void dispatchNativeEvent(Object event) {
+    public int fillPointWithCoords(Point point) {
+        LWCursorManager cursorManager =
+            LWToolkit.getLWToolkit().getCursorManager();
+        Point cursorPos = cursorManager.getCursorPosition();
+        point.x = cursorPos.x;
+        point.y = cursorPos.y;
+        // TODO: multiscreen
+        return 0;
     }
+
+    @Override
+    public boolean isWindowUnderMouse(Window w) {
+        if (w == null) {
+            return false;
+        }
+
+        LWWindowPeer windowPeer = (LWWindowPeer)w.getPeer();
+        return LWWindowPeer.getWindowUnderCursor() == windowPeer;
+    }
+
 }
+

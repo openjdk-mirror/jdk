@@ -37,28 +37,73 @@ import java.awt.peer.*;
 import java.util.*;
 import java.util.logging.*;
 import sun.awt.*;
-import sun.awt.peer.cacio.*;
+import sun.lwawt.*;
+import sun.lwawt.LWWindowPeer.PeerType;
 
-public class HaikuToolkit extends CacioToolkit {
+public class HaikuToolkit extends LWToolkit {
+
+    private native void nativeInit();
+    private native void nativeRunMessage();
+    private native void nativeShutdown();
+    private native void nativeLoadSystemColors(int[] systemColors);
+    private native void nativeBeep();
 
 	static {
 		System.loadLibrary("awt");
 	}
 
-    private PlatformWindowFactory platformWindow;
-    private HaikuClipboard clipboard;
-
     public HaikuToolkit() {
         super();
         SunToolkit.setDataTransfererClassName("sun.hawt.HaikuDataTransferer");
+
+        // We need to create the BApplication now so that other supporting
+        // classes can get access to be_app before the message loop is
+        // running.
+        nativeInit();
+
+        // This kicks off the toolkit thread and runs platformRunMessage
+        init();
     }
 
     @Override
-    public synchronized PlatformWindowFactory getPlatformWindowFactory() {
-        if (platformWindow == null) {
-            platformWindow = new HaikuPlatformWindowFactory();
+    protected void loadSystemColors(int[] systemColors) {
+        if (systemColors == null)
+            return;
+
+        nativeLoadSystemColors(systemColors);
+    }
+
+    @Override
+    protected PlatformWindow createPlatformWindow(PeerType peerType) {
+        if (peerType == PeerType.EMBEDDEDFRAME) {
+        	System.err.println("Creating embedded frame!");
+        	return null;
+        } else {
+        	return new HaikuPlatformWindow(peerType);
         }
-        return platformWindow;
+    }
+
+    @Override
+    protected PlatformComponent createPlatformComponent() {
+        return new HaikuPlatformComponent();
+    }
+
+    @Override
+    protected void platformCleanup() {
+    }
+
+    @Override
+    protected void platformInit() {
+    }
+
+    @Override
+    protected void platformRunMessage() {
+    	nativeRunMessage();
+    }
+
+    @Override
+    protected void platformShutdown() {
+    	nativeShutdown();
     }
 
     @Override
@@ -75,23 +120,78 @@ public class HaikuToolkit extends CacioToolkit {
     }
 
     @Override
-    public DragSourceContextPeer createDragSourceContextPeer(DragGestureEvent dge) throws InvalidDnDOperationException {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public Clipboard createPlatformClipboard() {
+        return HaikuClipboard.createClipboard();
     }
 
     @Override
-    public TrayIconPeer createTrayIcon(TrayIcon target) throws HeadlessException, AWTException {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public LWCursorManager getCursorManager() {
+        return HaikuCursorManager.getInstance();
     }
 
     @Override
-    public SystemTrayPeer createSystemTray(SystemTray target) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    protected FileDialogPeer createFileDialogPeer(FileDialog target) {
+        return new HaikuFileDialog(target);
+    }
+
+    @Override
+    public MenuPeer createMenu(Menu target) {
+        MenuPeer peer = new HaikuMenu(target);
+        targetCreatedPeer(target, peer);
+        return peer;
+    }
+
+    @Override
+    public MenuBarPeer createMenuBar(MenuBar target) {
+        MenuBarPeer peer = new HaikuMenuBar(target);
+        targetCreatedPeer(target, peer);
+        return peer;
+    }
+
+    @Override
+    public MenuItemPeer createMenuItem(MenuItem target) {
+        MenuItemPeer peer = new HaikuMenuItem(target);
+        targetCreatedPeer(target, peer);
+        return peer;
+    }
+
+    @Override
+    public CheckboxMenuItemPeer createCheckboxMenuItem(CheckboxMenuItem target) {
+        CheckboxMenuItemPeer peer = new HaikuCheckboxMenuItem(target);
+        targetCreatedPeer(target, peer);
+        return peer;
+    }
+
+    @Override
+    public PopupMenuPeer createPopupMenu(PopupMenu target) {
+        PopupMenuPeer peer = new HaikuPopupMenu(target);
+        targetCreatedPeer(target, peer);
+        return peer;
+    }
+
+    @Override
+    public DragSourceContextPeer createDragSourceContextPeer(
+            DragGestureEvent dge) throws InvalidDnDOperationException {
+        return HaikuDragSourceContextPeer.createDragSourceContextPeer(dge);
     }
 
     @Override
     public boolean isTraySupported() {
         return false;
+    }
+
+    @Override
+    public TrayIconPeer createTrayIcon(TrayIcon target) throws HeadlessException {
+        TrayIconPeer peer = new HaikuTrayIcon(target);
+        targetCreatedPeer(target, peer);
+        return peer;
+    }
+
+    @Override
+    public SystemTrayPeer createSystemTray(SystemTray target) {
+        SystemTrayPeer peer = new HaikuSystemTray();
+        targetCreatedPeer(target, peer);
+        return peer;
     }
 
     class HaikuPlatformFont extends PlatformFont {
@@ -100,6 +200,7 @@ public class HaikuToolkit extends CacioToolkit {
             super(name, style);
         }
 
+        @Override
         protected char getMissingGlyphCharacter() {
             return (char)0xfff8;
         }
@@ -111,8 +212,8 @@ public class HaikuToolkit extends CacioToolkit {
     }
 
     @Override
-    public RobotPeer createRobot(Robot target, GraphicsDevice screen) throws AWTException {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public RobotPeer createRobot(Robot target, GraphicsDevice device) {
+        return new HaikuRobot(target, device);
     }
 
     @Override
@@ -131,17 +232,10 @@ public class HaikuToolkit extends CacioToolkit {
 
     @Override
     protected boolean syncNativeQueue(long timeout) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    public void grab(Window w) {
-    	System.err.println("HaikuToolkit.grab: Not supported yet.");
-    }
-
-    @Override
-    public void ungrab(Window w) {
-    	System.err.println("HaikuToolkit.grab: Not supported yet.");
+    	// This should wait until all events that should be generated
+    	// in response to user events have been generated.
+    	// I don't know if BWindow::Sync fits the bill.
+        return false;
     }
 
     @Override
@@ -174,30 +268,19 @@ public class HaikuToolkit extends CacioToolkit {
     }
 
     @Override
-    public PrintJob getPrintJob(Frame frame, String jobtitle,
-                                Properties props) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
     public void beep() {
+    	nativeBeep();
     }
 
     @Override
-    public Clipboard getSystemClipboard() throws HeadlessException {
-        synchronized (this) {
-            if (clipboard == null)
-                clipboard = new HaikuClipboard("System");
-        }
-        return clipboard;
+    public Map mapInputMethodHighlight(InputMethodHighlight highlight)
+            throws HeadlessException {
+        return null;
     }
 
     @Override
-    public Map<TextAttribute, ?> mapInputMethodHighlight(InputMethodHighlight highlight) throws HeadlessException {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public InputMethodDescriptor getInputMethodAdapterDescriptor() throws AWTException {
+    public InputMethodDescriptor getInputMethodAdapterDescriptor()
+            throws AWTException {
         return null;
     }
 }

@@ -22,34 +22,24 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-#ifndef PLATFORM_VIEW_H
-#define	PLATFORM_VIEW_H
+#ifndef CONTENT_VIEW_H
+#define	CONTENT_VIEW_H
 
 #include <View.h>
 
-#include "HaikuPlatformWindow.h"
+#include "Drawable.h"
 
-class PlatformView : public BView, public PlatformWindow {
+class ContentView : public BView {
 public:
-							PlatformView(jobject platformWindow, bool root);
+							ContentView(jobject platformWindow);
 
-			Rectangle		GetBounds();
-			PlatformView*	GetContainer();
 			Drawable*		GetDrawable();
-			Point			GetLocation();
-			Point			GetLocationOnScreen();
-			void			SetBounds(Rectangle bounds);
-			void			SetParent(PlatformView* parent);
-			bool			GetVisible();
-			void			SetVisible(bool visible);
-			void			Dispose();
-			void			Focus();
-
 			void			DeferredDraw(BRect updateRect);
+			void			AddDropTarget(jobject target);
+			void			RemoveDropTarget();
+			void			StartDrag(BMessage* message, jobject dragSource);
 
 	virtual	void			Draw(BRect updateRect);
-	virtual	void			FrameMoved(BPoint origin);
-	virtual	void			FrameResized(float width, float height);
 	virtual	void			KeyDown(const char* bytes, int32 numBytes);
 	virtual	void			KeyUp(const char* bytes, int32 numBytes);
 	virtual	void			MakeFocus(bool focused);
@@ -62,15 +52,21 @@ public:
 private:
 			void			_HandleKeyEvent(BMessage* message);
 			void			_HandleMouseEvent(BMessage* message, BPoint point,
-								uint32 transit = 0);
+								uint32 transit = 0,
+								const BMessage* dragMessage = NULL);
 			void			_HandleWheelEvent(BMessage* message);
+			void			_HandleDnDMessage(uint32 transit,
+								const BMessage* dragMessage, int x, int y);
+			void			_HandleDnDDrop(BMessage* message);
 
 private:
-			bool			fRoot;
 			Drawable		fDrawable;
-			rgb_color		fColour;
 			jobject			fPlatformWindow;
 			uint32			fPreviousButtons;
+			BPoint			fPreviousPoint;
+			jobject			fDropTargetComponent;
+			jobject			fDropTargetContext;
+			jobject			fDragSourceContext;
 };
 
-#endif	/* PLATFORM_VIEW_H */
+#endif	/* CONTENT_VIEW_H */

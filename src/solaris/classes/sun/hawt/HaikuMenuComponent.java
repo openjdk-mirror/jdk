@@ -25,41 +25,42 @@
 
 package sun.hawt;
 
-import java.awt.Component;
-import sun.awt.peer.cacio.*;
+import java.awt.Font;
+import java.awt.MenuComponent;
+import java.awt.peer.MenuComponentPeer;
 
-public class HaikuPlatformWindowFactory implements PlatformWindowFactory {
+import sun.lwawt.LWToolkit;
 
-    private HaikuEventPump eventPump;
+public abstract class HaikuMenuComponent implements MenuComponentPeer {
 
-    public PlatformWindow createPlatformWindow(CacioComponent component,
-            PlatformWindow parent) {
-        Component comp = component.getAWTComponent();
-        return new HaikuPlatformWindow(component, (HaikuPlatformWindow)parent,
-        	false, comp.getX(), comp.getY(), comp.getWidth(),
-        	comp.getHeight());
+    private MenuComponent target;
+    private long modelPtr;
+
+    private native void nativeDispose(long modelPtr);
+
+    HaikuMenuComponent(MenuComponent target) {
+        this.target = target;
+        this.modelPtr = createModel();
     }
 
-    public PlatformToplevelWindow createPlatformToplevelWindow(CacioComponent component) {
-        Component comp = component.getAWTComponent();
-        return new HaikuPlatformWindow(component, null, true, comp.getX(),
-        	comp.getY(), comp.getWidth(), comp.getHeight());
+    MenuComponent getTarget() {
+        return target;
     }
 
-    public CacioEventPump<?> createEventPump() {
-    	return getEventPump();
+    long getModel() {
+        return modelPtr;
     }
 
-    private HaikuEventPump getEventPump() {
-    	if (eventPump == null) {
-    		eventPump = new HaikuEventPump();
-    	}
-    	return eventPump;
+    protected abstract long createModel();
+
+    @Override
+    public void dispose() {
+        LWToolkit.targetDisposedPeer(target, this);
+        nativeDispose(modelPtr);
+        target = null;
     }
 
-    public PlatformToplevelWindow createPlatformToplevelWindow(CacioComponent component,
-            PlatformWindow owner) {
-        // Not exactly sure what 'owner' should be/do. Am ignoring for now.
-        return createPlatformToplevelWindow(component);
+    @Override
+    public void setFont(Font f) {
     }
 }

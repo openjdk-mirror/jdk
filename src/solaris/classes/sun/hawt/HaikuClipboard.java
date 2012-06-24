@@ -33,12 +33,27 @@ import sun.awt.datatransfer.*;
 
 public class HaikuClipboard extends SunClipboard {
 
+    private static HaikuClipboard clipboard;
+
+    private boolean owned = false;
+    private int clipboardViewers = 0;
+
     private native String[] nativeGetFormats();
     private native byte[] nativeGetData(String format) throws IOException;
-    private native void nativeSetData(byte[] data, String format);
+    private native long nativeLockAndClear();
+    private native void nativeSetData(long nativeClipboard, byte[] data,
+        String format);
+    private native void nativeUnlock(long nativeClipboard);
 
-    public HaikuClipboard(String name) {
+    private HaikuClipboard(String name) {
         super(name);
+    }
+
+    public static synchronized HaikuClipboard createClipboard() {
+        if (clipboard == null) {
+            clipboard = new HaikuClipboard("System");
+        }
+        return clipboard;
     }
 
     @Override
@@ -52,7 +67,6 @@ public class HaikuClipboard extends SunClipboard {
 
     @Override
     protected void setContentsNative(Transferable contents) {
-
         // Don't use delayed Clipboard rendering for the Transferable's data.
         // If we did that, we would call Transferable.getTransferData on
         // the Toolkit thread, which is a security hole.
@@ -65,22 +79,30 @@ public class HaikuClipboard extends SunClipboard {
         Map<Long, DataFlavor> formatMap = transferer.
             getFormatsForTransferable(contents, flavorMap);
 
-        for (long format : formatMap.keySet()) {
-            DataFlavor flavor = formatMap.get(format);
+        if (formatMap.keySet().size() > 0) {
+        	long nativeClipboard = nativeLockAndClear();
+            for (long format : formatMap.keySet()) {
+                DataFlavor flavor = formatMap.get(format);
 
-            try {
-                byte[] bytes = transferer.
-                    translateTransferable(contents, flavor, format);
-                nativeSetData(bytes, transferer.getNativeForFormat(format));
-            } catch (IOException e) {
-                // Fix 4696186: don't print exception if data with
-                // javaJVMLocalObjectMimeType failed to serialize.
-                // May remove this if-check when 5078787 is fixed.
-                if (!(flavor.isMimeTypeEqual(
-                        DataFlavor.javaJVMLocalObjectMimeType) &&
-                        e instanceof java.io.NotSerializableException)) {
-                    e.printStackTrace();
+                try {
+                    byte[] bytes = transferer.
+                        translateTransferable(contents, flavor, format);
+                    nativeSetData(nativeClipboard, bytes,
+                        transferer.getNativeForFormat(format));
+                } catch (IOException e) {
+                    // Fix 4696186: don't print exception if data with
+                    // javaJVMLocalObjectMimeType failed to serialize.
+                    // May remove this if-check when 5078787 is fixed.
+                    if (!(flavor.isMimeTypeEqual(
+                            DataFlavor.javaJVMLocalObjectMimeType) &&
+                            e instanceof java.io.NotSerializableException)) {
+                        e.printStackTrace();
+                    }
                 }
+            }
+            nativeUnlock(nativeClipboard);
+            synchronized(this) {
+                owned = true;
             }
         }
     }
@@ -88,7 +110,8 @@ public class HaikuClipboard extends SunClipboard {
     @Override
     protected long[] getClipboardFormats() {
         String[] nativeFormats = nativeGetFormats();
-        if (nativeFormats == null) nativeFormats = new String[0];
+        if (nativeFormats == null)
+            nativeFormats = new String[0];
 
         long[] temporary = new long[nativeFormats.length];
         HaikuDataTransferer transferer =
@@ -97,7 +120,7 @@ public class HaikuClipboard extends SunClipboard {
         for (String nativeFormat : nativeFormats)
             temporary[length++] = transferer.getFormatForNativeAsLong(
                 nativeFormat);
-        
+
         long[] formats = new long[length];
         System.arraycopy(temporary, 0, formats, 0, length);
         return formats;
@@ -113,11 +136,30 @@ public class HaikuClipboard extends SunClipboard {
 
     @Override
     protected void registerClipboardViewerChecked() {
-        // todo
+        clipboardViewers++;
     }
 
     @Override
     protected void unregisterClipboardViewerChecked() {
-        // todo
+        if (clipboardViewers > 0) {
+            clipboardViewers--;
+        }
+    }
+
+    /**
+     * Called by native code when the clipboard contents have changed.
+     */
+    private static void clipboardChanged() {
+    	HaikuClipboard clipboard = createClipboard();
+    	synchronized(clipboard) {
+            if (clipboard.owned) {
+                clipboard.lostOwnershipImpl();
+                clipboard.owned = false;
+            }
+        }
+
+        if (clipboard.clipboardViewers > 0) {
+            clipboard.checkChange(clipboard.getClipboardFormats());
+        }
     }
 }

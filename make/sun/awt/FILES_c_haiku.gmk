@@ -27,48 +27,6 @@
 # The debug_* files included here aren't for 2D specifically but they
 # have no X dependency.
 
-FILES_2D_vis = \
-	vis_FuncArray.c           \
-	java2d_Mlib.c             \
-	mlib_ImageCreate.c        \
-	mlib_ImageZoom_NN.c       \
-	mlib_ImageCopy_Bit.c      \
-	mlib_sys.c                \
-	mlib_v_ImageClear.c       \
-	mlib_v_ImageClear_f.c     \
-	mlib_v_ImageConstXor.c    \
-	mlib_v_ImageCopy.c        \
-	mlib_v_ImageCopy_f.c      \
-	mlib_v_ImageXor.c         \
-	mlib_v_ImageZoom_NN_f.c   \
-	vis_Interp.c              \
-	vis_AlphaMacros.c         \
-	vis_AlphaMaskBlit.c       \
-	vis_AlphaMaskFill.c       \
-	vis_ByteGray.c            \
-	vis_ByteGray_FromRgb.c    \
-	vis_ByteGray_Mask.c       \
-	vis_ByteIndexed.c         \
-	vis_DrawLine.c            \
-	vis_FourByteAbgr.c        \
-	vis_IntArgb.c             \
-	vis_IntArgbPre.c          \
-	vis_IntArgbPre_Mask.c     \
-	vis_IntBgr.c              \
-	vis_IntRgb.c              \
-	vis_IntRgbx.c             \
-	vis_SrcMaskFill.c         \
-	vis_SrcOverMaskBlit.c     \
-	vis_SrcOverMaskFill.c     \
-	vis_FourByteAbgrPre.c     \
-	vis_GlyphList.c           \
-	vis_GlyphListXor.c        \
-	vis_IntArgbBm.c           \
-	vis_ThreeByteBgr.c        \
-	vis_UshortGray.c          \
-	vis_UshortGray_FromRgb.c  \
-	vis_XorBlit.c
-
 FILES_2D_c = \
 	AccelGlyphCache.c \
 	\
@@ -142,47 +100,24 @@ FILES_2D_c = \
 	debug_trace.c \
 	debug_util.c
 
-FILES_NO_MOTIF_c = \
-	awt_Font.c \
-	awt_MToolkit.c \
-	fontpath.c \
-	VDrawingArea.c \
-	X11Color.c \
-	X11Renderer.c \
-	X11PMBlitLoops.c \
-	X11SurfaceData.c \
-	X11FontScaler_md.c \
-	X11TextRenderer_md.c \
-        OGLBlitLoops.c \
-        OGLBufImgOps.c \
-        OGLContext.c \
-        OGLFuncs.c \
-        OGLMaskBlit.c \
-        OGLMaskFill.c \
-        OGLPaints.c \
-        OGLRenderQueue.c \
-        OGLRenderer.c \
-        OGLSurfaceData.c \
-        OGLTextRenderer.c \
-        OGLVertexCache.c \
-        GLXGraphicsConfig.c \
-        GLXSurfaceData.c \
-	CUPSfuncs.c
-
 FILES_cpp = \
+	AwtApplication.cpp \
+	ContentView.cpp \
 	Drawable.cpp \
 	HaikuClipboard.cpp \
+	HaikuCursorManager.cpp \
 	HaikuDesktopPeer.cpp \
-	HaikuEventPump.cpp \
+	HaikuDragSourceContextPeer.cpp \
+	HaikuFileDialog.cpp \
 	HaikuFontManager.cpp \
 	HaikuGraphicsConfig.cpp \
 	HaikuGraphicsDevice.cpp \
 	HaikuGraphicsEnvironment.cpp \
-	HaikuMouseInfo.cpp \
+	HaikuMenuComponent.cpp \
 	HaikuPlatformWindow.cpp \
+	HaikuRobot.cpp \
 	HaikuToolkit.cpp \
+	HaikuTrayIcon.cpp \
 	HaikuWindowSurfaceData.cpp \
-	PlatformFrame.cpp \
-	PlatformView.cpp \
 	Utilities.cpp
 

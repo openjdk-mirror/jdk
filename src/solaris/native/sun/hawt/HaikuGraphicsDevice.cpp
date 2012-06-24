@@ -23,62 +23,47 @@
  * questions.
  */
 
-#include "sun_hawt_HaikuGraphicsDevice.h"
+#include <jni.h>
 
 #include <Screen.h>
 
-static void getScreenDPI(screen_id displayID, double* _horizontal,
-        double* _vertical) {
-	BScreen screen(displayID);
-    if (!screen.IsValid()) {
-    	return;
-    }
-
-	// This doesn't work with the VirtualBox screen, but
-	// I'm guessing it's OK elsewhere.
-    monitor_info info;
-    if (screen.GetMonitorInfo(&info) != B_OK) {
-    	return;
-    }
-
-	// 2.54 cm == 1 inch
-	double width = info.width / 2.54;
-	double height = info.height / 2.54;
-
-	if (width != 0 && _horizontal != NULL)
-        *_horizontal = (screen.Frame().Width() + 1) / width;
-	if (height != 0 && _vertical != NULL)
-		*_vertical = (screen.Frame().Width() + 1) / height;
-}
+#include "Utilities.h"
 
 extern "C" {
 
 /*
  * Class:     sun_hawt_HaikuGraphicsDevice
- * Method:    nativeGetXResolution
- * Signature: (I)D
- */
-JNIEXPORT jdouble JNICALL
-Java_sun_hawt_HaikuGraphicsDevice_nativeGetXResolution
-  (JNIEnv *env, jclass clazz, jint displayID)
-{
-	double horz = 0;
-	getScreenDPI(B_MAIN_SCREEN_ID, &horz, NULL);
-    return horz;
-}
-
-/*
- * Class:     sun_hawt_HaikuGraphicsDevice
  * Method:    nativeGetYResolution
- * Signature: (I)D
+ * Signature: ([D)V
  */
-JNIEXPORT jdouble JNICALL
-Java_sun_hawt_HaikuGraphicsDevice_nativeGetYResolution
-  (JNIEnv *env, jclass clazz, jint displayID)
+JNIEXPORT void JNICALL
+Java_sun_hawt_HaikuGraphicsDevice_nativeGetScreenResolution(JNIEnv *env,
+	jclass clazz, jint displayID, jdoubleArray resolution)
 {
-	double vert = 0;
-	getScreenDPI(B_MAIN_SCREEN_ID, NULL, &vert);
-	return vert;
+	screen_id id;
+	id.id = displayID;
+	BScreen screen(id);
+	if (!screen.IsValid())
+		return;
+
+	// This doesn't work with the VirtualBox screen, but
+	// I'm guessing it's OK elsewhere.
+	monitor_info info;
+	if (screen.GetMonitorInfo(&info) != B_OK)
+		return;
+
+	// 2.54 cm == 1 inch
+	double width = info.width / 2.54;
+	double height = info.height / 2.54;
+
+	if (width != 0) {
+		jdouble xRes = (screen.Frame().Width() + 1) / width;
+		env->SetDoubleArrayRegion(resolution, 0, 1, &xRes);
+	}
+	if (height != 0) {
+		jdouble yRes = (screen.Frame().Width() + 1) / height;
+		env->SetDoubleArrayRegion(resolution, 1, 1, &yRes);
+	}
 }
 
 }

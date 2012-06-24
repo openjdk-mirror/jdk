@@ -33,16 +33,14 @@ import java.util.ArrayList;
 public class HaikuGraphicsDevice extends GraphicsDevice {
 
     private final int displayID;
-
     private final HaikuGraphicsConfig config;
+
+    private native double nativeGetScreenResolution(int displayID,
+        double[] resolution);
 
     public HaikuGraphicsDevice(int displayID) {
         this.displayID = displayID;
         config = new HaikuGraphicsConfig(this);
-    }
-
-    public int getDisplayID() {
-        return displayID;
     }
 
     @Override
@@ -55,15 +53,6 @@ public class HaikuGraphicsDevice extends GraphicsDevice {
         return config;
     }
 
-    private static native double nativeGetXResolution(int displayID);
-    private static native double nativeGetYResolution(int displayID);
-    private static native DisplayMode nativeGetDisplayMode(int displayID);
-    private static native void nativeGetDisplayModes(int displayID,
-    	ArrayList<DisplayMode> modes);
-    private static native void nativeSetDisplayMode(int displayID,
-		int width, int height, int displayMode);
-
-
     @Override
     public String getIDstring() {
         return "Display " + this.displayID;
@@ -74,47 +63,36 @@ public class HaikuGraphicsDevice extends GraphicsDevice {
         return TYPE_RASTER_SCREEN;
     }
 
-	@Override
-	public boolean isDisplayChangeSupported() {
-		return true;
-	}
+    @Override
+    public boolean isDisplayChangeSupported() {
+        return false;
+    }
 
     @Override
     public boolean isFullScreenSupported() {
         return false;
     }
 
-	// fold getXResolution and getYResolution into getScreenResolution
+    public int getDisplayID() {
+        return displayID;
+    }
+
     public double getXResolution() {
-    	double res = nativeGetXResolution(displayID);
-    	return res == 0.0 ? 72.0 : res;
+        double[] resolution = new double[2];
+        nativeGetScreenResolution(displayID, resolution);
+        return resolution[0] != 0.0 ? resolution[0] : 72.0;
     }
 
     public double getYResolution() {
-    	double res = nativeGetYResolution(displayID);
-    	return res == 0.0 ? 72.0 : res;
+        double[] resolution = new double[2];
+        nativeGetScreenResolution(displayID, resolution);
+        return resolution[1] != 0.0 ? resolution[1] : 72.0;
     }
 
-	public double getScreenResolution() {
-		double res = (getYResolution() + getXResolution()) / 2;
-		return res == 0.0 ? 72.0 : res;
-	}
-
-    @Override
-    public DisplayMode getDisplayMode() {
-    	// todo ?
-    	return null;
+    public double getScreenResolution() {
+        double[] resolution = new double[2];
+        nativeGetScreenResolution(displayID, resolution);
+        double res = (resolution[0] + resolution[1]) / 2;
+        return res == 0.0 ? res : 72.0;
     }
-    
-    @Override
-    public DisplayMode[] getDisplayModes() {
-    	// todo ?
-    	return null;
-    }
-
-	@Override
-	public void setDisplayMode(DisplayMode displayMode) {
-		// todo ?
-		return;
-	}
 }

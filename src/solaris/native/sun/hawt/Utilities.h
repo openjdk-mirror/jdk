@@ -29,6 +29,8 @@
 #include <jni_util.h>
 #include <debug_util.h>
 
+#include <new>
+
 #include <Rect.h>
 
 extern "C" {
@@ -37,25 +39,205 @@ extern JavaVM* jvm;
 
 }
 
-struct Point {
-	Point(int x, int y) : x(x), y(y) { }
-	int x, y;
-};
-
-struct Rectangle {
-	Rectangle(int x, int y, int width, int height) : x(x), y(y),
-		width(width), height(height) { }
-	int x, y, width, height;
-};
-
+JNIEnv* GetEnv();
 void DoCallback(jobject obj, const char* name, const char* description, ...);
 
 class BString;
 
+jint ConvertMouseButtonToJava(int32 button);
+jint ConvertMouseMaskToJava(int32 buttons);
 int32 ConvertKeyCodeToNative(jint jkeycode);
 void ConvertKeyCodeToJava(int32 keycode, uint32 modifiers, jint *jkeyCode, jint *jkeyLocation);
 void GetKeyChar(BString* keyChar, int32 keycode, int32 modifiers);
 jint ConvertModifiersToJava(uint32 modifiers);
 jint ConvertInputModifiersToJava(uint32 modifiers);
+
+/*
+ * I copied the following macros from the Windows AWT port.
+ * Go look at the Windows DnD stuff for example usage.
+ */
+
+jthrowable safe_ExceptionOccurred(JNIEnv *env) throw (std::bad_alloc);
+
+/*
+ * NOTE: You need these macros only if you take care of performance, since they
+ * provide proper caching. Otherwise you can use JNU_CallMethodByName etc.
+ */
+
+/*
+ * This macro defines a function which returns the class for the specified
+ * class name with proper caching and error handling.
+ */
+#define DECLARE_JAVA_CLASS(javaclazz, name)                                    \
+static jclass                                                                  \
+get_ ## javaclazz(JNIEnv* env) {                                               \
+    static jclass javaclazz = NULL;                                            \
+                                                                               \
+    if (JNU_IsNull(env, javaclazz)) {                                          \
+        jclass javaclazz ## Local = env->FindClass(name);                      \
+                                                                               \
+        if (!JNU_IsNull(env, javaclazz ## Local)) {                            \
+            javaclazz = (jclass)env->NewGlobalRef(javaclazz ## Local);         \
+            env->DeleteLocalRef(javaclazz ## Local);                           \
+            if (JNU_IsNull(env, javaclazz)) {                                  \
+                JNU_ThrowOutOfMemoryError(env, "");                            \
+            }                                                                  \
+        }                                                                      \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+    }                                                                          \
+                                                                               \
+    DASSERT(!JNU_IsNull(env, javaclazz));                                      \
+                                                                               \
+    return javaclazz;                                                          \
+}
+
+/*
+ * The following macros defines blocks of code which retrieve a method of the
+ * specified class identified with the specified name and signature.
+ * The specified class should be previously declared with DECLARE_JAVA_CLASS.
+ * These macros should be placed at the beginning of a block, after definition
+ * of local variables, but before the code begins.
+ */
+#define DECLARE_VOID_JAVA_METHOD(method, javaclazz, name, signature)           \
+    static jmethodID method = NULL;                                            \
+                                                                               \
+    if (JNU_IsNull(env, method)) {                                             \
+        jclass clazz = get_ ## javaclazz(env);                                 \
+                                                                               \
+        if (JNU_IsNull(env, clazz)) {                                          \
+            return;                                                            \
+        }                                                                      \
+                                                                               \
+        method = env->GetMethodID(clazz, name, signature);                     \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+                                                                               \
+        if (JNU_IsNull(env, method)) {                                         \
+            DASSERT(FALSE);                                                    \
+            return;                                                            \
+        }                                                                      \
+    }
+
+#define DECLARE_STATIC_VOID_JAVA_METHOD(method, javaclazz, name, signature)    \
+    static jmethodID method = NULL;                                            \
+    jclass clazz = get_ ## javaclazz(env);                                     \
+                                                                               \
+    if (JNU_IsNull(env, clazz)) {                                              \
+        return;                                                                \
+    }                                                                          \
+                                                                               \
+    if (JNU_IsNull(env, method)) {                                             \
+        method = env->GetStaticMethodID(clazz, name, signature);               \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+                                                                               \
+        if (JNU_IsNull(env, method)) {                                         \
+            DASSERT(FALSE);                                                    \
+            return;                                                            \
+        }                                                                      \
+    }
+
+#define DECLARE_JINT_JAVA_METHOD(method, javaclazz, name, signature)           \
+    static jmethodID method = NULL;                                            \
+                                                                               \
+    if (JNU_IsNull(env, method)) {                                             \
+        jclass clazz = get_ ## javaclazz(env);                                 \
+                                                                               \
+        if (JNU_IsNull(env, clazz)) {                                          \
+            return java_awt_dnd_DnDConstants_ACTION_NONE;                      \
+        }                                                                      \
+                                                                               \
+        method = env->GetMethodID(clazz, name, signature);                     \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+                                                                               \
+        if (JNU_IsNull(env, method)) {                                         \
+            DASSERT(FALSE);                                                    \
+            return java_awt_dnd_DnDConstants_ACTION_NONE;                      \
+        }                                                                      \
+    }
+
+#define DECLARE_JBOOLEAN_JAVA_METHOD(method, javaclazz, name, signature)       \
+    static jmethodID method = NULL;                                            \
+                                                                               \
+    if (JNU_IsNull(env, method)) {                                             \
+        jclass clazz = get_ ## javaclazz(env);                                 \
+                                                                               \
+        if (JNU_IsNull(env, clazz)) {                                          \
+            return JNI_FALSE;                                                  \
+        }                                                                      \
+                                                                               \
+        method = env->GetMethodID(clazz, name, signature);                     \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+                                                                               \
+        if (JNU_IsNull(env, method)) {                                         \
+            DASSERT(FALSE);                                                    \
+            return JNI_FALSE;                                                  \
+        }                                                                      \
+    }
+
+#define DECLARE_OBJECT_JAVA_METHOD(method, javaclazz, name, signature)         \
+    static jmethodID method = NULL;                                            \
+                                                                               \
+    if (JNU_IsNull(env, method)) {                                             \
+        jclass clazz = get_ ## javaclazz(env);                                 \
+                                                                               \
+        if (JNU_IsNull(env, clazz)) {                                          \
+            return NULL;                                                       \
+        }                                                                      \
+                                                                               \
+        method = env->GetMethodID(clazz, name, signature);                     \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+                                                                               \
+        if (JNU_IsNull(env, method)) {                                         \
+            DASSERT(FALSE);                                                    \
+            return NULL;                                                       \
+        }                                                                      \
+    }
+
+#define DECLARE_STATIC_OBJECT_JAVA_METHOD(method, javaclazz, name, signature)  \
+    static jmethodID method = NULL;                                            \
+    jclass clazz = get_ ## javaclazz(env);                                     \
+                                                                               \
+    if (JNU_IsNull(env, clazz)) {                                              \
+        return NULL;                                                           \
+    }                                                                          \
+                                                                               \
+    if (JNU_IsNull(env, method)) {                                             \
+        method = env->GetStaticMethodID(clazz, name, signature);               \
+                                                                               \
+        if (!JNU_IsNull(env, safe_ExceptionOccurred(env))) {                   \
+            env->ExceptionDescribe();                                          \
+            env->ExceptionClear();                                             \
+        }                                                                      \
+                                                                               \
+        if (JNU_IsNull(env, method)) {                                         \
+            DASSERT(FALSE);                                                    \
+            return NULL;                                                       \
+        }                                                                      \
+    }
+
+
 
 #endif	/* UTILITIES_H */

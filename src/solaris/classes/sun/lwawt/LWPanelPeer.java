@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,25 +22,30 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-#ifndef HAIKU_WINDOW_SURFACE_DATA_H
-#define	HAIKU_WINDOW_SURFACE_DATA_H
 
-#include "SurfaceData.h"
 
-extern "C" {
+package sun.lwawt;
 
-class Drawable;
+import java.awt.Dimension;
+import java.awt.Panel;
+import java.awt.peer.PanelPeer;
 
-typedef struct {
-   	SurfaceDataOps	sdOps;
-    Drawable* 		drawable;
-    jint			x;
-    jint			y;
-    jint			width;
-    jint			height;
-    jint 			lockFlags;
-} HaikuWindowSurfaceDataOps;
+import javax.swing.JPanel;
 
+final class LWPanelPeer extends LWContainerPeer<Panel, JPanel>
+        implements PanelPeer {
+
+    LWPanelPeer(final Panel target, final PlatformComponent platformComponent) {
+        super(target, platformComponent);
+    }
+
+    @Override
+    public JPanel createDelegate() {
+        return new JPanel();
+    }
+
+    @Override
+    public Dimension getMinimumSize() {
+        return getBounds().getSize();
+    }
 }
-
-#endif	/* HAIKU_WINDOW_SURFACE_DATA_H */

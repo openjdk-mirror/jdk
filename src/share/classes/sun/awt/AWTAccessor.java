@@ -399,6 +399,11 @@ public final class AWTAccessor {
          * Sets the most recent focus owner in the window.
          */
         void setMostRecentFocusOwner(Window window, Component component);
+
+        /*
+         * Returns current KFM of the specified AppContext.
+         */
+        KeyboardFocusManager getCurrentKeyboardFocusManager(AppContext ctx);
     }
 
     /*

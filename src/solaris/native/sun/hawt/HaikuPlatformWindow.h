@@ -28,33 +28,59 @@
 #include <View.h>
 #include <Window.h>
 
+#include "ContentView.h"
 #include "Drawable.h"
 #include "Utilities.h"
 
-class PlatformView;
+struct Insets {
+	Insets(int left, int top, int right, int bottom)
+	: left(left), top(top), right(right), bottom(bottom) {}
+	int left, top, right, bottom;
+};
 
-// The PlatformWindow "interface" defines the methods required of
-// PlatformFrame and PlatformView, since I decided to treat them
-// the same in the Java class.
-class PlatformWindow {
+class PlatformWindow : public BWindow {
 public:
-	virtual	void			Dispose() = 0;
-	virtual Rectangle		GetBounds() = 0;
-	virtual	void			SetBounds(Rectangle bounds) = 0;
-	virtual	PlatformView*	GetContainer() = 0;
-	virtual	Drawable*		GetDrawable() = 0;
-	virtual	Point			GetLocation() = 0;
-	virtual	Point			GetLocationOnScreen() = 0;
-	virtual	bool			GetVisible() = 0;
-	virtual	void			SetVisible(bool visible) = 0;
-	virtual	void			Focus() = 0;
+							PlatformWindow(jobject platformWindow,
+								bool simple);
 
-	virtual	void			SetName(const char* name) { }
-	virtual	int				GetState() { return 0; }
-	virtual	void			SetState(int state) { }
-	virtual	void			SetParent(PlatformView* parent) { }
-	virtual	void			SetResizable(bool resizable) { }
-	virtual	void			SendTo(bool front) { }
+			Drawable*		GetDrawable();
+			void			SetState(int state);
+			void			Dispose(JNIEnv* env);
+			void			Focus();
+			void			SetMenuBar(BMenuBar* menuBar);
+			Insets			GetInsets();
+			void			StartDrag(BMessage* message, jobject dragSource);
+			void			AddDropTarget(jobject target);
+			void			RemoveDropTarget();
+
+	virtual	void			WindowActivated(bool activated);
+	virtual	void			FrameMoved(BPoint origin);
+	virtual	void			FrameResized(float width, float height);
+	virtual	void			Minimize(bool minimize);
+	virtual	bool			QuitRequested();
+	virtual	void			Zoom(BPoint origin, float width, float height);
+	
+			BRect			ViewFromFrame(BRect rect);
+			BRect			ViewToFrame(BRect rect);
+
+			// Used to translate client-area bounds to frame-bounds
+			BRect			TransformFromFrame(BRect rect);
+			BRect			TransformToFrame(BRect rect);
+			BPoint			TranslateToFrame(BPoint point);
+
+public:
+			int				blocked_windows;
+
+private:
+			void			_Reshape(bool resize);
+			void			_UpdateInsets();
+
+private:
+			ContentView*	fView;
+			bool			fMaximized;
+			jobject			fPlatformWindow;
+			BMenuBar*		fMenuBar;
+			Insets			fInsets;
 };
 
 #endif	/* HAIKU_PLATFORM_WINDOW_H */
