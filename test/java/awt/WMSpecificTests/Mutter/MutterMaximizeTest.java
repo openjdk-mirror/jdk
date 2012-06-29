@@ -1,6 +1,6 @@
 /*
- * Copyright 2011 Red Hat, Inc.  All Rights Reserved.
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2012 Red Hat, Inc.  All Rights Reserved.
+ * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,7 +58,6 @@ public class MutterMaximizeTest extends Frame {
         frame.addWindowListener(Util.getClosingWindowAdapter());
 
         //Display the window.
-        frame.pack();
         frame.setSize(500, 500);
         Util.showWindowWait(frame);
         runRobotTest(frame);
