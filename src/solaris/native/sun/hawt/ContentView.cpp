@@ -242,7 +242,7 @@ ContentView::_HandleKeyEvent(BMessage* message)
 		id = java_awt_event_KeyEvent_KEY_RELEASED;
 
 	mods = ConvertInputModifiersToJava(modifiers);
-	ConvertKeyCodeToJava(key, modifiers, &keyCode, &keyLocation);
+	ConvertKeyCodeToJava(key, &keyCode, &keyLocation);
 
 	JNIEnv* env = GetEnv();
 	DECLARE_VOID_JAVA_METHOD(eventKey, platformWindowClazz,

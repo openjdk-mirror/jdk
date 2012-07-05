@@ -47,8 +47,7 @@ class BString;
 jint ConvertMouseButtonToJava(int32 button);
 jint ConvertMouseMaskToJava(int32 buttons);
 int32 ConvertKeyCodeToNative(jint jkeycode);
-void ConvertKeyCodeToJava(int32 keycode, uint32 modifiers, jint *jkeyCode, jint *jkeyLocation);
-void GetKeyChar(BString* keyChar, int32 keycode, int32 modifiers);
+void ConvertKeyCodeToJava(int32 keycode, jint *jkeyCode, jint *jkeyLocation);
 jint ConvertModifiersToJava(uint32 modifiers);
 jint ConvertInputModifiersToJava(uint32 modifiers);
 
