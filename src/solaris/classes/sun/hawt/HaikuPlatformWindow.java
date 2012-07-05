@@ -417,17 +417,19 @@ public class HaikuPlatformWindow implements PlatformWindow {
     }
 
     public void eventKey(int id, long when, int modifiers, int keyCode,
-            int keyLocation) {
-        peer.dispatchKeyEvent(id, when, modifiers, keyCode,
-            KeyEvent.CHAR_UNDEFINED, keyLocation);
-    }
+            String keyString, int keyLocation) {
+        char keyChar = KeyEvent.CHAR_UNDEFINED;
+        if (keyString != null && keyString.length() > 0) {
+            keyChar = keyString.charAt(0);
+        }
 
-    public void eventKeyTyped(long when, int modifiers, String keyChar) {
-    	if (keyChar.length() > 0) {
+        peer.dispatchKeyEvent(id, when, modifiers, keyCode, keyChar,
+            keyLocation);
+
+        if (id == KeyEvent.KEY_PRESSED && keyChar != KeyEvent.CHAR_UNDEFINED) {
             peer.dispatchKeyEvent(KeyEvent.KEY_TYPED, when, modifiers,
-                KeyEvent.VK_UNDEFINED, keyChar.charAt(0),
-                KeyEvent.KEY_LOCATION_UNKNOWN);
-    	}
+                KeyEvent.VK_UNDEFINED, keyChar, KeyEvent.KEY_LOCATION_UNKNOWN);
+        }
     }
 
     public void eventMouse(int id, long when, int modifiers, int x, int y,

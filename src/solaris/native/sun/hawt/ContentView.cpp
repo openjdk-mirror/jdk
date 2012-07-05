@@ -236,36 +236,33 @@ ContentView::_HandleKeyEvent(BMessage* message)
 	jint keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
 	jchar keyChar = java_awt_event_KeyEvent_CHAR_UNDEFINED;
 
-	if (message->what == B_KEY_DOWN || message->what == B_UNMAPPED_KEY_DOWN)
+	if (message->what == B_KEY_DOWN || message->what == B_UNMAPPED_KEY_DOWN) {
 		id = java_awt_event_KeyEvent_KEY_PRESSED;
-	else
+	} else {
 		id = java_awt_event_KeyEvent_KEY_RELEASED;
+	}
 
 	mods = ConvertInputModifiersToJava(modifiers);
 	ConvertKeyCodeToJava(key, &keyCode, &keyLocation);
 
 	JNIEnv* env = GetEnv();
-	DECLARE_VOID_JAVA_METHOD(eventKey, platformWindowClazz,
-		"eventKey", "(IJIII)V");
-	env->CallVoidMethod(fPlatformWindow, eventKey, id, (jlong)(when / 1000),
-		mods, keyCode, keyLocation);
 
+	jstring keyString;
 	BString bytes;
-	if (message->what == B_KEY_DOWN
-			&& message->FindString("bytes", &bytes) == B_OK) {
-		id = java_awt_event_KeyEvent_KEY_TYPED;
-		keyCode = java_awt_event_KeyEvent_VK_UNDEFINED;
-		keyLocation = java_awt_event_KeyEvent_KEY_LOCATION_UNKNOWN;
+	if (message->FindString("bytes", &bytes) == B_OK) {
+		keyString = env->NewStringUTF(bytes.String());
+			// can't throw
+	} else {
+		keyString = NULL;
+	}
 
-		jstring keyChar = env->NewStringUTF(bytes.String());
-		if (keyChar == NULL)
-			return;
+	DECLARE_VOID_JAVA_METHOD(eventKey, platformWindowClazz,
+		"eventKey", "(IJIILjava/lang/String;I)V");
+	env->CallVoidMethod(fPlatformWindow, eventKey, id, (jlong)(when / 1000),
+		mods, keyCode, keyString, keyLocation);
 
-		DECLARE_VOID_JAVA_METHOD(eventKeyTyped, platformWindowClazz,
-			"eventKeyTyped", "(JILjava/lang/String;)V");
-		env->CallVoidMethod(fPlatformWindow, eventKeyTyped,
-			(jlong)(when / 1000), mods, keyChar);
-		env->DeleteLocalRef(keyChar);
+	if (keyString != NULL) {
+		env->DeleteLocalRef(keyString);
 	}
 }
 
