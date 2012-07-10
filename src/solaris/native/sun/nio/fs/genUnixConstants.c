@@ -26,8 +26,16 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+#ifndef AIX
 #include <sys/fcntl.h>
+#else
+#include <fcntl.h>
+#endif
 #include <sys/stat.h>
+
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0x0
+#endif
 
 /**
  * Generates sun.nio.fs.UnixConstants
