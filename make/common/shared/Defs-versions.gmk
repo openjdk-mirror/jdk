@@ -49,6 +49,11 @@ ifeq ($(PLATFORM), macosx)
   override CC_VERSION = llvm
 endif
 
+# AIX uses xlc_r by default
+ifeq ($(PLATFORM), aix)
+  override CC_VERSION = xlc_r
+endif
+
 ##########################################################################
 #
 # List of JDK official minimum, expected, or required versions:
