@@ -152,6 +152,7 @@ ifeq ($(SYSTEM_UNAME), SunOS)
 endif
 
 ifeq ($(SYSTEM_UNAME), AIX)
+  PLATFORM = aix
   ARCH=ppc64
   ARCH_FAMILY=$(ARCH)
   LIBARCH=$(ARCH)
