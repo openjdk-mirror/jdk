@@ -610,6 +610,14 @@ getSolarisDefaultZoneID() {
 #endif /*__solaris__*/
 #endif /*__linux__*/
 
+#ifdef AIX
+static char *
+getPlatformTimeZoneID()
+{
+    return NULL;
+}
+#endif
+
 /*
  * findJavaTZ_md() maps platform time zone ID to Java time zone ID
  * using <java_home>/lib/tzmappings. If the TZ value is not found, it
