@@ -638,7 +638,7 @@ findJavaTZ_md(const char *java_home_dir, const char *country)
 #if defined(__linux__) || defined(_ALLBSD_SOURCE)
     if (tz == NULL) {
 #else
-#ifdef __solaris__
+#if defined (__solaris__) || defined(AIX)
     if (tz == NULL || *tz == '\0') {
 #endif
 #endif
