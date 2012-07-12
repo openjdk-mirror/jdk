@@ -41,7 +41,7 @@
 #include <sys/proc_info.h>
 #include <libproc.h>
 #endif
-#else
+#elif !defined(AIX) 
 #include <sys/swap.h>
 #endif
 #include <sys/resource.h>
