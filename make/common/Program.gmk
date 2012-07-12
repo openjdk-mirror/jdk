@@ -95,7 +95,7 @@ ifeq ($(PLATFORM), macosx)
   endif # SYSTEM_ZLIB
 endif # PLATFORM
 
-ifneq (,$(findstring $(PLATFORM), linux solaris)) # UNIX systems
+ifneq (,$(findstring $(PLATFORM), linux solaris aix)) # UNIX systems
   LDFLAGS += -L $(LIBDIR)/$(LIBARCH)/jli
   OTHER_LDLIBS += -ljli
   ifeq ($(PLATFORM), solaris)
@@ -113,7 +113,7 @@ ifneq (,$(findstring $(PLATFORM), linux solaris)) # UNIX systems
     LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../lib/$(LIBARCH)/jli
     LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../jre/lib/$(LIBARCH)/jli
   endif # PLATFORM LINUX
-endif # PLATFORM linux solaris
+endif # PLATFORM linux solaris aix
 
 ifeq ($(PLATFORM), windows)
   JLI_LCF = $(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/jli.lcf
