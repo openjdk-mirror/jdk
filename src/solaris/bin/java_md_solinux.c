@@ -981,7 +981,7 @@ void SplashFreeLibrary() {
 int
 ContinueInNewThread0(int (JNICALL *continuation)(void *), jlong stack_size, void * args) {
     int rslt;
-#ifdef __linux__
+#ifdefined(__linux__) || defined(USE_PTHREADS)
     pthread_t tid;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
