@@ -59,7 +59,7 @@
 
 static jlong page_size = 0;
 
-#if defined(_ALLBSD_SOURCE)
+#if defined(_ALLBSD_SOURCE) || defined(AIX) 
 #define MB      (1024UL * 1024UL)
 #else
 
