@@ -38,14 +38,87 @@ INT32 DAUDIO_GetDirectAudioDeviceCount() {
 	return cache.DeviceCount();
 }
 
-
 INT32 DAUDIO_GetDirectAudioDeviceDescription(INT32 mixerIndex,
                                              DirectAudioDeviceDescription* description) {
-    // fill out description for given device
+	live_node_info node;
+	
+	if (cache.GetDevice(mixerIndex, &node) != B_OK)
+		return FALSE;
+
+	strlcpy(description->name, cache.name, DAUDIO_STRING_LENGTH);
+	
+	// Mac OS X port sets this to -1 unsure exactly what it means
+	description->maxSimulLines = -1;
+
+	// We don't have any info to fill out the other fields
+	
+	return TRUE;
 }
 
 void DAUDIO_GetFormats(INT32 mixerIndex, INT32 deviceID, int isSource, void* creator) {
-    // call DAUDIO_AddAudioFormat(...) for each format
+    live_node_info node;
+    
+    if (cache.GetDevice(mixerIndex, &node) != B_OK)
+    	return;
+
+	vector<media_multi_audio_format> audioFormats;
+
+	static const int maxIOs = 64;
+  	if (isSource == TRUE) {
+  		// We're looking for input formats, so we want to get the
+  		// node's outputs
+		media_output outputs[maxIOs];
+		int32 outputCount;
+		roster->GetAllOutputsFor(node.node, outputs, maxIOs, &outputCount);
+		for (int i = 0; i < outputCount; i++) {
+			media_multi_audio_format* format = (media_multi_audio_format*)
+				&outputs[i].format.u;
+			audioFormats.push_back(*format);
+		}
+  	} else {
+  		// We're looking for output formats, so we want to get the
+  		// node's inputs
+		media_input inputs[maxIOs];
+		int32 intputCount;
+		roster->GetAllOutputsFor(node.node, inputs, maxIOs, &inputCount);
+		for (int i = 0; i < inputCount; i++) {
+			media_multi_audio_format* format = (media_multi_audio_format*)
+				&inputs[i].format.u;
+			audioFormats.push_back(*format);
+		}
+  	}
+
+	for (int i = 0; i < audioFormats.size(); i++) {
+		media_multi_audio_format format = audioFormats.at(i);
+
+		bool isSigned = true;
+		int bitCount;
+		switch (format.format) {
+			case B_AUDIO_FLOAT:
+				// ehhm?
+			case B_AUDIO_INT:
+				bitCount = 32;
+				break;
+			case B_AUDIO_SHORT:
+				bitCount = 16;
+				break;
+			case B_AUDIO_UCHAR:
+				isSigned = false;
+			case B_AUDIO_CHAR:
+				bitCount = 8;
+				break;
+		}
+
+		DAUDIO_AddAudioFormat(creator,
+			bitCount, // bits per sample
+			-1, // auto frame size
+			format.channel_count, // channel count
+			format.frame_rate, // sample rate
+			DAUDIO_PCM, // pcm encoding
+			isSigned, // is signed
+			format.byte_order == B_MEDIA_BIG_ENDIAN // is big endian
+				? TRUE : FALSE);
+	}
 }
 
 
