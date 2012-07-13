@@ -428,3 +428,65 @@ md_find_library_entry(void *handle, const char *name)
     sym =  dlsym(handle, name);
     return sym;
 }
+
+#ifdef AIX
+
+/* SAPJVM:
+ * workaround for the missing dladdr */
+static unsigned char dladdr_buffer[0x4000];
+
+static void fill_dll_info(void) {
+  int rc = loadquery(L_GETINFO,dladdr_buffer, sizeof(dladdr_buffer));
+  if (rc == -1) {
+    fprintf(stderr, "loadquery failed (%d %s)", errno, strerror(errno));
+    fflush(stderr);
+  }
+}
+
+static int dladdr_dont_reload(void* addr, Dl_info* info) {
+  const struct ld_info* p = (struct ld_info*) dladdr_buffer;
+  info->dli_fbase = 0; info->dli_fname = 0;
+  info->dli_sname = 0; info->dli_saddr = 0;
+  for (;;) {
+    if (addr >= p->ldinfo_textorg && 
+	    addr < (((char*)p->ldinfo_textorg) + p->ldinfo_textsize)) {
+      info->dli_fname = p->ldinfo_filename;
+      info->dli_fbase = p->ldinfo_textorg;
+      return 1; /* [sic] */
+    }
+    if (!p->ldinfo_next) {
+      break;
+    }
+    p = (struct ld_info*)(((char*)p) + p->ldinfo_next);
+  }
+  return 0; /* [sic] */
+} 
+
+static int dladdr(void *addr, Dl_info *info) {
+  static int loaded = 0;
+  if (!loaded) {
+    fill_dll_info();
+    loaded = 1;
+  }
+  if (!addr) {
+    return 0;  /* [sic] */
+  }
+  /* Address cuold be AIX function descriptor? */
+  void* const addr0 = *( (void**) addr );  
+  int rc = dladdr_dont_reload(addr, info);
+  if (rc == 0) {
+    rc = dladdr_dont_reload(addr0, info);
+    if (rc == 0) { /* [sic] */
+      fill_dll_info(); /* refill, maybe loadquery info is outdated */
+      rc = dladdr_dont_reload(addr, info);
+      if (rc == 0) {
+        rc = dladdr_dont_reload(addr0, info);
+      }
+    }
+  }
+  return rc;
+} 
+
+#endif /* AIX */
+
+
