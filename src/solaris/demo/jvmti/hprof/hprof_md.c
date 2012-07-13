@@ -42,7 +42,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#if !defined(LINUX) && !defined(_ALLBSD_SOURCE)
+#if !defined(LINUX) && !defined(_ALLBSD_SOURCE) && !defined(AIX)
 #include <procfs.h>
 #endif
 
@@ -86,7 +86,7 @@ md_sleep(unsigned seconds)
 void
 md_init(void)
 {
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     /* No Hi-Res timer option? */
 #else
     if ( gdata->micro_state_accounting ) {
@@ -248,7 +248,7 @@ md_timeofday(void)
 jlong
 md_get_microsecs(void)
 {
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     return (jlong)(md_timeofday() * (jlong)1000); /* Milli to micro */
 #else
     return (jlong)(gethrtime()/(hrtime_t)1000); /* Nano seconds to micro seconds */
@@ -266,7 +266,7 @@ md_get_timemillis(void)
 jlong
 md_get_thread_cpu_timemillis(void)
 {
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     return md_timeofday();
 #else
     return (jlong)(gethrvtime()/1000); /* Nano seconds to milli seconds */
@@ -281,7 +281,7 @@ md_get_prelude_path(char *path, int path_len, char *filename)
     Dl_info dlinfo;
 
     libdir[0] = 0;
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     addr = (void*)&Agent_OnLoad;
 #else
     /* Just using &Agent_OnLoad will get the first external symbol with
