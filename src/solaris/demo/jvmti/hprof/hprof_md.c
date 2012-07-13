@@ -65,6 +65,21 @@
 #include "jvm_md.h"
 #include "hprof.h"
 
+
+#ifdef AIX
+/* SAPJVM */
+#include <sys/ldr.h>
+#include <errno.h>
+typedef struct {
+  const char *dli_fname;
+  void *dli_fbase;
+  const char *dli_sname;
+  void *dli_saddr;
+} Dl_info;
+
+static int dladdr(void *addr, Dl_info *info);
+#endif /* AIX */
+
 int
 md_getpid(void)
 {
