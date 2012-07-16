@@ -1006,7 +1006,7 @@ ContinueInNewThread0(int (JNICALL *continuation)(void *), jlong stack_size, void
     }
 
     pthread_attr_destroy(&attr);
-#else /* ! __linux__ */
+#else /* ! USE_PTHREADS */
     thread_t tid;
     long flags = 0;
     if (thr_create(NULL, stack_size, (void *(*)(void *))continuation, args, flags, &tid) == 0) {
@@ -1017,7 +1017,7 @@ ContinueInNewThread0(int (JNICALL *continuation)(void *), jlong stack_size, void
       /* See above. Continue in current thread if thr_create() failed */
       rslt = continuation(args);
     }
-#endif /* __linux__ */
+#endif /* USE_PTHREADS */
     return rslt;
 }
 
