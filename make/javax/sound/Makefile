@@ -116,6 +116,18 @@ ifeq ($(PLATFORM), solaris)
   INCLUDE_MIDI = TRUE
 endif # PLATFORM solaris
 
+ifeq ($(PLATFORM), haiku)
+  FILES_cpp = \
+      PLATFORM_API_HaikuOS_PCM.cpp \
+      PLATFORM_API_HaikuOS_Utils.cpp
+
+  CPPFLAGS += -DUSE_PORTS=TRUE \
+              -DUSE_DAUDIO=TRUE
+
+  LDFLAGS += -lmedia -lbe -lstdc++
+  INCLUDE_DAUDIO = TRUE
+endif # PLATFORM haiku
+
 # for dynamic inclusion of extra sound libs: these
 # JNI libs will be loaded from Platform.java
 CPPFLAGS += -DEXTRA_SOUND_JNI_LIBS='"$(EXTRA_SOUND_JNI_LIBS)"'

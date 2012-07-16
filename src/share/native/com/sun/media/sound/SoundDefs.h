@@ -31,6 +31,7 @@
 #define X_WINDOWS       1
 #define X_SOLARIS       2
 #define X_LINUX         3
+#define X_HAIKU         4
 
 // types for X_ARCH
 #define X_I586          1
@@ -131,5 +132,8 @@ typedef char            SBYTE;
 #define INLINE          inline
 #endif
 
+#if X_PLATFORM == X_HAIKU
+#define INLINE          inline
+#endif
 
 #endif  // __SOUNDDEFS_INCLUDED__

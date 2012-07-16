@@ -25,25 +25,32 @@
 #ifndef PLATFORM_API_HAIKUOS_UTILS_H_INCLUDED
 #define PLATFORM_API_HAIKUOS_UTILS_H_INCLUDED
 
+extern "C" {
+#include <DirectAudio.h>
+}
+
 #include <Handler.h>
 #include <Locker.h>
+#include <MediaRoster.h>
+
+#include <stdlib.h>
 
 #include <vector>
 
 class DeviceCache : public BHandler {
 public:
-									DeviceCache();
+    DeviceCache();
 
-	int								DeviceCount();
-	live_node_info					GetDevice(int index);
+    int DeviceCount();
+    status_t GetDevice(int index, live_node_info* info);
 
-	void							MessageReceived(BMessage* msg);
+    void MessageReceived(BMessage* msg);
 
 private:
-	void							_Refresh();
+    void _Refresh();
 
-	std::vector<live_node_info>		nodes;
-	BLocker							lock;
+    std::vector<live_node_info> nodes;
+    BLocker lock;
 };
 
 class RingBuffer {
@@ -65,7 +72,7 @@ public:
         while (powerOfTwo < fullBufferSize) {
             powerOfTwo <<= 1;
         }
-        pBuffer = (Byte*)malloc(powerOfTwo);
+        pBuffer = (UINT8*)malloc(powerOfTwo);
         if (pBuffer == NULL) {
             ERROR0("RingBuffer::Allocate: OUT OF MEMORY\n");
             return false;
@@ -132,7 +139,7 @@ public:
 
         if (len > 0) {
 
-            write((Byte *)srcBuffer, Pos2Offset(writePos), len);
+            write((UINT8 *)srcBuffer, Pos2Offset(writePos), len);
 
             lock();
             TRACE4("--RingBuffer::Write writePos: %lld (%d) => %lld, (%d)\n",
@@ -168,7 +175,7 @@ public:
 
         if (len > 0) {
 
-            read((Byte *)dstBuffer, Pos2Offset(readPos), len);
+            read((UINT8 *)dstBuffer, Pos2Offset(readPos), len);
 
             lock();
             if (applyFlush()) {
@@ -197,7 +204,7 @@ public:
     }
 
 private:
-    Byte *pBuffer;
+    UINT8 *pBuffer;
     int nBufferSize;
     int nAllocatedBytes;
     INT64 nPosMask;
@@ -230,7 +237,7 @@ private:
         return (int)(pos & nPosMask);
     }
 
-    void write(Byte *srcBuffer, int dstOffset, int len) {
+    void write(UINT8 *srcBuffer, int dstOffset, int len) {
         int dstEndOffset = dstOffset + len;
 
         int lenAfterWrap = dstEndOffset - nAllocatedBytes;
@@ -245,7 +252,7 @@ private:
         }
     }
 
-    void read(Byte *dstBuffer, int srcOffset, int len) {
+    void read(UINT8 *dstBuffer, int srcOffset, int len) {
         int srcEndOffset = srcOffset + len;
 
         int lenAfterWrap = srcEndOffset - nAllocatedBytes;

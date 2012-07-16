@@ -23,73 +23,77 @@
  * questions.
  */
 
+#include "PLATFORM_API_HaikuOS_Utils.h"
+
+#include <algorithm>
+
 DeviceCache::DeviceCache()
 {
-	//BMediaRoster* roster = BMediaRoster::Roster();
-	//roster->StartWatching(BMessenger(this));
+    //BMediaRoster* roster = BMediaRoster::Roster();
+    //roster->StartWatching(BMessenger(this));
 
-	_Refresh();
+    _Refresh();
 }
 
 int
 DeviceCache::DeviceCount()
 {
-	int count = -1;
-	if (lock.Lock()) {
-		count = nodes.CountItems();
-		lock.Unlock();
-	}
+    int count = -1;
+    if (lock.Lock()) {
+        count = nodes.size();
+        lock.Unlock();
+    }
 
-	return count;
+    return count;
 }
 
 status_t
 DeviceCache::GetDevice(int index, live_node_info* _nodeInfo)
 {
-	if (!lock.Lock())
-		return B_ERROR;
+    if (!lock.Lock())
+        return B_ERROR;
 
-	live_node_info* nodeInfo = nodes.ItemAt(index);
-	lock.Unlock();
+    if (index >= 0 && (size_t)index < nodes.size()) {
+        *_nodeInfo = nodes[index];
 
-	if (nodeInfo != NULL) {
-		*_nodeInfo = nodeInfo;
-		return B_OK;
-	}
-
-	return B_ERROR;
+        lock.Unlock();
+        return B_OK;
+    } else {
+        lock.Unlock();
+        return B_ERROR;
+    }
 }
 
 void
 DeviceCache::MessageReceived(BMessage* msg)
 {
-	_Refresh();
+    _Refresh();
 }
 
 void
 DeviceCache::_Refresh()
 {
-	nodes.MakeEmpty();
-	static const int maxCount = 128;
+    nodes.clear();
+    static const int maxCount = 128;
 
-	live_node_info liveNodes[maxCount];
-	int32 count = maxCount;
+    live_node_info liveNodes[maxCount];
+    int32 count = maxCount;
 
-	media_format nodeFormat;
-	nodeFormat.type = B_MEDIA_RAW_AUDIO;
+    media_format nodeFormat;
+    nodeFormat.type = B_MEDIA_RAW_AUDIO;
 
-	roster->GetLiveNodes(liveNodes, &count, &nodeFormat, NULL, NULL, B_PHYSICAL_OUTPUT);
+    BMediaRoster* roster = BMediaRoster::Roster();
+    roster->GetLiveNodes(liveNodes, &count, &nodeFormat, NULL, NULL, B_PHYSICAL_OUTPUT);
 
-	for (int i = 0; i < count; i++) {
-		nodes.push_back(liveNodes[i]);
-	}
+    for (int i = 0; i < count; i++) {
+        nodes.push_back(liveNodes[i]);
+    }
 
-	count = maxCount;
-	roster->GetLiveNodes(liveNodes, &count, NULL, &nodeFormat, NULL, B_PHYSICAL_INPUT);
-
-	for (int i = 0; i < count; i++) {
-		if (std::find(nodes.begin(), nodes.end(), liveNodes[i]) != nodes.end()) {
-			nodes.push_back(liveNodes[i]);
-		}
-	}
+//    count = maxCount;
+//    roster->GetLiveNodes(liveNodes, &count, NULL, &nodeFormat, NULL, B_PHYSICAL_INPUT);
+//    for (int i = 0; i < count; i++) {
+//        if (std::find(nodes.begin(), nodes.end(), liveNodes[i]) == nodes.end()) {
+//            nodes.push_back(liveNodes[i]);
+//        }
+//    }
 }
