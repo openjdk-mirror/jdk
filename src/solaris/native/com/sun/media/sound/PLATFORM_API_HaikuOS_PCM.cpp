@@ -161,6 +161,16 @@ typedef struct {
 
 static void PlayBuffer(void* cookie, void* buffer, size_t size,
         const media_raw_audio_format& format) {
+    HaikuPCMInfo* info = (HaikuPCMInfo*)cookie;
+
+    // assume that the format is the one we requested for now
+
+    // try to read size bytes from the buffer
+    size_t read = info->buffer.Read(buffer, size);
+    if (read < size) {
+        // buffer underrun
+        // ...
+    }
 }
 
 void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
@@ -230,14 +240,39 @@ void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
 
 
 int DAUDIO_Start(void* id, int isSource) {
-    return 0;
+    HaikuPCMInfo* info = (HaikuPCMInfo*)id;
+    status_t result;
+
+    if (isSource == TRUE) {
+        // TODO
+    } else {
+        result = info->sound_player->Start();
+    }
+
+    return result == B_OK ? TRUE : FALSE;
 }
 
 int DAUDIO_Stop(void* id, int isSource) {
-    return 0;
+    HaikuPCMInfo* info = (HaikuPCMInfo*)id;
+
+    if (isSource == TRUE) {
+        // TODO
+    } else {
+        info->sound_player->Stop();
+    }
+
+    return TRUE;
 }
 
 void DAUDIO_Close(void* id, int isSource) {
+    HaikuPCMInfo* info = (HaikuPCMInfo*)id;
+
+    if (isSource == TRUE) {
+        // TODO
+    } else {
+        delete info->sound_player;
+        delete info;
+    }
 }
 
 int DAUDIO_Write(void* id, char* data, int byteSize) {
