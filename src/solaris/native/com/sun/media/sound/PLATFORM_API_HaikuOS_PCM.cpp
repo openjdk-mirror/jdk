@@ -52,7 +52,6 @@ INT32 DAUDIO_GetDirectAudioDeviceCount() {
 INT32 DAUDIO_GetDirectAudioDeviceDescription(INT32 mixerIndex,
                                              DirectAudioDeviceDescription* description) {
     live_node_info info;
-    
     if (cache.GetDevice(mixerIndex, &info) != B_OK)
         return FALSE;
 
@@ -72,7 +71,8 @@ static void EnumerateInputs(media_node node, std::vector<media_input>* inputs,
 
     media_input inputArray[maxIOs];
     int32 inputCount;
-    roster->GetFreeInputsFor(node, inputArray, maxIOs, &inputCount);
+
+    status_t rr = roster->GetFreeInputsFor(node, inputArray, maxIOs, &inputCount);
     for (int i = 0; i < inputCount; i++) {
         media_multi_audio_format* format = (media_multi_audio_format*)
             &inputArray[i].format.u;
@@ -89,6 +89,7 @@ static void EnumerateOutputs(media_node node, std::vector<media_output>* outputs
 
     media_output outputArray[maxIOs];
     int32 outputCount;
+
     roster->GetFreeOutputsFor(node, outputArray, maxIOs, &outputCount);
     for (int i = 0; i < outputCount; i++) {
         media_multi_audio_format* format = (media_multi_audio_format*)
@@ -116,39 +117,67 @@ static int AudioFormatToBits(uint32 format) {
    }
 }
 
+static uint32 BitsToAudioFormat(int bits) {
+    switch (bits) {
+        case 32:
+            return media_raw_audio_format::B_AUDIO_INT;
+        case 16:
+            return media_raw_audio_format::B_AUDIO_SHORT;
+        case 8:
+            return media_raw_audio_format::B_AUDIO_CHAR;
+        default:
+            return 0;
+    }
+}
+
+static int bitDepths[] = { 8, 16, 24, 32 };
+static float sampleRates[] = { 11025, 22050, 44100, 48000, 96000, 192000 };
+static int channelCounts[] = { 2 };
+
 void DAUDIO_GetFormats(INT32 mixerIndex, INT32 deviceID, int isSource, void* creator) {
     live_node_info info;
-    
+
     if (cache.GetDevice(mixerIndex, &info) != B_OK)
         return;
 
     std::vector<media_multi_audio_format> formats;
 
     if (isSource == TRUE) {
-        // We're looking for input formats, so we want to get the
-        // node's outputs
-        EnumerateOutputs(info.node, NULL, &formats);
-      } else {
         // We're looking for output formats, so we want to get the
         // node's inputs
         EnumerateInputs(info.node, NULL, &formats);
+    } else {
+        // We're looking for input formats, so we want to get the
+        // node's outputs
+        EnumerateOutputs(info.node, NULL, &formats);
     }
 
     for (size_t i = 0; i < formats.size(); i++) {
         media_multi_audio_format format = formats[i];
 
-        int bitCount = AudioFormatToBits(format.format);
-
-        DAUDIO_AddAudioFormat(creator,
-            bitCount, // bits per sample
-            -1, // auto frame size
-            format.channel_count, // channel count
-            format.frame_rate, // sample rate
-            DAUDIO_PCM, // pcm encoding
-            format.format == media_raw_audio_format::B_AUDIO_UCHAR // is signed
-                ? FALSE : TRUE,
-            format.byte_order == B_MEDIA_BIG_ENDIAN // is big endian
-                ? TRUE : FALSE);
+        if (format == format.wildcard) {
+            // If it's a wildcard format add some common formats
+            for (size_t i = 0; i < sizeof(bitDepths) / sizeof(bitDepths[0]); i++) {
+                for (size_t j = 0; j < sizeof(channelCounts) / sizeof(channelCounts[0]); j++) {
+                    for (size_t k = 0; k < sizeof(sampleRates) / sizeof(sampleRates[0]); k++) {
+                        DAUDIO_AddAudioFormat(creator, bitDepths[i], -1, channelCounts[j], sampleRates[k],
+                            DAUDIO_PCM, TRUE, TRUE);
+                    }
+                }
+            }
+        } else {
+            int bitCount = AudioFormatToBits(format.format);
+            DAUDIO_AddAudioFormat(creator,
+                bitCount, // bits per sample
+                -1, // auto frame size
+                format.channel_count, // channel count
+                format.frame_rate, // sample rate
+                DAUDIO_PCM, // pcm encoding
+                format.format == media_raw_audio_format::B_AUDIO_UCHAR // is signed
+                    ? FALSE : TRUE,
+                format.byte_order == B_MEDIA_BIG_ENDIAN // is big endian
+                    ? TRUE : FALSE);
+        }
     }
 }
 
@@ -161,23 +190,34 @@ typedef struct {
 
 static void PlayBuffer(void* cookie, void* buffer, size_t size,
         const media_raw_audio_format& format) {
+    if (size <= 0)
+        return;
+
     HaikuPCMInfo* info = (HaikuPCMInfo*)cookie;
 
     // assume that the format is the one we requested for now
 
     // try to read size bytes from the buffer
     size_t read = info->buffer.Read(buffer, size);
+
     if (read < size) {
         // buffer underrun
         // ...
+        fprintf(stderr, "Buffer underrun occured (%llu/%llu)...\n",
+            (long long unsigned)read, (long long unsigned)read);
     }
+}
+
+static void Notifier(void* cookie,
+        BSoundPlayer::sound_player_notification what, ...) {
+    // The default notifier callback prints to stdout so we use this
+    // dummy one instead.
 }
 
 void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
                   int encoding, float sampleRate, int sampleSizeInBits,
                   int frameSize, int channels,
                   int isSigned, int isBigEndian, int bufferSizeInBytes) {
-
     live_node_info info;
     if (cache.GetDevice(mixerIndex, &info) != B_OK)
         return NULL;
@@ -188,25 +228,35 @@ void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
 
     static const int maxIOs = 64;
     if (isSource == TRUE) {
-        // We're looking for input formats, so we want to get the
-        // node's outputs
-        EnumerateOutputs(info.node, &outputs, &formats);
-    } else {
         // We're looking for output formats, so we want to get the
         // node's inputs
         EnumerateInputs(info.node, &inputs, &formats);
+    } else {
+        // We're looking for intput formats, so we want to get the
+        // node's outputs
+        EnumerateOutputs(info.node, &outputs, &formats);
     }
 
     // find the matching media_input/media_output
     int foundIndex = -1;
     for (size_t i = 0; i < formats.size(); i++) {
-    	media_multi_audio_format format = formats[i];
+        media_multi_audio_format format = formats[i];
         int bits = AudioFormatToBits(format.format);
+
         if (format.frame_rate == sampleRate && bits == sampleSizeInBits
                 && (int)format.channel_count == channels
-                && (format.byte_order == B_MEDIA_BIG_ENDIAN) == (isSigned == TRUE)
+                && (format.byte_order == B_MEDIA_BIG_ENDIAN) == (isBigEndian == TRUE)
                 && (format.format == media_raw_audio_format::B_AUDIO_UCHAR)
-                    == (isSigned == TRUE)) {
+                    == (isSigned == FALSE)) {
+            foundIndex = i;
+            break;
+        } else if (format == format.wildcard) {
+            // We need to set up our requested format
+            formats[i].frame_rate = sampleRate;
+            formats[i].channel_count = channels;
+            formats[i].format = BitsToAudioFormat(sampleSizeInBits);
+            formats[i].byte_order = isBigEndian == TRUE ? B_MEDIA_BIG_ENDIAN : B_MEDIA_LITTLE_ENDIAN;
+            formats[i].buffer_size = bufferSizeInBytes;
             foundIndex = i;
             break;
         }
@@ -218,21 +268,23 @@ void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
     }
 
     if (isSource == TRUE) {
-        // TODO
-    } else {
-    	HaikuPCMInfo* info = new HaikuPCMInfo();
-        // We're outputting audio so we need a media_input
+        HaikuPCMInfo* info = new HaikuPCMInfo();
         media_input input = inputs[foundIndex];
+
         BSoundPlayer* player = new BSoundPlayer(input.node, &formats[foundIndex],
-            "jsoundSoundPlayer", &input, PlayBuffer, NULL, info);
-        if (player->InitCheck() != B_OK) {
-        	delete info;
-        	delete player;
-        	return NULL;
+            "jsoundSoundPlayer", &input, PlayBuffer, Notifier, info);
+
+        if (player->InitCheck() != B_OK
+                || !info->buffer.Allocate(bufferSizeInBytes, 0)) {
+            delete info;
+            delete player;
+            return NULL;
         }
 
         info->sound_player = player;
         return (void*)info;
+    } else {
+        // TODO
     }
 
     return NULL;
@@ -244,9 +296,9 @@ int DAUDIO_Start(void* id, int isSource) {
     status_t result;
 
     if (isSource == TRUE) {
-        // TODO
-    } else {
         result = info->sound_player->Start();
+    } else {
+        // TODO
     }
 
     return result == B_OK ? TRUE : FALSE;
@@ -256,9 +308,9 @@ int DAUDIO_Stop(void* id, int isSource) {
     HaikuPCMInfo* info = (HaikuPCMInfo*)id;
 
     if (isSource == TRUE) {
-        // TODO
-    } else {
         info->sound_player->Stop();
+    } else {
+        // TODO
     }
 
     return TRUE;
@@ -268,10 +320,11 @@ void DAUDIO_Close(void* id, int isSource) {
     HaikuPCMInfo* info = (HaikuPCMInfo*)id;
 
     if (isSource == TRUE) {
-        // TODO
-    } else {
+        info->sound_player->Stop();
         delete info->sound_player;
         delete info;
+    } else {
+        // TODO
     }
 }
 
@@ -348,6 +401,7 @@ INT64 DAUDIO_GetBytePosition(void* id, int isSource, INT64 javaBytePos) {
 }
 
 void DAUDIO_SetBytePosition(void* id, int isSource, INT64 javaBytePos) {
+    // unneeded
 }
 
 int DAUDIO_RequiresServicing(void* id, int isSource) {

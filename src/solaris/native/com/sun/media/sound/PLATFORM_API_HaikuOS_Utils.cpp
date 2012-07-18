@@ -74,6 +74,14 @@ void
 DeviceCache::_Refresh()
 {
     nodes.clear();
+    BMediaRoster* roster = BMediaRoster::Roster();
+
+    /*
+     * Picking a specific audio device to output on seems to be a no-go
+     * because the node doesn't have any free inputs (because it's used
+     * by the mixer?)
+     */
+#if 0
     static const int maxCount = 128;
 
     live_node_info liveNodes[maxCount];
@@ -82,18 +90,26 @@ DeviceCache::_Refresh()
     media_format nodeFormat;
     nodeFormat.type = B_MEDIA_RAW_AUDIO;
 
-    BMediaRoster* roster = BMediaRoster::Roster();
     roster->GetLiveNodes(liveNodes, &count, &nodeFormat, NULL, NULL, B_PHYSICAL_OUTPUT);
 
     for (int i = 0; i < count; i++) {
         nodes.push_back(liveNodes[i]);
     }
 
-//    count = maxCount;
-//    roster->GetLiveNodes(liveNodes, &count, NULL, &nodeFormat, NULL, B_PHYSICAL_INPUT);
-//    for (int i = 0; i < count; i++) {
-//        if (std::find(nodes.begin(), nodes.end(), liveNodes[i]) == nodes.end()) {
-//            nodes.push_back(liveNodes[i]);
-//        }
-//    }
+    count = maxCount;
+    roster->GetLiveNodes(liveNodes, &count, NULL, &nodeFormat, NULL, B_PHYSICAL_INPUT);
+
+    for (int i = 0; i < count; i++) {
+        nodes.push_back(liveNodes[i]);
+    }
+#endif
+
+    live_node_info info;
+    media_node audioMixer;
+    if (roster->GetAudioMixer(&audioMixer) == B_OK) {
+        info.node = audioMixer;
+        const char mixerName[] = "System Mixer";
+        strncpy(info.name, mixerName, sizeof(mixerName));
+        nodes.push_back(info);
+    }
 }
