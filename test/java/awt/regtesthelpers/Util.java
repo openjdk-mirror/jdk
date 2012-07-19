@@ -140,13 +140,6 @@ public final class Util {
         robot.mouseMove(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     }
 
-    public static Point getTitlePoint(Window decoratedWindow) {
-        Point p = decoratedWindow.getLocationOnScreen();
-        Dimension d = decoratedWindow.getSize();
-        return new Point(p.x + (int)(d.getWidth()/2),
-                         p.y + (int)decoratedWindow.getInsets().top/2);
-    }
-
     /**
      * Moves mouse pointer in the center of a given {@code comp} component
      * and performs a left mouse button click using the {@code robot} parameter
