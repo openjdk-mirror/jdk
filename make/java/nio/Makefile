@@ -94,10 +94,11 @@ FILES_java += \
 	sun/nio/fs/UnixUserPrincipals.java
 
 FILES_c += \
-        DevPollArrayWrapper.c \
+	AbstractPollArrayWrapper.c \
+	DevPollArrayWrapper.c \
 	InheritedChannel.c \
 	NativeThread.c \
-        PollArrayWrapper.c \
+	PollArrayWrapper.c \
 	SolarisEventPort.c \
 	UnixAsynchronousServerSocketChannelImpl.c \
 	UnixAsynchronousSocketChannelImpl.c \
@@ -109,6 +110,7 @@ FILES_c += \
 	UnixNativeDispatcher.c
 
 FILES_export += \
+	sun/nio/ch/AbstractPollArrayWrapper.java \
 	sun/nio/ch/DevPollArrayWrapper.java \
 	sun/nio/ch/InheritedChannel.java \
 	sun/nio/ch/NativeThread.java \
@@ -169,7 +171,7 @@ FILES_c += \
 	WindowsAsynchronousServerSocketChannelImpl.c \
 	WindowsAsynchronousSocketChannelImpl.c \
 	WindowsNativeDispatcher.c \
-        WindowsSelectorImpl.c
+	WindowsSelectorImpl.c
 
 FILES_export += \
 	sun/nio/ch/Iocp.java \
@@ -227,12 +229,13 @@ FILES_java += \
 	sun/nio/fs/UnixUserPrincipals.java
 
 FILES_c += \
+	AbstractPollArrayWrapper.c \
 	EPoll.c \
 	EPollArrayWrapper.c \
 	EPollPort.c \
 	InheritedChannel.c \
 	NativeThread.c \
-        PollArrayWrapper.c \
+	PollArrayWrapper.c \
 	UnixAsynchronousServerSocketChannelImpl.c \
 	UnixAsynchronousSocketChannelImpl.c \
 	\
@@ -243,6 +246,7 @@ FILES_c += \
 	UnixNativeDispatcher.c
 
 FILES_export += \
+	sun/nio/ch/AbstractPollArrayWrapper.java \
 	sun/nio/ch/EPoll.java \
         sun/nio/ch/EPollArrayWrapper.java \
 	sun/nio/ch/EPollPort.java \
@@ -299,6 +303,7 @@ FILES_java += \
 	sun/nio/fs/UnixUserPrincipals.java
 
 FILES_c += \
+	AbstractPollArrayWrapper.c \
 	InheritedChannel.c \
 	NativeThread.c \
     PollArrayWrapper.c \
@@ -311,6 +316,7 @@ FILES_c += \
 	UnixNativeDispatcher.c
 
 FILES_export += \
+	sun/nio/ch/AbstractPollArrayWrapper.java \
 	sun/nio/ch/InheritedChannel.java \
 	sun/nio/ch/NativeThread.java \
 	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \

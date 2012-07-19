@@ -37,19 +37,53 @@ import sun.misc.*;
 
 abstract class AbstractPollArrayWrapper {
 
+    private static final int POLLIN_INDEX = 0;
+    private static final int POLLOUT_INDEX = 1;
+    private static final int POLLERR_INDEX = 2;
+    private static final int POLLHUP_INDEX = 3;
+    private static final int POLLNVAL_INDEX = 4;
+    private static final int POLLREMOVE_INDEX = 5;
+
+    private static final int SIZE_POLLFD_INDEX = 6;
+    private static final int FD_OFFSET_INDEX = 7;
+    private static final int EVENT_OFFSET_INDEX = 8;
+    private static final int REVENT_OFFSET_INDEX = 9;
+
+    private static final int CONSTANTS_ARRAY_SIZE = 10;
+
+    private static native void getPollConstants(short[] pollConstants);
+
+    static {
+        System.loadLibrary("nio");
+
+        short[] pollConstants = new short[CONSTANTS_ARRAY_SIZE];
+        getPollConstants(pollConstants);
+
+        POLLIN = pollConstants[POLLIN_INDEX];
+        POLLOUT = pollConstants[POLLOUT_INDEX];
+        POLLERR = pollConstants[POLLERR_INDEX];
+        POLLHUP = pollConstants[POLLHUP_INDEX];
+        POLLNVAL = pollConstants[POLLNVAL_INDEX];
+        POLLREMOVE = pollConstants[POLLREMOVE_INDEX];
+        SIZE_POLLFD = pollConstants[SIZE_POLLFD_INDEX];
+        FD_OFFSET = pollConstants[FD_OFFSET_INDEX];
+        EVENT_OFFSET = pollConstants[EVENT_OFFSET_INDEX];
+        REVENT_OFFSET = pollConstants[REVENT_OFFSET_INDEX];
+    }
+
     // Event masks
-    static final short POLLIN       = 0x0001;
-    static final short POLLOUT      = 0x0004;
-    static final short POLLERR      = 0x0008;
-    static final short POLLHUP      = 0x0010;
-    static final short POLLNVAL     = 0x0020;
-    static final short POLLREMOVE   = 0x0800;
+    static final short POLLIN;
+    static final short POLLOUT;
+    static final short POLLERR;
+    static final short POLLHUP;
+    static final short POLLNVAL;
+    static final short POLLREMOVE;
 
     // Miscellaneous constants
-    static final short SIZE_POLLFD   = 8;
-    static final short FD_OFFSET     = 0;
-    static final short EVENT_OFFSET  = 4;
-    static final short REVENT_OFFSET = 6;
+    static final short SIZE_POLLFD;
+    static final short FD_OFFSET;
+    static final short EVENT_OFFSET;
+    static final short REVENT_OFFSET;
 
     // The poll fd array
     protected AllocatedNativeObject pollArray;
