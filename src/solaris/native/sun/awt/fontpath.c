@@ -583,7 +583,7 @@ JNIEXPORT jstring JNICALL Java_sun_awt_X11FontManager_getFontPathNative
 }
 
 #include <dlfcn.h>
-#if !(defined(__linux__) || defined(MACOSX))
+#if !(defined(__linux__) || defined(MACOSX) || defined(AIX))
 #include <link.h>
 #endif
 

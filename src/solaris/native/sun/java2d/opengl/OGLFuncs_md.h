@@ -27,7 +27,7 @@
 #define OGLFuncs_md_h_Included
 
 #include <stdlib.h>
-#ifndef MACOSX
+#if !(defined(MACOSX) || defined(AIX))
 #include <link.h>
 #endif
 #include "jvm_md.h"

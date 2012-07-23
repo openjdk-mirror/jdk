@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
-#ifndef __APPLE__
+#if !(defined(__APPLE__) || defined(AIX))
 #include <link.h>
 #endif
 #include "NativeFunc.h"
