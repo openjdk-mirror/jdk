@@ -25,9 +25,7 @@
 
 #include "PLATFORM_API_HaikuOS_Utils.h"
 
-#include <algorithm>
-
-DeviceCache::DeviceCache()
+AudioDeviceCache::AudioDeviceCache()
 {
     //BMediaRoster* roster = BMediaRoster::Roster();
     //roster->StartWatching(BMessenger(this));
@@ -36,7 +34,7 @@ DeviceCache::DeviceCache()
 }
 
 int
-DeviceCache::DeviceCount()
+AudioDeviceCache::DeviceCount()
 {
     int count = -1;
     if (lock.Lock()) {
@@ -48,7 +46,7 @@ DeviceCache::DeviceCount()
 }
 
 status_t
-DeviceCache::GetDevice(int index, live_node_info* _nodeInfo)
+AudioDeviceCache::GetDevice(int index, live_node_info* _nodeInfo)
 {
     if (!lock.Lock())
         return B_ERROR;
@@ -65,13 +63,13 @@ DeviceCache::GetDevice(int index, live_node_info* _nodeInfo)
 }
 
 void
-DeviceCache::MessageReceived(BMessage* msg)
+AudioDeviceCache::MessageReceived(BMessage* msg)
 {
     _Refresh();
 }
 
 void
-DeviceCache::_Refresh()
+AudioDeviceCache::_Refresh()
 {
     nodes.clear();
     BMediaRoster* roster = BMediaRoster::Roster();
@@ -111,5 +109,99 @@ DeviceCache::_Refresh()
         const char mixerName[] = "System Mixer";
         strncpy(info.name, mixerName, sizeof(mixerName));
         nodes.push_back(info);
+    }
+}
+
+MidiDeviceCache::MidiDeviceCache()
+{
+    //BMediaRoster* roster = BMediaRoster::Roster();
+    //roster->StartWatching(BMessenger(this));
+
+    _Refresh();
+}
+
+int
+MidiDeviceCache::ConsumerCount()
+{
+    int count = -1;
+    if (lock.Lock()) {
+        count = consumers.size();
+        lock.Unlock();
+    }
+
+    return count;
+}
+
+int
+MidiDeviceCache::ProducerCount()
+{
+    int count = -1;
+    if (lock.Lock()) {
+        count = producers.size();
+        lock.Unlock();
+    }
+
+    return count;
+}
+
+status_t
+MidiDeviceCache::GetConsumer(int index, BMidiConsumer** _consumer)
+{
+    if (!lock.Lock())
+        return B_ERROR;
+
+    if (index >= 0 && (size_t)index < consumers.size()) {
+        *_consumer = consumers[index];
+
+        lock.Unlock();
+        return B_OK;
+    } else {
+        lock.Unlock();
+        return B_ERROR;
+    }
+}
+
+status_t
+MidiDeviceCache::GetProducer(int index, BMidiProducer** _producer)
+{
+    if (!lock.Lock())
+        return B_ERROR;
+
+    if (index >= 0 && (size_t)index < producers.size()) {
+        *_producer = producers[index];
+
+        lock.Unlock();
+        return B_OK;
+    } else {
+        lock.Unlock();
+        return B_ERROR;
+    }
+}
+
+void
+MidiDeviceCache::MessageReceived(BMessage* msg)
+{
+    _Refresh();
+}
+
+void
+MidiDeviceCache::_Refresh()
+{
+    consumers.clear();
+    producers.clear();
+
+    BMidiRoster* roster = BMidiRoster::MidiRoster();
+
+    int32 id = 0;
+
+    BMidiConsumer* consumer;
+    while ((consumer = roster->NextConsumer(&id)) != NULL) {
+        consumers.push_back(consumer);
+    }
+
+    id = 0;
+    BMidiProducer* producer;
+    while ((producer = roster->NextProducer(&id)) != NULL) {
+        producers.push_back(producer);
     }
 }

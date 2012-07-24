@@ -32,14 +32,15 @@ extern "C" {
 #include <Handler.h>
 #include <Locker.h>
 #include <MediaRoster.h>
+#include <MidiRoster.h>
 
 #include <stdlib.h>
 
 #include <vector>
 
-class DeviceCache : public BHandler {
+class AudioDeviceCache : public BHandler {
 public:
-    DeviceCache();
+    AudioDeviceCache();
 
     int DeviceCount();
     status_t GetDevice(int index, live_node_info* info);
@@ -50,6 +51,26 @@ private:
     void _Refresh();
 
     std::vector<live_node_info> nodes;
+    BLocker lock;
+};
+
+class MidiDeviceCache : public BHandler {
+public:
+    MidiDeviceCache();
+
+    int ConsumerCount();
+    int ProducerCount();
+
+    status_t GetConsumer(int index, BMidiConsumer** consumer);
+    status_t GetProducer(int index, BMidiProducer** consumer);
+
+    void MessageReceived(BMessage* msg);
+
+private:
+    void _Refresh();
+
+    std::vector<BMidiConsumer*> consumers;
+    std::vector<BMidiProducer*> producers;
     BLocker lock;
 };
 

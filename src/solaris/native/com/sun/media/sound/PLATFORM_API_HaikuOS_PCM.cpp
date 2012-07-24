@@ -41,7 +41,7 @@ extern "C" {
 
 #if USE_DAUDIO == TRUE
 
-DeviceCache cache;
+AudioDeviceCache cache;
 
 extern "C" {
 
@@ -293,7 +293,7 @@ void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
 
 int DAUDIO_Start(void* id, int isSource) {
     HaikuPCMInfo* info = (HaikuPCMInfo*)id;
-    status_t result;
+    status_t result = B_ERROR;
 
     if (isSource == TRUE) {
         result = info->sound_player->Start();

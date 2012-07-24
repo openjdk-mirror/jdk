@@ -124,8 +124,9 @@ ifeq ($(PLATFORM), haiku)
   CPPFLAGS += -DUSE_PORTS=TRUE \
               -DUSE_DAUDIO=TRUE
 
-  LDFLAGS += -lmedia -lbe -lstdc++
+  LDFLAGS += -lmedia -lmidi2 -lbe -lstdc++
   INCLUDE_DAUDIO = TRUE
+  INCLUDE_MIDI = TRUE
 endif # PLATFORM haiku
 
 # for dynamic inclusion of extra sound libs: these
