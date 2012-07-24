@@ -386,9 +386,9 @@ public class HaikuPlatformWindow implements PlatformWindow {
     // =====================
 
     public void eventRepaint(int x, int y, int width, int height) {
-        //peer.notifyExpose(x, y, width, height);
-        Rectangle bounds = peer.getBounds();
-        peer.notifyExpose(0, 0, bounds.width, bounds. height);
+        peer.notifyExpose(x, y, width, height);
+        //Rectangle bounds = peer.getBounds();
+        //peer.notifyExpose(0, 0, bounds.width, bounds. height);
     }
 
     public void eventReshape(int x, int y, int width, int height) {

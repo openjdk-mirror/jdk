@@ -220,26 +220,33 @@ public class LWWindowPeer
     protected void setVisibleImpl(final boolean visible) {
         super.setVisibleImpl(visible);
         // TODO: update graphicsConfig, see 4868278
-        platformWindow.setVisible(visible);
-        if (isSimpleWindow()) {
-            LWKeyboardFocusManagerPeer manager = LWKeyboardFocusManagerPeer.
-                getInstance(getAppContext());
-
-            if (visible) {
-                if (!getTarget().isAutoRequestFocus()) {
-                    return;
-                } else {
-                    requestWindowFocus(CausedFocusEvent.Cause.ACTIVATION);
-                }
-            // Focus the owner in case this window is focused.
-            } else if (manager.getCurrentFocusedWindow() == getTarget()) {
-                // Transfer focus to the owner.
-                LWWindowPeer owner = getOwnerFrameDialog(LWWindowPeer.this);
-                if (owner != null) {
-                    owner.requestWindowFocus(CausedFocusEvent.Cause.ACTIVATION);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                platformWindow.setVisible(visible);
+                // TODO: review the below RE simple windows and
+                // activation events
+                if (isSimpleWindow()) {
+                    LWKeyboardFocusManagerPeer manager = LWKeyboardFocusManagerPeer.
+                        getInstance(getAppContext());
+        
+                    if (visible) {
+                        if (!getTarget().isAutoRequestFocus()) {
+                            return;
+                        } else {
+                            requestWindowFocus(CausedFocusEvent.Cause.ACTIVATION);
+                        }
+                    // Focus the owner in case this window is focused.
+                    } else if (manager.getCurrentFocusedWindow() == getTarget()) {
+                        // Transfer focus to the owner.
+                        LWWindowPeer owner = getOwnerFrameDialog(LWWindowPeer.this);
+                        if (owner != null) {
+                            owner.requestWindowFocus(CausedFocusEvent.Cause.ACTIVATION);
+                        }
+                    }
                 }
             }
-        }
+        });
     }
 
     @Override
