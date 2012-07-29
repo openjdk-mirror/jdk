@@ -118,6 +118,7 @@ endif # PLATFORM solaris
 
 ifeq ($(PLATFORM), haiku)
   FILES_cpp = \
+      PLATFORM_API_HaikuOS_MidiOut.cpp \
       PLATFORM_API_HaikuOS_PCM.cpp \
       PLATFORM_API_HaikuOS_Utils.cpp
 
