@@ -231,6 +231,12 @@ public class HaikuToolkit extends LWToolkit {
     }
 
     @Override
+    public boolean areExtraMouseButtonsEnabled() throws HeadlessException {
+        // TODO
+        return false;
+    }
+
+    @Override
     protected boolean syncNativeQueue(long timeout) {
     	// This should wait until all events that should be generated
     	// in response to user events have been generated.
