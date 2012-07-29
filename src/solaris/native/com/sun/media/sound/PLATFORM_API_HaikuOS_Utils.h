@@ -93,7 +93,7 @@ public:
         while (powerOfTwo < fullBufferSize) {
             powerOfTwo <<= 1;
         }
-        pBuffer = (UINT8*)malloc(powerOfTwo);
+        pBuffer = (UBYTE*)malloc(powerOfTwo);
         if (pBuffer == NULL) {
             ERROR0("RingBuffer::Allocate: OUT OF MEMORY\n");
             return false;
@@ -160,7 +160,7 @@ public:
 
         if (len > 0) {
 
-            write((UINT8 *)srcBuffer, Pos2Offset(writePos), len);
+            write((UBYTE *)srcBuffer, Pos2Offset(writePos), len);
 
             lock();
             TRACE4("--RingBuffer::Write writePos: %lld (%d) => %lld, (%d)\n",
@@ -196,7 +196,7 @@ public:
 
         if (len > 0) {
 
-            read((UINT8 *)dstBuffer, Pos2Offset(readPos), len);
+            read((UBYTE *)dstBuffer, Pos2Offset(readPos), len);
 
             lock();
             if (applyFlush()) {
@@ -225,7 +225,7 @@ public:
     }
 
 private:
-    UINT8 *pBuffer;
+    UBYTE *pBuffer;
     int nBufferSize;
     int nAllocatedBytes;
     INT64 nPosMask;
@@ -258,7 +258,7 @@ private:
         return (int)(pos & nPosMask);
     }
 
-    void write(UINT8 *srcBuffer, int dstOffset, int len) {
+    void write(UBYTE *srcBuffer, int dstOffset, int len) {
         int dstEndOffset = dstOffset + len;
 
         int lenAfterWrap = dstEndOffset - nAllocatedBytes;
@@ -273,7 +273,7 @@ private:
         }
     }
 
-    void read(UINT8 *dstBuffer, int srcOffset, int len) {
+    void read(UBYTE *dstBuffer, int srcOffset, int len) {
         int srcEndOffset = srcOffset + len;
 
         int lenAfterWrap = srcEndOffset - nAllocatedBytes;
