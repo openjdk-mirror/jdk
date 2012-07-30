@@ -152,7 +152,7 @@ INT32 MIDI_IN_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
         return MIDI_INVALID_DEVICEID;
     }
 
-    MidiInHandle* inHandle = new MidiInHandle();
+    MidiInHandle* inHandle = new(std::nothrow) MidiInHandle();
     if (inHandle == NULL) {
         consumer->Release();
         delete *handle;
@@ -166,8 +166,8 @@ INT32 MIDI_IN_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
 
     inHandle->queueSemaphore = create_sem(0, "javaMidiQueueSem");
     if (inHandle->queueSemaphore < B_OK) {
-        consumer->Release();
         delete inHandle;
+        consumer->Release();
         delete *handle;
         *handle = NULL;
 
@@ -183,8 +183,8 @@ INT32 MIDI_IN_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
 
     if ((*handle)->queue == NULL) {
         delete_sem(inHandle->queueSemaphore);
-        consumer->Release();
         delete inHandle;
+        consumer->Release();
         delete *handle;
         *handle = NULL;
         return MIDI_OUT_OF_MEMORY;
