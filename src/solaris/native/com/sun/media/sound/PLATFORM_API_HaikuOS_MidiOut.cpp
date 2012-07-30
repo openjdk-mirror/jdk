@@ -65,35 +65,17 @@ INT32 MIDI_OUT_GetDeviceName(INT32 deviceIndex, char *name, UINT32 nameLength) {
 
 
 INT32 MIDI_OUT_GetDeviceVendor(INT32 deviceIndex, char *name, UINT32 nameLength) {
-    BMidiConsumer* consumer;
-    if (midiCache.GetConsumer(deviceIndex, &consumer) == B_OK) {
-        strlcpy(name, "", nameLength);
-        return MIDI_SUCCESS;
-    }
-
-    return MIDI_INVALID_DEVICEID;
+    return MIDI_NOT_SUPPORTED;
 }
 
 
 INT32 MIDI_OUT_GetDeviceDescription(INT32 deviceIndex, char *name, UINT32 nameLength) {
-    BMidiConsumer* consumer;
-    if (midiCache.GetConsumer(deviceIndex, &consumer) == B_OK) {
-        strlcpy(name, "", nameLength);
-        return MIDI_SUCCESS;
-    }
-
-    return MIDI_INVALID_DEVICEID;
+    return MIDI_NOT_SUPPORTED;
 }
 
 
 INT32 MIDI_OUT_GetDeviceVersion(INT32 deviceIndex, char *name, UINT32 nameLength) {
-    BMidiConsumer* consumer;
-    if (midiCache.GetConsumer(deviceIndex, &consumer) == B_OK) {
-        strlcpy(name, "", nameLength);
-        return MIDI_SUCCESS;
-    }
-
-    return MIDI_INVALID_DEVICEID;
+    return MIDI_NOT_SUPPORTED;
 }
 
 
