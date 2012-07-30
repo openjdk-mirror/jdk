@@ -182,6 +182,7 @@ INT32 MIDI_IN_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
     (*handle)->queue = MIDI_CreateQueue(MIDI_IN_MESSAGE_QUEUE_SIZE);
 
     if ((*handle)->queue == NULL) {
+        delete_sem(inHandle->queueSemaphore);
         consumer->Release();
         delete inHandle;
         delete *handle;
