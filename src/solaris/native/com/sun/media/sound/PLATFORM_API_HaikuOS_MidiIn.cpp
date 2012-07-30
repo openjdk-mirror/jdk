@@ -100,10 +100,10 @@ public:
         if (fInHandle->started) {
             // "short" message is <= 3 bytes, otherwise "long" message
             if (length <= 3) {
-            	// store platform-endian status | data1<<8 | data2<<16
+                // store platform-endian status | data1<<8 | data2<<16
                 UINT32 packedMsg = (data[0] & 0xff) 
-        	        | (length >= 2 ? ((data[1] & 0xff) << 8) : 0)
-        	        | (length >= 3 ? ((data[2] & 0xff) << 16) : 0);
+                    | (length >= 2 ? ((data[1] & 0xff) << 8) : 0)
+                    | (length >= 3 ? ((data[2] & 0xff) << 16) : 0);
                 MIDI_QueueAddShort(fHandle->queue, packedMsg, (INT64)time, TRUE);
             } else {
                 // we need to make a copy of the data
@@ -127,26 +127,68 @@ private:
 
 
 INT32 MIDI_IN_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
-	BMidiProducer* producer;
+    BMidiProducer* producer;
     if (midiCache.GetProducer(deviceIndex, &producer) != B_OK) {
         return MIDI_INVALID_DEVICEID;
     }
 
-    *handle = new MidiDeviceHandle();
-    BMidiLocalConsumer* consumer = new MidiQueueConsumer(*handle);
+    *handle = new(std::nothrow) MidiDeviceHandle();
+    if (*handle == NULL) {
+        return MIDI_OUT_OF_MEMORY;
+    }
+    
+    BMidiLocalConsumer* consumer = new(std::nothrow) MidiQueueConsumer(*handle);
+    if (consumer == NULL) {
+        delete *handle;
+        *handle = NULL;
+        return MIDI_OUT_OF_MEMORY;
+    }
+
+    // is this check necessary?
     if (!consumer->IsValid()) {
-    	consumer->Release();
-    	delete *handle;
-    	*handle = NULL;
-    	return MIDI_INVALID_DEVICEID; // TODO suitable error
+        consumer->Release();
+        delete *handle;
+        *handle = NULL;
+        return MIDI_INVALID_DEVICEID;
     }
 
     MidiInHandle* inHandle = new MidiInHandle();
+    if (inHandle == NULL) {
+        consumer->Release();
+        delete *handle;
+        *handle = NULL;
+        return MIDI_OUT_OF_MEMORY;
+    }
+
+    inHandle->started = false;
     inHandle->localConsumer = consumer;
     inHandle->remoteProducer = producer;
 
+    inHandle->queueSemaphore = create_sem(0, "javaMidiQueueSem");
+    if (inHandle->queueSemaphore < B_OK) {
+        consumer->Release();
+        delete inHandle;
+        delete *handle;
+        *handle = NULL;
+
+        if (inHandle->queueSemaphore == B_NO_MEMORY) {
+            return MIDI_OUT_OF_MEMORY;
+        } else {
+            return inHandle->queueSemaphore;
+        }
+    }
+
     (*handle)->deviceHandle = (void*)inHandle;
     (*handle)->queue = MIDI_CreateQueue(MIDI_IN_MESSAGE_QUEUE_SIZE);
+
+    if ((*handle)->queue == NULL) {
+        consumer->Release();
+        delete inHandle;
+        delete *handle;
+        *handle = NULL;
+        return MIDI_OUT_OF_MEMORY;
+    }
+
     (*handle)->startTime = system_time();
     return MIDI_SUCCESS;
 }
