@@ -118,12 +118,15 @@ endif # PLATFORM solaris
 
 ifeq ($(PLATFORM), haiku)
   FILES_cpp = \
+      PLATFORM_API_HaikuOS_MidiIn.cpp \
       PLATFORM_API_HaikuOS_MidiOut.cpp \
       PLATFORM_API_HaikuOS_PCM.cpp \
       PLATFORM_API_HaikuOS_Utils.cpp
 
-  CPPFLAGS += -DUSE_PORTS=TRUE \
-              -DUSE_DAUDIO=TRUE
+  CPPFLAGS += -DUSE_DAUDIO=TRUE \
+              -DUSE_PLATFORM_MIDI_IN=TRUE \
+              -DUSE_PLATFORM_MIDI_OUT=TRUE \
+              -DUSE_PORTS=TRUE
 
   LDFLAGS += -lmedia -lmidi2 -lbe -lstdc++
   INCLUDE_DAUDIO = TRUE

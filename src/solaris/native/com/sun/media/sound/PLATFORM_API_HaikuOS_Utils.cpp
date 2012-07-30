@@ -205,3 +205,33 @@ MidiDeviceCache::_Refresh()
         producers.push_back(producer);
     }
 }
+
+extern "C" {
+
+void* MIDI_CreateLock() {
+    BLocker* locker = new BLocker();
+    return (void*)locker;
+}
+
+void MIDI_DestroyLock(void* lock) {
+    if (lock != NULL) {
+        BLocker* locker = (BLocker*)lock;
+        delete locker;
+    }
+}
+
+void MIDI_Lock(void* lock) {
+    if (lock != NULL) {
+        BLocker* locker = (BLocker*)lock;
+        locker->Lock();
+    }
+}
+
+void MIDI_Unlock(void* lock) {
+    if (lock) {
+        BLocker* locker = (BLocker*)lock;
+        locker->Unlock();
+    }
+}
+
+}
