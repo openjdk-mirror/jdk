@@ -47,6 +47,7 @@ static int CHANNEL_MESSAGE_LENGTH[] = {
     -1, -1, -1, -1, -1, -1, -1, -1, 3, 3, 3, 3, 2, 2, 3 };
 /*                                 8x 9x Ax Bx Cx Dx Ex */
 
+
 static int SYSTEM_MESSAGE_LENGTH[] = {
     -1, 2, 3, 2, -1, -1, 1, 1, 1, -1, 1, 1, 1, -1, 1, 1 };
 /*  F0 F1 F2 F3  F4  F5 F6 F7 F8  F9 FA FB FC  FD FE FF */
@@ -113,10 +114,15 @@ INT32 MIDI_OUT_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
         return MIDI_INVALID_DEVICEID;
     }
 
-    BMidiLocalProducer* producer = new BMidiLocalProducer();
+    BMidiLocalProducer* producer = new(std::nothrow) BMidiLocalProducer();
+    if (producer == NULL) {
+        return MIDI_OUT_OF_MEMORY;
+    }
+
+    // is this check necessary?
     if (!producer->IsValid()) {
         producer->Release();
-        return MIDI_INVALID_DEVICEID; // TODO suitable error
+        return MIDI_INVALID_DEVICEID;
     }
 
     status_t result = producer->Connect(consumer);
@@ -125,11 +131,22 @@ INT32 MIDI_OUT_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
         return result;
     }
 
-    MidiOutHandle* outHandle = new MidiOutHandle();
+    MidiOutHandle* outHandle = new(std::nothrow) MidiOutHandle();
+    if (outHandle == NULL) {
+        producer->Release();
+        return MIDI_OUT_OF_MEMORY;
+    }
+
     outHandle->localProducer = producer;
     outHandle->remoteConsumer = consumer;
 
-    *handle = new MidiDeviceHandle();
+    *handle = new(std::nothrow) MidiDeviceHandle();
+    if (*handle == NULL) {
+    	delete outHandle;
+    	producer->Release();
+    	return MIDI_OUT_OF_MEMORY;
+    }
+
     (*handle)->deviceHandle = (void*)outHandle;
     (*handle)->startTime = system_time();
     return MIDI_SUCCESS;
