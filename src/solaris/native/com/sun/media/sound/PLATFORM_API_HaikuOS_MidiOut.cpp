@@ -94,7 +94,7 @@ INT32 MIDI_OUT_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
     BMidiLocalProducer* producer = new BMidiLocalProducer();
     if (!producer->IsValid()) {
         producer->Release();
-        return MIDI_INVALID_DEVICEID;
+        return MIDI_INVALID_DEVICEID; // TODO suitable error
     }
 
     status_t result = producer->Connect(consumer);
@@ -109,7 +109,7 @@ INT32 MIDI_OUT_OpenDevice(INT32 deviceIndex, MidiDeviceHandle** handle) {
 
     *handle = new MidiDeviceHandle();
     (*handle)->deviceHandle = (void*)outHandle;
-    (*handle)->startTime = system_time_nsecs();
+    (*handle)->startTime = system_time();
     return MIDI_SUCCESS;
 }
 
@@ -128,7 +128,7 @@ INT32 MIDI_OUT_CloseDevice(MidiDeviceHandle* handle) {
 
 
 INT64 MIDI_OUT_GetTimeStamp(MidiDeviceHandle* handle) {
-    return system_time_nsecs() - handle->startTime;
+    return system_time() - handle->startTime;
 }
 
 
