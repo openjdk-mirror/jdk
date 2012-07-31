@@ -181,6 +181,9 @@ INT32 MIDI_OUT_SendShortMessage(MidiDeviceHandle* handle, UINT32 packedMsg,
     message[2] = (UBYTE)((packedMsg >> 16) & 0xff); // possible data2
 
     size_t length = getShortMessageLength((int)message[0]);
+    if (length == -1) {
+        return MIDI_INVALID_ARGUMENT;
+    }
 
     outHandle->localProducer->SprayData((void*)message, length, true,
         (bigtime_t)timestamp);
