@@ -130,10 +130,10 @@ final class XWM
               return "Compiz";
           case LG3D_WM:
               return "LookingGlass";
-          case MUTTER_WM:
-              return "Mutter";
           case CWM_WM:
               return "CWM";
+          case MUTTER_WM:
+              return "Mutter";
           case UNDETERMINED_WM:
           default:
               return "Undetermined WM";
@@ -580,8 +580,6 @@ final class XWM
         return isNetWMName("Mutter");
     }
 
-    // TODO: according to wikipedia, compiz is now reparenting. This should
-    // probably be updated.
     static boolean isNonReparentingWM() {
         return (XWM.getWMID() == XWM.COMPIZ_WM || XWM.getWMID() == XWM.LG3D_WM || XWM.getWMID() == XWM.CWM_WM);
     }

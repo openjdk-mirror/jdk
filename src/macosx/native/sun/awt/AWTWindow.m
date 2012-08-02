@@ -228,6 +228,7 @@ AWT_ASSERT_APPKIT_THREAD;
     }
 
     if (self.nsWindow == nil) return nil; // no hope either
+    [self.nsWindow release]; // the property retains the object already
 
     self.isEnabled = YES;
     self.javaPlatformWindow = platformWindow;
@@ -677,9 +678,9 @@ AWT_ASSERT_NOT_APPKIT_THREAD;
                                                   styleBits:styleBits
                                                   frameRect:frameRect
                                                 contentView:contentView];
+        // the window is released is CPlatformWindow.nativeDispose()
 
-        if (window) CFRetain(window);
-        [window release]; // GC
+        if (window) CFRetain(window.nsWindow);
     }];
 
 JNF_COCOA_EXIT(env);
@@ -1080,38 +1081,28 @@ JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeSynthesizeMou
 
 /*
  * Class:     sun_lwawt_macosx_CPlatformWindow
- * Method:    nativeGetScreenNSWindowIsOn_AppKitThread
+ * Method:    nativeGetDisplayID_AppKitThread
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeGetScreenNSWindowIsOn_1AppKitThread
+JNIEXPORT jint JNICALL
+Java_sun_lwawt_macosx_CPlatformWindow_nativeGetNSWindowDisplayID_1AppKitThread
 (JNIEnv *env, jclass clazz, jlong windowPtr)
 {
-    jint index = -1;
+    jint ret; // CGDirectDisplayID
 
 JNF_COCOA_ENTER(env);
 AWT_ASSERT_APPKIT_THREAD;
 
-    NSWindow *nsWindow = OBJC(windowPtr);
-    NSScreen* screen = [nsWindow screen];
-
-    //+++gdb NOTE: This is using a linear search of the screens. If it should
-    //  prove to be a bottleneck, this can definitely be improved. However,
-    //  many screens should prove to be the exception, rather than the rule.
-    NSArray* screens = [NSScreen screens];
-    NSUInteger i;
-    for (i = 0; i < [screens count]; i++)
-    {
-        if ([[screens objectAtIndex:i] isEqualTo:screen])
-        {
-            index = i;
-            break;
-        }
-    }
+    NSWindow *window = OBJC(windowPtr);
+    NSScreen *screen = [window screen];
+    NSDictionary *deviceDescription = [screen deviceDescription];
+    NSNumber *displayID = [deviceDescription objectForKey:@"NSScreenNumber"];
+    ret = (jint)[displayID intValue];
 
 JNF_COCOA_EXIT(env);
-    return 1;
-}
 
+    return ret;
+}
 
 /*
  * Class:     sun_lwawt_macosx_CPlatformWindow
@@ -1165,6 +1156,27 @@ JNF_COCOA_ENTER(env);
         AWTWindow *window = (AWTWindow*)[nsWindow delegate];
 
         [window setEnabled: isEnabled];
+    }];
+
+JNF_COCOA_EXIT(env);
+}
+
+JNIEXPORT void JNICALL Java_sun_lwawt_macosx_CPlatformWindow_nativeDispose
+(JNIEnv *env, jclass clazz, jlong windowPtr)
+{
+JNF_COCOA_ENTER(env);
+
+    NSWindow *nsWindow = OBJC(windowPtr);
+    [JNFRunLoop performOnMainThreadWaiting:NO withBlock:^(){
+        AWTWindow *window = (AWTWindow*)[nsWindow delegate];
+
+        // AWTWindow holds a reference to the NSWindow in its nsWindow
+        // property. Unsetting the delegate allows it to be deallocated
+        // which releases the reference. This, in turn, allows the window
+        // itself be deallocated.
+        [nsWindow setDelegate: nil];
+
+        [window release];
     }];
 
 JNF_COCOA_EXIT(env);
