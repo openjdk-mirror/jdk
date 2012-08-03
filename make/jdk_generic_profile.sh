@@ -380,6 +380,24 @@ if [ "${ZERO_BUILD}" = true ] ; then
   fi
 fi
 
+# Export variables for system zlib
+# ZLIB_CFLAGS and ZLIB_LIBS tell the compiler how to compile and
+# link against zlib
+pkgconfig=$(which pkg-config 2>/dev/null)
+if [ -x "${pkgconfig}" ] ; then
+  if [ "${ZLIB_CFLAGS}" = "" ] ; then
+    ZLIB_CFLAGS=$("${pkgconfig}" --cflags zlib)
+  fi
+  if [ "${ZLIB_LIBS}" = "" ] ; then
+    ZLIB_LIBS=$("${pkgconfig}" --libs zlib)
+  fi
+fi
+if [ "${ZLIB_LIBS}" = "" ] ; then
+    ZLIB_LIBS="-lz"
+fi
+export ZLIB_CFLAGS
+export ZLIB_LIBS
+
 # Export variables for system LCMS
 # LCMS_CFLAGS and LCMS_LIBS tell the compiler how to compile and
 # link against lcms2
@@ -400,3 +418,4 @@ export LCMS_LIBS
 
 # IcedTea defaults; use system libraries
 export USE_SYSTEM_LCMS=true
+export SYSTEM_ZLIB=true
