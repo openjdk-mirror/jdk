@@ -26,6 +26,7 @@
 #ifndef GCONF_GCONF_FP_H
 #define GCONF_GCONF_FP_H
 
+#include <glib_fp.h>
 #include <gconf/gconf-client.h>
 #include <jni.h>
 #include <stddef.h>
@@ -35,7 +36,6 @@ extern fp_client_get_string_func* my_get_string_func;
 extern fp_client_get_int_func* my_get_int_func;
 extern fp_client_get_bool_func* my_get_bool_func;
 extern fp_conf_init_func* my_gconf_init_func;
-extern fp_type_init_func* my_g_type_init_func;
 
 #define gconf_client_get_default (*my_get_default_func)
 #define gconf_client_get_string (*my_get_string_func)

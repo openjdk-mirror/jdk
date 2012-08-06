@@ -45,7 +45,6 @@ typedef enum {
   G_FILE_QUERY_INFO_NONE = 0
 } GFileQueryInfoFlags;
 
-typedef void (*type_init_func)(void);
 typedef void (*object_unref_func)(gpointer object);
 typedef GFile* (*file_new_for_path_func)(const char* path);
 typedef GFileInfo* (*file_query_info_func)(GFile *file,
@@ -62,6 +61,5 @@ typedef gchar** (*settings_get_strv_func) (GSettings *settings, const gchar *key
 typedef gint (*settings_get_int_func) (GSettings *settings, const gchar *key);
 typedef GSettings* (*settings_get_child_func) (GSettings *settings, const gchar *name);
 typedef void (*strfreev_func) (gchar **str_array);
-typedef void (*free_func) (gpointer mem);
 
 #endif

@@ -28,7 +28,8 @@
 
 #include <gio/gio_typedefs.h>
 
-extern type_init_func type_init;
+#include <glib_fp.h>
+
 extern object_unref_func object_unref;
 extern file_new_for_path_func file_new_for_path;
 extern file_query_info_func file_query_info;
@@ -41,10 +42,9 @@ extern settings_get_strv_func settings_get_strv;
 extern settings_get_int_func settings_get_int;
 extern settings_get_child_func settings_get_child;
 extern strfreev_func gstrfreev;
-extern free_func gfree;
 
-#define g_type_init (*type_init)
 #define g_object_unref (*object_unref)
+#define g_strfreev (*gstrfreev)
 #define g_file_new_for_path (*file_new_for_path)
 #define g_file_query_info (*file_query_info)
 #define g_file_info_get_content_type (*file_info_get_content_type)
@@ -55,8 +55,6 @@ extern free_func gfree;
 #define g_settings_get_strv (*settings_get_strv)
 #define g_settings_get_int (*settings_get_int)
 #define g_settings_get_child (*settings_get_child)
-#define g_strfreev (*gstrfreev)
-#define g_free (*gfree)
 
 jboolean gio_init();
 

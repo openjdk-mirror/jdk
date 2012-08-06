@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2004, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012 Red Hat Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,19 +24,16 @@
  * questions.
  */
 
-#ifndef GCONF_GCONF_H
-#define GCONF_GCONF_H
+#ifndef __GLIB_FP_H__
+#define __GLIB_FP_H__
 
-/**
- * These functions are used by the sun.net.spi.DefaultProxySelector class
- * to access some platform specific settings.
- * This is the Solaris/Linux Gnome 2.x code using the GConf-2 library.
- * Everything is loaded dynamically so no hard link with any library exists.
- */
-typedef void* fp_client_get_default_func();
-typedef char* fp_client_get_string_func(void *, char *, void**);
-typedef int   fp_client_get_int_func(void*, char *, void**);
-typedef int   fp_client_get_bool_func(void*, char *, void**);
-typedef int   fp_conf_init_func(int, char**, void**);
+typedef void (*type_init_func)(void);
+typedef void (*free_func) (void* mem);
 
-#endif
+extern type_init_func type_init;
+extern free_func gfree;
+
+#define g_type_init (*type_init)
+#define g_free (*gfree)
+
+#endif /* __GLIB_FP_H__ */

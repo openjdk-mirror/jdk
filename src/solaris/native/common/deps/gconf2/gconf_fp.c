@@ -32,7 +32,8 @@ fp_client_get_string_func* my_get_string_func = NULL;
 fp_client_get_int_func* my_get_int_func = NULL;
 fp_client_get_bool_func* my_get_bool_func = NULL;
 fp_conf_init_func* my_gconf_init_func = NULL;
-fp_type_init_func* my_g_type_init_func = NULL;
+type_init_func type_init = NULL;
+free_func gfree = NULL;
 
 jboolean init_gconf(int* gconf_ver, void** gconf_client)
 {
@@ -48,13 +49,14 @@ jboolean init_gconf(int* gconf_ver, void** gconf_client)
     /*
      * Now let's get pointer to the functions we need.
      */
-    my_g_type_init_func = (fp_type_init_func*) dlsym(RTLD_DEFAULT, "g_type_init");
+    type_init = (type_init_func) dlsym(RTLD_DEFAULT, "g_type_init");
+    gfree = (free_func) dlsym(RTLD_DEFAULT, "g_free");
     my_get_default_func = (fp_client_get_default_func*) dlsym(RTLD_DEFAULT, "gconf_client_get_default");
-    if (my_g_type_init_func != NULL && my_get_default_func != NULL) {
+    if (type_init != NULL && gfree != NULL && my_get_default_func != NULL) {
       /**
        * Try to connect to GConf.
        */
-      (*my_g_type_init_func)();
+      (*type_init)();
       (*gconf_client) = (*my_get_default_func)();
       if ((*gconf_client) != NULL) {
         my_get_string_func = (fp_client_get_string_func*) dlsym(RTLD_DEFAULT, "gconf_client_get_string");
