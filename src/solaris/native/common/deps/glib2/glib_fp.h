@@ -33,7 +33,9 @@ typedef void (*free_func) (void* mem);
 extern type_init_func type_init;
 extern free_func gfree;
 
+#ifndef USE_SYSTEM_GIO
 #define g_type_init (*type_init)
 #define g_free (*gfree)
+#endif
 
 #endif /* __GLIB_FP_H__ */

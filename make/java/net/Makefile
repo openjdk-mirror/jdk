@@ -121,7 +121,7 @@ ifdef USE_SYSTEM_GCONF
   OTHER_LDLIBS += $(GCONF_LIBS) $(GOBJECT_LIBS)
   CPPFLAGS += $(GCONF_CFLAGS) $(GOBJECT_CFLAGS) -DUSE_SYSTEM_GCONF
 else
-  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gconf2
+  CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gconf2 -I$(PLATFORM_SRC)/native/common/deps/glib2
   OTHER_LDLIBS += $(LIBDL)
 endif
 
