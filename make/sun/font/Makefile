@@ -185,11 +185,16 @@ ifeq ($(PLATFORM), solaris)
   # Note that on Solaris, fontmanager is built against the headless library.
   LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
   OTHER_LDLIBS += -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt -lc $(LIBM) $(LIBCXX)
+else
+ifeq ($(PLATFORM), aix)
+  LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
+  OTHER_LDLIBS += -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt -lc $(LIBM) $(LIBCXX)
 else # PLATFORM is linux
  OTHER_LDLIBS  += -lawt $(LIBM) $(LIBCXX)
   ifeq ("$(CC_VER_MAJOR)", "3")
     OTHER_LDLIBS  += -Wl,-Bstatic -lgcc_eh -Wl,-Bdynamic
   endif                           
+endif
 endif
 endif
 
