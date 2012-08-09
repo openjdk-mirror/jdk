@@ -26,7 +26,7 @@
 #ifndef OGLFuncs_h_Included
 #define OGLFuncs_h_Included
 
-#ifdef MACOSX
+#if defined(MACOSX) || defined(AIX)
 #include <dlfcn.h>
 #endif
 #include "jni.h"
