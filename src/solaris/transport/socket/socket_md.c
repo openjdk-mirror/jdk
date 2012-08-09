@@ -36,7 +36,7 @@
 #ifdef __solaris__
 #include <thread.h>
 #endif
-#if defined(__linux__) || defined(_ALLBSD_SOURCE)
+#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(AIX)
 #include <pthread.h>
 #include <sys/poll.h>
 #endif
@@ -308,7 +308,7 @@ dbgsysTlsGet(int index) {
 
 #endif
 
-#if defined(__linux__) || defined(_ALLBSD_SOURCE)
+#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(AIX)
 int
 dbgsysTlsAlloc() {
     pthread_key_t key;
