@@ -35,11 +35,15 @@ extern "C" {
 #include <MediaDefs.h>
 #include <MediaNode.h>
 #include <MediaRoster.h>
+#include <SoundConsumer.h>
 #include <SoundPlayer.h>
+#include <TimeSource.h>
 
 #include <vector>
 
 #if USE_DAUDIO == TRUE
+
+using BPrivate::SoundConsumer;
 
 AudioDeviceCache cache;
 
@@ -184,7 +188,11 @@ void DAUDIO_GetFormats(INT32 mixerIndex, INT32 deviceID, int isSource, void* cre
 
 typedef struct {
     BSoundPlayer* sound_player;
-    // TODO BBufferConsumer* sound_recorder
+
+    SoundConsumer* sound_consumer;
+    media_input consumer_input;
+    media_output input_output;
+
     RingBuffer buffer;
 } HaikuPCMInfo;
 
@@ -208,10 +216,54 @@ static void PlayBuffer(void* cookie, void* buffer, size_t size,
     }
 }
 
-static void Notifier(void* cookie,
+static void PlayNotifier(void* cookie,
         BSoundPlayer::sound_player_notification what, ...) {
-    // The default notifier callback prints to stdout so we use this
-    // dummy one instead.
+}
+
+static void RecordBuffer(void* cookie, bigtime_t timestamp, void* buffer,
+        size_t size, const media_raw_audio_format& format) {
+    if (size <= 0)
+        return;
+
+    HaikuPCMInfo* info = (HaikuPCMInfo*)cookie;
+    info->buffer.Write(buffer, size, false);
+}
+
+static void RecordNotifier(void* cookie, int32 code, ...) {
+}
+
+static status_t connectConsumer(SoundConsumer* consumer, media_output output, media_input* consumerInput) {
+    BMediaRoster* roster = BMediaRoster::Roster();
+
+    int32 count = 0;
+    status_t result = roster->GetFreeInputsFor(consumer->Node(), consumerInput, 1, &count, B_MEDIA_RAW_AUDIO);
+
+    if (result != B_OK || count < 1) {
+        return B_ERROR;
+    }
+
+    media_format format = output.format;
+    result = roster->Connect(output.source, consumerInput->destination, &format, &output, consumerInput);
+    if (result != B_OK) {
+        return B_ERROR;
+    }
+
+    BTimeSource* timeSource = roster->MakeTimeSourceFor(output.node);
+    if (timeSource == NULL) {
+        return B_ERROR;
+    }
+
+    result = roster->SetTimeSourceFor(consumer->Node().node, timeSource->Node().node);
+    if (result != B_OK) {
+        timeSource->Release();
+        return B_ERROR;
+    }
+
+    if ((timeSource->Node() != output.node) && !timeSource->IsRunning()) {
+        roster->StartNode(timeSource->Node(), BTimeSource::RealTime());
+    }
+    timeSource->Release();
+    return B_OK;
 }
 
 void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
@@ -268,11 +320,11 @@ void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
     }
 
     if (isSource == TRUE) {
-        HaikuPCMInfo* info = new HaikuPCMInfo();
+        HaikuPCMInfo* info = new HaikuPCMInfo;
         media_input input = inputs[foundIndex];
 
         BSoundPlayer* player = new BSoundPlayer(input.node, &formats[foundIndex],
-            "jsoundSoundPlayer", &input, PlayBuffer, Notifier, info);
+            "jsoundSoundPlayer", &input, PlayBuffer, PlayNotifier, info);
 
         if (player->InitCheck() != B_OK
                 || !info->buffer.Allocate(bufferSizeInBytes, 0)) {
@@ -284,7 +336,39 @@ void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
         info->sound_player = player;
         return (void*)info;
     } else {
-        // TODO
+        HaikuPCMInfo* info = new HaikuPCMInfo;
+        media_output output = outputs[foundIndex];
+
+        media_input consumerInput;
+        SoundConsumer* consumer = new SoundConsumer("jsoundSoundConsumer");
+        status_t result = connectConsumer(consumer, output, &consumerInput);
+        if (result != B_OK) {
+            delete info;
+            delete consumer;
+            return NULL;
+        }
+
+        result = consumer->SetHooks(RecordBuffer, RecordNotifier, info);
+        if (result != B_OK) {
+            delete info;
+            delete consumer;
+            return NULL;
+        }
+
+        BMediaRoster* roster = BMediaRoster::Roster();
+
+        info->sound_consumer = consumer;
+        info->consumer_input = consumerInput;
+        
+        if (!info->buffer.Allocate(bufferSizeInBytes, output.format.u.raw_audio.buffer_size)) {
+            roster->StopNode(consumerInput.node, 0);
+            roster->Disconnect(output.node.node, output.source, consumerInput.node.node, consumerInput.destination);
+            delete info;
+            delete consumer;
+            return NULL;
+        }
+
+        return (void*)info;
     }
 
     return NULL;
@@ -297,8 +381,21 @@ int DAUDIO_Start(void* id, int isSource) {
 
     if (isSource == TRUE) {
         result = info->sound_player->Start();
+
+        // why is SetHasData(true) not required as suggested by
+        // the docs?
     } else {
-        // TODO
+
+        BMediaRoster* roster = BMediaRoster::Roster();
+
+        // SoundRecorder uses this 50ms delay...
+        bigtime_t delay = info->sound_consumer->TimeSource()->Now() + 50000LL;
+        roster->StartNode(info->sound_consumer->Node(), delay);
+        if ((info->input_output.node.kind & B_TIME_SOURCE) != 0) {
+            roster->StartNode(info->input_output.node, info->sound_consumer->TimeSource()->RealTimeFor(delay, 0));
+        } else {
+            roster->StartNode(info->input_output.node, delay);
+        }
     }
 
     return result == B_OK ? TRUE : FALSE;
@@ -310,7 +407,9 @@ int DAUDIO_Stop(void* id, int isSource) {
     if (isSource == TRUE) {
         info->sound_player->Stop();
     } else {
-        // TODO
+        BMediaRoster* roster = BMediaRoster::Roster();
+        roster->StopNode(info->consumer_input.node, 0);
+        roster->Disconnect(info->input_output.node.node, info->input_output.source, info->consumer_input.node.node, info->consumer_input.destination);
     }
 
     return TRUE;
@@ -319,13 +418,14 @@ int DAUDIO_Stop(void* id, int isSource) {
 void DAUDIO_Close(void* id, int isSource) {
     HaikuPCMInfo* info = (HaikuPCMInfo*)id;
 
+    DAUDIO_Stop(id, isSource);
     if (isSource == TRUE) {
-        info->sound_player->Stop();
         delete info->sound_player;
-        delete info;
     } else {
-        // TODO
+        delete info->sound_consumer;
     }
+
+    delete info;
 }
 
 int DAUDIO_Write(void* id, char* data, int byteSize) {
