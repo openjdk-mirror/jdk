@@ -85,7 +85,7 @@ ifeq ($(PLATFORM), haiku)
 # prune should take care of most of it though.
 #
 AUTO_FILES_JAVA_DIRS += sun/hawt sun/lwawt
-AUTO_JAVA_PRUNE += motif X11 AWTCharset.java
+AUTO_JAVA_PRUNE += motif X11 xr jules AWTCharset.java
 
 #
 # Files
@@ -584,7 +584,6 @@ CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/debug \
             -I$(SHARE_SRC)/native/$(PKGDIR)/../dc/doe \
             -I$(SHARE_SRC)/native/$(PKGDIR)/../dc/path \
             -I$(PLATFORM_SRC)/native/$(PKGDIR)/../jdga \
-            -I$(PLATFORM_SRC)/native/$(PKGDIR) \
 		    $(EVENT_MODEL)
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ HAIKU
