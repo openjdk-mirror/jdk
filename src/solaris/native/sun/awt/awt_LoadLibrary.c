@@ -76,7 +76,13 @@ JNIEXPORT jboolean JNICALL AWTIsHeadless() {
 jint
 AWT_OnLoad(JavaVM *vm, void *reserved)
 {
+#if defined(AIX)
+    jstring propname = NULL;
+    jstring bootlibpath = NULL;
+    const char* libpath;
+#else
     Dl_info dlinfo;
+#endif
     char buf[MAXPATHLEN];
     int32_t len;
     char *p, *tk = 0;
@@ -95,11 +101,64 @@ AWT_OnLoad(JavaVM *vm, void *reserved)
 
     jvm = vm;
 
+#if defined(AIX)
+    propname = (*env)->NewStringUTF(env, "sun.boot.library.path");
+    bootlibpath = JNU_CallStaticMethodByName (env,
+                                              NULL,
+                                              "java/lang/System",
+                                              "getProperty",
+                                              "(Ljava/lang/String;)Ljava/lang/String;",
+                                              propname).l;
+    libpath = (*env)->GetStringUTFChars(env,bootlibpath,0);
+
+    strncpy(buf,libpath,MAXPATHLEN-1);
+    (*env)->ReleaseStringUTFChars(env,bootlibpath,libpath);
+
+    // IF condition is added to check if multiple paths are specified in the
+    // sun.boot.library.path as in the case of sidecar VM configurations.
+    // Just assume the presence of : as indicator of multiple paths
+    if(strchr(buf,':') != NULL)
+    {
+
+        char *temp_buf = (char *)malloc(sizeof(buf)+1);
+        char *token = (char *)malloc(sizeof(buf)+1);
+        struct stat sb;
+
+        temp_buf = strtok(buf, ":");
+        strcpy(token,temp_buf);
+        strcat(token,"/xawt/libmawt.so");
+        if(stat(token, &sb) == 0)
+        {
+            strcpy(buf,temp_buf);
+        }
+        else
+        {
+            while((temp_buf = strtok(NULL,":")) != NULL)
+            {
+                strcpy(token,temp_buf);
+                strcat(token,"/xawt/libmawt.so");
+                if(stat(token, &sb) == 0)
+                {
+                    strcpy(buf,temp_buf);
+                    break;
+                }
+            }
+        }
+    }
+
+    p = buf + strlen(buf);
+    len = strlen(buf);
+    (*env)->DeleteLocalRef(env,bootlibpath);
+    bootlibpath = NULL;
+    (*env)->DeleteLocalRef(env,propname);
+    propname = NULL;
+#else
     /* Get address of this library and the directory containing it. */
     dladdr((void *)JNI_OnLoad, &dlinfo);
     realpath((char *)dlinfo.dli_fname, buf);
     len = strlen(buf);
     p = strrchr(buf, '/');
+#endif
 
     /*
      * 1. Set the "sun.font.fontmanager" system property,

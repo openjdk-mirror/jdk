@@ -123,6 +123,14 @@ OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
 OTHER_LDLIBS = $(JVMLIB) $(LIBM) $(LIBDL)
 endif
 
+ifeq  ($(PLATFORM), aix)
+FILES_c = $(FILES_2D_c)
+FILES_c += awt_LoadLibrary.c
+OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
+OTHER_CFLAGS += -DMOTIF_VERSION=2
+OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lmlib_image $(JVMLIB) $(LIBM)
+endif
+
 FILES_c += initIDs.c
 
 ifeq ($(PLATFORM), macosx)
