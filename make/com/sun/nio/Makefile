@@ -31,7 +31,7 @@ BUILDDIR = ../../..
 include $(BUILDDIR)/common/Defs.gmk
 
 # MMM: disable for now
-ifneq ($(PLATFORM), macosx)
+ifeq (, $(findstring $(PLATFORM), macosx aix))
 include $(BUILDDIR)/common/Subdirs.gmk
 SUBDIRS = sctp
 endif
