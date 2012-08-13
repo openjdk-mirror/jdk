@@ -57,7 +57,7 @@ typedef unsigned int       mlib_u32;
 typedef float              mlib_f32;
 typedef double             mlib_d64;
 
-#if defined(__SUNPRO_C) || defined(__SUNPRO_CC) || defined(__GNUC__)
+#if defined(__SUNPRO_C) || defined(__SUNPRO_CC) || defined(__GNUC__) || defined(AIX)
 
 #if defined(MACOSX)
 #include <stddef.h>                     /* for ptrdiff_t */
@@ -65,6 +65,9 @@ typedef double             mlib_d64;
 #elif defined(__linux__)
 #include <stdint.h>                     /* for uintptr_t */
 #include <malloc.h>                     /* for ptrdiff_t */
+#elif defined(AIX)
+#include <stdint.h>                     /* for uintptr_t */
+#include <stddef.h>                     /* for ptrdiff_t */ 
 #else
 #include <link.h>                       /* for uintptr_t */
 #include <stddef.h>                     /* for ptrdiff_t */
@@ -81,7 +84,7 @@ typedef unsigned long      mlib_u64;
 #define MLIB_S64_CONST(x)  x##L
 #define MLIB_U64_CONST(x)  x##UL
 
-#elif (__STDC__ - 0 == 0) || defined(__GNUC__)
+#elif (__STDC__ - 0 == 0) || defined(__GNUC__) || defined(AIX)
 
 #if defined(_NO_LONGLONG)
 
