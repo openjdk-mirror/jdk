@@ -331,6 +331,26 @@ FILES_gen += \
 	sun/nio/fs/UnixConstants.java
 endif # PLATFORM = bsd, macosx
 
+ifeq ($(PLATFORM), aix)
+FILES_java += \
+        sun/nio/ch/AbstractPollSelectorImpl.java \
+        sun/nio/ch/InheritedChannel.java \
+        sun/nio/ch/PollSelectorProvider.java \
+        sun/nio/ch/PollSelectorImpl.java
+
+FILES_c += \
+        PollArrayWrapper.c \
+        InheritedChannel.c \
+        NativeThread.c
+
+FILES_export += \
+        sun/nio/ch/InheritedChannel.java \
+        sun/nio/ch/NativeThread.java
+FILES_gen += \
+        sun/nio/fs/UnixConstants.java
+endif # PLATFORM = aix
+
+
 ifeq ($(PLATFORM), macosx)
 FILES_java += \
     sun/nio/ch/KQueueSelectorProvider.java \
@@ -387,6 +407,9 @@ endif
 ifeq ($(PLATFORM), solaris)
 OTHER_LDLIBS += $(JVMLIB) $(LIBSOCKET) -lposix4 $(LIBDL) -lsendfile \
 		-L$(LIBDIR)/$(LIBARCH) -ljava -lnet
+endif
+ifeq ($(PLATFORM), aix)
+OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -ljava -lnet
 endif # PLATFORM
 
 #

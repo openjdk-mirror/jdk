@@ -116,23 +116,43 @@ struct my_group_source_req {
 
 #endif   /* __linux__ */
 
-#ifdef _ALLBSD_SOURCE
+#if defined(_ALLBSD_SOURCE) || defined(AIX)
 
 #ifndef IP_BLOCK_SOURCE
+
+#if defined(AIX)
+
+#define IP_BLOCK_SOURCE                 58   /* Block data from a given source to a given group */
+#define IP_UNBLOCK_SOURCE               59   /* Unblock data from a given source to a given group */
+#define IP_ADD_SOURCE_MEMBERSHIP        60   /* Join a source-specific group */
+#define IP_DROP_SOURCE_MEMBERSHIP       61   /* Leave a source-specific group */
+
+#else
 
 #define IP_ADD_SOURCE_MEMBERSHIP        70   /* join a source-specific group */
 #define IP_DROP_SOURCE_MEMBERSHIP       71   /* drop a single source */
 #define IP_BLOCK_SOURCE                 72   /* block a source */
 #define IP_UNBLOCK_SOURCE               73   /* unblock a source */
 
+#endif /* AIX */
+
 #endif  /* IP_BLOCK_SOURCE */
 
 #ifndef MCAST_BLOCK_SOURCE
+
+#if !defined(AIX)
 
 #define MCAST_JOIN_SOURCE_GROUP         82   /* join a source-specific group */
 #define MCAST_LEAVE_SOURCE_GROUP        83   /* leave a single source */
 #define MCAST_BLOCK_SOURCE              84   /* block a source */
 #define MCAST_UNBLOCK_SOURCE            85   /* unblock a source */
+
+#endif /* AIX */
+
+#define MCAST_BLOCK_SOURCE              64
+#define MCAST_UNBLOCK_SOURCE            65
+#define MCAST_JOIN_SOURCE_GROUP         66
+#define MCAST_LEAVE_SOURCE_GROUP        67
 
 #endif /* MCAST_BLOCK_SOURCE */
 
