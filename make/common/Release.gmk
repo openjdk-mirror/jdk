@@ -178,6 +178,12 @@ ifeq ($(PLATFORM), linux)
   JA_DIRNAME=ja_JP.UTF-8
 endif # linux
 
+ifeq ($(PLATFORM), aix)
+  MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
+  MAN1SUBDIR=man
+  JA_DIRNAME=ja_JP.$(JA_SOURCE_ENCODING)
+endif # aix
+
 define copy-man-pages
 $(MKDIR) -p $1/man/man1
 for manbase in $(MANBASEDIRS:%=%/$(MAN1SUBDIR)) ; do \
@@ -201,7 +207,7 @@ for manbase in $(MANBASEDIRS:%=%/$(MAN1SUBDIR)) ; do \
 done
 $(java-vm-cleanup)
 if [ "$(JA_DIRNAME)" != "" ] ; then \
-  $(CD) $1/man && $(RM) ja && $(LN) -s $(JA_DIRNAME) ja; \
+  $(CD) $1/man && $(RM) -r ja && $(LN) -s $(JA_DIRNAME) ja; \
 fi
 endef
 

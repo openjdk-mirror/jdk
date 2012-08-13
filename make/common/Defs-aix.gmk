@@ -389,3 +389,13 @@ DEBUG_SALIB_NAME     = $(LIB_PREFIX)saproc$(DBG_SUFFIX).$(LIBRARY_SUFFIX)
 INCLUDE_SA = false
 export OBJECT_MODE=64
 
+# Macro to check it's input file for banned dependencies and verify the
+#   binary built properly. Relies on process exit code.
+define binary_file_verification # binary_file
+( \
+  $(ECHO) "Checking for mapfile use in: $1" && \
+  if [ "`$(NM) -u $1 | $(EGREP) 'SUNWprivate'`" = "" ] ; then \
+    $(ECHO) "WARNING: File was not built with a mapfile: $1"; \
+  fi \
+)
+endef
