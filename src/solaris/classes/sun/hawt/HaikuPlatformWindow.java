@@ -222,7 +222,7 @@ public class HaikuPlatformWindow implements PlatformWindow {
     }
 
     @Override
-    public SurfaceData getScreenSurface() {
+    public SurfaceData replaceSurfaceData() {
         if (surfaceData == null) {
             long drawable = nativeGetDrawable(nativeWindow);
             surfaceData = new HaikuWindowSurfaceData(
@@ -233,8 +233,15 @@ public class HaikuPlatformWindow implements PlatformWindow {
     }
 
     @Override
-    public SurfaceData replaceSurfaceData() {
-        return getScreenSurface();
+    public Image createBackBuffer() {
+        Rectangle r = peer.getBounds();
+        Image im = null;
+        if (!r.isEmpty()) {
+            int transparency = (peer.isOpaque() ? Transparency.OPAQUE : Transparency.TRANSLUCENT);
+            im = peer.getGraphicsConfiguration().createCompatibleImage(r.width, r.height, transparency);
+        }
+        System.err.println(im);
+        return im;
     }
 
     public ColorModel getColorModel() {
@@ -364,14 +371,15 @@ public class HaikuPlatformWindow implements PlatformWindow {
         // not supported
     }
 
+
     @Override
-    public FontMetrics getFontMetrics(Font f) {
-        (new RuntimeException("unimplemented")).printStackTrace();
+    public SurfaceData getScreenSurface() {
         return null;
     }
 
     @Override
-    public Image createBackBuffer() {
+    public FontMetrics getFontMetrics(Font f) {
+        (new RuntimeException("unimplemented")).printStackTrace();
         return null;
     }
 
