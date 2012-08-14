@@ -29,12 +29,14 @@
 #include "colordata.h"
 
 #ifndef HEADLESS
+#ifndef __HAIKU__
 typedef struct {
     unsigned int Depth;
     XPixmapFormatValues wsImageFormat;
     ImgColorData clrdata;
     ImgConvertFcn *convert[NUM_IMGCV];
 } awtImageData;
+#endif
 #endif /* !HEADLESS */
 
 #endif           /* _COLOR_H_ */

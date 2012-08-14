@@ -35,7 +35,9 @@
 #include "debug_util.h"
 
 #ifndef HEADLESS
+#ifndef __HAIKU__
 #include <X11/Intrinsic.h>
+#endif
 #endif /* !HEADLESS */
 
 
@@ -159,8 +161,10 @@ extern int lastL;
 #endif /* DEBUG_AWT_LOCK && !XAWT */
 
 #ifndef HEADLESS
+#ifndef __HAIKU__
 extern Display         *awt_display; /* awt_GraphicsEnv.c */
 extern Boolean          awt_ModLockIsShiftLock; /* XToolkit.c */
+#endif
 #endif /* !HEADLESS */
 
 #endif /* ! _AWT_ */

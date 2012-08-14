@@ -28,8 +28,24 @@
 #ifndef _AWT_RECT_H
 #define _AWT_RECT_H
 
+#ifdef __HAIKU__
+
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+} HaikuRectangle;
+
+typedef HaikuRectangle RECT_T;
+
+#else
+
 #include <X11/Xlib.h>
+
 typedef XRectangle RECT_T;
+
+#endif
 
 #define RECT_EQ_X(r1,r2)        ((r1).x==(r2).x && (r1).width==(r2).width)
 
