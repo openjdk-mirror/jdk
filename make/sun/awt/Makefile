@@ -85,7 +85,7 @@ ifeq ($(PLATFORM), haiku)
 # prune should take care of most of it though.
 #
 AUTO_FILES_JAVA_DIRS += sun/hawt sun/lwawt
-AUTO_JAVA_PRUNE += motif X11 xr jules AWTCharset.java
+AUTO_JAVA_PRUNE += motif X11 xr AWTCharset.java
 
 #
 # Files
