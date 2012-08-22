@@ -36,7 +36,7 @@ PRODUCT = sun
 # This re-directs all the class files to a separate location
 CLASSDESTDIR = $(TEMPDIR)/classes
 
-OTHER_JAVACFLAGS += -Xlint:serial,-deprecation -Werror
+OTHER_JAVACFLAGS += -Xlint:serial,-deprecation
 include $(BUILDDIR)/common/Defs.gmk
 
 #

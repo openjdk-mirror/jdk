@@ -60,7 +60,9 @@ OTHER_INCLUDES += \
   -I$(CLASSHDRDIR)/../../../../java/java.nio/nio/CClassHeaders
 
 ifeq ($(PLATFORM), linux)
+ifneq ($(COMPILER_WARNINGS_FATAL),false)
 COMPILER_WARNINGS_FATAL=true
+endif
 #OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -ljava -lnet -lpthread -ldl
 OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -lnio -lnet -lpthread -ldl
 endif

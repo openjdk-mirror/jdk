@@ -30,7 +30,7 @@
 BUILDDIR = ../..
 PACKAGE = sun.tools.native2ascii
 PRODUCT = sun
-OTHER_JAVACFLAGS += -Xlint:serial -Werror
+OTHER_JAVACFLAGS += -Xlint:serial
 include $(BUILDDIR)/common/Defs.gmk
 
 # This program must contain a manifest that defines the execution level
