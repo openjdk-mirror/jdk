@@ -211,6 +211,7 @@ static void PlayBuffer(void* cookie, void* buffer, size_t size,
     if (read < size) {
         // buffer underrun
         // ...
+        memset((UBYTE*)buffer + read, 0, size - read);
         fprintf(stderr, "Buffer underrun occured (%llu/%llu)...\n",
             (long long unsigned)read, (long long unsigned)read);
     }
