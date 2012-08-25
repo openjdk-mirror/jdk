@@ -39,39 +39,40 @@ extern "C" {
  */
 JNIEXPORT void JNICALL
 Java_sun_hawt_HaikuRobot_nativeGetPixels(JNIEnv *env, jclass clazz,
-	jint displayID, jint x, jint y, jint width, jint height,
-	jintArray pixels)
+    jint displayID, jint x, jint y, jint width, jint height, jintArray pixels)
 {
-	if (env->GetArrayLength(pixels) < width * height)
-		return;
+    if (env->GetArrayLength(pixels) < width * height)
+        return;
 
-	jint* pixelData = env->GetIntArrayElements(pixels, NULL);
-	if (pixelData == NULL)
-		return;
+    jint* pixelData = env->GetIntArrayElements(pixels, NULL);
+    if (pixelData == NULL)
+        return;
 
-	screen_id id;
-	id.id = displayID;
-	BScreen screen(id);
-	if (!screen.IsValid())
-    	return;
+    screen_id id;
+    id.id = displayID;
+    BScreen screen(id);
+    if (!screen.IsValid())
+        return;
 
-	BRect bounds(x, y, x + width - 1, y + height - 1);
-	// We allocate our own bitmap to ensure we get the right colour space
-	BBitmap bitmap(BRect(0, 0, width - 1, height - 1), B_RGBA32);
-	if (!bitmap.IsValid())
-		return;
+    BRect bounds(x, y, x + width - 1, y + height - 1);
+    // We allocate our own bitmap to ensure we get the right colour space
+    BBitmap bitmap(BRect(0, 0, width - 1, height - 1), B_RGBA32);
+    if (!bitmap.IsValid())
+        return;
 
-	screen.ReadBitmap(&bitmap, false, &bounds);
-	int32* bitmapData = (int32*)bitmap.Bits();
-	int bytesPerRow = bitmap.BytesPerRow();
+    status_t result = screen.ReadBitmap(&bitmap, false, &bounds);
+    if (result != B_OK)
+        return;
+    uint8* bitmapData = (uint8*)bitmap.Bits();
+    int bytesPerRow = bitmap.BytesPerRow();
 
-	for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
-			// RobotPeer doesn't mention any endianness so I'm just
-			// going to copy the integer value of the pixel
-			*pixelData++ = bitmapData[i + j * bytesPerRow];
-		}
-	}
+    for (int i = 0; i < height; i++) {
+         for (int j = 0; j < width; j++) {
+            // RobotPeer doesn't mention any endianness so I'm just
+            // going to copy the integer value of the pixel
+            *pixelData++ = bitmapData[j * 4 + i * bytesPerRow];
+        }
+    }
 }
 
 }

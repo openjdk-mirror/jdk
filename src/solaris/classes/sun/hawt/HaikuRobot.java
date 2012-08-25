@@ -34,7 +34,7 @@ class HaikuRobot implements RobotPeer {
 	private Robot target;
     private HaikuGraphicsDevice device;
 
-    private native void nativeGetScreenPixels(int displayID, int x, int y,
+    private native void nativeGetPixels(int displayID, int x, int y,
         int width, int height, int[] pixels);
 
     public HaikuRobot(Robot target, GraphicsDevice device) {
@@ -85,7 +85,7 @@ class HaikuRobot implements RobotPeer {
     @Override
     public int[] getRGBPixels(Rectangle bounds) {
         int[] pixels = new int[bounds.width * bounds.height];
-        nativeGetScreenPixels(device.getDisplayID(), bounds.x, bounds.y,
+        nativeGetPixels(device.getDisplayID(), bounds.x, bounds.y,
             bounds.width, bounds.height, pixels);
         return pixels;
     }
