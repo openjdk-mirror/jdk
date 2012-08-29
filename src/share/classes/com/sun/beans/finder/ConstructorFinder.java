@@ -29,6 +29,8 @@ import com.sun.beans.WeakCache;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 
+import sun.reflect.misc.ReflectUtil;
+
 /**
  * This utility class provides {@code static} methods
  * to find a public constructor with specified parameter types
@@ -61,7 +63,8 @@ public final class ConstructorFinder extends AbstractFinder<Constructor<?>> {
         if (Modifier.isAbstract(type.getModifiers())) {
             throw new NoSuchMethodException("Abstract class cannot be instantiated");
         }
-        if (!Modifier.isPublic(type.getModifiers())) {
+        if (!ReflectUtil.isPackageAccessible(type)
+	    || !Modifier.isPublic(type.getModifiers())) {
             throw new NoSuchMethodException("Class is not accessible");
         }
         PrimitiveWrapperMap.replacePrimitivesWithWrappers(args);

@@ -33,6 +33,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
+import sun.reflect.misc.ReflectUtil;
+
 /**
  * This utility class provides {@code static} methods
  * to find a public method with specified name and parameter types
@@ -120,7 +122,8 @@ public final class MethodFinder extends AbstractFinder<Method> {
      */
     public static Method findAccessibleMethod(Method method) throws NoSuchMethodException {
         Class<?> type = method.getDeclaringClass();
-        if (Modifier.isPublic(type.getModifiers())) {
+        if (ReflectUtil.isPackageAccessible(type)
+	    && Modifier.isPublic(type.getModifiers())) {
             return method;
         }
         if (Modifier.isStatic(method.getModifiers())) {

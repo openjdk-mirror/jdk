@@ -27,6 +27,8 @@ package com.sun.beans.finder;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
+import sun.reflect.misc.ReflectUtil;
+
 /**
  * This utility class provides {@code static} methods
  * to find a public field with specified name
@@ -56,7 +58,8 @@ public final class FieldFinder {
         if (!Modifier.isPublic(field.getModifiers())) {
             throw new NoSuchFieldException("Field '" + name + "' is not public");
         }
-        if (!Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
+        if (!ReflectUtil.isPackageAccessible(field.getDeclaringClass()) ||
+	    !Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
             throw new NoSuchFieldException("Field '" + name + "' is not accessible");
         }
         return field;
