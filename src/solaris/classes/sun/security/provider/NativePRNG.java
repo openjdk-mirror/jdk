@@ -29,6 +29,7 @@ import java.io.*;
 
 import java.security.*;
 import java.security.SecureRandom;
+import sun.security.action.GetPropertyAction;
 
 /**
  * Native PRNG implementation for Solaris/Linux. It interacts with
@@ -161,11 +162,18 @@ public final class NativePRNG extends SecureRandomSpi {
         // mutex lock for setSeed()
         private final Object LOCK_SET_SEED = new Object();
 
+        // we can't write /dev/random on Haiku
+        private final boolean isHaiku;
+
         // constructor, called only once from initIO()
         private RandomIO(File randomFile, File urandomFile) throws IOException {
             randomIn = new FileInputStream(randomFile);
             urandomIn = new FileInputStream(urandomFile);
             urandomBuffer = new byte[BUFFER_SIZE];
+
+            String osname = AccessController
+                .doPrivileged(new GetPropertyAction("os.name"));
+            isHaiku = osname.equals("Haiku");
         }
 
         // get the SHA1PRNG for mixing
@@ -242,7 +250,7 @@ public final class NativePRNG extends SecureRandomSpi {
                         }
                     });
                 }
-                if (randomOut != null) {
+                if (randomOut != null && !isHaiku) {
                     try {
                         randomOut.write(seed);
                     } catch (IOException e) {
