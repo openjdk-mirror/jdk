@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -23,17 +21,35 @@
  * questions.
  */
 
-package sun.nio.fs;
+/*
+ * @test
+ * @bug 7186794
+ * @summary Tests setter in the super class
+ * @author Sergey Malenkov
+ */
 
-import java.nio.file.FileSystems;
-import java.nio.file.spi.FileTypeDetector;
-import java.nio.file.spi.FileSystemProvider;
+import java.util.List;
 
-public class DefaultFileTypeDetector {
-    private DefaultFileTypeDetector() { }
+public class Test7186794 {
 
-    public static FileTypeDetector create() {
-        FileSystemProvider provider = FileSystems.getDefault().provider();
-        return ((UnixFileSystemProvider)provider).getFileTypeDetector();
+    public static void main(String[] args) {
+        if (null == BeanUtils.findPropertyDescriptor(MyBean.class, "value").getWriteMethod()) {
+            throw new Error("The property setter is not found");
+        }
+    }
+
+    public static class BaseBean {
+
+        protected List<String> value;
+
+        public void setValue(List<String> value) {
+            this.value = value;
+        }
+    }
+
+    public static class MyBean extends BaseBean {
+        public List<String> getValue() {
+            return super.value;
+        }
     }
 }

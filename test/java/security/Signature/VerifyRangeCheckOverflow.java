@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012 Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,37 +22,35 @@
  */
 
 /*
- * @test
- * @bug 7189112
- * @summary Tests overridden getter
- * @author Sergey Malenkov
+ * Portions Copyright (c) 2012 IBM Corporation
  */
 
-public class Test7189112 {
+/* @test
+ * @bug 7172149
+ * @summary AIOOBE from Signature.verify after integer overflow
+ * @author Jonathan Lu
+ */
 
-    public static void main(String[] args) {
-        if (null == BeanUtils.findPropertyDescriptor(MyBean.class, "value").getWriteMethod()) {
-            throw new Error("The property setter is not found");
-        }
-    }
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PublicKey;
+import java.security.Signature;
 
-    public static class BaseBean {
+public class VerifyRangeCheckOverflow {
 
-        private Object value;
+    public static void main(String[] args) throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
+        keyPairGenerator.initialize(1024);
+        KeyPair keys = keyPairGenerator.generateKeyPair();
+        PublicKey publicKey = keys.getPublic();
+        byte[] sigBytes = new byte[100];
 
-        public Object getValue() {
-            return this.value;
-        }
-
-        public void setValue(Object value) {
-            this.value = value;
-        }
-    }
-
-    public static class MyBean extends BaseBean {
-        @Override
-        public String getValue() {
-            return (String) super.getValue();
+        Signature signature = Signature.getInstance("SHA1withDSA");
+        signature.initVerify(publicKey);
+        try {
+            signature.verify(sigBytes, Integer.MAX_VALUE, 1);
+        } catch (IllegalArgumentException ex) {
+            // Expected
         }
     }
 }
