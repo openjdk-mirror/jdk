@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,7 +33,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
-import sun.reflect.misc.ReflectUtil;
+import static sun.reflect.misc.ReflectUtil.isPackageAccessible;
 
 /**
  * This utility class provides {@code static} methods
@@ -122,8 +122,7 @@ public final class MethodFinder extends AbstractFinder<Method> {
      */
     public static Method findAccessibleMethod(Method method) throws NoSuchMethodException {
         Class<?> type = method.getDeclaringClass();
-        if (ReflectUtil.isPackageAccessible(type)
-	    && Modifier.isPublic(type.getModifiers())) {
+        if (Modifier.isPublic(type.getModifiers()) && isPackageAccessible(type)) {
             return method;
         }
         if (Modifier.isStatic(method.getModifiers())) {

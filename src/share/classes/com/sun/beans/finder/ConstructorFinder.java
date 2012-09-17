@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,7 @@ import com.sun.beans.WeakCache;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 
-import sun.reflect.misc.ReflectUtil;
+import static sun.reflect.misc.ReflectUtil.isPackageAccessible;
 
 /**
  * This utility class provides {@code static} methods
@@ -63,8 +63,7 @@ public final class ConstructorFinder extends AbstractFinder<Constructor<?>> {
         if (Modifier.isAbstract(type.getModifiers())) {
             throw new NoSuchMethodException("Abstract class cannot be instantiated");
         }
-        if (!ReflectUtil.isPackageAccessible(type)
-	    || !Modifier.isPublic(type.getModifiers())) {
+        if (!Modifier.isPublic(type.getModifiers()) || !isPackageAccessible(type)) {
             throw new NoSuchMethodException("Class is not accessible");
         }
         PrimitiveWrapperMap.replacePrimitivesWithWrappers(args);
