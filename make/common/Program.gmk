@@ -95,7 +95,7 @@ ifeq ($(PLATFORM), macosx)
   endif # SYSTEM_ZLIB
 endif # PLATFORM
 
-ifneq (,$(findstring $(PLATFORM), linux solaris aix)) # UNIX systems
+ifneq (,$(findstring $(PLATFORM), linux solaris)) # UNIX systems
   LDFLAGS += -L $(LIBDIR)/$(LIBARCH)/jli
   OTHER_LDLIBS += -ljli
   ifeq ($(PLATFORM), solaris)
@@ -113,7 +113,14 @@ ifneq (,$(findstring $(PLATFORM), linux solaris aix)) # UNIX systems
     LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../lib/$(LIBARCH)/jli
     LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../jre/lib/$(LIBARCH)/jli
   endif # PLATFORM LINUX
-endif # PLATFORM linux solaris aix
+endif # PLATFORM linux solaris
+
+# AIX can not handle $ORIGIN so we have to link with the static JLI version (libjli.a)
+# (see make/java/jli/Makfile for where we build libjli.a)
+ifeq ($(PLATFORM), aix)
+  LDFLAGS += -L$(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/static
+  OTHER_LDLIBS += -ljli
+endif # PLATFORM aix
 
 ifeq ($(PLATFORM), windows)
   JLI_LCF = $(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/jli.lcf

@@ -83,7 +83,7 @@ ifeq ($(PLATFORM), macosx)
 				  -framework JavaNativeFoundation
 else ifneq ($(PLATFORM), windows)
   CFLAGS += -DWITH_X11
-  ifeq ($(PLATFORM), macosx))
+  ifeq ($(PLATFORM), macosx)
     OTHER_LDLIBS += -liconv
     CPPFLAGS += -I$(OPENWIN_HOME)/include \
                 -I$(OPENWIN_HOME)/include/X11/extensions

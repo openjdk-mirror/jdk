@@ -91,7 +91,7 @@ SORT           = $(UNIXCOMMAND_PATH)sort
 STRIP          = $(USRBIN_PATH)strip
 TAIL 	       = $(USRBIN_PATH)tail
 
-TAR            = $(UNIXCOMMAND_PATH)tar
+TAR            = tar # We need GNU TAR which must be found trough PATH (may be in /opt/freeware/bin or /usr/local/bin)
 
 TEST	       = $(USRBIN_PATH)test
 TOUCH          = $(UNIXCOMMAND_PATH)touch
@@ -102,7 +102,7 @@ UNIQ           = $(USRBIN_PATH)uniq
 UNZIPSFX       = $(USRBIN_PATH)unzipsfx
 YACC           = $(USRBIN_PATH)yacc
 
-ZIPEXE         = $(UNIXCOMMAND_PATH)zip
+ZIPEXE         = zip # Must be found trough PATH (may be in /opt/freeware/bin or /usr/local/bin)
 
 OS_VERSION  = $(shell $(UNAME) -v)
 OS_NAME	    = aix
@@ -138,17 +138,14 @@ ifndef OPENJDK
   endif
 endif
 
-# SAPJVM: Set the source for the platform dependent sources of express
-SAPJVMEXPRESS_PLATFORM_SRC=$(JDK_TOPDIR)/../../common/j2se/src/solaris
-
 # platform specific include files
 PLATFORM_INCLUDE_NAME = $(PLATFORM)
 PLATFORM_INCLUDE      = $(INCLUDEDIR)/$(PLATFORM_INCLUDE_NAME)
 
-# SAPJVM: OBJECT_SUFFIX, LIBRARY_SUFFIX, EXE_SUFFICS etc. are set in
+# OBJECT_SUFFIX, LIBRARY_SUFFIX, EXE_SUFFICS etc. are set in
 # j2se/make/common/shared/Platform.gmk . Just override those which differ for AIX.
 # suffix used for make dependencies files.
-# SAPJVM AIX: -qmakedep outputs .u, not .d 
+# -qmakedep outputs .u, not .d 
 override DEPEND_SUFFIX = u
 # suffix used for lint files
 LINT_SUFFIX = ln
@@ -202,21 +199,17 @@ PIC_CODE_LARGE = -qpic=large
 PIC_CODE_SMALL = -qpic=small
 GLOBAL_KPIC = $(PIC_CODE_LARGE)
 CFLAGS_COMMON   += $(GLOBAL_KPIC) $(GCC_WARNINGS)
-# SAPJVM:
 # save compiler options into object file
 CFLAGS_COMMON += -qsaveopt 
 
-# SAPJVM
 # preserve absolute source file infos in debug infos
 CFLAGS_COMMON += -qfullpath
 
-# SAPJVM
 # We want to be able to debug an opt build as well.
 CFLAGS_OPT      = -g $(POPT)
 CFLAGS_DBG      = -g
 
 CXXFLAGS_COMMON = $(GLOBAL_KPIC) -DCC_NOEX $(GCC_WARNINGS)
-# SAPJVM
 # We want to be able to debug an opt build as well.
 CXXFLAGS_OPT	= -g $(POPT)
 CXXFLAGS_DBG	= -g
@@ -236,11 +229,11 @@ else
   CPP_ARCH_FLAGS += -D_$(ARCH)_
 endif
 
-# SAPJVM. turn `=' into `+='.
+# turn `=' into `+='.
 CPPFLAGS_COMMON += -D$(ARCH) -DARCH='"$(ARCH)"' -DAIX $(VERSION_DEFINES) \
 		  -D_LARGEFILE64_SOURCE -D_GNU_SOURCE -D_REENTRANT
 
-# SAPJVM: AIX port: zip lib
+# zip lib
 CPPFLAGS_COMMON +=  -DSTDC
 
 # turn on USE_PTHREADS
@@ -250,17 +243,16 @@ CFLAGS_COMMON   += -DUSE_PTHREADS
 CFLAGS_COMMON += -q64
 CPPFLAGS_COMMON += -q64
 
-# SAPJVM. define PPC64
+# define PPC64
 CFLAGS_COMMON += -DPPC64
 CPPFLAGS_COMMON += -DPPC64
 
-# SAPJVM
 LDFLAGS_COMMON += -b64
 
-# SAPJVM: enable dynamic runtime linking & strip the absolute paths from the coff section
+# enable dynamic runtime linking & strip the absolute paths from the coff section
 LDFLAGS_COMMON += -brtl -bnolibpath
 
-# SAPJVM: Additional link parameters for AIX
+# Additional link parameters for AIX
 LDFLAGS_COMMON += -liconv
 
 CPPFLAGS_OPT    =
@@ -270,7 +262,6 @@ LDFLAGS_COMMON += -L$(LIBDIR)/$(LIBARCH)
 LDFLAGS_OPT     =
 LDFLAGS_DBG     =
 
-# SAPJVM
 # Export symbols
 OTHER_LDFLAGS += -bexpall
 
@@ -282,7 +273,6 @@ ifeq ($(VARIANT), OPT)
     ifneq ($(DEBUG_BINARIES), true)
       # Debug 'strip -g' leaves local function Elf symbols (better stack
       # traces)
-      # SAPJVM
       # We want to be able to debug an opt build as well.
       # POST_STRIP_PROCESS = $(STRIP) -g
     endif

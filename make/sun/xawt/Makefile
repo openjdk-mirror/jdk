@@ -63,9 +63,16 @@ LDFLAGS += -lpthread
 dummy := $(shell $(MKDIR) -p $(LIB_LOCATION))
 endif
 
-ifeq ($(PLATFORM), macosx))
+ifeq ($(PLATFORM), macosx)
 LDFLAGS += -pthread
 dummy := $(shell $(MKDIR) -p $(LIB_LOCATION))
+endif
+
+# The Xrender headers/libraries will most probaly be under /opt/freeware on AIX
+# This could/should be made configurable with ALT_XRENDER_HEADERS_PATH/ALT_XRENDER_LIB_PATH 
+ifeq ($(PLATFORM), aix)
+LDFLAGS += -L/opt/freeware/lib
+CPPFLAGS += -I/opt/freeware/include
 endif
 
 # Since this library will be living in a subdirectory below the other libraries
