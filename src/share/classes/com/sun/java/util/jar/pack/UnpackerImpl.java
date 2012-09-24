@@ -81,7 +81,8 @@ public class UnpackerImpl extends TLGlobals implements Pack200.Unpacker {
      * Get the set of options for the pack and unpack engines.
      * @return A sorted association of option key strings to option values.
      */
-    public SortedMap<String, String> properties() {
+    @SuppressWarnings("unchecked")
+    public SortedMap properties() {
         return props;
     }
 

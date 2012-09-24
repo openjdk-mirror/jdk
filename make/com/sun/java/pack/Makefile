@@ -32,7 +32,6 @@ PACKAGE = com.sun.java.util.jar.pack
 LIBRARY = unpack
 PRODUCT = sun
 PGRM = unpack200
-JAVAC_MAX_WARNINGS=true
 include $(BUILDDIR)/common/Defs.gmk
 
 CPLUSPLUSLIBRARY=true

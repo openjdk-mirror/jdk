@@ -27,6 +27,7 @@ package com.sun.java.util.jar.pack;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -46,8 +47,8 @@ import java.util.jar.Pack200;
  * Control block for publishing Pack200 options to the other classes.
  */
 
-final class PropMap implements SortedMap<String, String>  {
-    private final TreeMap<String, String> theMap = new TreeMap<>();;
+final class PropMap implements SortedMap<Object, Object>  {
+    private final TreeMap<Object, Object> theMap = new TreeMap<>();;
     private final List<PropertyChangeListener> listenerList = new ArrayList<>(1);
 
     void addListener(PropertyChangeListener listener) {
@@ -67,12 +68,12 @@ final class PropMap implements SortedMap<String, String>  {
     }
 
     // Override:
-    public String put(String key, String value) {
-        String oldValue = theMap.put(key, value);
+    public Object put(Object key, Object value) {
+        Object oldValue = theMap.put(key, value);
         if (value != oldValue && !listenerList.isEmpty()) {
             // Post the property change event.
             PropertyChangeEvent event =
-                new PropertyChangeEvent(this, key,
+                new PropertyChangeEvent(this, (String) key,
                                         oldValue, value);
             for (PropertyChangeListener listener : listenerList) {
                 listener.propertyChange(event);
@@ -84,7 +85,7 @@ final class PropMap implements SortedMap<String, String>  {
     // All this other stuff is private to the current package.
     // Outide clients of Pack200 do not need to use it; they can
     // get by with generic SortedMap functionality.
-    private static Map<String, String> defaultProps;
+    private static Map<Object, Object> defaultProps;
     static {
         Properties props = new Properties();
 
@@ -140,9 +141,7 @@ final class PropMap implements SortedMap<String, String>  {
             }
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        HashMap<String, String> temp = new HashMap(props);  // shrink to fit
-        defaultProps = temp;
+        defaultProps = (new HashMap<>(props));  // shrink to fit
     }
 
     PropMap() {
@@ -152,7 +151,7 @@ final class PropMap implements SortedMap<String, String>  {
     // Return a view of this map which includes only properties
     // that begin with the given prefix.  This is easy because
     // the map is sorted, and has a subMap accessor.
-    SortedMap<String, String> prefixMap(String prefix) {
+    SortedMap<Object, Object> prefixMap(String prefix) {
         int len = prefix.length();
         if (len == 0)
             return this;
@@ -163,7 +162,7 @@ final class PropMap implements SortedMap<String, String>  {
     }
 
     String getProperty(String s) {
-        return get(s);
+        return (String) get(s);
     }
     String getProperty(String s, String defaultVal) {
         String val = getProperty(s);
@@ -172,13 +171,13 @@ final class PropMap implements SortedMap<String, String>  {
         return val;
     }
     String setProperty(String s, String val) {
-        return put(s, val);
+        return (String) put(s, val);
     }
 
     // Get sequence of props for "prefix", and "prefix.*".
-    List<String> getProperties(String prefix) {
-        Collection<String> values = prefixMap(prefix).values();
-        List<String> res = new ArrayList<>(values.size());
+    List getProperties(String prefix) {
+        Collection<Object> values = prefixMap(prefix).values();
+        List<Object> res = new ArrayList<>(values.size());
         res.addAll(values);
         while (res.remove(null));
         return res;
@@ -242,8 +241,8 @@ final class PropMap implements SortedMap<String, String>  {
     }
     void list(PrintWriter out) {
         out.println("#"+Utils.PACK_ZIP_ARCHIVE_MARKER_COMMENT+"[");
-        Set<Map.Entry<String, String>> defaults = defaultProps.entrySet();
-        for (Map.Entry<String, String> e : theMap.entrySet()) {
+        Set defaults = defaultProps.entrySet();
+        for (Map.Entry e : theMap.entrySet()) {
             if (defaults.contains(e))  continue;
             out.println("  " + e.getKey() + " = " + e.getValue());
         }
@@ -271,17 +270,18 @@ final class PropMap implements SortedMap<String, String>  {
     }
 
     @Override
-    public String get(Object key) {
+    public Object get(Object key) {
         return theMap.get(key);
     }
 
     @Override
-    public String remove(Object key) {
+    public Object remove(Object key) {
        return theMap.remove(key);
     }
 
     @Override
-    public void putAll(Map<? extends String, ? extends String> m) {
+    @SuppressWarnings("unchecked")
+    public void putAll(Map m) {
        theMap.putAll(m);
     }
 
@@ -291,47 +291,48 @@ final class PropMap implements SortedMap<String, String>  {
     }
 
     @Override
-    public Set<String> keySet() {
+    public Set<Object> keySet() {
        return theMap.keySet();
     }
 
     @Override
-    public Collection<String> values() {
+    public Collection<Object> values() {
        return theMap.values();
     }
 
     @Override
-    public Set<Map.Entry<String, String>> entrySet() {
+    public Set<Map.Entry<Object, Object>> entrySet() {
         return theMap.entrySet();
     }
 
     @Override
-    public Comparator<? super String> comparator() {
-        return theMap.comparator();
+    @SuppressWarnings("unchecked")
+    public Comparator<Object> comparator() {
+        return (Comparator<Object>) theMap.comparator();
     }
 
     @Override
-    public SortedMap<String, String> subMap(String fromKey, String toKey) {
+    public SortedMap<Object, Object> subMap(Object fromKey, Object toKey) {
         return theMap.subMap(fromKey, toKey);
     }
 
     @Override
-    public SortedMap<String, String> headMap(String toKey) {
+    public SortedMap<Object, Object> headMap(Object toKey) {
         return theMap.headMap(toKey);
     }
 
     @Override
-    public SortedMap<String, String> tailMap(String fromKey) {
+    public SortedMap<Object, Object> tailMap(Object fromKey) {
         return theMap.tailMap(fromKey);
     }
 
     @Override
-    public String firstKey() {
+    public Object firstKey() {
         return theMap.firstKey();
     }
 
     @Override
-    public String lastKey() {
+    public Object lastKey() {
        return theMap.lastKey();
     }
 }

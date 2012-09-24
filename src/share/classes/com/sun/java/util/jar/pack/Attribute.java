@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -45,7 +45,7 @@ import static com.sun.java.util.jar.pack.Constants.*;
  * attribute layouts.
  * @author John Rose
  */
-class Attribute implements Comparable<Attribute> {
+class Attribute implements Comparable {
     // Attribute instance fields.
 
     Layout def;     // the name and format of this attr
@@ -99,7 +99,8 @@ class Attribute implements Comparable<Attribute> {
         return this == def.canon;
     }
 
-    public int compareTo(Attribute that) {
+    public int compareTo(Object o) {
+        Attribute that = (Attribute) o;
         return this.def.compareTo(that.def);
     }
 
@@ -446,7 +447,7 @@ class Attribute implements Comparable<Attribute> {
      *  and format.  The formats are specified in a "little language".
      */
     public static
-    class Layout implements Comparable<Layout> {
+    class Layout implements Comparable {
         int ctype;       // attribute context type, e.g., ATTR_CONTEXT_CODE
         String name;     // name of attribute
         boolean hasRefs; // this kind of attr contains CP refs?
@@ -539,7 +540,8 @@ class Attribute implements Comparable<Attribute> {
                     * 37 + layout.hashCode())
                     * 37 + ctype);
         }
-        public int compareTo(Layout that) {
+        public int compareTo(Object o) {
+            Layout that = (Layout) o;
             int r;
             r = this.name.compareTo(that.name);
             if (r != 0)  return r;
@@ -661,8 +663,6 @@ class Attribute implements Comparable<Attribute> {
 
     public static
     class FormatException extends IOException {
-        private static final long serialVersionUID = -2542243830788066513L;
-
         private int ctype;
         private String name;
         String layout;
