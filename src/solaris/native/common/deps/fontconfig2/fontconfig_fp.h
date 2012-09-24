@@ -27,9 +27,6 @@
 #define __FONTCONFIG_FP_H__
 
 #include <dlfcn.h>
-#if !(defined(__linux__) || defined(MACOSX))
-#include <link.h>
-#endif
 
 #include <fontconfig/fontconfig.h>
 #include <jvm_md.h>

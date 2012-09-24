@@ -255,7 +255,6 @@ FILES_java += \
 	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \
 	sun/nio/ch/UnixAsynchronousSocketChannelImpl.java \
 	\
-	sun/nio/fs/GnomeFileTypeDetector.java \
 	sun/nio/fs/BsdFileStore.java \
 	sun/nio/fs/BsdFileSystem.java \
 	sun/nio/fs/BsdFileSystemProvider.java \
@@ -287,7 +286,6 @@ FILES_c += \
 	UnixAsynchronousServerSocketChannelImpl.c \
 	UnixAsynchronousSocketChannelImpl.c \
 	\
-	GnomeFileTypeDetector.c \
 	BsdNativeDispatcher.c \
 	UnixCopyFile.c \
 	UnixNativeDispatcher.c \
@@ -303,7 +301,6 @@ FILES_export += \
 	sun/nio/ch/UnixAsynchronousServerSocketChannelImpl.java \
 	sun/nio/ch/UnixAsynchronousSocketChannelImpl.java \
 	\
-	sun/nio/fs/GnomeFileTypeDetector.java \
 	sun/nio/fs/BsdNativeDispatcher.java \
 	sun/nio/fs/UnixCopyFile.java \
 	sun/nio/fs/UnixNativeDispatcher.java
