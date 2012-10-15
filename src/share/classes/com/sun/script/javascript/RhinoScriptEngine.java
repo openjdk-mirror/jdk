@@ -149,10 +149,6 @@ public final class RhinoScriptEngine extends AbstractScriptEngine
             accCtxt = AccessController.getContext();
         }
 
-        if (System.getSecurityManager() != null) {
-            accCtxt = AccessController.getContext();
-        }
-
         Context cx = enterContext();
         try {
             topLevel = new RhinoTopLevel(cx, this);
