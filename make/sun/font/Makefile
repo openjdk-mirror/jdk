@@ -188,7 +188,7 @@ ifeq ($(PLATFORM), solaris)
 else
 ifeq ($(PLATFORM), aix)
   LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
-  OTHER_LDLIBS += -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt -lc $(LIBM) $(LIBCXX)
+  OTHER_LDLIBS += -G -lawt -lc $(LIBM) $(LIBCXX)
 else # PLATFORM is linux
  OTHER_LDLIBS  += -lawt $(LIBM) $(LIBCXX)
   ifeq ("$(CC_VER_MAJOR)", "3")

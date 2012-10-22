@@ -62,6 +62,11 @@
 #define readdir64_r readdir_r
 #endif
 
+/* Needed for strerror */
+#if defined(_AIX) || defined (__hpux__)
+#include <string.h>
+#endif
+
 #include "jni.h"
 #include "jni_util.h"
 #include "jlong.h"
@@ -101,6 +106,11 @@ static jfieldID attrs_f_frsize;
 static jfieldID attrs_f_blocks;
 static jfieldID attrs_f_bfree;
 static jfieldID attrs_f_bavail;
+
+/* Needed for getmntctl */
+#ifdef _AIX
+static jclass entry_cls;
+#endif
 
 static jfieldID entry_name;
 static jfieldID entry_dir;
@@ -209,6 +219,11 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
     entry_options = (*env)->GetFieldID(env, clazz, "opts", "[B");
     entry_dev = (*env)->GetFieldID(env, clazz, "dev", "J");
 
+    /* UnixMountEntry class is needed for getmntctl */
+#ifdef _AIX
+    entry_cls = (*env)->NewGlobalRef(env, clazz);
+#endif
+
     /* system calls that might not be available at run time */
 
 #if (defined(__solaris__) && defined(_LP64)) || defined(_ALLBSD_SOURCE)
@@ -266,7 +281,13 @@ Java_sun_nio_fs_UnixNativeDispatcher_strerror(JNIEnv* env, jclass this, jint err
     jsize len;
     jbyteArray bytes;
 
+    /* strerror is not thread-safe on AIX */
+#ifdef _AIX
+    char buffer[256];
+    msg = (strerror_r((int)error, buffer, 256) == 0) ? buffer : "Error while calling strerror_r";
+#else
     msg = strerror((int)error);
+#endif
     len = strlen(msg);
     bytes = (*env)->NewByteArray(env, len);
     if (bytes != NULL) {
@@ -624,18 +645,35 @@ Java_sun_nio_fs_UnixNativeDispatcher_closedir(JNIEnv* env, jclass this, jlong di
 
 JNIEXPORT jbyteArray JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_readdir(JNIEnv* env, jclass this, jlong value) {
+#ifdef _AIX
+    struct dirent* result;
+    struct {
+        struct dirent buf;
+        char name_extra[PATH_MAX + 1 - sizeof result->d_name];
+    } entry;
+    struct dirent* ptr = &entry.buf;
+#else
     struct dirent64* result;
     struct {
         struct dirent64 buf;
         char name_extra[PATH_MAX + 1 - sizeof result->d_name];
     } entry;
     struct dirent64* ptr = &entry.buf;
+#endif
     int res;
     DIR* dirp = jlong_to_ptr(value);
 
     /* EINTR not listed as a possible error */
     /* TDB: reentrant version probably not required here */
     res = readdir64_r(dirp, ptr, &result);
+
+    /* AIX returns EBADF for directory stream end which is no error. */
+#ifdef _AIX
+    if (res != 0) {
+        res = (result == NULL && res == EBADF) ? 0 : errno;
+    }
+#endif
+
     if (res != 0) {
         throwUnixException(env, res);
         return NULL;
@@ -839,6 +877,17 @@ Java_sun_nio_fs_UnixNativeDispatcher_statvfs0(JNIEnv* env, jclass this,
     if (err == -1) {
         throwUnixException(env, errno);
     } else {
+        /* Number of blocks (f_blocks) may be too big for signed long on AIX for /proc. */
+#ifdef _AIX
+        if (buf.f_blocks == ULONG_MAX) {
+            buf.f_blocks = 0;
+        }
+        /* Number of free or available blocks can never exceed total number of blocks (seen on /QOpt as400) */
+        if (buf.f_blocks == 0) {
+        	buf.f_bfree = 0;
+            buf.f_bavail = 0;
+        }
+#endif
         (*env)->SetLongField(env, attrs, attrs_f_frsize, long_to_jlong(buf.f_frsize));
         (*env)->SetLongField(env, attrs, attrs_f_blocks, long_to_jlong(buf.f_blocks));
         (*env)->SetLongField(env, attrs, attrs_f_bfree,  long_to_jlong(buf.f_bfree));
@@ -915,7 +964,12 @@ Java_sun_nio_fs_UnixNativeDispatcher_getpwuid(JNIEnv* env, jclass this, jint uid
         if (res != 0 || p == NULL || p->pw_name == NULL || *(p->pw_name) == '\0') {
             /* not found or error */
             if (errno == 0)
-                errno = ENOENT;
+	        /* getpwuid_r returns ESRCH if user does not exist on AIX */
+#ifdef _AIX
+	        errno = ESRCH;
+#else
+	        errno = ENOENT;
+#endif
             throwUnixException(env, errno);
         } else {
             jsize len = strlen(p->pw_name);
@@ -970,7 +1024,12 @@ Java_sun_nio_fs_UnixNativeDispatcher_getgrgid(JNIEnv* env, jclass this, jint gid
                 retry = 1;
             } else {
                 if (errno == 0)
+		    /* getgrgid_r returns ESRCH if group does not exist on AIX */
+#ifdef _AIX
+                    errno = ESRCH;
+#else
                     errno = ENOENT;
+#endif
                 throwUnixException(env, errno);
             }
         } else {
@@ -1018,7 +1077,12 @@ Java_sun_nio_fs_UnixNativeDispatcher_getpwnam0(JNIEnv* env, jclass this,
 
         if (res != 0 || p == NULL || p->pw_name == NULL || *(p->pw_name) == '\0') {
             /* not found or error */
+            /* getpwnam_r returns ESRCH if user does not exist on AIX */
+#ifdef _AIX
+            if (errno != 0 && errno != ESRCH)
+#else
             if (errno != 0 && errno != ENOENT)
+#endif
                 throwUnixException(env, errno);
         } else {
             uid = p->pw_uid;
@@ -1064,7 +1128,12 @@ Java_sun_nio_fs_UnixNativeDispatcher_getgrnam0(JNIEnv* env, jclass this,
         retry = 0;
         if (res != 0 || g == NULL || g->gr_name == NULL || *(g->gr_name) == '\0') {
             /* not found or error */
+            /* getgrnam_r returns ESRCH if group does not exist on AIX */
+#ifdef _AIX
+            if (errno != 0 && errno != ESRCH) {
+#else
             if (errno != 0 && errno != ENOENT) {
+#endif
                 if (errno == ERANGE) {
                     /* insufficient buffer size so need larger buffer */
                     buflen += ENT_BUF_SIZE;
@@ -1088,6 +1157,10 @@ JNIEXPORT jint JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_getextmntent(JNIEnv* env, jclass this,
     jlong value, jobject entry)
 {
+/* AIX uses getmntctl instead of this method. */
+#ifdef _AIX
+    return 0;
+#else
 #ifdef __solaris__
     struct extmnttab ent;
 #elif defined(_ALLBSD_SOURCE)
@@ -1184,4 +1257,157 @@ again:
         (*env)->SetLongField(env, entry, entry_dev, (jlong)dev);
 
     return 0;
+#endif
+}
+
+/* Special implementation of getextmntent that returns all entries at once */
+JNIEXPORT jobjectArray JNICALL
+Java_sun_nio_fs_UnixNativeDispatcher_getmntctl(JNIEnv* env, jclass this)
+{
+#ifndef _AIX
+    return NULL;
+#else
+    int must_free_buf = 0;
+    char stack_buf[1024];
+    char* buffer = stack_buf;
+    size_t buffer_size = 1024;
+    int num_entries;
+    int i;
+    jobjectArray ret;
+    struct vmount * vm;
+
+    for (i = 0; i < 5; i++) {
+        num_entries = mntctl(MCTL_QUERY, buffer_size, buffer);
+        if (num_entries != 0) {
+            break;
+        }
+        if (must_free_buf) {
+            free(buffer);
+        }
+        buffer_size *= 8;
+        buffer = malloc(buffer_size);
+        must_free_buf = 1;
+    }
+    /* Treat zero entries like errors. */
+    if (num_entries <= 0) {
+        if (must_free_buf) {
+            free(buffer);
+        }
+        throwUnixException(env, errno);
+        return NULL;
+    }
+    ret = (*env)->NewObjectArray(env, num_entries, entry_cls, NULL);
+    if (ret == NULL) {
+        if (must_free_buf) {
+            free(buffer);
+        }
+        return NULL;
+    }
+    vm = (struct vmount*)buffer;
+    for (i = 0; i < num_entries; i++) {
+        jsize len;
+        jbyteArray bytes;
+        const char* fstype;
+        /* We set all relevant attributes so there is no need to call constructor. */
+        jobject entry = (*env)->AllocObject(env, entry_cls);
+        if (entry == NULL) {
+            if (must_free_buf) {
+                free(buffer);
+            }
+            return NULL;
+        }
+        (*env)->SetObjectArrayElement(env, ret, i, entry);
+
+        /* vm->vmt_data[...].vmt_size is 32 bit aligned and also includes NULL byte. */
+        /* Since we only need the characters, it is necessary to check string size manually. */
+        len = strlen((char*)vm + vm->vmt_data[VMT_OBJECT].vmt_off);
+        bytes = (*env)->NewByteArray(env, len);
+        if (bytes == NULL) {
+            if (must_free_buf) {
+                free(buffer);
+            }
+            return NULL;
+        }
+        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)((char *)vm + vm->vmt_data[VMT_OBJECT].vmt_off));
+        (*env)->SetObjectField(env, entry, entry_name, bytes);
+
+        len = strlen((char*)vm + vm->vmt_data[VMT_STUB].vmt_off);
+        bytes = (*env)->NewByteArray(env, len);
+        if (bytes == NULL) {
+            if (must_free_buf) {
+                free(buffer);
+            }
+            return NULL;
+        }
+        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)((char *)vm + vm->vmt_data[VMT_STUB].vmt_off));
+        (*env)->SetObjectField(env, entry, entry_dir, bytes);
+
+        switch (vm->vmt_gfstype) {
+            case MNT_J2:
+                fstype = "jfs2";
+                break;
+            case MNT_NAMEFS:
+                fstype = "namefs";
+                break;
+            case MNT_NFS:
+                fstype = "nfs";
+                break;
+            case MNT_JFS:
+                fstype = "jfs";
+                break;
+            case MNT_CDROM:
+                fstype = "cdrom";
+                break;
+            case MNT_PROCFS:
+                fstype = "procfs";
+                break;
+            case MNT_NFS3:
+                fstype = "nfs3";
+                break;
+            case MNT_AUTOFS:
+                fstype = "autofs";
+                break;
+            case MNT_UDF:
+                fstype = "udfs";
+                break;
+            case MNT_NFS4:
+                fstype = "nfs4";
+                break;
+            case MNT_CIFS:
+                fstype = "smbfs";
+                break;
+            default:
+                fstype = "unknown";
+        }
+        len = strlen(fstype);
+        bytes = (*env)->NewByteArray(env, len);
+        if (bytes == NULL) {
+            if (must_free_buf) {
+                free(buffer);
+            }
+            return NULL;
+        }
+        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)fstype);
+        (*env)->SetObjectField(env, entry, entry_fstype, bytes);
+
+        len = strlen((char*)vm + vm->vmt_data[VMT_ARGS].vmt_off);
+        bytes = (*env)->NewByteArray(env, len);
+        if (bytes == NULL) {
+            if (must_free_buf) {
+                free(buffer);
+            }
+            return NULL;
+        }
+        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)((char *)vm + vm->vmt_data[VMT_ARGS].vmt_off));
+        (*env)->SetObjectField(env, entry, entry_options, bytes);
+
+        /* goto the next vmount structure: */
+        vm = (struct vmount *)((char *)vm + vm->vmt_length);
+    }
+
+    if (must_free_buf) {
+        free(buffer);
+    }
+    return ret;
+#endif
 }

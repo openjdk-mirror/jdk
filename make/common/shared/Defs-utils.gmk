@@ -74,6 +74,10 @@ ifeq ($(PLATFORM),macosx)
   UTILS_DEVTOOL_PATH=$(DEVTOOLS_PATH)
 endif
 
+ifeq ($(PLATFORM),aix)
+  UTILS_CCS_BIN_PATH=$(USRBIN_PATH)
+endif
+
 # Utilities
 ifdef CROSS_COMPILE_ARCH
   AR             = $(COMPILER_PATH)ar

@@ -288,6 +288,11 @@ RequiresSetenv(int wanted, const char *jvmpath) {
     char *dmllp = NULL;
     char *p; /* a utility pointer */
 
+#ifdef AIX
+    /* We always have to set the LD_LIBRARY_PATH on AIX because ld doesn't support $ORIGIN. */
+    return JNI_TRUE;
+#endif
+
     llp = getenv("LD_LIBRARY_PATH");
 #ifdef __solaris__
     dmllp = (CURRENT_DATA_MODEL == 32)

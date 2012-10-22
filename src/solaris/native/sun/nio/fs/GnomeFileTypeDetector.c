@@ -30,7 +30,7 @@
 
 #include <stdlib.h>
 #include <dlfcn.h>
-#ifndef __APPLE__
+#if !defined(_AIX) && !defined(__APPLE__)
 #include <link.h>
 #endif
 

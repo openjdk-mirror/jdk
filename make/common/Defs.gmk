@@ -261,6 +261,11 @@ ifdef PROGRAM
     LDLIBS_COMMON = -pthread
   endif
 
+  # AIX port: do not link launchers (e.g. java, javac) against libjava.so  and libjvm.so
+  ifeq ($(PLATFORM), aix)
+    LDLIBS_COMMON =
+  endif
+
 endif # PROGRAM
 
 LDLIBS_COMMON += $(EXTRA_LIBS)
