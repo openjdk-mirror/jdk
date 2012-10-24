@@ -57,6 +57,7 @@ build: unpacker
 vpath %.cpp $(SHARE_SRC)/native/$(PKGDIR)
 
 ifeq ($(STANDALONE),true)
+ ifneq ($(SYSTEM_ZLIB),true)
   ZIPOBJDIR = $(OUTPUTDIR)/tmp/sun/java.util.zip/zip/$(OBJDIRNAME)
 
   ZIPOBJS =  $(ZIPOBJDIR)/zcrc32.$(OBJECT_SUFFIX) \
@@ -70,14 +71,13 @@ ifeq ($(STANDALONE),true)
 	     $(ZIPOBJDIR)/inftrees.$(OBJECT_SUFFIX) \
 	     $(ZIPOBJDIR)/inffast.$(OBJECT_SUFFIX)
 
-  ifdef USE_SYSTEM_ZLIB
-    OTHER_CXXFLAGS += $(ZLIB_CFLAGS) -DUSE_SYSTEM_ZLIB=1
-    OTHER_LDLIBS += $(ZLIB_LIBS)
-  else
-    ZINCLUDE=-I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
-    OTHER_CXXFLAGS += $(ZINCLUDE)
-    LDDFLAGS += $(ZIPOBJS)
-  endif
+  ZINCLUDE=-I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
+  OTHER_CXXFLAGS += $(ZINCLUDE)
+  LDDFLAGS += $(ZIPOBJS)
+ else
+  OTHER_LDLIBS += $(ZLIB_LIBS)
+  OTHER_CXXFLAGS += $(ZLIB_CFLAGS) -DSYSTEM_ZLIB
+ endif
 else
   OTHER_CXXFLAGS += -DNO_ZLIB -DUNPACK_JNI
   OTHER_LDLIBS += $(JVMLIB)

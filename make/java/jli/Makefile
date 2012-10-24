@@ -46,6 +46,8 @@ include $(BUILDDIR)/common/Defs.gmk
 
 ifndef USE_SYSTEM_ZLIB
   ZIP_SRC = $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
+else # SYSTEM_ZLIB
+  OTHER_CFLAGS += $(ZLIB_CFLAGS)
 endif #SYSTEM_ZLIB
 LAUNCHER_SHARE_SRC = $(SHARE_SRC)/bin
 

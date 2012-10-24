@@ -129,8 +129,8 @@ else
 endif
 CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/splashscreen
 
-ifdef USE_SYSTEM_ZLIB
-  CPPFLAGS += $(ZLIB_CFLAGS)
+ifneq ($(SYSTEM_ZLIB),true)
+  OTHER_CFLAGS += $(ZLIB_CFLAGS)
   OTHER_LDLIBS += $(ZLIB_LIBS)
 else
   CPPFLAGS += -I$(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
