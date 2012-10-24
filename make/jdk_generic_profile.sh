@@ -381,24 +381,6 @@ if [ "${ZERO_BUILD}" = true ] ; then
   fi
 fi
 
-# Export variables for system LCMS
-# LCMS_CFLAGS and LCMS_LIBS tell the compiler how to compile and
-# link against lcms2
-pkgconfig=$(which pkg-config 2>/dev/null)
-if [ -x "${pkgconfig}" ] ; then
-  if [ "${LCMS_CFLAGS}" = "" ] ; then
-    LCMS_CFLAGS=$("${pkgconfig}" --cflags lcms2)
-  fi
-  if [ "${LCMS_LIBS}" = "" ] ; then
-    LCMS_LIBS=$("${pkgconfig}" --libs lcms2)
-  fi
-fi
-if [ "${LCMS_LIBS}" = "" ] ; then
-    LCMS_LIBS="-llcms2"
-fi
-export LCMS_CFLAGS
-export LCMS_LIBS
-
 # Export variables for system zlib
 # ZLIB_CFLAGS and ZLIB_LIBS tell the compiler how to compile and
 # link against zlib
@@ -416,6 +398,24 @@ if [ "${ZLIB_LIBS}" = "" ] ; then
 fi
 export ZLIB_CFLAGS
 export ZLIB_LIBS
+
+# Export variables for system LCMS
+# LCMS_CFLAGS and LCMS_LIBS tell the compiler how to compile and
+# link against lcms2
+pkgconfig=$(which pkg-config 2>/dev/null)
+if [ -x "${pkgconfig}" ] ; then
+  if [ "${LCMS_CFLAGS}" = "" ] ; then
+    LCMS_CFLAGS=$("${pkgconfig}" --cflags lcms2)
+  fi
+  if [ "${LCMS_LIBS}" = "" ] ; then
+    LCMS_LIBS=$("${pkgconfig}" --libs lcms2)
+  fi
+fi
+if [ "${LCMS_LIBS}" = "" ] ; then
+    LCMS_LIBS="-llcms2"
+fi
+export LCMS_CFLAGS
+export LCMS_LIBS
 
 # Export variables for system jpeg
 # JPEG_CFLAGS and JPEG_LIBS tell the compiler how to compile and
@@ -453,7 +453,7 @@ export GIF_LIBS
 
 # IcedTea defaults; use system libraries
 export USE_SYSTEM_LCMS=true
-export USE_SYSTEM_ZLIB=true
+export SYSTEM_ZLIB=true
 export USE_SYSTEM_JPEG=true
 export USE_SYSTEM_PNG=true
 export USE_SYSTEM_GIF=true

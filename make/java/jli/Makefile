@@ -44,7 +44,7 @@ MS_RUNTIME_STATIC = true
 
 include $(BUILDDIR)/common/Defs.gmk
 
-ifndef USE_SYSTEM_ZLIB
+ifneq ($(SYSTEM_ZLIB),true)
   ZIP_SRC = $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 else # SYSTEM_ZLIB
   OTHER_CFLAGS += $(ZLIB_CFLAGS)
@@ -74,23 +74,21 @@ endif # ZERO_BUILD
 #
 # Files to compile.
 #
-FILES_c = \
-	java.c \
-	splashscreen_stubs.c \
-	parse_manifest.c \
-	version_comp.c \
-	wildcard.c \
-	jli_util.c
+FILES_c = java.c \
+          splashscreen_stubs.c \
+          parse_manifest.c \
+          version_comp.c \
+          wildcard.c \
+          jli_util.c
 
-ifndef USE_SYSTEM_ZLIB
-FILES_c += \
-	inflate.c \
-	inftrees.c \
-	inffast.c \
-	zadler32.c \
-	zcrc32.c \
-	zutil.c
-endif
+ifneq ($(SYSTEM_ZLIB),true)
+  FILES_c += inflate.c \
+             inftrees.c \
+             inffast.c \
+             zadler32.c \
+             zcrc32.c \
+             zutil.c
+endif # SYSTEM_ZLIB
 
 # add platform specific files
 ifeq ($(PLATFORM), windows)
@@ -163,7 +161,7 @@ endif # PLATFORM
 
 OTHER_INCLUDES += -I$(LAUNCHER_SHARE_SRC)
 OTHER_INCLUDES += -I$(LAUNCHER_PLATFORM_SRC)
-ifndef USE_SYSTEM_ZLIB
+ifneq ($(SYSTEM_ZLIB),true)
   OTHER_INCLUDES += -I$(ZIP_SRC)
 else # !SYSTEM_ZLIB
   LDLIBS += $(ZLIB_LIBS)
@@ -223,7 +221,7 @@ $(STATIC_LIBRARY): $(STATIC_LIBRARY_DIR)
 library:: $(STATIC_LIBRARY)
 
 vpath %.c $(LAUNCHER_SHARE_SRC) $(LAUNCHER_PLATFORM_SRC)
-ifndef USE_SYSTEM_ZLIB
+ifneq ($(SYSTEM_ZLIB),true)
   vpath %.c $(ZIP_SRC)
 else # !SYSTEM_ZLIB
   #

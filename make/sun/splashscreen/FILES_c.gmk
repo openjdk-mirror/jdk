@@ -32,7 +32,7 @@ FILES_c = \
 	splashscreen_png.c \
 	splashscreen_sys.c
 
-ifndef USE_SYSTEM_ZLIB
+ifneq ($(SYSTEM_ZLIB),true)
   FILES_c += \
 	compress.c \
 	deflate.c \
