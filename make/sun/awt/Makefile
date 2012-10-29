@@ -446,6 +446,25 @@ FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ MAC OS X
 endif # PLATFORM
 
+ifeq ($(PLATFORM), aix)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv AIX
+
+ifdef OPENJDK
+
+FONTCONFIGS_SRC	= $(PLATFORM_SRC)/classes/sun/awt/fontconfigs
+_FONTCONFIGS	= \
+	fontconfig.properties
+else
+
+$(error "Currently we only support the 'OPENJDK' configuration for AIX")
+
+endif
+
+FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AIX
+endif # PLATFORM
+
 FONTCONFIGS     = $(_FONTCONFIGS:%=$(LIBDIR)/%.src)
 BINARYFONTCONFIGS = $(_FONTCONFIGS:%.properties=$(LIBDIR)/%.bfc)
 
