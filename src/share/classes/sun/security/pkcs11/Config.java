@@ -52,6 +52,7 @@ final class Config {
     static final int ERR_HALT       = 1;
     static final int ERR_IGNORE_ALL = 2;
     static final int ERR_IGNORE_LIB = 3;
+    static final int ERR_IGNORE_MULTI_INIT = 4;
 
     // same as allowSingleThreadedModules but controlled via a system property
     // and applied to all providers. if set to false, no SunPKCS11 instances
@@ -980,6 +981,8 @@ final class Config {
             handleStartupErrors = ERR_IGNORE_LIB;
         } else if (val.equals("halt")) {
             handleStartupErrors = ERR_HALT;
+        } else if (val.equals("ignoreMultipleInitialisation")) {
+            handleStartupErrors = ERR_IGNORE_MULTI_INIT;
         } else {
             throw excToken("Invalid value for handleStartupErrors:");
         }
