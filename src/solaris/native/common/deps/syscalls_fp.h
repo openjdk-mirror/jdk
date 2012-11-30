@@ -34,35 +34,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-/* epoll_wait(2) man page */
-
-typedef union epoll_data {
-    void *ptr;
-    int fd;
-    __uint32_t u32;
-    __uint64_t u64;
-} epoll_data_t;
-
-/* x86-64 has same alignment as 32-bit */
-#ifdef __x86_64__
-#define EPOLL_PACKED __attribute__((packed))
-#else
-#define EPOLL_PACKED
-#endif
-
-struct epoll_event {
-    __uint32_t events;  /* Epoll events */
-    epoll_data_t data;  /* User data variable */
-} EPOLL_PACKED;
-
-#ifdef  __cplusplus
-}
-#endif
-
 /**
  * System calls that may not be available at run time.
  */
@@ -77,15 +48,6 @@ typedef int renameat_func(int, const char*, int, const char*);
 typedef int futimesat_func(int, const char *, const struct timeval *);
 typedef DIR* fdopendir_func(int);
 
-/*
- * epoll event notification is new in 2.6 kernel. As the offical build
- * platform for the JDK is on a 2.4-based distribution then we must
- * obtain the addresses of the epoll functions dynamically.
- */
-typedef int (*epoll_create_t)(int size);
-typedef int (*epoll_ctl_t)   (int epfd, int op, int fd, struct epoll_event *event);
-typedef int (*epoll_wait_t)  (int epfd, struct epoll_event *events, int maxevents, int timeout);
-
 extern openat64_func* my_openat64_func;
 extern fstatat64_func* my_fstatat64_func;
 extern unlinkat_func* my_unlinkat_func;
@@ -96,13 +58,9 @@ extern fgetxattr_func* my_fgetxattr_func;
 extern fsetxattr_func* my_fsetxattr_func;
 extern fremovexattr_func* my_fremovexattr_func;
 extern flistxattr_func* my_flistxattr_func;
-extern epoll_create_t epoll_create_func;
-extern epoll_ctl_t    epoll_ctl_func;
-extern epoll_wait_t   epoll_wait_func;
 
 void syscalls_init();
 int atsyscalls_init();
-int epollcalls_init();
 size_t fgetxattr_dl(int fd, const char* name, void* value, size_t size);
 int fsetxattr_dl(int fd, const char* name, void* value, size_t size, int flags);
 int fremovexattr_dl(int fd, const char* name);
@@ -118,7 +76,4 @@ int flistxattr_dl(int fd, char* list, size_t size);
 #define fsetxattr fsetxattr_dl
 #define fremovexattr fremovexattr_dl
 #define flistxattr flistxattr_dl
-#define epoll_create (*epoll_create_func)
-#define epoll_ctl (*epoll_ctl_func)
-#define epoll_wait (*epoll_wait_func) 
 #endif

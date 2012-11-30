@@ -38,9 +38,6 @@ fgetxattr_func* my_fgetxattr_func = NULL;
 fsetxattr_func* my_fsetxattr_func = NULL;
 fremovexattr_func* my_fremovexattr_func = NULL;
 flistxattr_func* my_flistxattr_func = NULL;
-epoll_create_t epoll_create_func = NULL;
-epoll_ctl_t    epoll_ctl_func = NULL;
-epoll_wait_t   epoll_wait_func = NULL;
 
 void syscalls_init()
 {
@@ -81,19 +78,6 @@ int atsyscalls_init()
     }
 
     return -1;
-}
-
-int epollcalls_init()
-{
-    epoll_create_func = (epoll_create_t) dlsym(RTLD_DEFAULT, "epoll_create");
-    epoll_ctl_func    = (epoll_ctl_t)    dlsym(RTLD_DEFAULT, "epoll_ctl");
-    epoll_wait_func   = (epoll_wait_t)   dlsym(RTLD_DEFAULT, "epoll_wait");
-
-    if ((epoll_create_func == NULL) || (epoll_ctl_func == NULL) ||
-        (epoll_wait_func == NULL)) {
-        return -1;
-    }
-    return 0;
 }
 
 size_t fgetxattr_dl(int fd, const char* name, void* value, size_t size)

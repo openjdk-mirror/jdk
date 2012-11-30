@@ -31,14 +31,8 @@
 #include "sun_nio_ch_EPollArrayWrapper.h"
 
 #include <unistd.h>
-#include <sys/resource.h>
 #include <sys/time.h>
-
-#ifdef COMPILE_AGAINST_SYSCALLS
 #include <sys/epoll.h>
-#else
-#include <syscalls_fp.h>
-#endif
 
 #define RESTARTABLE(_cmd, _result) do { \
   do { \
@@ -58,7 +52,7 @@ iepoll(int epfd, struct epoll_event *events, int numfds, jlong timeout)
     start = t.tv_sec * 1000 + t.tv_usec / 1000;
 
     for (;;) {
-        int res = epoll_wait (epfd, events, numfds, timeout);
+        int res = epoll_wait(epfd, events, numfds, timeout);
         if (res < 0 && errno == EINTR) {
             if (remaining >= 0) {
                 gettimeofday(&t, NULL);
@@ -79,10 +73,6 @@ iepoll(int epfd, struct epoll_event *events, int numfds, jlong timeout)
 JNIEXPORT void JNICALL
 Java_sun_nio_ch_EPollArrayWrapper_init(JNIEnv *env, jclass this)
 {
-#ifndef COMPILE_AGAINST_SYSCALLS
-    if (epollcalls_init() < 0)
-        JNU_ThrowInternalError(env, "unable to get address of epoll functions, pre-2.6 kernel?");
-#endif
 }
 
 JNIEXPORT jint JNICALL
@@ -92,21 +82,11 @@ Java_sun_nio_ch_EPollArrayWrapper_epollCreate(JNIEnv *env, jobject this)
      * epoll_create expects a size as a hint to the kernel about how to
      * dimension internal structures. We can't predict the size in advance.
      */
-    int epfd = epoll_create (256);
+    int epfd = epoll_create(256);
     if (epfd < 0) {
        JNU_ThrowIOExceptionWithLastError(env, "epoll_create failed");
     }
     return epfd;
-}
-
-JNIEXPORT jint JNICALL
-Java_sun_nio_ch_EPollArrayWrapper_fdLimit(JNIEnv *env, jclass this)
-{
-    struct rlimit rlp;
-    if (getrlimit(RLIMIT_NOFILE, &rlp) < 0) {
-        JNU_ThrowIOExceptionWithLastError(env, "getrlimit failed");
-    }
-    return (jint)rlp.rlim_max;
 }
 
 JNIEXPORT jint JNICALL
@@ -131,7 +111,7 @@ Java_sun_nio_ch_EPollArrayWrapper_epollCtl(JNIEnv *env, jobject this, jint epfd,
     event.events = events;
     event.data.fd = fd;
 
-    RESTARTABLE(epoll_ctl (epfd, (int)opcode, (int)fd, &event), res);
+    RESTARTABLE(epoll_ctl(epfd, (int)opcode, (int)fd, &event), res);
 
     /*
      * A channel may be registered with several Selectors. When each Selector
@@ -157,7 +137,7 @@ Java_sun_nio_ch_EPollArrayWrapper_epollWait(JNIEnv *env, jobject this,
     int res;
 
     if (timeout <= 0) {           /* Indefinite or no wait */
-        RESTARTABLE(epoll_wait (epfd, events, numfds, timeout), res);
+        RESTARTABLE(epoll_wait(epfd, events, numfds, timeout), res);
     } else {                      /* Bounded wait; bounded restarts */
         res = iepoll(epfd, events, numfds, timeout);
     }

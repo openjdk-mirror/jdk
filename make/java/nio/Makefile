@@ -187,6 +187,9 @@ FILES_c += \
 	UnixNativeDispatcher.c
 
 FILES_java += \
+	sun/nio/ch/EventPortSelectorImpl.java \
+	sun/nio/ch/EventPortSelectorProvider.java \
+	sun/nio/ch/EventPortWrapper.java \
 	sun/nio/fs/SolarisAclFileAttributeView.java \
 	sun/nio/fs/SolarisFileStore.java \
 	sun/nio/fs/SolarisFileSystem.java \
@@ -259,6 +262,9 @@ FILES_java += \
 	sun/nio/fs/BsdFileSystem.java \
 	sun/nio/fs/BsdFileSystemProvider.java \
 	sun/nio/fs/BsdNativeDispatcher.java \
+	sun/nio/fs/MacOSXFileSystemProvider.java \
+	sun/nio/fs/MacOSXFileSystem.java \
+	sun/nio/fs/MacOSXNativeDispatcher.java \
 	sun/nio/fs/PollingWatchService.java \
 	sun/nio/fs/UnixChannelFactory.java \
 	sun/nio/fs/UnixCopyFile.java \
@@ -287,6 +293,7 @@ FILES_c += \
 	UnixAsynchronousSocketChannelImpl.c \
 	\
 	BsdNativeDispatcher.c \
+	MacOSXNativeDispatcher.c \
 	UnixCopyFile.c \
 	UnixNativeDispatcher.c \
 	\
@@ -376,7 +383,7 @@ ifeq ($(PLATFORM), linux)
 endif
 
 ifeq ($(PLATFORM), macosx)
-OTHER_LDLIBS += -L$(LIBDIR) -ljava -lnet -pthread
+OTHER_LDLIBS += -L$(LIBDIR) -ljava -lnet -pthread -framework CoreFoundation
 endif
 
 ifeq ($(PLATFORM), solaris)
