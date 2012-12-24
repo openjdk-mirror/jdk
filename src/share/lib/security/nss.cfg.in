@@ -1,0 +1,5 @@
+name = NSS
+nssLibraryDirectory = @NSS_LIBDIR@
+nssDbMode = noDb
+attributes = compatibility
+handleStartupErrors = ignoreMultipleInitialisation

@@ -451,6 +451,17 @@ if [ "${GIF_LIBS}" = "" ] ; then
 fi
 export GIF_LIBS
 
+# Setup nss.cfg using location of NSS libraries
+if [ -x "${pkgconfig}" ] ; then
+  jdk_topdir=$(dirname ${BASH_SOURCE})/..
+  if [ ! -e ${jdk_topdir}/src ] ; then
+    jdk_topdir=$(hg root) ;
+  fi
+  sed -e "s#@NSS_LIBDIR@#$(${pkgconfig} --variable=libdir nss)#" \
+    ${jdk_topdir}/src/share/lib/security/nss.cfg.in \
+    > ${jdk_topdir}/src/share/lib/security/nss.cfg
+fi
+
 # IcedTea defaults; use system libraries
 export USE_SYSTEM_LCMS=true
 export SYSTEM_ZLIB=true

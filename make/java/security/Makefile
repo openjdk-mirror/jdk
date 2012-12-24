@@ -60,6 +60,9 @@ endif # NOT_SOLARIS
 
 PROPS_BUILD = $(LIBDIR)/security/java.security
 
+PKCS11_CONFIG_SRC = $(TOPDIR)/src/share/lib/security/nss.cfg
+PKCS11_CONFIG_BUILD = $(LIBDIR)/security/nss.cfg
+
 POLICY_SRC =	$(TOPDIR)/src/share/lib/security/java.policy
 POLICY_BUILD = $(LIBDIR)/security/java.policy
 
@@ -81,7 +84,7 @@ FILES_class = $(FILES_java:%.java=$(CLASSBINDIR)/%.class)
 include $(BUILDDIR)/common/Rules.gmk
 
 ifdef OPENJDK
-build: properties policy cacerts
+build: properties pkcs11config policy cacerts
 else
 build: properties policy cacerts blacklist trustedlibs
 endif
@@ -89,6 +92,8 @@ endif
 install: all
 
 properties: classes  $(PROPS_BUILD)
+
+pkcs11config: classes  $(PKCS11_CONFIG_BUILD)
 
 policy: classes  $(POLICY_BUILD)
 
@@ -99,6 +104,9 @@ blacklist: classes $(BLACKLIST_BUILD)
 trustedlibs: classes $(TRUSTEDLIBS_BUILD)
 
 $(PROPS_BUILD): $(PROPS_SRC)
+	$(install-file)
+
+$(PKCS11_CONFIG_BUILD): $(PKCS11_CONFIG_SRC)
 	$(install-file)
 
 $(POLICY_BUILD): $(POLICY_SRC)
@@ -115,7 +123,7 @@ $(TRUSTEDLIBS_BUILD): $(TRUSTEDLIBS_SRC)
 
 clean clobber:: .delete.classlist
 	$(RM) -r $(CLASSBINDIR)/java/security
-	$(RM) $(PROPS_BUILD) $(POLICY_BUILD) $(CACERTS_BUILD) $(BLACKLIST_BUILD) $(TRUSTEDLIBS_BUILD)
+	$(RM) $(PROPS_BUILD) $(PKCS11_CONFIG_BUILD) $(POLICY_BUILD) $(CACERTS_BUILD) $(BLACKLIST_BUILD) $(TRUSTEDLIBS_BUILD)
 
 # Additional Rule for building sun.security.util
 $(CLASSBINDIR)/%.class: $(SHARE_SRC)/sun/%.java
