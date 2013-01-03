@@ -53,6 +53,10 @@ security.provider.7=com.sun.security.sasl.Provider
 security.provider.8=org.jcp.xml.dsig.internal.dom.XMLDSigRI
 security.provider.9=sun.security.smartcardio.SunPCSC
 security.provider.10=apple.security.AppleProvider
+# the NSS security provider was not enabled for this build; it can be enabled
+# if NSS (libnss3) is available on the machine. The nss.cfg file may need
+# editing to reflect the location of the NSS installation.
+#security.provider.11=sun.security.pkcs11.SunPKCS11 ${java.home}/lib/security/nss.cfg
 
 #
 # Select the source of seed data for SecureRandom. By default an
