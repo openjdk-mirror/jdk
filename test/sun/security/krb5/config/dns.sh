@@ -1,12 +1,10 @@
 #
-# Copyright (c) 2005, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 only, as
-# published by the Free Software Foundation.  Oracle designates this
-# particular file as subject to the "Classpath" exception as provided
-# by Oracle in the LICENSE file that accompanied this code.
+# published by the Free Software Foundation.
 #
 # This code is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -23,11 +21,21 @@
 # questions.
 #
 
-# Define library interface.
+# @test
+# @bug 8002344
+# @summary Krb5LoginModule config class does not return proper KDC list from DNS
+#
 
-SUNWprivate_1.1 {
-	global:
-	    Java_sun_rmi_server_MarshalInputStream_latestUserDefinedLoader;
-	local:
-	    *;
-};
+if [ "${TESTJAVA}" = "" ] ; then
+  JAVAC_CMD=`which javac`
+  TESTJAVA=`dirname $JAVAC_CMD`/..
+fi
+
+if [ "${TESTSRC}" = "" ] ; then
+   TESTSRC="."
+fi
+
+$TESTJAVA/bin/javac -d . \
+        ${TESTSRC}/NamingManager.java ${TESTSRC}/DNS.java
+$TESTJAVA/bin/java -Xbootclasspath/p:. DNS
+

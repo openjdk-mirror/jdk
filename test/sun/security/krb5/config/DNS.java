@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2000, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -23,22 +21,18 @@
  * questions.
  */
 
-#include "jni.h"
-#include "jvm.h"
-#include "jni_util.h"
+// See dns.sh.
+import sun.security.krb5.Config;
 
-#include "sun_rmi_server_MarshalInputStream.h"
-
-/*
- * Class:     sun_rmi_server_MarshalInputStream
- * Method:    latestUserDefinedLoader
- * Signature: ()Ljava/lang/ClassLoader;
- *
- * Returns the first non-null class loader up the execution stack, or null
- * if only code from the null class loader is on the stack.
- */
-JNIEXPORT jobject JNICALL
-Java_sun_rmi_server_MarshalInputStream_latestUserDefinedLoader(JNIEnv *env, jclass cls)
-{
-    return JVM_LatestUserDefinedLoader(env);
+public class DNS {
+    public static void main(String[] args) throws Exception {
+        System.setProperty("java.security.krb5.conf",
+                System.getProperty("test.src", ".") +"/nothing.conf");
+        Config config = Config.getInstance();
+        String kdcs = config.getKDCList("X");
+        if (!kdcs.equals("a.com.:88 b.com.:99") &&
+                !kdcs.equals("a.com. b.com.:99")) {
+            throw new Exception("Strange KDC: [" + kdcs + "]");
+        };
+    }
 }
