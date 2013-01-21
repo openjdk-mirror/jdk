@@ -162,16 +162,21 @@ public final class Util {
         clickOnComp(comp, robot, 50);
     }
 
+    public static Point getTitlePoint(Window decoratedWindow) {
+        Point p = decoratedWindow.getLocationOnScreen();
+        Dimension d = decoratedWindow.getSize();
+        return new Point(p.x + (int)(d.getWidth()/2),
+                         p.y + (int)(decoratedWindow.getInsets().top/2));
+    }
+
     /*
      * Clicks on a title of Frame/Dialog.
      * WARNING: it may fail on some platforms when the window is not wide enough.
      */
     public static void clickOnTitle(final Window decoratedWindow, final Robot robot) {
-        Point p = decoratedWindow.getLocationOnScreen();
-        Dimension d = decoratedWindow.getSize();
-
         if (decoratedWindow instanceof Frame || decoratedWindow instanceof Dialog) {
-            robot.mouseMove(p.x + (int)(d.getWidth()/2), p.y + (int)decoratedWindow.getInsets().top/2);
+            Point p = getTitlePoint(decoratedWindow);
+            robot.mouseMove(p.x, p.y);
             robot.delay(50);
             robot.mousePress(InputEvent.BUTTON1_MASK);
             robot.delay(50);
@@ -409,7 +414,9 @@ public final class Util {
         ICE_WM = 10,
         METACITY_WM = 11,
         COMPIZ_WM = 12,
-        LG3D_WM = 13;
+        LG3D_WM = 13,
+        CWM_WM = 14,
+        MUTTER_WM = 15;
 
     /*
      * Returns -1 in case of not X Window or any problems.
@@ -600,4 +607,34 @@ public final class Util {
                                 time, printEvent);
 
     }
+
+
+    /**
+     * Invokes the <code>task</code> on the EDT thread.
+     *
+     * @return result of the <code>task</code>
+     */
+    public static <T> T invokeOnEDT(final java.util.concurrent.Callable<T> task) throws Exception {
+        final java.util.List<T> result = new java.util.ArrayList<T>(1);
+        final Exception[] exception = new Exception[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    result.add(task.call());
+                } catch (Exception e) {
+                    exception[0] = e;
+                }
+            }
+        });
+
+        if (exception[0] != null) {
+            throw exception[0];
+        }
+
+        return result.get(0);
+    }
+
 }

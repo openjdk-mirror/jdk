@@ -56,12 +56,13 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     private static native void nativePushNSWindowToBack(long nsWindowPtr);
     private static native void nativePushNSWindowToFront(long nsWindowPtr);
     private static native void nativeSetNSWindowTitle(long nsWindowPtr, String title);
-    private static native void nativeSetNSWindowAlpha(long nsWindowPtr, float alpha);
     private static native void nativeRevalidateNSWindowShadow(long nsWindowPtr);
     private static native void nativeSetNSWindowMinimizedIcon(long nsWindowPtr, long nsImage);
     private static native void nativeSetNSWindowRepresentedFilename(long nsWindowPtr, String representedFilename);
     private static native void nativeSetNSWindowSecurityWarningPositioning(long nsWindowPtr, double x, double y, float biasX, float biasY);
     private static native void nativeSetEnabled(long nsWindowPtr, boolean isEnabled);
+    private static native void nativeSynthesizeMouseEnteredExitedEvents(long nsWindowPtr);
+    private static native void nativeDispose(long nsWindowPtr);
 
     private static native int nativeGetNSWindowDisplayID_AppKitThread(long nsWindowPtr);
 
@@ -208,6 +209,7 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     private boolean undecorated; // initialized in getInitialStyleBits()
     private Rectangle normalBounds = null; // not-null only for undecorated maximized windows
     private CPlatformResponder responder;
+    private volatile boolean zoomed = false; // from native perspective
 
     public CPlatformWindow(final PeerType peerType) {
         super(0, true);
@@ -241,17 +243,6 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
 
         // TODO: implement on top of JObjC bridged class
     //    NSWindow window = JObjC.getInstance().AppKit().NSWindow().getInstance(nativeWindowPtr, JObjCRuntime.getInstance());
-
-        // Since JDK7 we have standard way to set opacity, so we should not pick
-        // background's alpha.
-        // TODO: set appropriate opacity value
-        //        this.opacity = target.getOpacity();
-        //        this.setOpacity(this.opacity);
-
-        final float windowAlpha = target.getOpacity();
-        if (windowAlpha != 1.0f) {
-            nativeSetNSWindowAlpha(nativeWindowPtr, windowAlpha);
-        }
 
         if (target instanceof javax.swing.RootPaneContainer) {
             final javax.swing.JRootPane rootpane = ((javax.swing.RootPaneContainer)target).getRootPane();
@@ -417,14 +408,9 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         if (owner != null) {
             CWrapper.NSWindow.removeChildWindow(owner.getNSWindowPtr(), getNSWindowPtr());
         }
-        // Make sure window is ordered out before it is disposed, we could order it out right here or
-        // we could postpone the disposal, I think postponing is probably better.
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                contentView.dispose();
-                CPlatformWindow.super.dispose();
-            }
-        });
+        contentView.dispose();
+        nativeDispose(getNSWindowPtr());
+        CPlatformWindow.super.dispose();
     }
 
     @Override // PlatformWindow
@@ -486,26 +472,42 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         return this.visible;
     }
 
-    private void zoom() {
+    private boolean isMaximized() {
+        return undecorated ? this.normalBounds != null : zoomed;
+    }
+
+    private void maximize() {
+        if (isMaximized()) {
+            return;
+        }
         if (!undecorated) {
+            zoomed = true;
             CWrapper.NSWindow.zoom(getNSWindowPtr());
         } else {
-            // OS X handles -zoom incorrectly for undecorated windows
-            final boolean isZoomed = this.normalBounds == null;
-            deliverZoom(isZoomed);
+            deliverZoom(true);
 
-            Rectangle toBounds;
-            if (isZoomed) {
-                this.normalBounds = peer.getBounds();
-                long screen = CWrapper.NSWindow.screen(getNSWindowPtr());
-                toBounds = CWrapper.NSScreen.visibleFrame(screen).getBounds();
-                // Flip the y coordinate
-                Rectangle frame = CWrapper.NSScreen.frame(screen).getBounds();
-                toBounds.y = frame.height - toBounds.y - toBounds.height;
-            } else {
-                toBounds = normalBounds;
-                this.normalBounds = null;
-            }
+            this.normalBounds = peer.getBounds();
+            long screen = CWrapper.NSWindow.screen(getNSWindowPtr());
+            Rectangle toBounds = CWrapper.NSScreen.visibleFrame(screen).getBounds();
+            // Flip the y coordinate
+            Rectangle frame = CWrapper.NSScreen.frame(screen).getBounds();
+            toBounds.y = frame.height - toBounds.y - toBounds.height;
+            setBounds(toBounds.x, toBounds.y, toBounds.width, toBounds.height);
+        }
+    }
+
+    private void unmaximize() {
+        if (!isMaximized()) {
+            return;
+        }
+        if (!undecorated) {
+            zoomed = false;
+            CWrapper.NSWindow.zoom(getNSWindowPtr());
+        } else {
+            deliverZoom(false);
+
+            Rectangle toBounds = this.normalBounds;
+            this.normalBounds = null;
             setBounds(toBounds.x, toBounds.y, toBounds.width, toBounds.height);
         }
     }
@@ -514,9 +516,9 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     public void setVisible(boolean visible) {
         final long nsWindowPtr = getNSWindowPtr();
 
-        // 1. Process parent-child relationship when hiding
+        // Process parent-child relationship when hiding
         if (!visible) {
-            // 1a. Unparent my children
+            // Unparent my children
             for (Window w : target.getOwnedWindows()) {
                 WindowPeer p = (WindowPeer)w.getPeer();
                 if (p instanceof LWWindowPeer) {
@@ -527,30 +529,17 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
                 }
             }
 
-            // 1b. Unparent myself
+            // Unparent myself
             if (owner != null && owner.isVisible()) {
                 CWrapper.NSWindow.removeChildWindow(owner.getNSWindowPtr(), nsWindowPtr);
             }
         }
 
-        // 2. Configure stuff
+        // Configure stuff
         updateIconImages();
         updateFocusabilityForAutoRequestFocus(false);
 
-        // 3. Manage the extended state when hiding
-        if (!visible) {
-            // Cancel out the current native state of the window
-            switch (peer.getState()) {
-                case Frame.ICONIFIED:
-                    CWrapper.NSWindow.deminiaturize(nsWindowPtr);
-                    break;
-                case Frame.MAXIMIZED_BOTH:
-                    zoom();
-                    break;
-            }
-        }
-
-        // 4. Actually show or hide the window
+        // Actually show or hide the window
         LWWindowPeer blocker = peer.getBlocker();
         if (blocker == null || !visible) {
             // If it ain't blocked, or is being hidden, go regular way
@@ -579,27 +568,32 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         }
         this.visible = visible;
 
-        // 5. Manage the extended state when showing
+        // Manage the extended state when showing
         if (visible) {
-            // Re-apply the extended state as expected in shared code
+            // Apply the extended state as expected in shared code
             if (target instanceof Frame) {
                 switch (((Frame)target).getExtendedState()) {
                     case Frame.ICONIFIED:
                         CWrapper.NSWindow.miniaturize(nsWindowPtr);
                         break;
                     case Frame.MAXIMIZED_BOTH:
-                        zoom();
+                        maximize();
+                        break;
+                    default: // NORMAL
+                        unmaximize(); // in case it was maximized, otherwise this is a no-op
                         break;
                 }
             }
         }
 
-        // 6. Configure stuff #2
+        nativeSynthesizeMouseEnteredExitedEvents(nsWindowPtr);
+
+        // Configure stuff #2
         updateFocusabilityForAutoRequestFocus(true);
 
-        // 7. Manage parent-child relationship when showing
+        // Manage parent-child relationship when showing
         if (visible) {
-            // 7a. Add myself as a child
+            // Add myself as a child
             if (owner != null && owner.isVisible()) {
                 CWrapper.NSWindow.addChildWindow(owner.getNSWindowPtr(), nsWindowPtr, CWrapper.NSWindow.NSWindowAbove);
                 if (target.isAlwaysOnTop()) {
@@ -607,7 +601,7 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
                 }
             }
 
-            // 7b. Add my own children to myself
+            // Add my own children to myself
             for (Window w : target.getOwnedWindows()) {
                 WindowPeer p = (WindowPeer)w.getPeer();
                 if (p instanceof LWWindowPeer) {
@@ -622,7 +616,7 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
             }
         }
 
-        // 8. Deal with the blocker of the window being shown
+        // Deal with the blocker of the window being shown
         if (blocker != null && visible) {
             // Make sure the blocker is above its siblings
             ((CPlatformWindow)blocker.getPlatformWindow()).orderAboveSiblings();
@@ -780,7 +774,7 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
                 if (prevWindowState == Frame.MAXIMIZED_BOTH) {
                     // let's return into the normal states first
                     // the zoom call toggles between the normal and the max states
-                    zoom();
+                    unmaximize();
                 }
                 CWrapper.NSWindow.miniaturize(nsWindowPtr);
                 break;
@@ -789,19 +783,21 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
                     // let's return into the normal states first
                     CWrapper.NSWindow.deminiaturize(nsWindowPtr);
                 }
-                zoom();
+                maximize();
                 break;
             case Frame.NORMAL:
                 if (prevWindowState == Frame.ICONIFIED) {
                     CWrapper.NSWindow.deminiaturize(nsWindowPtr);
                 } else if (prevWindowState == Frame.MAXIMIZED_BOTH) {
                     // the zoom call toggles between the normal and the max states
-                    zoom();
+                    unmaximize();
                 }
                 break;
             default:
                 throw new RuntimeException("Unknown window state: " + windowState);
         }
+
+        nativeSynthesizeMouseEnteredExitedEvents(nsWindowPtr);
 
         // NOTE: the SWP.windowState field gets updated to the newWindowState
         //       value when the native notification comes to us
