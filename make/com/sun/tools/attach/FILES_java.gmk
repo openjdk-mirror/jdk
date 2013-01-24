@@ -32,7 +32,7 @@ FILES_java = \
 	com/sun/tools/attach/spi/AttachProvider.java \
 	sun/tools/attach/HotSpotAttachProvider.java \
 	sun/tools/attach/HotSpotVirtualMachine.java 
-	
+
 ifeq ($(PLATFORM), solaris)
 FILES_java += \
 	sun/tools/attach/SolarisAttachProvider.java
@@ -48,11 +48,16 @@ FILES_java += \
 	sun/tools/attach/BsdAttachProvider.java
 endif
 
+ifeq ($(PLATFORM), aix)
+FILES_java += \
+	sun/tools/attach/AixAttachProvider.java
+endif
+
 #
 # Files that need to be copied
 #
 SERVICEDIR = $(CLASSBINDIR)/META-INF/services
-                                                                                                
+
 FILES_copy = \
 	$(SERVICEDIR)/com.sun.tools.attach.spi.AttachProvider
 
