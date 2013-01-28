@@ -614,6 +614,10 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
             jvmpath = JLI_StringDup(jvmpath);
             new_runpath = JLI_MemAlloc(((runpath != NULL) ? JLI_StrLen(runpath) : 0) +
                     2 * JLI_StrLen(jrepath) + 2 * JLI_StrLen(arch) +
+#ifdef AIX
+		    /* On AIX we additionally need 'jli' in the path because ld doesn't support $ORIGIN. */
+                    JLI_StrLen(jrepath) + JLI_StrLen(arch) + JLI_StrLen("/lib//jli:") +
+#endif
                     JLI_StrLen(jvmpath) + 52);
             newpath = new_runpath + JLI_StrLen(LD_LIBRARY_PATH "=");
 
@@ -630,6 +634,9 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
                 sprintf(new_runpath, LD_LIBRARY_PATH "="
                         "%s:"
                         "%s/lib/%s:"
+#ifdef AIX
+                        "%s/lib/%s/jli:" /* Needed on AIX because ld doesn't support $ORIGIN. */
+#endif
                         "%s/../lib/%s",
                         jvmpath,
 #ifdef DUAL_MODE
@@ -637,6 +644,9 @@ CreateExecutionEnvironment(int *pargc, char ***pargv,
                         jrepath, GetArchPath(wanted)
 #else /* !DUAL_MODE */
                         jrepath, arch,
+#ifdef AIX
+                        jrepath, arch,
+#endif
                         jrepath, arch
 #endif /* DUAL_MODE */
                         );
