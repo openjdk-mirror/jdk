@@ -66,6 +66,13 @@ ifeq ($(PLATFORM),macosx)
   FASTDEBUG_OPTIMIZATION_LEVEL = NONE
 endif
 
+ifeq ($(PLATFORM),aix)
+  # Turn all optimizations off
+  OPTIMIZATION_LEVEL = NONE
+  FASTDEBUG_OPTIMIZATION_LEVEL = NONE
+  OTHER_CFLAGS += -qfloat=nomaf
+endif
+
 #
 # Include path.
 #
