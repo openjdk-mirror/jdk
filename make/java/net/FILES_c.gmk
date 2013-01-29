@@ -43,6 +43,10 @@ ifeq ($(PLATFORM), linux)
     FILES_c += linux_close.c
 endif
 
+ifeq ($(PLATFORM), aix)
+    FILES_c += linux_close.c
+endif
+
 ifeq ($(PLATFORM), macosx)
     FILES_c += bsd_close.c
 endif

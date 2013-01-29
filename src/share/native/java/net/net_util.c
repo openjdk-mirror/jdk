@@ -28,6 +28,11 @@
 #include "jni_util.h"
 #include "net_util.h"
 
+#ifdef _AIX
+/* Initialize stubs for blocking I/O workarounds (see src/solaris/native/java/net/linux_close.c) */
+void linux_close_init();
+#endif
+
 int IPv6_supported() ;
 
 static int IPv6_available;
@@ -68,6 +73,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     */
     IPv6_available = IPv6_supported() & (!preferIPv4Stack);
     initLocalAddrTable ();
+#ifdef _AIX
+    /* Initialize stubs for blocking I/O workarounds (see src/solaris/native/java/net/linux_close.c) */
+    linux_close_init();
+#endif
     parseExclusiveBindProperty(env);
 
     return JNI_VERSION_1_2;
