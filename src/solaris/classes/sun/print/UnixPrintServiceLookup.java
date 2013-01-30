@@ -77,6 +77,23 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
 
     static String osname;
 
+    // list of used aix commands to deal with the printer queues
+    String[] lpNameComAix = {
+      "/usr/bin/lsallq",
+      "/usr/bin/lpstat -W|/usr/bin/expand|/usr/bin/cut -f1 -d' '",
+      "/usr/bin/lpstat -d|/usr/bin/expand|/usr/bin/cut -f1 -d' '",
+      "/usr/bin/lpstat -v",
+      "/usr/bin/cat ./lpstatprinters.txt |/usr/bin/expand|/usr/bin/cut -f1 -d' '",
+      "/usr/bin/cat ./lsallqprinters.txt",
+    };
+    private static final int aix_lsallq = 0;
+    private static final int aix_lpstat_W = 1;
+    private static final int aix_lpstat_d = 2;
+    private static final int aix_lpstat_v = 3;
+    private static final int aix_lpstat_test = 4;
+    private static final int aix_lsallq_test = 5;
+    private static int aix_defaultPrinterEnumeration = aix_lsallq;
+
     static {
         /* The system property "sun.java2d.print.polling"
          * can be used to force the printing code to poll or not poll
@@ -111,6 +128,25 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
             }
         }
 
+    	/* The system property "com.sap.print.aix.enumeration"
+         * can be used to force the usage of lpstat to enumerate all
+         * printer queues. By default we use lsallq, because lpstat -W
+         * can take lots of time if thousands of printers are attached to a server.
+         */
+    	String aixPrinterEnumerator =
+       	 (String)java.security.AccessController.doPrivileged(
+         	       new sun.security.action.GetPropertyAction("com.sap.print.aix.enumeration"));
+
+    	if (aixPrinterEnumerator != null) {
+            if (aixPrinterEnumerator.equalsIgnoreCase("lpstat")) {
+                aix_defaultPrinterEnumeration = aix_lpstat_W;
+            } else if (aixPrinterEnumerator.equalsIgnoreCase("lpstat_test")) {
+                aix_defaultPrinterEnumeration = aix_lpstat_test;
+            } else if (aixPrinterEnumerator.equalsIgnoreCase("lsallq_test")) {
+                aix_defaultPrinterEnumeration = aix_lsallq_test;
+            }
+    	}
+
         osname = java.security.AccessController.doPrivileged(
             new sun.security.action.GetPropertyAction("os.name"));
     }
@@ -120,7 +156,12 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
     }
 
     static boolean isSysV() {
-        return osname.equals("SunOS");
+	// HPUX and AIX uses a SystemV based printing system as well
+	return "SunOS HP-UX AIX".contains(osname);
+    }
+
+    static boolean isAIX( ) {
+	return "AIX".contains(osname);
     }
 
     static boolean isBSD() {
@@ -217,7 +258,9 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
                 }
             }
         } else {
-            if (isMac() || isSysV()) {
+            if (isAIX()) {
+                printers = getAllPrinterNamesAix();
+            } else if (isMac() || isSysV()) {
                 printers = getAllPrinterNamesSysV();
             } else { //BSD
                 printers = getAllPrinterNamesBSD();
@@ -366,7 +409,9 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
         if (name == null || name.equals("") || !checkPrinterName(name)) {
             return null;
         }
-        if (isMac() || isSysV()) {
+        if (isAIX()) {
+            printer = getNamedPrinterNameAix(name);
+        } else if (isMac() || isSysV()) {
             printer = getNamedPrinterNameSysV(name);
         } else {
             printer = getNamedPrinterNameBSD(name);
@@ -792,5 +837,51 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
                 }
             }
         }
+    }
+
+    private String getDefaultPrinterNameAix() {
+        String defaultPrinter = "lp";
+        String[] names = execCmd(lpNameComAix[aix_lpstat_d]);
+        names = UnixPrintService.filterPrinterNamesAIX(names);
+        if (names == null || names.length == 0) {
+            return defaultPrinter;
+        } else {
+            if (names.length != 3) {
+                // No default printer found
+                return null;
+            }
+            return names[2];
+        }
+    }
+
+    private PrintService getNamedPrinterNameAix(String name) {
+        // for AIX the blank after -v should not be there
+        String[] result = execCmd(lpNameComAix[aix_lpstat_v] + name);
+        // on AIX remote printers add additional lines to
+        // the result which should be removed
+        result = UnixPrintService.filterPrinterNamesAIX(result);
+        if (result == null || result.length == 0) {
+            return null;
+        } else {
+            return new UnixPrintService(name);
+        }
+    }
+
+    private String[] getAllPrinterNamesAix() {
+        // determine all printers of the system
+        String [] names = execCmd(lpNameComAix[aix_defaultPrinterEnumeration]);
+
+        // on AIX remote printers add additional lines to the result
+        // which should be removed
+        names = UnixPrintService.filterPrinterNamesAIX(names);
+
+        ArrayList<String> printerNames = new ArrayList<String>();
+        for ( int i=0; i < names.length; i++) {
+            //remove empty lines and remove the heading
+            if(names[i] != null && !names[i].equals("") && !names[i].startsWith("---") && !names[i].contains("Queue") ) {
+                printerNames.add(names[i]);
+            }
+        }
+        return (String[])printerNames.toArray(new String[printerNames.size()]);
     }
 }
