@@ -874,6 +874,13 @@ Java_java_net_Inet4AddressImpl_isReachable0(JNIEnv *env, jobject this,
         case ENETUNREACH: /* Network Unreachable */
         case EAFNOSUPPORT: /* Address Family not supported */
         case EADDRNOTAVAIL: /* address is not available on  the  remote machine */
+#ifdef _AIX
+	case EHOSTUNREACH: /* No route to host */
+          /*
+           * On AIX and AS400 the connect may also immediately return with
+           * EHOSTUNREACH which is not an error, but the answer to our question.
+           */
+#endif
 #ifdef __linux__
         case EINVAL:
           /*
