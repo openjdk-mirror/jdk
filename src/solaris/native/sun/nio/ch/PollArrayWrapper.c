@@ -32,6 +32,18 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#ifdef _AIX
+/* hard coded values in java code do not match system header values */
+#include <string.h>
+#include <stdlib.h>
+#define JAVA_POLLIN        0x0001
+#define JAVA_POLLOUT       0x0004
+#define JAVA_POLLERR       0x0008
+#define JAVA_POLLHUP       0x0010
+#define JAVA_POLLNVAL      0x0020
+#define JAVA_POLLREMOVE    0x0800  /* not used yet in Java but ment to deregister fd */
+#endif
+
 #define RESTARTABLE(_cmd, _result) do { \
   do { \
     _result = _cmd; \
@@ -78,11 +90,48 @@ Java_sun_nio_ch_PollArrayWrapper_poll0(JNIEnv *env, jobject this,
 
     a = (struct pollfd *) jlong_to_ptr(address);
 
+#ifdef _AIX
+    /* hard coded values in java code do not match system header values */
+    {
+        int i;
+        struct pollfd *aa = (struct pollfd*) malloc(numfds * sizeof(struct pollfd));
+        if (aa == NULL) {
+            JNU_ThrowIOExceptionWithLastError(env, "Poll failed");
+            return (jint)-1;
+        }
+        memcpy(aa, a, numfds * sizeof(struct pollfd));
+        /* translate hardcoded java (SOLARIS) event flags to AIX event flags */
+        for (i=0; i<numfds; i++) {
+            aa[i].events = 0;
+            if (a[i].events & JAVA_POLLIN)     aa[i].events |= POLLIN;
+            if (a[i].events & JAVA_POLLOUT)    aa[i].events |= POLLOUT;
+            if (a[i].events & JAVA_POLLERR)    aa[i].events |= POLLERR;
+            if (a[i].events & JAVA_POLLHUP)    aa[i].events |= POLLHUP;
+            if (a[i].events & JAVA_POLLNVAL)   aa[i].events |= POLLNVAL;
+            /* For the time being we don't support JAVA_POLLREMOVE. */
+        }
+        if (timeout <= 0) {           /* Indefinite or no wait */
+            RESTARTABLE (poll(a, numfds, timeout), err);
+        } else {                      /* Bounded wait; bounded restarts */
+            err = ipoll(a, numfds, timeout);
+        }
+        /* transfer resulting event flags back to the hardcoded java event flags */
+        for (i=0; i<numfds; i++) {
+            if (aa[i].revents & POLLIN)   a[i].revents |= JAVA_POLLIN;
+            if (aa[i].revents & POLLOUT)  a[i].revents |= JAVA_POLLOUT;
+            if (aa[i].revents & POLLERR)  a[i].revents |= JAVA_POLLERR;
+            if (aa[i].revents & POLLHUP)  a[i].revents |= JAVA_POLLHUP;
+            if (aa[i].revents & POLLNVAL) a[i].revents |= JAVA_POLLNVAL;
+        }
+        free(aa);
+    }
+#else
     if (timeout <= 0) {           /* Indefinite or no wait */
         RESTARTABLE (poll(a, numfds, timeout), err);
-    } else {                     /* Bounded wait; bounded restarts */
+    } else {                      /* Bounded wait; bounded restarts */
         err = ipoll(a, numfds, timeout);
     }
+#endif
 
     if (err < 0) {
         JNU_ThrowIOExceptionWithLastError(env, "Poll failed");

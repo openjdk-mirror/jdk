@@ -87,7 +87,16 @@ Java_sun_nio_ch_ServerSocketChannelImpl_accept0(JNIEnv *env, jobject this,
      */
     for (;;) {
         socklen_t sa_len = alloc_len;
+#ifdef _AIX
+        /*
+         * use NET_.. APIs to get interruptible IO (CSN 561561 2010) (see linux_close.c)
+         * Due to time constraints I do this for AIX only. The whole "blocking close in nio"
+         * issue needs more investigating.
+         */
+        newfd = NET_Accept(ssfd, sa, &sa_len);
+#else
         newfd = accept(ssfd, sa, &sa_len);
+#endif
         if (newfd >= 0) {
             break;
         }

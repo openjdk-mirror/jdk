@@ -127,6 +127,37 @@ struct my_group_source_req {
 #define IP_ADD_SOURCE_MEMBERSHIP        60   /* Join a source-specific group */
 #define IP_DROP_SOURCE_MEMBERSHIP       61   /* Leave a source-specific group */
 
+#include <sys/utsname.h>
+/*
+ * Checks whether or not "socket extensions for multicast source filters" is supported.
+ * Returns JNI_TRUE if it is supported, JNI_FALSE otherwise
+ */
+static jboolean isSourceFilterSupported(){
+    static jboolean alreadyChecked = JNI_FALSE;
+    static jboolean result = JNI_TRUE;
+    if (alreadyChecked != JNI_TRUE){
+        struct utsname uts;
+        memset(&uts, 0, sizeof(uts));
+        strcpy(uts.sysname, "?");
+        const int utsRes = uname(&uts);
+        int major = -1;
+        int minor = -1;
+        major = atoi(uts.version);
+        minor = atoi(uts.release);
+        if (strcmp(uts.sysname, "OS400") == 0){// usupported on OS400 < 7.1
+            if (major < 7 || (major == 7 && minor < 1)) {
+                result = JNI_FALSE;
+            }
+         } else if (strcmp(uts.sysname, "AIX") == 0) {
+            if (major < 6 || (major == 6 && minor < 1)) {// usupported on aix < 6.1
+                result = JNI_FALSE;
+            }
+        }
+        alreadyChecked = JNI_TRUE;
+    }
+    return result;
+}
+
 #else
 
 #define IP_ADD_SOURCE_MEMBERSHIP        70   /* join a source-specific group */
@@ -534,6 +565,15 @@ Java_sun_nio_ch_Net_joinOrDrop4(JNIEnv *env, jobject this, jboolean join, jobjec
         /* no IPv4 include-mode filtering for now */
         return IOS_UNAVAILABLE;
 #else
+
+#ifdef _AIX
+        /* check AIX and OS400 for support of source filtering */
+        if (isSourceFilterSupported() != JNI_TRUE){
+            JNU_ThrowByName(env, "java/lang/UnsupportedOperationException", "");
+            return -1;
+        }
+#endif
+
         mreq_source.imr_multiaddr.s_addr = htonl(group);
         mreq_source.imr_sourceaddr.s_addr = htonl(source);
         mreq_source.imr_interface.s_addr = htonl(interf);
@@ -545,9 +585,17 @@ Java_sun_nio_ch_Net_joinOrDrop4(JNIEnv *env, jobject this, jboolean join, jobjec
 
     n = setsockopt(fdval(env,fdo), IPPROTO_IP, opt, optval, optlen);
     if (n < 0) {
-        if (join && (errno == ENOPROTOOPT))
+        /* catch genreric unsupported error for 'socket extension for multicast source filter'
+         * I did not put this inside function handleSocketError to prevent any changes in behaviour of other calls.
+         */
+        int last_err = errno;
+    	if (join && source && (last_err == EOPNOTSUPP)){
+            JNU_ThrowByName(env, "java/lang/UnsupportedOperationException", "");
+            return -1;
+    	}
+        if (join && (last_err == ENOPROTOOPT))
             return IOS_UNAVAILABLE;
-        handleSocketError(env, errno);
+        handleSocketError(env, last_err);
     }
     return 0;
 }
@@ -564,6 +612,14 @@ Java_sun_nio_ch_Net_blockOrUnblock4(JNIEnv *env, jobject this, jboolean block, j
     int n;
     int opt = (block) ? IP_BLOCK_SOURCE : IP_UNBLOCK_SOURCE;
 
+#ifdef _AIX
+    /* check AIX and OS400 for support of source filtering */
+    if (isSourceFilterSupported() != JNI_TRUE){
+        JNU_ThrowByName(env, "java/lang/UnsupportedOperationException", "");
+        return -1;
+    }
+#endif
+
     mreq_source.imr_multiaddr.s_addr = htonl(group);
     mreq_source.imr_sourceaddr.s_addr = htonl(source);
     mreq_source.imr_interface.s_addr = htonl(interf);
@@ -571,9 +627,17 @@ Java_sun_nio_ch_Net_blockOrUnblock4(JNIEnv *env, jobject this, jboolean block, j
     n = setsockopt(fdval(env,fdo), IPPROTO_IP, opt,
                    (void*)&mreq_source, sizeof(mreq_source));
     if (n < 0) {
-        if (block && (errno == ENOPROTOOPT))
+        /* catch generic unsupported error for 'socket extension for multicast source filter'
+         * I did not put this inside function handleSocketError to prevent any changes in behaviour of other calls.
+         */
+        int last_err = errno;
+    	if (block && source && (last_err == EOPNOTSUPP)){
+            JNU_ThrowByName(env, "java/lang/UnsupportedOperationException", "");
+            return -1;
+    	}
+        if (block && (last_err == ENOPROTOOPT))
             return IOS_UNAVAILABLE;
-        handleSocketError(env, errno);
+        handleSocketError(env, last_err);
     }
     return 0;
 #endif
@@ -609,9 +673,17 @@ Java_sun_nio_ch_Net_joinOrDrop6(JNIEnv *env, jobject this, jboolean join, jobjec
 
     n = setsockopt(fdval(env,fdo), IPPROTO_IPV6, opt, optval, optlen);
     if (n < 0) {
-        if (join && (errno == ENOPROTOOPT))
+        /* catch genreric unsupported error for 'socket extension for multicast source filter'
+         * I did not put this inside function handleSocketError to prevent any changes in behaviour of other calls.
+         */
+        int last_err = errno;
+        if (join && source && (last_err == EOPNOTSUPP)) {
+            JNU_ThrowByName(env, "java/lang/UnsupportedOperationException", "");
+            return -1;
+        }
+        if (join && (last_err == ENOPROTOOPT))
             return IOS_UNAVAILABLE;
-        handleSocketError(env, errno);
+        handleSocketError(env, last_err);
     }
     return 0;
 #else
@@ -638,9 +710,17 @@ Java_sun_nio_ch_Net_blockOrUnblock6(JNIEnv *env, jobject this, jboolean block, j
     n = setsockopt(fdval(env,fdo), IPPROTO_IPV6, opt,
         (void*)&req, sizeof(req));
     if (n < 0) {
-        if (block && (errno == ENOPROTOOPT))
+        /* catch genreric unsupported error for 'socket extension for multicast source filter'
+         * I did not put this inside function handleSocketError to prevent any changes in behaviour of other calls.
+         */
+        int last_err = errno;
+        if (block && source && (last_err == EOPNOTSUPP)) {
+            JNU_ThrowByName(env, "java/lang/UnsupportedOperationException", "");
+            return -1;
+        }
+        if (block && (last_err == ENOPROTOOPT))
             return IOS_UNAVAILABLE;
-        handleSocketError(env, errno);
+        handleSocketError(env, last_err);
     }
     return 0;
   #endif

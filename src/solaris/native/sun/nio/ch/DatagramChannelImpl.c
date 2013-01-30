@@ -86,7 +86,7 @@ Java_sun_nio_ch_DatagramChannelImpl_disconnect0(JNIEnv *env, jobject this,
     rv = connect(fd, 0, 0);
 #endif
 
-#if defined(__linux__) || defined(_ALLBSD_SOURCE)
+#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(_AIX)
     {
         int len;
         SOCKADDR sa;

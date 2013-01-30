@@ -34,7 +34,17 @@ abstract class FileDispatcher extends NativeDispatcher {
     public static final int RET_EX_LOCK = 1;    // Obtained exclusive lock
     public static final int INTERRUPTED = 2;    // Request interrupted
 
-    abstract int force(FileDescriptor fd, boolean metaData) throws IOException;
+    // Calling fsync on an AIX file descriptor that is opened only for reading
+    // results in an error (EBADF: The FileDescriptor parameter is not a valid
+    // file descriptor open for writing.). Therefore, it is necessary to prevent
+    // the JVM from calling fsync for read-only file descriptors.
+    // The fsync system call is used indirectly in the force method of the file
+    // channel. The native method force moved from the file channel class to the
+    // file dispatcher class in JDK 7. Due to this, it is not as easy anymore to
+    // read the corresponding attribute of the file channel as it was done prior
+    // to JDK 7. For JDK 7 a new parameter is added to the force method that
+    // indicates whether a file is opened for writing.
+    abstract int force(FileDescriptor fd, boolean metaData, boolean writable) throws IOException;
 
     abstract int truncate(FileDescriptor fd, long size) throws IOException;
 

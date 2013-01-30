@@ -36,6 +36,9 @@
 #include <unistd.h>
 #include "nio.h"
 #include "nio_util.h"
+#if defined(_AIX) || defined(__solaris__) || defined(__hpux)
+#include <sys/stat.h>
+#endif
 
 #ifdef _ALLBSD_SOURCE
 #define stat64 stat
@@ -74,6 +77,18 @@ Java_sun_nio_ch_FileDispatcherImpl_read0(JNIEnv *env, jclass clazz,
 {
     jint fd = fdval(env, fdo);
     void *buf = (void *)jlong_to_ptr(address);
+
+    /* AIX supports reading from directory file descriptors just like files. */
+    /* This causes JCK tests to fail so we manually handle the case here.    */
+    /* Solaris and HP-UX support reading from directory file descriptors too */
+    /* (at least for local file systems) so we added them as well.           */
+#if defined(_AIX) || defined(__solaris__) || defined(__hpux)
+    struct stat64 stat_buf;
+    if (fstat64((int)fd, &stat_buf) != -1 && (stat_buf.st_mode & S_IFMT) == S_IFDIR) {
+        errno = EISDIR;
+        return convertReturnVal(env, -1, JNI_TRUE);
+    }
+#endif
 
     return convertReturnVal(env, read(fd, buf, len), JNI_TRUE);
 }
@@ -143,9 +158,10 @@ handle(JNIEnv *env, jlong rv, char *msg)
     return IOS_THROWN;
 }
 
+/* Added parameter writable for AIX platform port. */
 JNIEXPORT jint JNICALL
 Java_sun_nio_ch_FileDispatcherImpl_force0(JNIEnv *env, jobject this,
-                                          jobject fdo, jboolean md)
+                                          jobject fdo, jboolean md, jboolean writable)
 {
     jint fd = fdval(env, fdo);
     int result = 0;
@@ -153,6 +169,13 @@ Java_sun_nio_ch_FileDispatcherImpl_force0(JNIEnv *env, jobject this,
     if (md == JNI_FALSE) {
         result = fdatasync(fd);
     } else {
+#ifdef _AIX
+        /* Call this for files opened for writing only
+         * (AIX: EBADF The FileDescriptor parameter is not a valid file descriptor open for writing.)
+         */
+        if (writable != JNI_TRUE)
+            return 0;
+#endif
         result = fsync(fd);
     }
     return handle(env, result, "Force failed");
@@ -186,6 +209,13 @@ Java_sun_nio_ch_FileDispatcherImpl_lock0(JNIEnv *env, jobject this, jobject fdo,
     jint lockResult = 0;
     int cmd = 0;
     struct flock64 fl;
+
+    /* fix JCK test api.java.nio.channels.FileChannel.LocksTests */
+#if defined(__hpux) || defined(_AIX)
+    if (size > 0x7fffffff) {
+        size = 0x7fffffff;
+    }
+#endif
 
     fl.l_whence = SEEK_SET;
     if (size == (jlong)java_lang_Long_MAX_VALUE) {
@@ -224,6 +254,13 @@ Java_sun_nio_ch_FileDispatcherImpl_release0(JNIEnv *env, jobject this,
     struct flock64 fl;
     int cmd = F_SETLK64;
 
+    /* fix JCK test api.java.nio.channels.FileLock.MethodsTests */
+#if defined(__hpux) || defined (_AIX)
+    if (size > 0x7fffffff) {
+	size = 0x7fffffff;
+    }
+#endif
+
     fl.l_whence = SEEK_SET;
     if (size == (jlong)java_lang_Long_MAX_VALUE) {
         fl.l_len = (off64_t)0;
@@ -241,7 +278,17 @@ Java_sun_nio_ch_FileDispatcherImpl_release0(JNIEnv *env, jobject this,
 
 static void closeFileDescriptor(JNIEnv *env, int fd) {
     if (fd != -1) {
+#ifdef _AIX
+	/*
+         * Use NET_SocketClose to provide non-blocking close (CSN 561561 2010)
+         * Note that this should also work for files, not only sockets.
+         * Due to time constraints I do this for AIX only. The whole
+         * "blocking close in nio" issue needs more investigation.
+         */
+	int result = NET_SocketClose(fd);
+#else
         int result = close(fd);
+#endif
         if (result < 0)
             JNU_ThrowIOExceptionWithLastError(env, "Close failed");
     }
@@ -257,11 +304,16 @@ Java_sun_nio_ch_FileDispatcherImpl_close0(JNIEnv *env, jclass clazz, jobject fdo
 JNIEXPORT void JNICALL
 Java_sun_nio_ch_FileDispatcherImpl_preClose0(JNIEnv *env, jclass clazz, jobject fdo)
 {
+#ifdef _AIX
+    /* AIX port: preclosing breaks JCK tests api.java.nio.channels.FileLock.MethodsTests */
+    return;
+#else
     jint fd = fdval(env, fdo);
     if (preCloseFD >= 0) {
         if (dup2(preCloseFD, fd) < 0)
             JNU_ThrowIOExceptionWithLastError(env, "dup2 failed");
     }
+#endif
 }
 
 JNIEXPORT void JNICALL
