@@ -92,7 +92,8 @@ class UnixFileAttributeViews {
 
                 boolean retry = false;
                 try {
-                    futimes(fd, accessValue, modValue);
+                    // Added path of file "fd" for platform ports (only needed on AIX and HPUX)
+                    futimes(fd, accessValue, modValue, file);
                 } catch (UnixException x) {
                     // if futimes fails with EINVAL and one/both of the times is
                     // negative then we adjust the value to the epoch and retry.
@@ -107,7 +108,8 @@ class UnixFileAttributeViews {
                     if (modValue < 0L) modValue = 0L;
                     if (accessValue < 0L) accessValue= 0L;
                     try {
-                        futimes(fd, accessValue, modValue);
+                        // Added path of file "fd" for platform ports (only needed on AIX and HPUX)
+                        futimes(fd, accessValue, modValue, file);
                     } catch (UnixException x) {
                         x.rethrowAsIOException(file);
                     }

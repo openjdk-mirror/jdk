@@ -111,9 +111,9 @@ Java_sun_nio_ch_PollArrayWrapper_poll0(JNIEnv *env, jobject this,
             /* For the time being we don't support JAVA_POLLREMOVE. */
         }
         if (timeout <= 0) {           /* Indefinite or no wait */
-            RESTARTABLE (poll(a, numfds, timeout), err);
+            RESTARTABLE (poll(aa, numfds, timeout), err);
         } else {                      /* Bounded wait; bounded restarts */
-            err = ipoll(a, numfds, timeout);
+            err = ipoll(aa, numfds, timeout);
         }
         /* transfer resulting event flags back to the hardcoded java event flags */
         for (i=0; i<numfds; i++) {

@@ -118,6 +118,13 @@ static jfieldID entry_fstype;
 static jfieldID entry_options;
 static jfieldID entry_dev;
 
+/* AIX and HP-UX need a couple more references for futimes emulation */
+#if defined(_AIX) || defined (__hpux__)
+static jmethodID disp_copy2buf;
+static jfieldID buffer_address;
+static jmethodID buffer_release;
+#endif
+
 /**
  * System calls that may not be available at run time.
  */
@@ -222,6 +229,17 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
     /* UnixMountEntry class is needed for getmntctl */
 #ifdef _AIX
     entry_cls = (*env)->NewGlobalRef(env, clazz);
+#endif
+
+    /* AIX and HP-UX need a couple more references for futimes emulation */
+#if defined(_AIX) || defined (__hpux__)
+    disp_copy2buf = (*env)->GetStaticMethodID(env, this, "copyToNativeBuffer", "(Lsun/nio/fs/UnixPath;)Lsun/nio/fs/NativeBuffer;");
+    clazz = (*env)->FindClass(env, "sun/nio/fs/NativeBuffer");
+    if (clazz == NULL) {
+        return 0;
+    }
+    buffer_address = (*env)->GetFieldID(env, clazz, "address", "J");
+    buffer_release = (*env)->GetMethodID(env, clazz, "release", "()V");
 #endif
 
     /* system calls that might not be available at run time */
@@ -573,9 +591,10 @@ Java_sun_nio_fs_UnixNativeDispatcher_utimes0(JNIEnv* env, jclass this,
     }
 }
 
+/* Added path of file "filedes" for platform ports (only needed on AIX and HPUX) */
 JNIEXPORT void JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_futimes(JNIEnv* env, jclass this, jint filedes,
-    jlong accessTime, jlong modificationTime)
+    jlong accessTime, jlong modificationTime, jobject path)
 {
     struct timeval times[2];
     int err = 0;
@@ -588,16 +607,38 @@ Java_sun_nio_fs_UnixNativeDispatcher_futimes(JNIEnv* env, jclass this, jint file
 
 #ifdef _ALLBSD_SOURCE
     RESTARTABLE(futimes(filedes, &times[0]), err);
-#else
-    if (my_futimesat_func == NULL) {
-        JNU_ThrowInternalError(env, "my_ftimesat_func is NULL");
-        return;
-    }
-    RESTARTABLE((*my_futimesat_func)(filedes, NULL, &times[0]), err);
-#endif
+
     if (err == -1) {
         throwUnixException(env, errno);
     }
+#else
+    if (my_futimesat_func != NULL) {
+        RESTARTABLE((*my_futimesat_func)(filedes, NULL, &times[0]), err);
+
+        if (err == -1) {
+            throwUnixException(env, errno);
+        }
+    }
+    /* AIX and HP-UX does not provide futimes as system call => use utimes instead */
+#if defined(_AIX) || defined (__hpux__)
+    else {
+        jobject buffer = (*env)->CallStaticObjectMethod(env, this, disp_copy2buf, path);
+        jlong path_address = (*env)->GetLongField(env, buffer, buffer_address);
+        const char* path = (const char*)jlong_to_ptr(path_address);
+        RESTARTABLE(utimes(path, &times[0]), err);
+        if (err == -1) {
+            throwUnixException(env, errno);
+        }
+        (*env)->CallVoidMethod(env, buffer, buffer_release);
+    }
+#else
+    else {
+        JNU_ThrowInternalError(env, "my_ftimesat_func is NULL");
+        return;
+    }
+#endif
+
+#endif
 }
 
 JNIEXPORT jlong JNICALL
@@ -645,21 +686,13 @@ Java_sun_nio_fs_UnixNativeDispatcher_closedir(JNIEnv* env, jclass this, jlong di
 
 JNIEXPORT jbyteArray JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_readdir(JNIEnv* env, jclass this, jlong value) {
-#ifdef _AIX
-    struct dirent* result;
-    struct {
-        struct dirent buf;
-        char name_extra[PATH_MAX + 1 - sizeof result->d_name];
-    } entry;
-    struct dirent* ptr = &entry.buf;
-#else
     struct dirent64* result;
     struct {
         struct dirent64 buf;
         char name_extra[PATH_MAX + 1 - sizeof result->d_name];
     } entry;
     struct dirent64* ptr = &entry.buf;
-#endif
+
     int res;
     DIR* dirp = jlong_to_ptr(value);
 

@@ -397,8 +397,10 @@ class UnixNativeDispatcher {
 
     /**
      * futimes(int fildes,, const struct timeval times[2])
+     *
+     * added path of file "fd" for platform ports (only needed on AIX and HPUX)
      */
-    static native void futimes(int fd, long times0, long times1) throws UnixException;
+    static native void futimes(int fd, long times0, long times1, UnixPath path) throws UnixException;
 
     /**
      * DIR *opendir(const char* dirname)

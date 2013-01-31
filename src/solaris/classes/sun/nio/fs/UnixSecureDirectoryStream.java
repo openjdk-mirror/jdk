@@ -409,9 +409,11 @@ class UnixSecureDirectoryStream
                     }
                     // update times
                     try {
+                        // Added path of file "fd" for platform ports (only needed on AIX and HPUX)
                         futimes(fd,
                                 lastAccessTime.to(TimeUnit.MICROSECONDS),
-                                lastModifiedTime.to(TimeUnit.MICROSECONDS));
+                                lastModifiedTime.to(TimeUnit.MICROSECONDS),
+				(file == null) ? ds.directory() : file);
                     } catch (UnixException x) {
                         x.rethrowAsIOException(file);
                     }

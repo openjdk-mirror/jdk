@@ -190,9 +190,11 @@ class UnixCopyFile {
             if (flags.copyBasicAttributes) {
                 try {
                     if (dfd >= 0) {
+                        // Added path of file "dfd" for platform ports (only needed on AIX and HPUX)
                         futimes(dfd,
                                 attrs.lastAccessTime().to(TimeUnit.MICROSECONDS),
-                                attrs.lastModifiedTime().to(TimeUnit.MICROSECONDS));
+                                attrs.lastModifiedTime().to(TimeUnit.MICROSECONDS),
+                                target);
                     } else {
                         utimes(target,
                                attrs.lastAccessTime().to(TimeUnit.MICROSECONDS),
@@ -269,9 +271,11 @@ class UnixCopyFile {
                 // copy time attributes
                 if (flags.copyBasicAttributes) {
                     try {
+                        // Added path of file "fo" for platform ports (only needed on AIX and HPUX)
                         futimes(fo,
                                 attrs.lastAccessTime().to(TimeUnit.MICROSECONDS),
-                                attrs.lastModifiedTime().to(TimeUnit.MICROSECONDS));
+                                attrs.lastModifiedTime().to(TimeUnit.MICROSECONDS),
+                                target);
                     } catch (UnixException x) {
                         if (flags.failIfUnableToCopyBasic)
                             x.rethrowAsIOException(target);
