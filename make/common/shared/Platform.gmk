@@ -394,10 +394,18 @@ endif
 
 ifeq ($(SYSTEM_UNAME), Haiku)
   PLATFORM = haiku
-  mach := $(shell uname -m)
+  # Arch and OS name/version
+  ifdef CROSS_COMPILE_ARCH
+    mach := $(CROSS_COMPILE_ARCH)
+  else
+    mach := $(shell uname -m)
+  endif
   archExpr = case "$(mach)" in \
                 BePC) \
                     echo i586 \
+                    ;; \
+                x86_64) \
+                    echo amd64 \
                     ;; \
                 *) \
                     echo $(mach) \
