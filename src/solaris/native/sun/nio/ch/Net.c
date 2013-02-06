@@ -39,6 +39,10 @@
 #include "nio_util.h"
 #include "nio.h"
 
+#ifdef AIX
+#include <sys/utsname.h>
+#endif
+
 /**
  * Definitions for source-specific multicast to allow for building
  * with older header files.
@@ -127,37 +131,6 @@ struct my_group_source_req {
 #define IP_ADD_SOURCE_MEMBERSHIP        60   /* Join a source-specific group */
 #define IP_DROP_SOURCE_MEMBERSHIP       61   /* Leave a source-specific group */
 
-#include <sys/utsname.h>
-/*
- * Checks whether or not "socket extensions for multicast source filters" is supported.
- * Returns JNI_TRUE if it is supported, JNI_FALSE otherwise
- */
-static jboolean isSourceFilterSupported(){
-    static jboolean alreadyChecked = JNI_FALSE;
-    static jboolean result = JNI_TRUE;
-    if (alreadyChecked != JNI_TRUE){
-        struct utsname uts;
-        memset(&uts, 0, sizeof(uts));
-        strcpy(uts.sysname, "?");
-        const int utsRes = uname(&uts);
-        int major = -1;
-        int minor = -1;
-        major = atoi(uts.version);
-        minor = atoi(uts.release);
-        if (strcmp(uts.sysname, "OS400") == 0){// usupported on OS400 < 7.1
-            if (major < 7 || (major == 7 && minor < 1)) {
-                result = JNI_FALSE;
-            }
-         } else if (strcmp(uts.sysname, "AIX") == 0) {
-            if (major < 6 || (major == 6 && minor < 1)) {// usupported on aix < 6.1
-                result = JNI_FALSE;
-            }
-        }
-        alreadyChecked = JNI_TRUE;
-    }
-    return result;
-}
-
 #else
 
 #define IP_ADD_SOURCE_MEMBERSHIP        70   /* join a source-specific group */
@@ -212,6 +185,7 @@ struct my_group_source_req {
 #define COPY_INET6_ADDRESS(env, source, target) \
     (*env)->GetByteArrayRegion(env, source, 0, 16, target)
 
+
 /*
  * Copy IPv6 group, interface index, and IPv6 source address
  * into group_source_req structure.
@@ -233,6 +207,40 @@ static void initGroupSourceReq(JNIEnv* env, jbyteArray group, jint index,
     COPY_INET6_ADDRESS(env, source, (jbyte*)&(sin6->sin6_addr));
 }
 #endif
+
+#ifdef _AIX
+
+/*
+ * Checks whether or not "socket extensions for multicast source filters" is supported.
+ * Returns JNI_TRUE if it is supported, JNI_FALSE otherwise
+ */
+static jboolean isSourceFilterSupported(){
+    static jboolean alreadyChecked = JNI_FALSE;
+    static jboolean result = JNI_TRUE;
+    if (alreadyChecked != JNI_TRUE){
+        struct utsname uts;
+        memset(&uts, 0, sizeof(uts));
+        strcpy(uts.sysname, "?");
+        const int utsRes = uname(&uts);
+        int major = -1;
+        int minor = -1;
+        major = atoi(uts.version);
+        minor = atoi(uts.release);
+        if (strcmp(uts.sysname, "OS400") == 0){// usupported on OS400 < 7.1
+            if (major < 7 || (major == 7 && minor < 1)) {
+                result = JNI_FALSE;
+            }
+         } else if (strcmp(uts.sysname, "AIX") == 0) {
+            if (major < 6 || (major == 6 && minor < 1)) {// usupported on aix < 6.1
+                result = JNI_FALSE;
+            }
+        }
+        alreadyChecked = JNI_TRUE;
+    }
+    return result;
+}
+
+#endif  /* AIX */
 
 JNIEXPORT void JNICALL
 Java_sun_nio_ch_Net_initIDs(JNIEnv *env, jclass clazz)
