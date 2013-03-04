@@ -181,20 +181,21 @@ public class IndexedPropertyDescriptor extends PropertyDescriptor {
                 // the Indexed readMethod was explicitly set to null.
                 return null;
             }
+            String nextMethodName = Introspector.GET_PREFIX + getBaseName();
             if (indexedReadMethodName == null) {
                 Class type = getIndexedPropertyType0();
                 if (type == boolean.class || type == null) {
                     indexedReadMethodName = Introspector.IS_PREFIX + getBaseName();
                 } else {
-                    indexedReadMethodName = Introspector.GET_PREFIX + getBaseName();
+                    indexedReadMethodName = nextMethodName;
                 }
             }
 
             Class[] args = { int.class };
             indexedReadMethod = Introspector.findMethod(cls, indexedReadMethodName, 1, args);
-            if (indexedReadMethod == null) {
+            if ((indexedReadMethod == null) && !indexedReadMethodName.equals(nextMethodName)) {
                 // no "is" method, so look for a "get" method.
-                indexedReadMethodName = Introspector.GET_PREFIX + getBaseName();
+                indexedReadMethodName = nextMethodName;
                 indexedReadMethod = Introspector.findMethod(cls, indexedReadMethodName, 1, args);
             }
             setIndexedReadMethod0(indexedReadMethod);
@@ -492,6 +493,16 @@ public class IndexedPropertyDescriptor extends PropertyDescriptor {
         indexedPropertyTypeRef = old.indexedPropertyTypeRef;
         indexedWriteMethodName = old.indexedWriteMethodName;
         indexedReadMethodName = old.indexedReadMethodName;
+    }
+
+    void updateGenericsFor(Class<?> type) {
+        super.updateGenericsFor(type);
+        try {
+            setIndexedPropertyType(findIndexedPropertyType(getIndexedReadMethod0(), getIndexedWriteMethod0()));
+        }
+        catch (IntrospectionException exception) {
+            setIndexedPropertyType(null);
+        }
     }
 
     /**

@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2008, 2009, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -501,18 +500,6 @@ class UnixNativeDispatcher {
     private static native int getgrnam0(long nameAddress) throws UnixException;
 
     /**
-     * int getextmntent(FILE *fp, struct extmnttab *mp, int len);
-     */
-    static native int getextmntent(long fp, UnixMountEntry entry) throws UnixException;
-
-
-    /** 
-     * Special implementation of getextmntent that returns all entries at once (AIX_Port)
-     * Currently only implemented for AIX.
-     */
-    static native UnixMountEntry[] getmntctl() throws UnixException;
-
-    /**
      * statvfs(const char* path, struct statvfs *buf)
      */
     static void statvfs(UnixPath path, UnixFileStoreAttributes attrs)
@@ -556,6 +543,10 @@ class UnixNativeDispatcher {
     private static final boolean hasAtSysCalls;
     static boolean supportsAtSysCalls() {
         return hasAtSysCalls;
+    }
+
+    static boolean supportsNoFollowLinks() {
+        return UnixConstants.O_NOFOLLOW != 0;
     }
 
     // initialize syscalls and fieldIDs

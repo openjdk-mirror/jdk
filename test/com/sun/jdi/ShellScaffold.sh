@@ -252,6 +252,7 @@ setup()
     isCygwin=
     case "$osname" in
        Windows* | CYGWIN*)	   
+         devnull=NUL
 	 if [ "$osname" = Windows_98 -o "$osname" = Windows_ME ]; then
              isWin98=1
              debuggeeKeyword='we_cant_kill_debuggees_on_win98'
@@ -261,6 +262,7 @@ setup()
          case "$osname" in
            CYGWIN*)
              isCygwin=1
+             devnull=/dev/null
              ;;
          esac
 
@@ -271,7 +273,6 @@ setup()
             transport=dt_socket
             address=
          fi
-         devnull=NUL
          baseArgs="$baseArgs -XX:-ShowMessageBoxOnError"
          # jtreg puts \\s in TESTCLASSES and some uses, eg. echo
          # treat them as control chars on mks (eg \t is tab)

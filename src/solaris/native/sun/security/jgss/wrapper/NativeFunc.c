@@ -26,9 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
-#if !(defined(__APPLE__) || defined(AIX))
-#include <link.h>
-#endif
 #include "NativeFunc.h"
 
 /* standard GSS method names (ordering is from mapfile) */

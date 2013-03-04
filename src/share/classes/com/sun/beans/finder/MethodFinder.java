@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
+import static sun.reflect.misc.ReflectUtil.isPackageAccessible;
+
 /**
  * This utility class provides {@code static} methods
  * to find a public method with specified name and parameter types
@@ -64,11 +66,14 @@ public final class MethodFinder extends AbstractFinder<Method> {
         Signature signature = new Signature(type, name, args);
 
         Method method = CACHE.get(signature);
-        if (method != null) {
+        boolean cached = method != null;
+        if (cached && isPackageAccessible(method.getDeclaringClass())) {
             return method;
         }
         method = findAccessibleMethod(new MethodFinder(name, args).find(type.getMethods()));
-        CACHE.put(signature, method);
+        if (!cached) {
+            CACHE.put(signature, method);
+        }
         return method;
     }
 
@@ -120,7 +125,7 @@ public final class MethodFinder extends AbstractFinder<Method> {
      */
     public static Method findAccessibleMethod(Method method) throws NoSuchMethodException {
         Class<?> type = method.getDeclaringClass();
-        if (Modifier.isPublic(type.getModifiers())) {
+        if (Modifier.isPublic(type.getModifiers()) && isPackageAccessible(type)) {
             return method;
         }
         if (Modifier.isStatic(method.getModifiers())) {
@@ -164,8 +169,10 @@ public final class MethodFinder extends AbstractFinder<Method> {
                             return findAccessibleMethod(m);
                         }
                         Type[] gpts = m.getGenericParameterTypes();
-                        if (Arrays.equals(params, TypeResolver.erase(TypeResolver.resolve(pt, gpts)))) {
-                            return findAccessibleMethod(m);
+                        if (params.length == gpts.length) {
+                            if (Arrays.equals(params, TypeResolver.erase(TypeResolver.resolve(pt, gpts)))) {
+                                return findAccessibleMethod(m);
+                            }
                         }
                     }
                 }

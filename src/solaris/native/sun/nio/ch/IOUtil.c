@@ -25,11 +25,14 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include <sys/resource.h>
+
 #include "jni.h"
 #include "jni_util.h"
 #include "jvm.h"
 #include "jlong.h"
 #include "sun_nio_ch_IOUtil.h"
+#include "java_lang_Integer.h"
 #include "nio.h"
 #include "nio_util.h"
 
@@ -118,6 +121,20 @@ Java_sun_nio_ch_IOUtil_drain(JNIEnv *env, jclass cl, jint fd)
     }
 }
 
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_IOUtil_fdLimit(JNIEnv *env, jclass this)
+{
+    struct rlimit rlp;
+    if (getrlimit(RLIMIT_NOFILE, &rlp) < 0) {
+        JNU_ThrowIOExceptionWithLastError(env, "getrlimit failed");
+        return -1;
+    }
+    if (rlp.rlim_max < 0 || rlp.rlim_max > java_lang_Integer_MAX_VALUE) {
+        return java_lang_Integer_MAX_VALUE;
+    } else {
+        return (jint)rlp.rlim_max;
+    }
+}
 
 /* Declared in nio_util.h for use elsewhere in NIO */
 
@@ -143,6 +160,16 @@ convertReturnVal(JNIEnv *env, jint n, jboolean reading)
         return IOS_THROWN;
     }
 }
+
+JNIEXPORT jint JNICALL
+Java_sun_nio_ch_IOUtil_iovMax(JNIEnv *env, jclass this)
+{
+    jlong iov_max = sysconf(_SC_IOV_MAX);
+    if (iov_max == -1)
+        iov_max = 16;
+    return (jint)iov_max;
+}
+
 
 /* Declared in nio_util.h for use elsewhere in NIO */
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import java.util.Hashtable;
  * in a client's request.
  */
 class CGIClientException extends Exception {
+    private static final long serialVersionUID = 8147981687059865216L;
 
     public CGIClientException(String s) {
         super(s);
@@ -43,6 +44,8 @@ class CGIClientException extends Exception {
  * CGIServerException is thrown when an error occurs here on the server.
  */
 class CGIServerException extends Exception {
+
+    private static final long serialVersionUID = 6928425456704527017L;
 
     public CGIServerException(String s) {
         super(s);
@@ -111,9 +114,9 @@ public final class CGIHandler {
     };
 
     /* construct table mapping command strings to handlers */
-    private static Hashtable commandLookup;
+    private static Hashtable<String, CGICommandHandler> commandLookup;
     static {
-        commandLookup = new Hashtable();
+        commandLookup = new Hashtable<>();
         for (int i = 0; i < commands.length; ++ i)
             commandLookup.put(commands[i].getName(), commands[i]);
     }
@@ -140,7 +143,7 @@ public final class CGIHandler {
                 param = QueryString.substring(delim + 1);
             }
             CGICommandHandler handler =
-                (CGICommandHandler) commandLookup.get(command);
+                commandLookup.get(command);
             if (handler != null)
                 try {
                     handler.execute(param);
@@ -150,7 +153,7 @@ public final class CGIHandler {
                     returnServerError(e.getMessage());
                 }
             else
-                returnClientError("invalid command: " + command);
+                returnClientError("invalid command.");
         } catch (Exception e) {
             returnServerError("internal error: " + e.getMessage());
         }
@@ -200,12 +203,17 @@ public final class CGIHandler {
 
 /**
  * "forward" command: Forward request body to local port on the server,
- * and send reponse back to client.
+ * and send response back to client.
  */
 final class CGIForwardCommand implements CGICommandHandler {
 
     public String getName() {
         return "forward";
+    }
+
+    @SuppressWarnings("deprecation")
+    private String getLine (DataInputStream socketIn) throws IOException {
+        return socketIn.readLine();
     }
 
     public void execute(String param) throws CGIClientException, CGIServerException
@@ -217,7 +225,7 @@ final class CGIForwardCommand implements CGICommandHandler {
         try {
             port = Integer.parseInt(param);
         } catch (NumberFormatException e) {
-            throw new CGIClientException("invalid port number: " + param);
+            throw new CGIClientException("invalid port number.");
         }
         if (port <= 0 || port > 0xFFFF)
             throw new CGIClientException("invalid port: " + port);
@@ -276,7 +284,7 @@ final class CGIForwardCommand implements CGICommandHandler {
         int responseContentLength = -1;
         do {
             try {
-                line = socketIn.readLine();
+                line = getLine(socketIn);
             } catch (IOException e) {
                 throw new CGIServerException("error reading from server");
             }
@@ -285,11 +293,14 @@ final class CGIForwardCommand implements CGICommandHandler {
                     "unexpected EOF reading server response");
 
             if (line.toLowerCase().startsWith(key)) {
-                if (contentLengthFound)
-                    ; // what would we want to do in this case??
-                responseContentLength =
-                    Integer.parseInt(line.substring(key.length()).trim());
-                contentLengthFound = true;
+                if (contentLengthFound) {
+                    throw new CGIServerException(
+                            "Multiple Content-length entries found.");
+                } else {
+                    responseContentLength =
+                        Integer.parseInt(line.substring(key.length()).trim());
+                    contentLengthFound = true;
+                }
             }
         } while ((line.length() != 0) &&
                  (line.charAt(0) != '\r') && (line.charAt(0) != '\n'));

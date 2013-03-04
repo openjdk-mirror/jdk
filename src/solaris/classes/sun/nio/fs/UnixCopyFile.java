@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -387,8 +387,8 @@ class UnixCopyFile {
             } catch (UnixException x) {
                 if (x.errno() == EXDEV) {
                     throw new AtomicMoveNotSupportedException(
-                        source.getPathForExecptionMessage(),
-                        target.getPathForExecptionMessage(),
+                        source.getPathForExceptionMessage(),
+                        target.getPathForExceptionMessage(),
                         x.errorString());
                 }
                 x.rethrowAsIOException(source, target);
@@ -424,7 +424,7 @@ class UnixCopyFile {
                 return;  // nothing to do as files are identical
             if (!flags.replaceExisting) {
                 throw new FileAlreadyExistsException(
-                    target.getPathForExecptionMessage());
+                    target.getPathForExceptionMessage());
             }
 
             // attempt to delete target
@@ -440,7 +440,7 @@ class UnixCopyFile {
                    (x.errno() == EEXIST || x.errno() == ENOTEMPTY))
                 {
                     throw new DirectoryNotEmptyException(
-                        target.getPathForExecptionMessage());
+                        target.getPathForExceptionMessage());
                 }
                 x.rethrowAsIOException(target);
             }
@@ -493,7 +493,7 @@ class UnixCopyFile {
                 (x.errno() == EEXIST || x.errno() == ENOTEMPTY))
             {
                 throw new DirectoryNotEmptyException(
-                    source.getPathForExecptionMessage());
+                    source.getPathForExceptionMessage());
             }
             x.rethrowAsIOException(source);
         }
@@ -546,7 +546,7 @@ class UnixCopyFile {
                 return;  // nothing to do as files are identical
             if (!flags.replaceExisting)
                 throw new FileAlreadyExistsException(
-                    target.getPathForExecptionMessage());
+                    target.getPathForExceptionMessage());
             try {
                 if (targetAttrs.isDirectory()) {
                     rmdir(target);
@@ -559,7 +559,7 @@ class UnixCopyFile {
                    (x.errno() == EEXIST || x.errno() == ENOTEMPTY))
                 {
                     throw new DirectoryNotEmptyException(
-                        target.getPathForExecptionMessage());
+                        target.getPathForExceptionMessage());
                 }
                 x.rethrowAsIOException(target);
             }

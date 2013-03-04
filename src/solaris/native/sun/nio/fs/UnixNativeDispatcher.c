@@ -40,13 +40,10 @@
 
 #ifdef __solaris__
 #include <strings.h>
-#include <sys/mnttab.h>
-#include <sys/mkdev.h>
 #endif
 
 #ifdef __linux__
 #include <string.h>
-#include <mntent.h>
 #endif
 
 #ifdef _ALLBSD_SOURCE
@@ -106,11 +103,6 @@ static jfieldID attrs_f_frsize;
 static jfieldID attrs_f_blocks;
 static jfieldID attrs_f_bfree;
 static jfieldID attrs_f_bavail;
-
-/* Needed for getmntctl */
-#ifdef _AIX
-static jclass entry_cls;
-#endif
 
 static jfieldID entry_name;
 static jfieldID entry_dir;
@@ -225,11 +217,6 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
     entry_fstype = (*env)->GetFieldID(env, clazz, "fstype", "[B");
     entry_options = (*env)->GetFieldID(env, clazz, "opts", "[B");
     entry_dev = (*env)->GetFieldID(env, clazz, "dev", "J");
-
-    /* UnixMountEntry class is needed for getmntctl */
-#ifdef _AIX
-    entry_cls = (*env)->NewGlobalRef(env, clazz);
-#endif
 
     /* AIX and HP-UX need a couple more references for futimes emulation */
 #if defined(_AIX) || defined (__hpux__)
@@ -1110,12 +1097,7 @@ Java_sun_nio_fs_UnixNativeDispatcher_getpwnam0(JNIEnv* env, jclass this,
 
         if (res != 0 || p == NULL || p->pw_name == NULL || *(p->pw_name) == '\0') {
             /* not found or error */
-            /* getpwnam_r returns ESRCH if user does not exist on AIX */
-#ifdef _AIX
-            if (errno != 0 && errno != ESRCH)
-#else
-            if (errno != 0 && errno != ENOENT)
-#endif
+            if (errno != 0 && errno != ENOENT && errno != ESRCH)
                 throwUnixException(env, errno);
         } else {
             uid = p->pw_uid;
@@ -1161,12 +1143,7 @@ Java_sun_nio_fs_UnixNativeDispatcher_getgrnam0(JNIEnv* env, jclass this,
         retry = 0;
         if (res != 0 || g == NULL || g->gr_name == NULL || *(g->gr_name) == '\0') {
             /* not found or error */
-            /* getgrnam_r returns ESRCH if group does not exist on AIX */
-#ifdef _AIX
-            if (errno != 0 && errno != ESRCH) {
-#else
-            if (errno != 0 && errno != ENOENT) {
-#endif
+            if (errno != 0 && errno != ENOENT && errno != ESRCH) {
                 if (errno == ERANGE) {
                     /* insufficient buffer size so need larger buffer */
                     buflen += ENT_BUF_SIZE;
@@ -1184,263 +1161,4 @@ Java_sun_nio_fs_UnixNativeDispatcher_getgrnam0(JNIEnv* env, jclass this,
     } while (retry);
 
     return gid;
-}
-
-JNIEXPORT jint JNICALL
-Java_sun_nio_fs_UnixNativeDispatcher_getextmntent(JNIEnv* env, jclass this,
-    jlong value, jobject entry)
-{
-/* AIX uses getmntctl instead of this method. */
-#ifdef _AIX
-    return 0;
-#else
-#ifdef __solaris__
-    struct extmnttab ent;
-#elif defined(_ALLBSD_SOURCE)
-    char buf[1024];
-    char *str;
-    char *last;
-#else
-    struct mntent ent;
-    char buf[1024];
-    int buflen = sizeof(buf);
-    struct mntent* m;
-#endif
-    FILE* fp = jlong_to_ptr(value);
-    jsize len;
-    jbyteArray bytes;
-    char* name;
-    char* dir;
-    char* fstype;
-    char* options;
-    dev_t dev;
-
-#ifdef __solaris__
-    if (getextmntent(fp, &ent, 0))
-        return -1;
-    name = ent.mnt_special;
-    dir = ent.mnt_mountp;
-    fstype = ent.mnt_fstype;
-    options = ent.mnt_mntopts;
-    dev = makedev(ent.mnt_major, ent.mnt_minor);
-    if (dev == NODEV) {
-        /* possible bug on Solaris 8 and 9 */
-        throwUnixException(env, errno);
-        return -1;
-    }
-#elif defined(_ALLBSD_SOURCE)
-again:
-    if (!(str = fgets(buf, sizeof(buf), fp)))
-        return -1;
-
-    name = strtok_r(str, " \t\n", &last);
-    if (name == NULL)
-        return -1;
-
-    // skip comments
-    if (*name == '#')
-        goto again;
-
-    dir = strtok_r((char *)NULL, " \t\n", &last);
-    fstype = strtok_r((char *)NULL, " \t\n", &last);
-    options = strtok_r((char *)NULL, " \t\n", &last);
-    if (options == NULL)
-        return -1;
-    dev = 0;
-#else
-    m = getmntent_r(fp, &ent, (char*)&buf, buflen);
-    if (m == NULL)
-        return -1;
-    name = m->mnt_fsname;
-    dir = m->mnt_dir;
-    fstype = m->mnt_type;
-    options = m->mnt_opts;
-    dev = 0;
-#endif
-
-    len = strlen(name);
-    bytes = (*env)->NewByteArray(env, len);
-    if (bytes == NULL)
-        return -1;
-    (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)name);
-    (*env)->SetObjectField(env, entry, entry_name, bytes);
-
-    len = strlen(dir);
-    bytes = (*env)->NewByteArray(env, len);
-    if (bytes == NULL)
-        return -1;
-    (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)dir);
-    (*env)->SetObjectField(env, entry, entry_dir, bytes);
-
-    len = strlen(fstype);
-    bytes = (*env)->NewByteArray(env, len);
-    if (bytes == NULL)
-        return -1;
-    (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)fstype);
-    (*env)->SetObjectField(env, entry, entry_fstype, bytes);
-
-    len = strlen(options);
-    bytes = (*env)->NewByteArray(env, len);
-    if (bytes == NULL)
-        return -1;
-    (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)options);
-    (*env)->SetObjectField(env, entry, entry_options, bytes);
-
-    if (dev != 0)
-        (*env)->SetLongField(env, entry, entry_dev, (jlong)dev);
-
-    return 0;
-#endif
-}
-
-/* Special implementation of getextmntent that returns all entries at once */
-JNIEXPORT jobjectArray JNICALL
-Java_sun_nio_fs_UnixNativeDispatcher_getmntctl(JNIEnv* env, jclass this)
-{
-#ifndef _AIX
-    return NULL;
-#else
-    int must_free_buf = 0;
-    char stack_buf[1024];
-    char* buffer = stack_buf;
-    size_t buffer_size = 1024;
-    int num_entries;
-    int i;
-    jobjectArray ret;
-    struct vmount * vm;
-
-    for (i = 0; i < 5; i++) {
-        num_entries = mntctl(MCTL_QUERY, buffer_size, buffer);
-        if (num_entries != 0) {
-            break;
-        }
-        if (must_free_buf) {
-            free(buffer);
-        }
-        buffer_size *= 8;
-        buffer = malloc(buffer_size);
-        must_free_buf = 1;
-    }
-    /* Treat zero entries like errors. */
-    if (num_entries <= 0) {
-        if (must_free_buf) {
-            free(buffer);
-        }
-        throwUnixException(env, errno);
-        return NULL;
-    }
-    ret = (*env)->NewObjectArray(env, num_entries, entry_cls, NULL);
-    if (ret == NULL) {
-        if (must_free_buf) {
-            free(buffer);
-        }
-        return NULL;
-    }
-    vm = (struct vmount*)buffer;
-    for (i = 0; i < num_entries; i++) {
-        jsize len;
-        jbyteArray bytes;
-        const char* fstype;
-        /* We set all relevant attributes so there is no need to call constructor. */
-        jobject entry = (*env)->AllocObject(env, entry_cls);
-        if (entry == NULL) {
-            if (must_free_buf) {
-                free(buffer);
-            }
-            return NULL;
-        }
-        (*env)->SetObjectArrayElement(env, ret, i, entry);
-
-        /* vm->vmt_data[...].vmt_size is 32 bit aligned and also includes NULL byte. */
-        /* Since we only need the characters, it is necessary to check string size manually. */
-        len = strlen((char*)vm + vm->vmt_data[VMT_OBJECT].vmt_off);
-        bytes = (*env)->NewByteArray(env, len);
-        if (bytes == NULL) {
-            if (must_free_buf) {
-                free(buffer);
-            }
-            return NULL;
-        }
-        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)((char *)vm + vm->vmt_data[VMT_OBJECT].vmt_off));
-        (*env)->SetObjectField(env, entry, entry_name, bytes);
-
-        len = strlen((char*)vm + vm->vmt_data[VMT_STUB].vmt_off);
-        bytes = (*env)->NewByteArray(env, len);
-        if (bytes == NULL) {
-            if (must_free_buf) {
-                free(buffer);
-            }
-            return NULL;
-        }
-        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)((char *)vm + vm->vmt_data[VMT_STUB].vmt_off));
-        (*env)->SetObjectField(env, entry, entry_dir, bytes);
-
-        switch (vm->vmt_gfstype) {
-            case MNT_J2:
-                fstype = "jfs2";
-                break;
-            case MNT_NAMEFS:
-                fstype = "namefs";
-                break;
-            case MNT_NFS:
-                fstype = "nfs";
-                break;
-            case MNT_JFS:
-                fstype = "jfs";
-                break;
-            case MNT_CDROM:
-                fstype = "cdrom";
-                break;
-            case MNT_PROCFS:
-                fstype = "procfs";
-                break;
-            case MNT_NFS3:
-                fstype = "nfs3";
-                break;
-            case MNT_AUTOFS:
-                fstype = "autofs";
-                break;
-            case MNT_UDF:
-                fstype = "udfs";
-                break;
-            case MNT_NFS4:
-                fstype = "nfs4";
-                break;
-            case MNT_CIFS:
-                fstype = "smbfs";
-                break;
-            default:
-                fstype = "unknown";
-        }
-        len = strlen(fstype);
-        bytes = (*env)->NewByteArray(env, len);
-        if (bytes == NULL) {
-            if (must_free_buf) {
-                free(buffer);
-            }
-            return NULL;
-        }
-        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)fstype);
-        (*env)->SetObjectField(env, entry, entry_fstype, bytes);
-
-        len = strlen((char*)vm + vm->vmt_data[VMT_ARGS].vmt_off);
-        bytes = (*env)->NewByteArray(env, len);
-        if (bytes == NULL) {
-            if (must_free_buf) {
-                free(buffer);
-            }
-            return NULL;
-        }
-        (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)((char *)vm + vm->vmt_data[VMT_ARGS].vmt_off));
-        (*env)->SetObjectField(env, entry, entry_options, bytes);
-
-        /* goto the next vmount structure: */
-        vm = (struct vmount *)((char *)vm + vm->vmt_length);
-    }
-
-    if (must_free_buf) {
-        free(buffer);
-    }
-    return ret;
-#endif
 }

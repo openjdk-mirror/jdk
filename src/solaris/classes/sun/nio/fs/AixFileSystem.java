@@ -30,7 +30,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.io.IOException;
 import java.util.*;
-import static sun.nio.fs.UnixNativeDispatcher.*;
+import static sun.nio.fs.AixNativeDispatcher.*;
 
 /**
  * AIX implementation of FileSystem

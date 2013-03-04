@@ -131,7 +131,10 @@ public interface PlatformWindow {
 
     public void setResizable(boolean resizable);
 
-    public void setMinimumSize(int width, int height);
+    /**
+     * Applies the minimum and maximum size to the platform window.
+     */
+    public void setSizeConstraints(int minW, int minH, int maxW, int maxH);
 
     /**
      * Transforms the given Graphics object according to the native
@@ -157,4 +160,6 @@ public interface PlatformWindow {
     public long getLayerPtr();
 
     public LWWindowPeer getPeer();
+
+    public boolean isUnderMouse();
 }

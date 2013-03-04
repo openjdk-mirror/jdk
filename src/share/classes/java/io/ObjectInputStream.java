@@ -1750,6 +1750,12 @@ public class ObjectInputStream
         ObjectStreamClass desc = readClassDesc(false);
         desc.checkDeserialize();
 
+        Class<?> cl = desc.forClass();
+        if (cl == String.class || cl == Class.class
+                || cl == ObjectStreamClass.class) {
+            throw new InvalidClassException("invalid class descriptor");
+        }
+
         Object obj;
         try {
             obj = desc.isInstantiable() ? desc.newInstance() : null;
@@ -2025,8 +2031,9 @@ public class ObjectInputStream
      * This method should not be removed or its signature changed without
      * corresponding modifications to the above class.
      */
-    // REMIND: change name to something more accurate?
-    private static native ClassLoader latestUserDefinedLoader();
+    private static ClassLoader latestUserDefinedLoader() {
+        return sun.misc.VM.latestUserDefinedLoader();
+    }
 
     /**
      * Default GetField implementation.

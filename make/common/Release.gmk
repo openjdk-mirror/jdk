@@ -158,7 +158,6 @@ JDK_MAN_PAGES =            \
         jstack.1           \
         jstat.1            \
         jstatd.1           \
-        jvisualvm.1        \
 	native2ascii.1     \
 	rmic.1             \
         schemagen.1        \
@@ -167,13 +166,25 @@ JDK_MAN_PAGES =            \
         wsimport.1         \
         xjc.1
 
+ifndef OPENJDK
+  JDK_MAN_PAGES += jvisualvm.1
+endif
+
 ifeq ($(PLATFORM), solaris)
-  MANBASEDIRS=$(JDK_TOPDIR)/src/solaris/doc $(IMPORTDOCDIR)
+  ifndef OPENJDK
+    MANBASEDIRS=$(CLOSED_SRC)/solaris/doc $(IMPORTDOCDIR)
+  else
+    MANBASEDIRS=$(JDK_TOPDIR)/src/solaris/doc $(IMPORTDOCDIR)
+  endif
   MAN1SUBDIR=sun/man/man1
 endif # solaris
 
 ifeq ($(PLATFORM), linux)
-  MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
+  ifndef OPENJDK
+    MANBASEDIRS=$(CLOSED_SRC)/linux/doc $(IMPORTDOCDIR)
+  else
+    MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
+  endif
   MAN1SUBDIR=man
   JA_DIRNAME=ja_JP.UTF-8
 endif # linux
@@ -405,10 +416,29 @@ TOOLS = \
 	sun/tools/jinfo         \
 	sun/tools/jmap
 
+JFR_SRCDIRS_EXIST := $(shell \
+  if [ -d $(CLOSED_SHARE_SRC)/classes/com/oracle/jrockit/jfr ] ; then \
+   echo true; \
+  else \
+   echo false; \
+  fi)
+
+BUILD_JFR=
+ifndef OPENJDK
+ifndef JAVASE_EMBEDDED
+ifeq ($(JFR_SRCDIRS_EXIST), true)
+BUILD_JFR=true
+endif
+endif
+endif
+
 # classes that go into jfr.jar
+JFR_CLASSES_DIRS=
+ifdef BUILD_JFR
 JFR_CLASSES_DIRS= \
 	com/oracle/jrockit/jfr \
 	oracle/jrockit/jfr
+endif
 
 # classes that go into jsse.jar
 JSSE_CLASSES_DIRS = \
@@ -612,8 +642,7 @@ $(NOT_RT_JAR_LIST): FRC
 	$(ECHO) "sun/tools/jstack/" >> $@
 	$(ECHO) "sun/tools/jinfo/" >> $@
 	$(ECHO) "sun/tools/jmap/" >> $@
-ifndef OPENJDK
-ifndef JAVASE_EMBEDDED
+ifdef BUILD_JFR
 	$(ECHO) "com/oracle/jrockit/jfr/" >> $@
 	$(ECHO) "com/oracle/jrockit/jfr/client/" >> $@
 	$(ECHO) "com/oracle/jrockit/jfr/management/" >> $@
@@ -624,7 +653,7 @@ ifndef JAVASE_EMBEDDED
 	$(ECHO) "oracle/jrockit/jfr/settings/" >> $@
 	$(ECHO) "oracle/jrockit/jfr/tools/" >> $@
 endif
-endif
+
 
 
 # File order list for rt.jar
@@ -651,8 +680,7 @@ $(TOTAL_JAR_FILELIST): $(JARREORDER_JARFILE) $(NOT_RT_JAR_LIST)
 
 # Create jfr.jar
 JFR_JAR=
-ifndef OPENJDK
-ifndef JAVASE_EMBEDDED
+ifdef BUILD_JFR
 JFR_JAR=$(ABS_TEMPDIR)/jfr-orig.jar
 $(JFR_JAR): $(OTHER_JAR_MANIFEST_FILE)
 	$(prep-target)
@@ -660,7 +688,6 @@ $(JFR_JAR): $(OTHER_JAR_MANIFEST_FILE)
 	    $(BOOT_JAR_CMD) $(CREATE_JAR_OPTS) $(OTHER_JAR_MANIFEST_FILE) $@ \
 		$(JFR_CLASSES_DIRS) $(BOOT_JAR_JFLAGS)
 	@$(CD) $(CLASSBINDIR) && $(java-vm-cleanup)
-endif
 endif
 
 # Create the rt.jar file list & non-class files list
@@ -1318,8 +1345,8 @@ $(TEMP_PREV_JDK_COMPARISON): install-previous-jdk $(DIRDIFF_JARFILE)
 	@$(java-vm-cleanup)
 
 # Clean up names in the messages printed out
-CAT_FILTER = $(SED) -e "s@$(JDK_IMAGE_DIR)@JDK_IMAGE@g" \
-	            -e "s@$(JRE_IMAGE_DIR)@JRE_IMAGE@g"
+CAT_FILTER = $(SED) -e "s|$(JDK_IMAGE_DIR)|JDK_IMAGE|g" \
+	            -e "s|$(JRE_IMAGE_DIR)|JRE_IMAGE|g"
 
 # Report on the jre image comparison
 compare-image-jre: $(TEMP_PREV_JRE_COMPARISON)

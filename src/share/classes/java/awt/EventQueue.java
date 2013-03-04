@@ -52,7 +52,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import java.security.AccessControlContext;
-import java.security.ProtectionDomain;
 
 import sun.misc.SharedSecrets;
 import sun.misc.JavaSecurityAccess;
@@ -187,6 +186,23 @@ public class EventQueue {
                 }
                 public boolean isDispatchThreadImpl(EventQueue eventQueue) {
                     return eventQueue.isDispatchThreadImpl();
+                }
+                public void removeSourceEvents(EventQueue eventQueue,
+                                               Object source,
+                                               boolean removeAllEvents)
+                {
+                    eventQueue.removeSourceEvents(source, removeAllEvents);
+                }
+                public boolean noEvents(EventQueue eventQueue) {
+                    return eventQueue.noEvents();
+                }
+                public void wakeup(EventQueue eventQueue, boolean isShutdown) {
+                    eventQueue.wakeup(isShutdown);
+                }
+                public void invokeAndWait(Object source, Runnable r)
+                    throws InterruptedException, InvocationTargetException
+                {
+                    EventQueue.invokeAndWait(source, r);
                 }
             });
     }
@@ -1223,8 +1239,14 @@ public class EventQueue {
      * @since           1.2
      */
     public static void invokeAndWait(Runnable runnable)
-             throws InterruptedException, InvocationTargetException {
+        throws InterruptedException, InvocationTargetException
+    {
+        invokeAndWait(Toolkit.getDefaultToolkit(), runnable);
+    }
 
+    static void invokeAndWait(Object source, Runnable runnable)
+        throws InterruptedException, InvocationTargetException
+    {
         if (EventQueue.isDispatchThread()) {
             throw new Error("Cannot call invokeAndWait from the event dispatcher thread");
         }
@@ -1233,8 +1255,7 @@ public class EventQueue {
         Object lock = new AWTInvocationLock();
 
         InvocationEvent event =
-            new InvocationEvent(Toolkit.getDefaultToolkit(), runnable, lock,
-                                true);
+            new InvocationEvent(source, runnable, lock, true);
 
         synchronized (lock) {
             Toolkit.getEventQueue().postEvent(event);

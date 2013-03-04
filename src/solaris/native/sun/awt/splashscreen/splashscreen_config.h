@@ -32,11 +32,7 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/shape.h>
 #include <sys/types.h>
-#if defined(AIX)
 #include <unistd.h>
-#else
-#include <sys/unistd.h>
-#endif
 #include <pthread.h>
 #include <signal.h>
 #include <inttypes.h>

@@ -107,12 +107,6 @@ public class TextComponent extends Component implements Accessible {
     // the background color of non-editable TextComponents.
     boolean backgroundSetByClientCode = false;
 
-    /**
-     * True if this <code>TextComponent</code> has access
-     * to the System clipboard.
-     */
-    transient private boolean canAccessClipboard;
-
     transient protected TextListener textListener;
 
     /*
@@ -137,7 +131,6 @@ public class TextComponent extends Component implements Accessible {
         GraphicsEnvironment.checkHeadless();
         this.text = (text != null) ? text : "";
         setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
-        checkSystemClipboardAccess();
     }
 
     private void enableInputMethodsIfNecessary() {
@@ -233,9 +226,14 @@ public class TextComponent extends Component implements Accessible {
      * @see         java.awt.TextComponent#getText
      */
     public synchronized void setText(String t) {
+        boolean skipTextEvent = (text == null || text.isEmpty())
+                && (t == null || t.isEmpty());
         text = (t != null) ? t : "";
         TextComponentPeer peer = (TextComponentPeer)this.peer;
-        if (peer != null) {
+        // Please note that we do not want to post an event
+        // if TextArea.setText() or TextField.setText() replaces an empty text
+        // by an empty text, that is, if component's text remains unchanged.
+        if (peer != null && !skipTextEvent) {
             peer.setText(text);
         }
     }
@@ -727,17 +725,14 @@ public class TextComponent extends Component implements Accessible {
     /**
      * Assigns a valid value to the canAccessClipboard instance variable.
      */
-    private void checkSystemClipboardAccess() {
-        canAccessClipboard = true;
+    private boolean canAccessClipboard() {
         SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            try {
-                sm.checkSystemClipboardAccess();
-            }
-            catch (SecurityException e) {
-                canAccessClipboard = false;
-            }
-        }
+        if (sm == null) return true;
+        try {
+            sm.checkSystemClipboardAccess();
+            return true;
+        } catch (SecurityException e) {}
+        return false;
     }
 
     /*
@@ -820,7 +815,6 @@ public class TextComponent extends Component implements Accessible {
             }
         }
         enableInputMethodsIfNecessary();
-        checkSystemClipboardAccess();
     }
 
 

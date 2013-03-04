@@ -109,9 +109,6 @@ Java_sun_nio_ch_FileDispatcherImpl_readv0(JNIEnv *env, jclass clazz,
 {
     jint fd = fdval(env, fdo);
     struct iovec *iov = (struct iovec *)jlong_to_ptr(address);
-    if (len > 16) {
-        len = 16;
-    }
     return convertLongReturnVal(env, readv(fd, iov, len), JNI_TRUE);
 }
 
@@ -141,9 +138,6 @@ Java_sun_nio_ch_FileDispatcherImpl_writev0(JNIEnv *env, jclass clazz,
 {
     jint fd = fdval(env, fdo);
     struct iovec *iov = (struct iovec *)jlong_to_ptr(address);
-    if (len > 16) {
-        len = 16;
-    }
     return convertLongReturnVal(env, writev(fd, iov, len), JNI_FALSE);
 }
 
@@ -236,7 +230,7 @@ Java_sun_nio_ch_FileDispatcherImpl_lock0(JNIEnv *env, jobject this, jobject fdo,
     }
     lockResult = fcntl(fd, cmd, &fl);
     if (lockResult < 0) {
-        if ((cmd == F_SETLK64) && (errno == EAGAIN))
+        if ((cmd == F_SETLK64) && (errno == EAGAIN || errno == EACCES))
             return sun_nio_ch_FileDispatcherImpl_NO_LOCK;
         if (errno == EINTR)
             return sun_nio_ch_FileDispatcherImpl_INTERRUPTED;

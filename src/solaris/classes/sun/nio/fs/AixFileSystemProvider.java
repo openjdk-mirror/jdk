@@ -26,6 +26,7 @@
 
 package sun.nio.fs;
 
+import java.nio.file.spi.FileTypeDetector;
 import java.io.IOException;
 
 /**
@@ -48,5 +49,10 @@ public class AixFileSystemProvider extends UnixFileSystemProvider {
     @Override
     AixFileStore getFileStore(UnixPath path) throws IOException {
         return new AixFileStore(path);
+    }
+  
+    @Override
+    FileTypeDetector getFileTypeDetector() {
+        return new GnomeFileTypeDetector();
     }
 }

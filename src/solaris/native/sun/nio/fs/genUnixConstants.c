@@ -26,16 +26,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
-#ifndef AIX
-#include <sys/fcntl.h>
-#else
 #include <fcntl.h>
-#endif
 #include <sys/stat.h>
-
-#ifndef O_NOFOLLOW
-#define O_NOFOLLOW 0x0
-#endif
 
 /**
  * Generates sun.nio.fs.UnixConstants
@@ -77,7 +69,12 @@ int main(int argc, const char* argv[]) {
 #else
     DEFX(O_DSYNC);
 #endif
+#ifdef O_NOFOLLOW
     DEFX(O_NOFOLLOW);
+#else
+    // not supported (dummy values will not be used at runtime).
+    emitX("O_NOFOLLOW", 0x0);
+#endif
 
     // mode masks
     emitX("S_IAMB",

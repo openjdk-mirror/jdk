@@ -28,9 +28,6 @@
 #include <string.h>
 
 #include <dlfcn.h>
-#if !defined( __APPLE__ ) && !defined(AIX)
-#include <link.h>
-#endif
 
 #include <jni_util.h>
 
