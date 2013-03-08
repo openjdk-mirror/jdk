@@ -316,7 +316,7 @@ SplashDecodeGif(Splash * splash, GifFileType * gif)
 int
 SplashDecodeGifStream(Splash * splash, SplashStream * stream)
 {
-#ifdef GIFLIB_MAJOR >= 5
+#if GIFLIB_MAJOR >= 5
     int error = 0;
     GifFileType *gif = DGifOpen((void *) stream, SplashStreamGifInputFunc, &error);
 
