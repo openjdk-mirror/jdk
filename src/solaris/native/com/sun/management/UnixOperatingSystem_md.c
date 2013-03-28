@@ -57,6 +57,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if defined(AIX)
+#include <libperfstat.h>
+#endif
+
 static jlong page_size = 0;
 
 #if defined(_ALLBSD_SOURCE) || defined(AIX) 
@@ -326,6 +330,12 @@ Java_com_sun_management_UnixOperatingSystem_getFreePhysicalMemorySize
      */
     // throw_internal_error(env, "Unimplemented in FreeBSD");
     return (128 * MB);
+#elif defined(AIX)
+    perfstat_memory_total_t memory_info;
+    if (-1 != perfstat_memory_total(NULL, &memory_info, sizeof(perfstat_memory_total_t), 1)) {
+        return (jlong)(memory_info.real_free * 4L * 1024L);
+    }
+    return -1;
 #else // solaris / linux
     jlong num_avail_physical_pages = sysconf(_SC_AVPHYS_PAGES);
     return (num_avail_physical_pages * page_size);
@@ -349,6 +359,12 @@ Java_com_sun_management_UnixOperatingSystem_getTotalPhysicalMemorySize
         return -1;
     }
     return result;
+#elif defined(AIX)
+    perfstat_memory_total_t memory_info;
+    if (-1 != perfstat_memory_total(NULL, &memory_info, sizeof(perfstat_memory_total_t), 1)) {
+        return (jlong)(memory_info.real_total * 4L * 1024L);
+    }
+    return -1;
 #else // solaris / linux
     jlong num_physical_pages = sysconf(_SC_PHYS_PAGES);
     return (num_physical_pages * page_size);
