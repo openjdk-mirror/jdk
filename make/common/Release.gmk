@@ -171,12 +171,20 @@ ifndef OPENJDK
 endif
 
 ifeq ($(PLATFORM), solaris)
-  MANBASEDIRS=$(JDK_TOPDIR)/src/solaris/doc $(IMPORTDOCDIR)
+  ifndef OPENJDK
+    MANBASEDIRS=$(CLOSED_SRC)/solaris/doc $(IMPORTDOCDIR)
+  else
+    MANBASEDIRS=$(JDK_TOPDIR)/src/solaris/doc $(IMPORTDOCDIR)
+  endif
   MAN1SUBDIR=sun/man/man1
 endif # solaris
 
 ifeq ($(PLATFORM), linux)
-  MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
+  ifndef OPENJDK
+    MANBASEDIRS=$(CLOSED_SRC)/linux/doc $(IMPORTDOCDIR)
+  else
+    MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
+  endif
   MAN1SUBDIR=man
   JA_DIRNAME=ja_JP.UTF-8
 endif # linux
@@ -237,7 +245,7 @@ trim-image-jre trim-image-jdk \
 identify-image-jre identify-image-jdk \
 process-image-jre process-image-jdk \
 compare-image \
-sec-files sec-files-win jgss-files ::
+sec-files sec-files-win jgss-files server-jdk-image ::
 	@$(ECHO) ">>>Making "$@" @ `$(DATE)` ..."
 
 # Order is important here, trim jre after jdk image is created
@@ -246,16 +254,17 @@ ifeq ($(PLATFORM), macosx)
 images:: sanity-images post-sanity-images  \
 	 $(INITIAL_IMAGE_JRE) $(EXTRA_JRE_TARGETS) $(INITIAL_IMAGE_JDK) \
 	 trim-image-jre trim-image-jdk \
-     identify-image-jre identify-image-jdk \
-	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files \
-	 $(EXTRA_IMAGE_TARGETS)
+	identify-image-jre identify-image-jdk \
+	 process-image-jre process-image-jdk sec-files sec-files-win \
+	 jgss-files $(EXTRA_IMAGE_TARGETS) server-jdk-image
 else
 
 images:: sanity-images post-sanity-images  \
 	 $(INITIAL_IMAGE_JRE) $(INITIAL_IMAGE_JDK) \
 	 trim-image-jre trim-image-jdk \
          identify-image-jre identify-image-jdk \
-	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files 
+	 process-image-jre process-image-jdk sec-files sec-files-win \
+	 jgss-files server-jdk-image
 endif
 
 # Don't use these
@@ -931,6 +940,27 @@ endif
 	done
 	$(RM) $(JRE_BIN_LIST)
 
+# Duplicate current j2re-image contents to server-j2re-image
+# for the server version of jre, before deploy build
+server-jdk-image::
+ifeq ($(PLATFORM), macosx)
+	$(RM) -r $(JDK_SERVER_BUNDLE_DIR)/Home/demo
+	$(RM) -r $(JDK_SERVER_BUNDLE_DIR)/Home/sample
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/bin/jcontrol
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/jre/bin/jcontrol
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/man/ja_JP.UTF-8/man1/javaws.1
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/man/man1/javaws.1
+else
+	$(RM) -r $(JDK_SERVER_IMAGE_DIR)
+	$(CP) -r $(JDK_IMAGE_DIR) $(JDK_SERVER_IMAGE_DIR)
+	$(RM) -r $(JDK_SERVER_IMAGE_DIR)/demo
+	$(RM) -r $(JDK_SERVER_IMAGE_DIR)/sample
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/bin/jcontrol
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/jre/bin/jcontrol
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/man/ja_JP.UTF-8/man1/javaws.1
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/man/man1/javaws.1
+endif
+
 ######################################################
 # JDK Image
 ######################################################
@@ -1323,8 +1353,8 @@ $(TEMP_PREV_JDK_COMPARISON): install-previous-jdk $(DIRDIFF_JARFILE)
 	@$(java-vm-cleanup)
 
 # Clean up names in the messages printed out
-CAT_FILTER = $(SED) -e "s@$(JDK_IMAGE_DIR)@JDK_IMAGE@g" \
-	            -e "s@$(JRE_IMAGE_DIR)@JRE_IMAGE@g"
+CAT_FILTER = $(SED) -e "s|$(JDK_IMAGE_DIR)|JDK_IMAGE|g" \
+	            -e "s|$(JRE_IMAGE_DIR)|JRE_IMAGE|g"
 
 # Report on the jre image comparison
 compare-image-jre: $(TEMP_PREV_JRE_COMPARISON)

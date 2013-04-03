@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,7 @@
  *      6894719 6968053 7151434 7146424
  * @summary Argument parsing validation.
  * @compile -XDignore.symbol.file Arrrghs.java
- * @run main Arrrghs
+ * @run main/othervm Arrrghs
  */
 
 import java.io.BufferedReader;
@@ -205,8 +205,7 @@ public class Arrrghs extends TestHelper {
         // exiting the process prematurely can terminate the stderr.
         scratchpad.add(javaCmd + " -version " + inArgs);
         File batFile = new File("atest.bat");
-        java.nio.file.Files.deleteIfExists(batFile.toPath());
-        createFile(batFile, scratchpad);
+        createAFile(batFile, scratchpad);
 
         TestResult tr = doExec(batFile.getName());
 
@@ -311,6 +310,7 @@ public class Arrrghs extends TestHelper {
         checkArgumentParsing("../../*", "../../*");
         checkArgumentParsing("..\\..\\", "..\\..\\");
         checkArgumentParsing("../../", "../../");
+        checkArgumentParsing("a b\\ c", "a", "b\\", "c");
     }
 
     private void initEmptyDir(File emptyDir) throws IOException {

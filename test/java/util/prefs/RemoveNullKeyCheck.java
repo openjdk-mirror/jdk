@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2008, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,9 +21,25 @@
  * questions.
  */
 
-import java.rmi.Remote;
-import java.rmi.RemoteException;
-public interface CallbackInterface extends Remote {
-    public void inc() throws RemoteException;
-    public int getNumDeactivated() throws RemoteException;
+/* @test
+ * @bug 7160242
+ * @summary Check if NullPointerException is thrown if the key passed
+ *          to remove() is null.
+ * @run main/othervm -Djava.util.prefs.userRoot=. RemoveNullKeyCheck
+ */
+
+import java.util.prefs.Preferences;
+
+public class RemoveNullKeyCheck {
+
+    public static void main(String[] args) throws Exception {
+       try {
+           Preferences node = Preferences.userRoot().node("N1");
+           node.remove(null);
+           throw new RuntimeException("Expected NullPointerException " +
+                                      "not thrown");
+       } catch (NullPointerException npe) {
+           System.out.println("NullPointerException thrown");
+       }
+    }
 }

@@ -1,6 +1,6 @@
 ###########################################################################
 #
-# Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -134,9 +134,6 @@ java/lang/Runtime/exec/SleepyCat.java                           generic-all
 # Times out on solaris sparc -server
 java/lang/ThreadLocal/MemoryLeak.java                           solaris-all
 
-# Windows X64, RuntimeException: MyThread expected to have RUNNABLE but got WAITING
-java/lang/Thread/ThreadStateTest.java                           generic-all
-
 # 7148492
 java/lang/management/MemoryMXBean/ResetPeakMemoryUsage.java	generic-all
 
@@ -238,27 +235,6 @@ demo/jvmti/compiledMethodLoad/CompiledMethodLoadTest.java       generic-all
 # 7056489
 com/sun/jndi/ldap/ReadTimeoutTest.java                          generic-all
 
-# 7162111
-demo/jvmti/mtrace/TraceJFrame.java                              macosx-all
-javax/script/CauseExceptionTest.java                            macosx-all
-javax/script/GetInterfaceTest.java                              macosx-all
-javax/script/JavaScriptScopeTest.java                           macosx-all
-javax/script/NullUndefinedVarTest.java                          macosx-all
-javax/script/PluggableContextTest.java                          macosx-all
-javax/script/ProviderTest.sh                                    macosx-all
-javax/script/RhinoExceptionTest.java                            macosx-all
-javax/script/StringWriterPrintTest.java                         macosx-all
-javax/script/Test1.java                                         macosx-all
-javax/script/Test2.java                                         macosx-all
-javax/script/Test3.java                                         macosx-all
-javax/script/Test4.java                                         macosx-all
-javax/script/Test5.java                                         macosx-all
-javax/script/Test6.java                                         macosx-all
-javax/script/Test7.java                                         macosx-all
-javax/script/Test8.java                                         macosx-all
-javax/script/UnescapedBracketRegExTest.java                     macosx-all
-javax/script/VersionTest.java                                   macosx-all
-
 ############################################################################
 
 # jdk_net
@@ -288,9 +264,6 @@ sun/net/www/protocol/http/UserCookie.java			macosx-all
 # 7162118
 java/net/CookieHandler/CookieManagerTest.java			macosx-all
 
-# 7162123
-test/java/net/InetSocketAddress/B6469803.java			macosx-all
-
 # JPRT needs to set 127.0.0.1 in proxy bypass list
 java/net/URLClassLoader/closetest/CloseTest.java		macosx-all
 
@@ -300,11 +273,6 @@ java/net/URLClassLoader/closetest/CloseTest.java		macosx-all
 
 # 6962637
 java/io/File/MaxPathLength.java                                 windows-all
-
-# 7162111 - these tests need to be updated to run headless
-java/io/Serializable/resolveClass/deserializeButton/run.sh      macosx-all
-java/io/Serializable/serialver/classpath/run.sh                 macosx-all
-java/io/Serializable/serialver/nested/run.sh                    macosx-all
 
 ############################################################################
 
@@ -328,73 +296,17 @@ java/nio/channels/Selector/OutOfBand.java			macosx-all
 
 # jdk_rmi
 
-# Port already in use, fails on sparc, othervm
-java/rmi/reliability/benchmark/runRmiBench.sh                   generic-all
-
-# Already in use port issues? othervm solaris
-java/rmi/activation/rmidViaInheritedChannel/InheritedChannelNotServerSocket.java generic-all
-java/rmi/activation/rmidViaInheritedChannel/RmidViaInheritedChannel.java generic-all
-
-java/rmi/transport/rapidExportUnexport/RapidExportUnexport.java         generic-all
-java/rmi/transport/dgcDeadLock/TestImpl_Stub.java                       generic-all
-
-# Address already in use, othervm mode, solaris
-java/rmi/activation/Activatable/elucidateNoSuchMethod/ElucidateNoSuchMethod.java        generic-all
-java/rmi/activation/Activatable/forceLogSnapshot/ForceLogSnapshot.java  generic-all
-
-# Registry already running on port, solaris
-java/rmi/Naming/legalRegistryNames/LegalRegistryNames.java      generic-all
-
 # 7146541
 java/rmi/transport/rapidExportUnexport/RapidExportUnexport.java	linux-all
 
-# Times out on solaris sparc
-java/rmi/server/RemoteServer/AddrInUse.java                     generic-all
+# 7190106
+java/rmi/reliability/benchmark/runRmiBench.sh                   generic-all
 
-# Connection error on Windows i586 -server
-#  Also connection errors in othervm on Solaris 10 sparc, same port???
-sun/rmi/transport/tcp/DeadCachedConnection.java                 generic-all
+# 7191877
+java/rmi/transport/checkLeaseInfoLeak/CheckLeaseLeak.java       generic-all
 
-# Connection errors in othervm on Solaris 10 sparc, same port???
-java/rmi/activation/Activatable/checkActivateRef/CheckActivateRef.java generic-all
-java/rmi/activation/Activatable/checkAnnotations/CheckAnnotations.java generic-all
-java/rmi/activation/Activatable/checkImplClassLoader/CheckImplClassLoader.java generic-all
-java/rmi/activation/Activatable/checkRegisterInLog/CheckRegisterInLog.java generic-all
-java/rmi/activation/Activatable/createPrivateActivable/CreatePrivateActivatable.java generic-all
-java/rmi/activation/Activatable/downloadParameterClass/DownloadParameterClass.java generic-all
-java/rmi/activation/Activatable/extLoadedImpl/ext.sh generic-all
-java/rmi/activation/Activatable/inactiveGroup/InactiveGroup.java generic-all
-java/rmi/activation/Activatable/lookupActivationSystem/LookupActivationSystem.java generic-all
-java/rmi/activation/Activatable/nestedActivate/NestedActivate.java generic-all
-java/rmi/activation/Activatable/restartCrashedService/RestartCrashedService.java generic-all
-java/rmi/activation/Activatable/restartLatecomer/RestartLatecomer.java generic-all
-java/rmi/activation/Activatable/shutdownGracefully/ShutdownGracefully.java generic-all
-java/rmi/activation/Activatable/unregisterInactive/UnregisterInactive.java generic-all
-java/rmi/activation/ActivateFailedException/activateFails/ActivateFails.java generic-all
-java/rmi/activation/ActivationGroup/downloadActivationGroup/DownloadActivationGroup.java generic-all
-java/rmi/activation/ActivationSystem/activeGroup/IdempotentActiveGroup.java generic-all
-java/rmi/reliability/juicer/AppleUserImpl.java generic-all
-java/rmi/server/RMISocketFactory/useSocketFactory/unicast/UseCustomSocketFactory.java generic-all
-java/rmi/server/UnicastRemoteObject/keepAliveDuringCall/KeepAliveDuringCall.java generic-all
-java/rmi/transport/handshakeTimeout/HandshakeTimeout.java generic-all
-java/rmi/activation/Activatable/restartService/RestartService.java generic-all
-java/rmi/activation/ActivationSystem/modifyDescriptor/ModifyDescriptor.java generic-all
-java/rmi/activation/ActivationSystem/stubClassesPermitted/StubClassesPermitted.java generic-all
-java/rmi/activation/ActivationSystem/unregisterGroup/UnregisterGroup.java generic-all
-java/rmi/activation/CommandEnvironment/SetChildEnv.java generic-all
-java/rmi/registry/classPathCodebase/ClassPathCodebase.java generic-all
-java/rmi/registry/reexport/Reexport.java generic-all
-java/rmi/server/Unreferenced/leaseCheckInterval/LeaseCheckInterval.java generic-all
-java/rmi/server/Unreferenced/unreferencedContext/UnreferencedContext.java generic-all
-java/rmi/server/useCustomRef/UseCustomRef.java generic-all
-java/rmi/transport/checkFQDN/CheckFQDN.java generic-all
-java/rmi/transport/checkLeaseInfoLeak/CheckLeaseLeak.java generic-all
-java/rmi/server/RMISocketFactory/useSocketFactory/activatable/UseCustomSocketFactory.java generic-all
-java/rmi/server/RMISocketFactory/useSocketFactory/registry/UseCustomSocketFactory.java generic-all
-java/rmi/server/UnicastRemoteObject/unexportObject/UnexportLeak.java generic-all
-
-# 7142596
-java/rmi/transport/httpSocket/HttpSocketTest.java		macosx-all
+# 7195095
+sun/rmi/transport/proxy/EagerHttpFallback.java                  generic-all
 
 ############################################################################
 
@@ -452,6 +364,15 @@ sun/security/ssl/com/sun/net/ssl/internal/ssl/InputRecord/InterruptedIO.java sol
 # 7147060
 com/sun/org/apache/xml/internal/security/transforms/ClassLoaderTest.java        generic-all
 
+# 8000439: NPG: REGRESSION : sun/security/krb5/auto/MaxRetries.java fails with timeout
+sun/security/krb5/auto/MaxRetries.java                          solaris-sparcv9
+
+# 8006690: sun/security/krb5/auto/BadKdc1.java fails intermittently
+sun/security/krb5/auto/BadKdc1.java                             solaris-sparcv9
+sun/security/krb5/auto/BadKdc2.java                             solaris-sparcv9
+sun/security/krb5/auto/BadKdc3.java                             solaris-sparcv9
+sun/security/krb5/auto/BadKdc4.java                             solaris-sparcv9
+
 ############################################################################
 
 # jdk_swing
@@ -478,14 +399,6 @@ sun/tools/jconsole/ResourceCheckTest.sh                         generic-all
 
 # 7132203
 sun/jvmstat/monitor/MonitoredVm/CR6672135.java                  generic-all
-
-# 7162111
-sun/tools/jrunscript/jrunscript-DTest.sh			macosx-all
-sun/tools/jrunscript/jrunscript-argsTest.sh			macosx-all
-sun/tools/jrunscript/jrunscript-cpTest.sh			macosx-all
-sun/tools/jrunscript/jrunscript-eTest.sh			macosx-all
-sun/tools/jrunscript/jrunscript-fTest.sh			macosx-all
-sun/tools/jrunscript/jrunscriptTest.sh				macosx-all
 
 # 8001118
 sun/tools/jcmd/jcmd-f.sh					generic-all
@@ -534,10 +447,6 @@ java/util/concurrent/FutureTask/BlockingTaskExecutor.java       generic-all
 
 # Problems on windows, jmap.exe hangs? (these run jmap), fails on Solaris 10 x86
 java/util/concurrent/locks/Lock/TimedAcquireLeak.java           generic-all
-
-# 7162111
-java/util/ResourceBundle/Control/Bug6530694.java		macosx-all
-java/util/logging/LoggingDeadlock4.java				macosx-all
 
 # 7041639, Solaris DSA keypair generation bug
 java/util/TimeZone/TimeZoneDatePermissionCheck.sh               solaris-all
