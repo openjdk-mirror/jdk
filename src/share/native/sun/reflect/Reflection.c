@@ -27,9 +27,11 @@
 #include "sun_reflect_Reflection.h"
 
 JNIEXPORT jclass JNICALL Java_sun_reflect_Reflection_getCallerClass
-(JNIEnv *env, jclass unused, jint depth)
+(JNIEnv *env, jclass unused)
 {
-    return JVM_GetCallerClass(env, depth);
+    // Until there is hotspot @CallerSensitive support,
+    // depth must always be 2 to get the immediate caller
+    return JVM_GetCallerClass(env, 2);
 }
 
 JNIEXPORT jint JNICALL Java_sun_reflect_Reflection_getClassAccessFlags
