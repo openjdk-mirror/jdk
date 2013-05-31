@@ -42,7 +42,7 @@ import sun.util.logging.PlatformLogger;
 
 public class LWWindowPeer
     extends LWContainerPeer<Window, JComponent>
-    implements WindowPeer, FramePeer, DialogPeer, FullScreenCapable
+    implements FramePeer, DialogPeer, FullScreenCapable, DisplayChangedListener
 {
     public static enum PeerType {
         SIMPLEWINDOW,
@@ -194,6 +194,7 @@ public class LWWindowPeer
         if (getSurfaceData() == null) {
             replaceSurfaceData(false);
         }
+        activateDisplayListener();
     }
 
     // Just a helper method
@@ -215,6 +216,7 @@ public class LWWindowPeer
 
     @Override
     protected void disposeImpl() {
+        deactivateDisplayListener();
         SurfaceData oldData = getSurfaceData();
         synchronized (surfaceDataLock){
             surfaceData = null;
@@ -656,17 +658,16 @@ public class LWWindowPeer
         setBounds(x, y, w, h, SET_BOUNDS, false, false);
 
         // Second, update the graphics config and surface data
-        checkIfOnNewScreen();
-        if (resized) {
+        final boolean isNewDevice = updateGraphicsDevice();
+        if (resized || isNewDevice) {
             replaceSurfaceData();
-            flushOnscreenGraphics();
         }
 
         // Third, COMPONENT_MOVED/COMPONENT_RESIZED/PAINT events
         if (moved || invalid) {
             handleMove(x, y, true);
         }
-        if (resized || invalid) {
+        if (resized || invalid || isNewDevice) {
             handleResize(w, h, true);
             repaintPeer();
         }
@@ -686,7 +687,7 @@ public class LWWindowPeer
                 }
                 if (!isTextured()) {
                     if (g instanceof SunGraphics2D) {
-                        SG2DConstraint((SunGraphics2D) g, getRegion());
+                        ((SunGraphics2D) g).constrain(0, 0, w, h, getRegion());
                     }
                     g.setColor(getBackground());
                     g.fillRect(0, 0, w, h);
@@ -701,8 +702,9 @@ public class LWWindowPeer
         getLWToolkit().getCursorManager().updateCursorLater(this);
     }
 
-    public void notifyActivation(boolean activation) {
-        changeFocusedWindow(activation);
+    public void notifyActivation(boolean activation, LWWindowPeer opposite) {
+        Window oppositeWindow = (opposite == null)? null : opposite.getTarget();
+        changeFocusedWindow(activation, oppositeWindow);
     }
 
     // MouseDown in non-client area
@@ -920,6 +922,18 @@ public class LWWindowPeer
 
     // ---- UTILITY METHODS ---- //
 
+    private void activateDisplayListener() {
+        final GraphicsEnvironment ge =
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
+        ((SunGraphicsEnvironment) ge).addDisplayChangedListener(this);
+    }
+
+    private void deactivateDisplayListener() {
+        final GraphicsEnvironment ge =
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
+        ((SunGraphicsEnvironment) ge).removeDisplayChangedListener(this);
+    }
+
     private void postWindowStateChangedEvent(int newWindowState) {
         if (getTarget() instanceof Frame) {
             AWTAccessor.getFrameAccessor().setExtendedState(
@@ -961,7 +975,7 @@ public class LWWindowPeer
             }
             // If window's graphics config is changed from the app code, the
             // config correspond to the same device as before; when the window
-            // is moved by user, graphicsDevice is updated in checkIfOnNewScreen().
+            // is moved by user, graphicsDevice is updated in notifyReshape().
             // In either case, there's nothing to do with screenOn here
             graphicsConfig = gc;
         }
@@ -969,25 +983,42 @@ public class LWWindowPeer
         return true;
     }
 
-    private void checkIfOnNewScreen() {
+    /**
+     * Returns true if the GraphicsDevice has been changed, false otherwise.
+     */
+    public boolean updateGraphicsDevice() {
         GraphicsDevice newGraphicsDevice = platformWindow.getGraphicsDevice();
         synchronized (getStateLock()) {
             if (graphicsDevice == newGraphicsDevice) {
-                return;
+                return false;
             }
             graphicsDevice = newGraphicsDevice;
         }
 
-        // TODO: DisplayChangedListener stuff
         final GraphicsConfiguration newGC = newGraphicsDevice.getDefaultConfiguration();
 
-        if (!setGraphicsConfig(newGC)) return;
+        if (!setGraphicsConfig(newGC)) return false;
 
         SunToolkit.executeOnEventHandlerThread(getTarget(), new Runnable() {
             public void run() {
                 AWTAccessor.getComponentAccessor().setGraphicsConfiguration(getTarget(), newGC);
             }
         });
+        return true;
+    }
+
+    @Override
+    public final void displayChanged() {
+        updateGraphicsDevice();
+        // Replace surface unconditionally, because internal state of the
+        // GraphicsDevice could be changed.
+        replaceSurfaceData();
+        repaintPeer();
+    }
+
+    @Override
+    public final void paletteChanged() {
+        // components do not need to react to this event.
     }
 
     /*
@@ -1046,7 +1077,7 @@ public class LWWindowPeer
                     g.setColor(nonOpaqueBackground);
                     g.fillRect(0, 0, r.width, r.height);
                     if (g instanceof SunGraphics2D) {
-                        SG2DConstraint((SunGraphics2D) g, getRegion());
+                       ((SunGraphics2D) g).constrain(0, 0, r.width, r.height, getRegion());
                     }
                     if (!isTextured()) {
                         g.setColor(getBackground());
@@ -1062,6 +1093,7 @@ public class LWWindowPeer
                 }
             }
         }
+        flushOnscreenGraphics();
     }
 
     private void blitSurfaceData(final SurfaceData src, final SurfaceData dst) {
@@ -1069,14 +1101,15 @@ public class LWWindowPeer
         if (src != dst && src != null && dst != null
             && !(dst instanceof NullSurfaceData)
             && !(src instanceof NullSurfaceData)
-            && src.getSurfaceType().equals(dst.getSurfaceType())) {
-            final Rectangle size = getSize();
+            && src.getSurfaceType().equals(dst.getSurfaceType())
+            && src.getDefaultScale() == dst.getDefaultScale()) {
+            final Rectangle size = src.getBounds();
             final Blit blit = Blit.locate(src.getSurfaceType(),
                                           CompositeType.Src,
                                           dst.getSurfaceType());
             if (blit != null) {
-                blit.Blit(src, dst, AlphaComposite.Src,
-                          getRegion(), 0, 0, 0, 0, size.width, size.height);
+                blit.Blit(src, dst, AlphaComposite.Src, null, 0, 0, 0, 0,
+                          size.width, size.height);
             }
         }
     }
@@ -1135,6 +1168,9 @@ public class LWWindowPeer
         Window currentActive = KeyboardFocusManager.
             getCurrentKeyboardFocusManager().getActiveWindow();
 
+        Window opposite = LWKeyboardFocusManagerPeer.getInstance().
+            getCurrentFocusedWindow();
+
         // Make the owner active window.
         if (isSimpleWindow()) {
             LWWindowPeer owner = getOwnerFrameDialog(this);
@@ -1161,16 +1197,17 @@ public class LWWindowPeer
             }
 
             // DKFM will synthesize all the focus/activation events correctly.
-            changeFocusedWindow(true);
+            changeFocusedWindow(true, opposite);
             return true;
 
         // In case the toplevel is active but not focused, change focus directly,
         // as requesting native focus on it will not have effect.
         } else if (getTarget() == currentActive && !getTarget().hasFocus()) {
 
-            changeFocusedWindow(true);
+            changeFocusedWindow(true, opposite);
             return true;
         }
+
         return platformWindow.requestWindowFocus();
     }
 
@@ -1200,7 +1237,7 @@ public class LWWindowPeer
     /*
      * Changes focused window on java level.
      */
-    private void changeFocusedWindow(boolean becomesFocused) {
+    private void changeFocusedWindow(boolean becomesFocused, Window opposite) {
         if (focusLog.isLoggable(PlatformLogger.FINE)) {
             focusLog.fine((becomesFocused?"gaining":"loosing") + " focus window: " + this);
         }
@@ -1224,9 +1261,6 @@ public class LWWindowPeer
             }
         }
 
-        KeyboardFocusManagerPeer kfmPeer = LWKeyboardFocusManagerPeer.getInstance();
-        Window oppositeWindow = becomesFocused ? kfmPeer.getCurrentFocusedWindow() : null;
-
         // Note, the method is not called:
         // - when the opposite (gaining focus) window is an owned/owner window.
         // - for a simple window in any case.
@@ -1238,10 +1272,11 @@ public class LWWindowPeer
             grabbingWindow.ungrab();
         }
 
+        KeyboardFocusManagerPeer kfmPeer = LWKeyboardFocusManagerPeer.getInstance();
         kfmPeer.setCurrentFocusedWindow(becomesFocused ? getTarget() : null);
 
         int eventID = becomesFocused ? WindowEvent.WINDOW_GAINED_FOCUS : WindowEvent.WINDOW_LOST_FOCUS;
-        WindowEvent windowEvent = new WindowEvent(getTarget(), eventID, oppositeWindow);
+        WindowEvent windowEvent = new WindowEvent(getTarget(), eventID, opposite);
 
         // TODO: wrap in SequencedEvent
         postEvent(windowEvent);

@@ -33,6 +33,7 @@ import java.awt.peer.WindowPeer;
 import java.beans.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Objects;
 
 import javax.swing.*;
 
@@ -884,8 +885,8 @@ public final class CPlatformWindow extends CFRetainedResource implements Platfor
         }
     }
 
-    private void flushBuffers() {
-        if (isVisible() && !nativeBounds.isEmpty()) {
+    void flushBuffers() {
+        if (isVisible() && !nativeBounds.isEmpty() && !isFullScreenMode) {
             try {
                 LWCToolkit.invokeAndWait(new Runnable() {
                     @Override
@@ -902,13 +903,15 @@ public final class CPlatformWindow extends CFRetainedResource implements Platfor
     /*************************************************************
      * Callbacks from the AWTWindow and AWTView objc classes.
      *************************************************************/
-    private void deliverWindowFocusEvent(boolean gained){
+    private void deliverWindowFocusEvent(boolean gained, CPlatformWindow opposite){
         // Fix for 7150349: ingore "gained" notifications when the app is inactive.
         if (gained && !((LWCToolkit)Toolkit.getDefaultToolkit()).isApplicationActive()) {
             focusLogger.fine("the app is inactive, so the notification is ignored");
             return;
         }
-        responder.handleWindowFocusEvent(gained);
+
+        LWWindowPeer oppositePeer = (opposite == null)? null : opposite.getPeer();
+        responder.handleWindowFocusEvent(gained, oppositePeer);
     }
 
     private void deliverMoveResizeEvent(int x, int y, int width, int height,
@@ -923,9 +926,12 @@ public final class CPlatformWindow extends CFRetainedResource implements Platfor
 
         final Rectangle oldB = nativeBounds;
         nativeBounds = new Rectangle(x, y, width, height);
+        final GraphicsConfiguration oldGC = peer.getGraphicsConfiguration();
         peer.notifyReshape(x, y, width, height);
+        final GraphicsConfiguration newGC = peer.getGraphicsConfiguration();
+        // System-dependent appearance optimization.
         if ((byUser && !oldB.getSize().equals(nativeBounds.getSize()))
-            || isFullScreenAnimationOn) {
+            || isFullScreenAnimationOn || !Objects.equals(newGC, oldGC)) {
             flushBuffers();
         }
     }
@@ -970,6 +976,10 @@ public final class CPlatformWindow extends CFRetainedResource implements Platfor
         LWWindowPeer blocker = peer.getBlocker();
         if (blocker == null) {
             return false;
+        }
+
+        if (blocker instanceof CPrinterDialogPeer) {
+            return true;
         }
 
         CPlatformWindow pWindow = (CPlatformWindow)blocker.getPlatformWindow();
