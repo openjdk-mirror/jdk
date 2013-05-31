@@ -488,14 +488,15 @@ Java_sun_font_FreetypeFontScaler_getFontMetricsNative(
 
     /**** Note: only some metrics are affected by styling ***/
 
+#define FT_MulFixFloatShift6(a, b) (((float) (a)) * ((float) (b)) / 65536.0 / 64.0)
     /* ascent */
     ax = 0;
-    ay = -(jfloat) FT26Dot6ToFloat(FT_MulFix(
+    ay = -(jfloat) (FT_MulFixFloatShift6(
                        ((jlong) scalerInfo->face->ascender + bmodifier/2),
                        (jlong) scalerInfo->face->size->metrics.y_scale));
     /* descent */
     dx = 0;
-    dy = -(jfloat) FT26Dot6ToFloat(FT_MulFix(
+    dy = -(jfloat) (FT_MulFixFloatShift6(
                        ((jlong) scalerInfo->face->descender + bmodifier/2),
                        (jlong) scalerInfo->face->size->metrics.y_scale));
     /* baseline */
@@ -503,7 +504,7 @@ Java_sun_font_FreetypeFontScaler_getFontMetricsNative(
 
     /* leading */
     lx = 0;
-    ly = (jfloat) FT26Dot6ToFloat(FT_MulFix(
+    ly = (jfloat) (FT_MulFixFloatShift6(
                       (jlong) scalerInfo->face->height + bmodifier,
                       (jlong) scalerInfo->face->size->metrics.y_scale))
                   + ay - dy;
