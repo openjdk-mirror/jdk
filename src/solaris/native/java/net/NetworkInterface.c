@@ -127,8 +127,6 @@ static jclass ni_ibcls;
 static jmethodID ni_ia4ctrID;
 static jmethodID ni_ia6ctrID;
 static jmethodID ni_ibctrID;
-static jfieldID ni_iaaddressID;
-static jfieldID ni_iafamilyID;
 static jfieldID ni_ia6ipaddressID;
 static jfieldID ni_ibaddressID;
 static jfieldID ni_ib4broadcastID;
@@ -204,8 +202,6 @@ Java_java_net_NetworkInterface_init(JNIEnv *env, jclass cls) {
     ni_ia4ctrID = (*env)->GetMethodID(env, ni_ia4cls, "<init>", "()V");
     ni_ia6ctrID = (*env)->GetMethodID(env, ni_ia6cls, "<init>", "()V");
     ni_ibctrID = (*env)->GetMethodID(env, ni_ibcls, "<init>", "()V");
-    ni_iaaddressID = (*env)->GetFieldID(env, ni_iacls, "address", "I");
-    ni_iafamilyID = (*env)->GetFieldID(env, ni_iacls, "family", "I");
     ni_ia6ipaddressID = (*env)->GetFieldID(env, ni_ia6cls, "ipaddress", "[B");
     ni_ibaddressID = (*env)->GetFieldID(env, ni_ibcls, "address", "Ljava/net/InetAddress;");
     ni_ib4broadcastID = (*env)->GetFieldID(env, ni_ibcls, "broadcast", "Ljava/net/Inet4Address;");
@@ -309,7 +305,7 @@ JNIEXPORT jobject JNICALL Java_java_net_NetworkInterface_getByInetAddress0
     netif *ifs, *curr;
 
 #ifdef AF_INET6
-    int family = (  (*env)->GetIntField(env, iaObj, ni_iafamilyID) == IPv4 ) ? AF_INET : AF_INET6;
+    int family = (getInetAddress_family(env, iaObj) == IPv4) ? AF_INET : AF_INET6;
 #else
     int family =  AF_INET;
 #endif
@@ -334,7 +330,7 @@ JNIEXPORT jobject JNICALL Java_java_net_NetworkInterface_getByInetAddress0
             if (family == addrP->family) {
                 if (family == AF_INET) {
                     int address1 = htonl(((struct sockaddr_in*)addrP->addr)->sin_addr.s_addr);
-                    int address2 = (*env)->GetIntField(env, iaObj, ni_iaaddressID);
+                    int address2 = getInetAddress_addr(env, iaObj);
 
                     if (address1 == address2) {
                         match = JNI_TRUE;
@@ -660,7 +656,7 @@ jobject createNetworkInterface(JNIEnv *env, netif *ifs) {
         if (addrP->family == AF_INET) {
             iaObj = (*env)->NewObject(env, ni_ia4cls, ni_ia4ctrID);
             if (iaObj) {
-                 (*env)->SetIntField(env, iaObj, ni_iaaddressID, htonl(((struct sockaddr_in*)addrP->addr)->sin_addr.s_addr));
+                 setInetAddress_addr(env, iaObj, htonl(((struct sockaddr_in*)addrP->addr)->sin_addr.s_addr));
             }
             ibObj = (*env)->NewObject(env, ni_ibcls, ni_ibctrID);
             if (ibObj) {
@@ -669,8 +665,7 @@ jobject createNetworkInterface(JNIEnv *env, netif *ifs) {
                     jobject ia2Obj = NULL;
                     ia2Obj = (*env)->NewObject(env, ni_ia4cls, ni_ia4ctrID);
                     if (ia2Obj) {
-                       (*env)->SetIntField(env, ia2Obj, ni_iaaddressID,
-                                                               htonl(((struct sockaddr_in*)addrP->brdcast)->sin_addr.s_addr));
+                       setInetAddress_addr(env, ia2Obj, htonl(((struct sockaddr_in*)addrP->brdcast)->sin_addr.s_addr));
                        (*env)->SetObjectField(env, ibObj, ni_ib4broadcastID, ia2Obj);
                        (*env)->SetShortField(env, ibObj, ni_ib4maskID, addrP->mask);
                     }
@@ -848,14 +843,19 @@ void freeif(netif *ifs) {
     }
 }
 
-netif *addif(JNIEnv *env, int sock, const char * if_name, netif *ifs, struct sockaddr* ifr_addrP, int family, short prefix) {
+netif *addif(JNIEnv *env, int sock, const char * if_name,
+             netif *ifs, struct sockaddr* ifr_addrP, int family,
+             short prefix)
+{
     netif *currif = ifs, *parent;
     netaddr *addrP;
 
 #ifdef LIFNAMSIZ
-    char name[LIFNAMSIZ],  vname[LIFNAMSIZ];
+    int ifnam_size = LIFNAMSIZ;
+    char name[LIFNAMSIZ], vname[LIFNAMSIZ];
 #else
-    char name[IFNAMSIZ],  vname[IFNAMSIZ];
+    int ifnam_size = IFNAMSIZ;
+    char name[IFNAMSIZ], vname[IFNAMSIZ];
 #endif
 
     char  *name_colonP;
@@ -871,7 +871,8 @@ netif *addif(JNIEnv *env, int sock, const char * if_name, netif *ifs, struct soc
      * currently doesn't have any concept of physical vs.
      * logical interfaces.
      */
-    strcpy(name, if_name);
+    strncpy(name, if_name, ifnam_size);
+    name[ifnam_size - 1] = '\0';
     *vname = 0;
 
     /*
@@ -948,9 +949,10 @@ netif *addif(JNIEnv *env, int sock, const char * if_name, netif *ifs, struct soc
      * insert it onto the list.
      */
     if (currif == NULL) {
-         CHECKED_MALLOC3(currif, netif *, sizeof(netif)+IFNAMSIZ );
+         CHECKED_MALLOC3(currif, netif *, sizeof(netif) + ifnam_size);
          currif->name = (char *) currif+sizeof(netif);
-         strcpy(currif->name, name);
+         strncpy(currif->name, name, ifnam_size);
+         currif->name[ifnam_size - 1] = '\0';
          currif->index = getIndex(sock, name);
          currif->addr = NULL;
          currif->childs = NULL;
@@ -983,9 +985,10 @@ netif *addif(JNIEnv *env, int sock, const char * if_name, netif *ifs, struct soc
         }
 
         if (currif == NULL) {
-            CHECKED_MALLOC3(currif, netif *, sizeof(netif)+ IFNAMSIZ );
+            CHECKED_MALLOC3(currif, netif *, sizeof(netif) + ifnam_size);
             currif->name = (char *) currif + sizeof(netif);
-            strcpy(currif->name, vname);
+            strncpy(currif->name, vname, ifnam_size);
+            currif->name[ifnam_size - 1] = '\0';
             currif->index = getIndex(sock, vname);
             currif->addr = NULL;
            /* Need to duplicate the addr entry? */
@@ -1158,7 +1161,7 @@ static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
     uint8_t ipv6addr[16];
 
     if ((f = fopen(_PATH_PROCNET_IFINET6, "r")) != NULL) {
-        while (fscanf(f, "%4s%4s%4s%4s%4s%4s%4s%4s %02x %02x %02x %02x %20s\n",
+        while (fscanf(f, "%4s%4s%4s%4s%4s%4s%4s%4s %08x %02x %02x %02x %20s\n",
                          addr6p[0], addr6p[1], addr6p[2], addr6p[3], addr6p[4], addr6p[5], addr6p[6], addr6p[7],
                          &if_idx, &plen, &scope, &dad_status, devname) != EOF) {
 

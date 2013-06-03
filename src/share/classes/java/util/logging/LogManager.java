@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,10 +33,8 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.net.URL;
 import sun.misc.JavaAWTAccess;
 import sun.misc.SharedSecrets;
-import sun.security.action.GetPropertyAction;
 
 /**
  * There is a single global LogManager object that is used to
@@ -151,7 +149,6 @@ public class LogManager {
     // The global LogManager object
     private static LogManager manager;
 
-    private final static Handler[] emptyHandlers = { };
     private Properties props = new Properties();
     private PropertyChangeSupport changes
                          = new PropertyChangeSupport(LogManager.class);
@@ -363,7 +360,10 @@ public class LogManager {
                         context = userContext;
                     } else {
                         context = new LoggerContext();
-                        context.addLocalLogger(manager.rootLogger);
+                        // during initialization, rootLogger is null when
+                        // instantiating itself RootLogger
+                        if (manager.rootLogger != null)
+                            context.addLocalLogger(manager.rootLogger);
                     }
                     javaAwtAccess.put(ecx, LoggerContext.class, context);
                 }
@@ -423,7 +423,40 @@ public class LogManager {
     }
 
     Logger demandSystemLogger(String name, String resourceBundleName) {
-        return systemContext.demandLogger(name, resourceBundleName);
+        // Add a system logger in the system context's namespace
+        final Logger sysLogger = systemContext.demandLogger(name, resourceBundleName);
+
+        // Add the system logger to the LogManager's namespace if not exist
+        // so that there is only one single logger of the given name.
+        // System loggers are visible to applications unless a logger of
+        // the same name has been added.
+        Logger logger;
+        do {
+            // First attempt to call addLogger instead of getLogger
+            // This would avoid potential bug in custom LogManager.getLogger
+            // implementation that adds a logger if does not exist
+            if (addLogger(sysLogger)) {
+                // successfully added the new system logger
+                logger = sysLogger;
+            } else {
+                logger = getLogger(name);
+            }
+        } while (logger == null);
+
+        // LogManager will set the sysLogger's handlers via LogManager.addLogger method.
+        if (logger != sysLogger && sysLogger.getHandlers().length == 0) {
+            // if logger already exists but handlers not set
+            final Logger l = logger;
+            AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                public Void run() {
+                    for (Handler hdl : l.getHandlers()) {
+                        sysLogger.addHandler(hdl);
+                    }
+                    return null;
+                }
+            });
+        }
+        return sysLogger;
     }
 
     // LoggerContext maintains the logger namespace per context.
@@ -471,13 +504,10 @@ public class LogManager {
                 throw new NullPointerException();
             }
 
-            // cleanup some Loggers that have been GC'ed
-            manager.drainLoggerRefQueueBounded();
-
             LoggerWeakRef ref = namedLoggers.get(name);
             if (ref != null) {
                 if (ref.get() == null) {
-                    // It's possible that the Logger was GC'ed after the
+                    // It's possible that the Logger was GC'ed after a
                     // drainLoggerRefQueueBounded() call above so allow
                     // a new one to be registered.
                     removeLogger(name);
@@ -526,6 +556,8 @@ public class LogManager {
             return true;
         }
 
+        // note: all calls to removeLogger are synchronized on LogManager's
+        // intrinsic lock
         void removeLogger(String name) {
             namedLoggers.remove(name);
         }
@@ -627,21 +659,6 @@ public class LogManager {
                         result = findLogger(name);
                     }
                 } while (result == null);
-            }
-            // Add the system logger to the LogManager's namespace if not exists
-            // The LogManager will set its handlers via the LogManager.addLogger method.
-            if (!manager.addLogger(result) && result.getHandlers().length == 0) {
-                // if logger already exists but handlers not set
-                final Logger l = manager.getLogger(name);
-                final Logger logger = result;
-                AccessController.doPrivileged(new PrivilegedAction<Void>() {
-                    public Void run() {
-                        for (Handler hdl : l.getHandlers()) {
-                            logger.addHandler(hdl);
-                        }
-                        return null;
-                    }
-                });
             }
             return result;
         }
@@ -823,6 +840,7 @@ public class LogManager {
         if (name == null) {
             throw new NullPointerException();
         }
+        drainLoggerRefQueueBounded();
         LoggerContext cx = getUserContext();
         if (cx.addLocalLogger(logger)) {
             // Do we have a per logger handler too?

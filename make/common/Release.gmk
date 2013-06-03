@@ -59,8 +59,7 @@ EXCLUDE_PROPWARN_PKGS = com.sun.java.swing.plaf.windows  \
 # This is an interim solution until the ct.sym is replaced
 # with a new module system (being discussed for JDK 8).
 #
-EXPORTED_PRIVATE_PKGS = com.sun.servicetag \
-                        com.oracle.net \
+EXPORTED_PRIVATE_PKGS = com.oracle.net \
                         com.oracle.nio \
                         com.oracle.util
 
@@ -250,8 +249,8 @@ initial-image-jre-sol64 initial-image-jdk-sol64 \
 trim-image-jre trim-image-jdk \
 identify-image-jre identify-image-jdk \
 process-image-jre process-image-jdk \
-compare-image \
-sec-files sec-files-win jgss-files ::
+compare-image  \
+sec-files sec-files-win jgss-files server-jdk-image ::
 	@$(ECHO) ">>>Making "$@" @ `$(DATE)` ..."
 
 # Order is important here, trim jre after jdk image is created
@@ -260,16 +259,17 @@ ifeq ($(PLATFORM), macosx)
 images:: sanity-images post-sanity-images  \
 	 $(INITIAL_IMAGE_JRE) $(EXTRA_JRE_TARGETS) $(INITIAL_IMAGE_JDK) \
 	 trim-image-jre trim-image-jdk \
-     identify-image-jre identify-image-jdk \
-	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files \
-	 $(EXTRA_IMAGE_TARGETS)
+	 identify-image-jre identify-image-jdk \
+	 process-image-jre process-image-jdk sec-files sec-files-win \
+	jgss-files $(EXTRA_IMAGE_TARGETS) server-jdk-image 
 else
 
 images:: sanity-images post-sanity-images  \
 	 $(INITIAL_IMAGE_JRE) $(INITIAL_IMAGE_JDK) \
 	 trim-image-jre trim-image-jdk \
          identify-image-jre identify-image-jdk \
-	 process-image-jre process-image-jdk sec-files sec-files-win jgss-files 
+	 process-image-jre process-image-jdk sec-files sec-files-win \
+	 jgss-files server-jdk-image
 endif
 
 # Don't use these
@@ -945,6 +945,27 @@ endif
 	done
 	$(RM) $(JRE_BIN_LIST)
 
+# Duplicate current j2re-image contents to server-j2re-image 
+# for the server version of jre, before deploy build
+server-jdk-image::
+ifeq ($(PLATFORM), macosx)
+	$(RM) -r $(JDK_SERVER_BUNDLE_DIR)/Home/demo
+	$(RM) -r $(JDK_SERVER_BUNDLE_DIR)/Home/sample
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/bin/jcontrol
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/jre/bin/jcontrol
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/man/ja_JP.UTF-8/man1/javaws.1
+	$(RM) $(JDK_SERVER_BUNDLE_DIR)/Home/man/man1/javaws.1
+else
+	$(RM) -r $(JDK_SERVER_IMAGE_DIR)
+	$(CP) -r $(JDK_IMAGE_DIR) $(JDK_SERVER_IMAGE_DIR)
+	$(RM) -r $(JDK_SERVER_IMAGE_DIR)/demo
+	$(RM) -r $(JDK_SERVER_IMAGE_DIR)/sample
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/bin/jcontrol
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/jre/bin/jcontrol
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/man/ja_JP.UTF-8/man1/javaws.1
+	$(RM) $(JDK_SERVER_IMAGE_DIR)/man/man1/javaws.1
+endif
+
 ######################################################
 # JDK Image
 ######################################################
@@ -1221,6 +1242,11 @@ define info-file-item # name value
 $(PRINTF) '%s="%s"\n' $1 $2 >> $@
 endef
 
+define echo-java-info
+$(CAT) $1
+endef
+-include $(JDK_TOPDIR)/make/closed/common/release.gmk
+
 # Values to emit
 MINIMUM_OS_NAME    := $(REQUIRED_OS_NAME)
 MINIMUM_OS_VERSION := $(REQUIRED_OS_VERSION)
@@ -1237,6 +1263,7 @@ $(JDK_INFO_FILE): FRC
 	$(call info-file-item, "OS_VERSION",   "$(MINIMUM_OS_VERSION)")
 	$(call info-file-item, "OS_ARCH",      "$(MINIMUM_OS_ARCH)")
 	$(call info-file-item, "SOURCE",       "$(ALL_SOURCE_TIPS)")
+	$(call echo-java-info, $@)
 
 # Create release file to identify this image
 identify-image-jdk:: $(JDK_INFO_FILE)
@@ -1248,6 +1275,7 @@ $(JRE_INFO_FILE): FRC
 	$(call info-file-item, "OS_VERSION",   "$(MINIMUM_OS_VERSION)")
 	$(call info-file-item, "OS_ARCH",      "$(MINIMUM_OS_ARCH)")
 	$(call info-file-item, "SOURCE",       "$(ALL_SOURCE_TIPS)")
+	$(call echo-java-info, $@)
 
 # Create release file to identify this image
 identify-image-jre:: $(JRE_INFO_FILE)

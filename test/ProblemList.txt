@@ -1,4 +1,4 @@
-###########################################################################
+##########################################################################
 #
 # Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -134,9 +134,6 @@ java/lang/Runtime/exec/SleepyCat.java                           generic-all
 # Times out on solaris sparc -server
 java/lang/ThreadLocal/MemoryLeak.java                           solaris-all
 
-# Windows X64, RuntimeException: MyThread expected to have RUNNABLE but got WAITING
-java/lang/Thread/ThreadStateTest.java                           generic-all
-
 # 7148492
 java/lang/management/MemoryMXBean/ResetPeakMemoryUsage.java	generic-all
 
@@ -267,9 +264,6 @@ sun/net/www/protocol/http/UserCookie.java			macosx-all
 # 7162118
 java/net/CookieHandler/CookieManagerTest.java			macosx-all
 
-# 7162123
-test/java/net/InetSocketAddress/B6469803.java			macosx-all
-
 # JPRT needs to set 127.0.0.1 in proxy bypass list
 java/net/URLClassLoader/closetest/CloseTest.java		macosx-all
 
@@ -279,6 +273,11 @@ java/net/URLClassLoader/closetest/CloseTest.java		macosx-all
 
 # 6962637
 java/io/File/MaxPathLength.java                                 windows-all
+
+# 7162111 - these tests need to be updated to run headless
+java/io/Serializable/resolveClass/deserializeButton/run.sh      macosx-all
+java/io/Serializable/serialver/classpath/run.sh                 macosx-all
+java/io/Serializable/serialver/nested/run.sh                    macosx-all
 
 ############################################################################
 
@@ -370,6 +369,15 @@ sun/security/ssl/com/sun/net/ssl/internal/ssl/InputRecord/InterruptedIO.java sol
 # 7147060
 com/sun/org/apache/xml/internal/security/transforms/ClassLoaderTest.java        generic-all
 
+# 8000439: NPG: REGRESSION : sun/security/krb5/auto/MaxRetries.java fails with timeout
+sun/security/krb5/auto/MaxRetries.java                          solaris-sparcv9
+
+# 8006690: sun/security/krb5/auto/BadKdc1.java fails intermittently
+sun/security/krb5/auto/BadKdc1.java                             solaris-sparcv9
+sun/security/krb5/auto/BadKdc2.java                             solaris-sparcv9
+sun/security/krb5/auto/BadKdc3.java                             solaris-sparcv9
+sun/security/krb5/auto/BadKdc4.java                             solaris-sparcv9
+
 ############################################################################
 
 # jdk_swing
@@ -384,6 +392,9 @@ java/text/Bidi/Bug6665028.java                                  linux-x64
 ############################################################################
 
 # jdk_tools
+
+# 8012474
+sun/tools/jmap/Basic.sh                                         generic-all
 
 # 6461635
 com/sun/tools/attach/BasicTests.sh                              generic-all
