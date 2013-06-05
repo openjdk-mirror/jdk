@@ -1817,6 +1817,14 @@ jobject get_integer_property(JNIEnv *env, GtkSettings* settings, const gchar* ke
     return create_Integer(env, intval);
 }*/
 
+jobject get_boolean_property(JNIEnv* env, GtkSettings* settings, const gchar *key)
+{
+    gboolean boolval = NULL;
+
+    g_object_get (settings, key, &boolval, NULL);
+    return create_Boolean(env, (jboolean) boolval);
+}
+
 jobject gtk2_get_setting(JNIEnv *env, Setting property)
 {
     GtkSettings* settings = gtk_settings_get_default ();
@@ -1827,6 +1835,8 @@ jobject gtk2_get_setting(JNIEnv *env, Setting property)
             return get_string_property(env, settings, "gtk-font-name");
         case GTK_ICON_SIZES:
             return get_string_property(env, settings, "gtk-icon-sizes");
+        case GTK_BUTTON_ORDER:
+	    return get_boolean_property(env, settings, "gtk-alternative-button-order");
     }
 
     return NULL;

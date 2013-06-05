@@ -130,7 +130,8 @@ typedef enum _ColorType
 typedef enum _Setting
 {
     GTK_FONT_NAME,
-    GTK_ICON_SIZES
+    GTK_ICON_SIZES,
+    GTK_BUTTON_ORDER
 } Setting;
 
 /*

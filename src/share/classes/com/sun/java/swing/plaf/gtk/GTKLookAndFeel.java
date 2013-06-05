@@ -539,6 +539,14 @@ public class GTKLookAndFeel extends SynthLookAndFeel {
             }
         }
 
+	/* If gtk-alternative-button-order is set to true, isYesLast needs to be false */
+	Boolean buttonOrder = Boolean.TRUE;
+	Object orderSetting = GTKEngine.INSTANCE.getSetting(GTKEngine.Settings.GTK_BUTTON_ORDER);
+	if (orderSetting instanceof Boolean) {
+	    Boolean order = (Boolean) orderSetting;
+	    if (Boolean.TRUE.equals(order))
+		buttonOrder = Boolean.FALSE;
+	}
         Object[] defaults = new Object[] {
             "ArrowButton.size", Integer.valueOf(13),
 
@@ -818,7 +826,7 @@ public class GTKLookAndFeel extends SynthLookAndFeel {
             "OptionPane.windowBindings", new Object[] {
                 "ESCAPE", "close" },
             "OptionPane.buttonClickThreshhold", new Integer(500),
-            "OptionPane.isYesLast", Boolean.TRUE,
+            "OptionPane.isYesLast", buttonOrder,
             "OptionPane.font", new FontLazyValue(Region.OPTION_PANE),
 
             "Panel.font", new FontLazyValue(Region.PANEL),
