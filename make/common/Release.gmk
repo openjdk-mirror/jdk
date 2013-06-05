@@ -191,7 +191,7 @@ endif # linux
 ifeq ($(PLATFORM), aix)
   MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
   MAN1SUBDIR=man
-  JA_DIRNAME=ja_JP.$(JA_SOURCE_ENCODING)
+  JA_DIRNAME=ja_JP.UTF-8
 endif # aix
 
 define copy-man-pages
@@ -1124,7 +1124,7 @@ initial-image-jdk:: initial-image-jdk-setup \
 	@# So for Linux, make use of the -T option (like Solaris' -I option) of
 	@# obtaining the list of files from a file. MKS tar has no such option.
 
-  ifneq (,$(findstring $(PLATFORM), linux macosx))
+  ifneq (,$(findstring $(PLATFORM), linux macosx aix))
 	for d in $(SOURCE_DIRS); do \
 	  $(RM) $(ABS_TEMPDIR)/src-files.list; \
 	  ($(CD) $$d &&  \

@@ -39,9 +39,7 @@
 
 #include <stdio.h>
 
-#ifndef DEBUG
-# define DEBUG 0
-#endif
+#define DEBUG 0
 
 U_NAMESPACE_BEGIN
 
@@ -184,7 +182,7 @@ KernTable::KernTable(const LETableReference& base, LEErrorCode &success)
               ids[id] = (char)i;
             }
           }
-          const PairInfo *p = pairs;
+          PairInfo *p = pairs;
           for (int i = 0; i < nPairs; ++i, p++) {
             le_uint32 k = p->key;
             le_uint16 left = (k >> 16) & 0xffff;
