@@ -41,6 +41,7 @@ import sun.security.rsa.RSAPadding;
 
 import sun.security.pkcs11.wrapper.*;
 import static sun.security.pkcs11.wrapper.PKCS11Constants.*;
+import sun.security.util.KeyUtil;
 
 /**
  * Signature implementation class. This class currently supports the
@@ -687,8 +688,8 @@ final class P11Signature extends SignatureSpi {
             BigInteger r = values[0].getPositiveBigInteger();
             BigInteger s = values[1].getPositiveBigInteger();
             // trim leading zeroes
-            byte[] br = P11Util.trimZeroes(r.toByteArray());
-            byte[] bs = P11Util.trimZeroes(s.toByteArray());
+            byte[] br = KeyUtil.trimZeroes(r.toByteArray());
+            byte[] bs = KeyUtil.trimZeroes(s.toByteArray());
             int k = Math.max(br.length, bs.length);
             // r and s each occupy half the array
             byte[] res = new byte[k << 1];

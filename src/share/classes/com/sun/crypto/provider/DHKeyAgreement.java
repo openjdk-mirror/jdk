@@ -404,8 +404,8 @@ extends KeyAgreementSpi {
             }
             return skey;
         } else if (algorithm.equals("TlsPremasterSecret")) {
-            // return entire secret
-            return new SecretKeySpec(secret, "TlsPremasterSecret");
+            // remove leading zero bytes per RFC 5246 Section 8.1.2
+	    return new SecretKeySpec(KeyUtil.trimZeroes(secret), "TlsPremasterSecret");
         } else {
             throw new NoSuchAlgorithmException("Unsupported secret key "
                                                + "algorithm: "+ algorithm);

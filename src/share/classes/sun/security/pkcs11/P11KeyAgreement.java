@@ -330,7 +330,7 @@ final class P11KeyAgreement extends KeyAgreementSpi {
                 // as here we always retrieve the CKA_VALUE even for tokens
                 // that do not have that bug.
                 byte[] keyBytes = key.getEncoded();
-                byte[] newBytes = P11Util.trimZeroes(keyBytes);
+                byte[] newBytes = KeyUtil.trimZeroes(keyBytes);
                 if (keyBytes != newBytes) {
                     key = new SecretKeySpec(newBytes, algorithm);
                 }
