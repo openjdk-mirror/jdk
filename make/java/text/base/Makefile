@@ -81,7 +81,6 @@ $(BIFILES): $(GENERATEBREAKITERATORDATA_JARFILE) \
 		$(TEXT_SOURCES)
 	$(MKDIR) -p  $(TEXT_CLASSDIR)
 	$(BOOT_JAVA_CMD) -Xbootclasspath/p:$(TEXT_CLASSES) \
-		-Xbootclasspath/a:$(ABS_OUTPUTDIR)/classes \
 		-jar $(GENERATEBREAKITERATORDATA_JARFILE) \
 		-o $(TEXT_CLASSDIR) \
 		-spec $(UNICODEDATA)/UnicodeData.txt
