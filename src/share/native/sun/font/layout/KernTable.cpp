@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 
+#undef DEBUG
 #define DEBUG 0
 
 U_NAMESPACE_BEGIN
