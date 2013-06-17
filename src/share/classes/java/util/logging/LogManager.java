@@ -351,27 +351,23 @@ public class LogManager {
                 // from the execution stack.
                 Object ecx = javaAwtAccess.getExecutionContext();
                 if (ecx == null) {
-                    // fall back to AppContext.getAppContext()
+                    // fall back to thread group seach of AppContext
                     ecx = javaAwtAccess.getContext();
                 }
-                context = (LoggerContext)javaAwtAccess.get(ecx, LoggerContext.class);
-                if (context == null) {
-                    if (javaAwtAccess.isMainAppContext()) {
-                        context = userContext;
-                    } else {
-                        context = new LoggerContext();
-                        // during initialization, rootLogger is null when
-                        // instantiating itself RootLogger
-                        if (manager.rootLogger != null)
-                            context.addLocalLogger(manager.rootLogger);
+                if (ecx != null) {
+                    context = (LoggerContext)javaAwtAccess.get(ecx, LoggerContext.class);
+                    if (context == null) {
+                        if (javaAwtAccess.isMainAppContext()) {
+                            context = userContext;
+                        } else {
+                            context = new LoggerContext();
+                        }
+                        javaAwtAccess.put(ecx, LoggerContext.class, context);
                     }
-                    javaAwtAccess.put(ecx, LoggerContext.class, context);
                 }
             }
-        } else {
-            context = userContext;
         }
-        return context;
+        return context != null ? context : userContext;
     }
 
     private List<LoggerContext> contexts() {
@@ -393,11 +389,11 @@ public class LogManager {
     // add a new Logger or return the one that has been added previously
     // as a LogManager subclass may override the addLogger, getLogger,
     // readConfiguration, and other methods.
-    Logger demandLogger(String name, String resourceBundleName) {
+    Logger demandLogger(String name, String resourceBundleName, Class<?> caller) {
         Logger result = getLogger(name);
         if (result == null) {
             // only allocate the new logger once
-            Logger newLogger = new Logger(name, resourceBundleName);
+            Logger newLogger = new Logger(name, resourceBundleName, caller);
             do {
                 if (addLogger(newLogger)) {
                     // We successfully added the new Logger that we
@@ -479,7 +475,7 @@ public class LogManager {
         Logger demandLogger(String name, String resourceBundleName) {
             // a LogManager subclass may have its own implementation to add and
             // get a Logger.  So delegate to the LogManager to do the work.
-            return manager.demandLogger(name, resourceBundleName);
+            return manager.demandLogger(name, resourceBundleName, null);
         }
 
         synchronized Logger findLogger(String name) {
@@ -496,9 +492,22 @@ public class LogManager {
             return logger;
         }
 
+        synchronized void ensureRootLogger(Logger logger) {
+            if (logger.getName().isEmpty())
+                return;
+
+            // during initialization, rootLogger is null when
+            // instantiating itself RootLogger
+            if (findLogger("") == null && manager.rootLogger != null) {
+                addLocalLogger(manager.rootLogger);
+            }
+        }
+
         // Add a logger to this context.  This method will only set its level
         // and process parent loggers.  It doesn't set its handlers.
         synchronized boolean addLocalLogger(Logger logger) {
+            ensureRootLogger(logger);
+
             final String name = logger.getName();
             if (name == null) {
                 throw new NullPointerException();
@@ -508,7 +517,7 @@ public class LogManager {
             if (ref != null) {
                 if (ref.get() == null) {
                     // It's possible that the Logger was GC'ed after a
-                    // drainLoggerRefQueueBounded() call above so allow
+                    // drainLoggerRefQueueBounded() call so allow
                     // a new one to be registered.
                     removeLogger(name);
                 } else {

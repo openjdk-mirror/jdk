@@ -200,6 +200,11 @@ public class CViewPlatformEmbeddedFrame implements PlatformWindow {
     }
 
     @Override
+    public boolean isFullScreenMode() {
+        return false;
+    }
+
+    @Override
     public void setWindowState(int windowState) {
     }
 
