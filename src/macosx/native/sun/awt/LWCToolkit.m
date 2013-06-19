@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,8 @@
 #import  "NSApplicationAWT.h"
 
 #import "sun_lwawt_macosx_LWCToolkit.h"
+
+#import "sizecalc.h"
 
 int gNumberOfButtons;
 jint* gButtonDownMasks;
@@ -202,7 +204,7 @@ Java_sun_lwawt_macosx_LWCToolkit_initIDs
     jintArray obj = (jintArray)(*env)->CallStaticObjectMethod(env, inputEventClazz, getButtonDownMasksID);
     jint * tmp = (*env)->GetIntArrayElements(env, obj, JNI_FALSE);
     
-    gButtonDownMasks = (jint*)malloc(sizeof(jint) * gNumberOfButtons);
+    gButtonDownMasks = (jint*)SAFE_SIZE_ARRAY_ALLOC(malloc, sizeof(jint), gNumberOfButtons);
     if (gButtonDownMasks == NULL) {
         gNumberOfButtons = 0;
         JNU_ThrowOutOfMemoryError(env, NULL);
