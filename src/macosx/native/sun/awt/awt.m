@@ -316,14 +316,12 @@ AWT_ASSERT_APPKIT_THREAD;
         // Don't set the delegate until the NSApplication has been created and
         // its finishLaunching has initialized it.
         //  ApplicationDelegate is the support code for com.apple.eawt.
-        void (^setDelegateBlock)() = ^(){
-            OSXAPP_SetApplicationDelegate([ApplicationDelegate sharedDelegate]);
-        };
-        if (onMainThread) {
-            setDelegateBlock();
-        } else {
-            [JNFRunLoop performOnMainThreadWaiting:YES withBlock:setDelegateBlock];
-        }
+        [ThreadUtilities performOnMainThreadWaiting:YES block:^(){
+            id<NSApplicationDelegate> delegate = [ApplicationDelegate sharedDelegate];
+            if (delegate != nil) {
+                OSXAPP_SetApplicationDelegate(delegate);
+            }
+        }];
     }
 }
 

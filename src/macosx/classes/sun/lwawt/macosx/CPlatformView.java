@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,9 +60,13 @@ public class CPlatformView extends CFRetainedResource {
         this.responder = responder;
 
         if (!LWCToolkit.getSunAwtDisableCALayers()) {
-            this.windowLayer = new CGLLayer(peer);
+            this.windowLayer = createCGLayer();
         }
         setPtr(nativeCreateView(0, 0, 0, 0, getWindowLayerPtr()));
+    }
+
+    public CGLLayer createCGLayer() {
+        return new CGLLayer(peer);
     }
 
     public long getAWTView() {
@@ -90,33 +94,16 @@ public class CPlatformView extends CFRetainedResource {
         return peer;
     }
 
-    public void enterFullScreenMode(final long nsWindowPtr) {
+    public void enterFullScreenMode() {
         CWrapper.NSView.enterFullScreenMode(ptr);
-
-        // REMIND: CGLSurfaceData expects top-level's size
-        // and therefore we need to account insets before
-        // recreating the surface data
-        Insets insets = peer.getInsets();
-
-        Rectangle screenBounds;
-        final long screenPtr = CWrapper.NSWindow.screen(nsWindowPtr);
-        try {
-            screenBounds = CWrapper.NSScreen.frame(screenPtr).getBounds();
-        } finally {
-            CWrapper.NSObject.release(screenPtr);
-        }
-
-        // the move/size notification from the underlying system comes
-        // but it contains a bounds smaller than the whole screen
-        // and therefore we need to create the synthetic notifications
-        peer.notifyReshape(screenBounds.x - insets.left,
-                           screenBounds.y - insets.bottom,
-                           screenBounds.width + insets.left + insets.right,
-                           screenBounds.height + insets.top + insets.bottom);
     }
 
     public void exitFullScreenMode() {
         CWrapper.NSView.exitFullScreenMode(ptr);
+    }
+
+    public void setToolTip(String msg) {
+        CWrapper.NSView.setToolTip(ptr, msg);
     }
 
     // ----------------------------------------------------------------------
@@ -133,11 +120,11 @@ public class CPlatformView extends CFRetainedResource {
     }
 
     public Image createBackBuffer() {
-        Rectangle r = peer.getBounds();
+        Rectangle r = getBounds();
         Image im = null;
         if (!r.isEmpty()) {
             int transparency = (isOpaque() ? Transparency.OPAQUE : Transparency.TRANSLUCENT);
-            im = peer.getGraphicsConfiguration().createCompatibleImage(r.width, r.height, transparency);
+            im = getGraphicsConfiguration().createCompatibleImage(r.width, r.height, transparency);
         }
         return im;
     }
@@ -147,7 +134,7 @@ public class CPlatformView extends CFRetainedResource {
             surfaceData = windowLayer.replaceSurfaceData();
         } else {
             if (surfaceData == null) {
-                CGraphicsConfig graphicsConfig = (CGraphicsConfig)peer.getGraphicsConfiguration();
+                CGraphicsConfig graphicsConfig = (CGraphicsConfig)getGraphicsConfiguration();
                 surfaceData = graphicsConfig.createSurfaceData(this);
             } else {
                 validateSurface();
@@ -222,7 +209,7 @@ public class CPlatformView extends CFRetainedResource {
      * In normal mode this method is never called.
      */
     private void deliverResize(int x, int y, int w, int h) {
-        peer.notifyReshape(x, y, w, h);
+        responder.handleReshapeEvent(x, y, w, h);
     }
 
 
@@ -241,15 +228,15 @@ public class CPlatformView extends CFRetainedResource {
 
     private void deliverKeyEvent(NSEvent event) {
         responder.handleKeyEvent(event.getType(), event.getModifierFlags(),
-                                 event.getCharactersIgnoringModifiers(), event.getKeyCode(), true);
+                                 event.getCharactersIgnoringModifiers(), event.getKeyCode(), true, false);
     }
 
+    /**
+     * Called by the native delegate in layer backed view mode or in the simple
+     * NSView mode. See NSView.drawRect().
+     */
     private void deliverWindowDidExposeEvent() {
-        Rectangle r = peer.getBounds();
-        peer.notifyExpose(0, 0, r.width, r.height);
-    }
-
-    private void deliverWindowDidExposeEvent(float x, float y, float w, float h) {
-        peer.notifyExpose((int)x, (int)y, (int)w, (int)h);
+        Rectangle r = getBounds();
+        responder.handleWindowDidExposeEvent(new Rectangle(r.width, r.height));
     }
 }

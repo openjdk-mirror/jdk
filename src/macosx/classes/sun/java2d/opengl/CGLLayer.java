@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,11 +40,12 @@ import java.awt.Transparency;
 public class CGLLayer extends CFRetainedResource {
 
     private native long nativeCreateLayer();
-
+    private static native void nativeSetScale(long layerPtr, double scale);
     private static native void validate(long layerPtr, CGLSurfaceData cglsd);
     private static native void blitTexture(long layerPtr);
 
     private LWWindowPeer peer;
+    private int scale = 1;
 
     private SurfaceData surfaceData; // represents intermediate buffer (texture)
 
@@ -72,8 +73,7 @@ public class CGLLayer extends CFRetainedResource {
     }
 
     public int getTransparency() {
-        return peer.isTranslucent() ? Transparency.TRANSLUCENT :
-               Transparency.OPAQUE;
+        return (isOpaque() ? Transparency.OPAQUE : Transparency.TRANSLUCENT);
     }
 
     public Object getDestination() {
@@ -81,16 +81,16 @@ public class CGLLayer extends CFRetainedResource {
     }
 
     public SurfaceData replaceSurfaceData() {
-        if (peer.getBounds().isEmpty()) {
+        if (getBounds().isEmpty()) {
             surfaceData = NullSurfaceData.theInstance;
             return surfaceData;
         }
 
         // the layer redirects all painting to the buffer's graphics
         // and blits the buffer to the layer surface (in drawInCGLContext callback)
-        CGraphicsConfig gc = (CGraphicsConfig)peer.getGraphicsConfiguration();
+        CGraphicsConfig gc = (CGraphicsConfig)getGraphicsConfiguration();
         surfaceData = gc.createSurfaceData(this);
-
+        setScale(gc.getDevice().getScaleFactor());
         // the layer holds a reference to the buffer, which in
         // turn has a reference back to this layer
         if (surfaceData instanceof CGLSurfaceData) {
@@ -119,6 +119,13 @@ public class CGLLayer extends CFRetainedResource {
         // break the connection between the layer and the buffer
         validate(null);
         super.dispose();
+    }
+
+    private void setScale(final int _scale) {
+        if (scale != _scale) {
+            scale = _scale;
+            nativeSetScale(getPointer(), scale);
+        }
     }
 
     // ----------------------------------------------------------------------

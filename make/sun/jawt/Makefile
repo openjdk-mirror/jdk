@@ -30,6 +30,9 @@ PRODUCT = sun
 
 include $(BUILDDIR)/common/Defs.gmk
 
+# default to PLATFORM_SRC to copy export headers from
+PLATFORM_EXPORT_BASE = $(PLATFORM_SRC)
+
 #
 # libjawt links to other programs, but nothing links to it directly. An RPATH
 # entry has been added to the launcher so third-party programs linked against
@@ -44,6 +47,8 @@ ifeq ($(PLATFORM), windows)
 FILES_cpp = jawt.cpp
 else ifeq ($(PLATFORM), macosx) # PLATFORM
 FILES_objc = jawt.m
+# pick up the correct export headers for Mac OS X
+PLATFORM_EXPORT_BASE = $(PLATFORM_SRC_MACOS)
 else # PLATFORM
 FILES_c = jawt.c
 endif # PLATFORM
@@ -167,7 +172,7 @@ endif
 #
 $(INCLUDEDIR)/%.h: $(SHARE_SRC)/javavm/export/%.h
 	$(install-file)
-$(PLATFORM_INCLUDE)/%.h: $(PLATFORM_SRC)/javavm/export/%.h
+$(PLATFORM_INCLUDE)/%.h: $(PLATFORM_EXPORT_BASE)/javavm/export/%.h
 	$(install-file)
 
 

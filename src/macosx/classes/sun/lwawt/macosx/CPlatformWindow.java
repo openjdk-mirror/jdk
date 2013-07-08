@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,7 +31,9 @@ import java.awt.Dialog.ModalityType;
 import java.awt.event.*;
 import java.awt.peer.WindowPeer;
 import java.beans.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Objects;
 
 import javax.swing.*;
 
@@ -39,7 +41,6 @@ import sun.awt.*;
 import sun.java2d.SurfaceData;
 import sun.java2d.opengl.CGLSurfaceData;
 import sun.lwawt.*;
-import sun.lwawt.LWWindowPeer.PeerType;
 import sun.util.logging.PlatformLogger;
 
 import com.apple.laf.*;
@@ -59,7 +60,6 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     private static native void nativeRevalidateNSWindowShadow(long nsWindowPtr);
     private static native void nativeSetNSWindowMinimizedIcon(long nsWindowPtr, long nsImage);
     private static native void nativeSetNSWindowRepresentedFilename(long nsWindowPtr, String representedFilename);
-    private static native void nativeSetNSWindowSecurityWarningPositioning(long nsWindowPtr, double x, double y, float biasX, float biasY);
     private static native void nativeSetEnabled(long nsWindowPtr, boolean isEnabled);
     private static native void nativeSynthesizeMouseEnteredExitedEvents(long nsWindowPtr);
     private static native void nativeDispose(long nsWindowPtr);
@@ -115,6 +115,8 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
 
     static final int RESIZABLE = 1 << 9; // both a style bit and prop bit
     static final int NONACTIVATING = 1 << 24;
+    static final int IS_DIALOG = 1 << 25;
+    static final int IS_MODAL = 1 << 26;
 
     static final int _STYLE_PROP_BITMASK = DECORATED | TEXTURED | UNIFIED | UTILITY | HUD | SHEET | CLOSEABLE | MINIMIZABLE | RESIZABLE;
 
@@ -196,14 +198,15 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     // In order to keep it up-to-date we will update them on
     // 1) setting native bounds via nativeSetBounds() call
     // 2) getting notification from the native level via deliverMoveResizeEvent()
-    private Rectangle nativeBounds;
-    private volatile boolean isFullScreenMode = false;
+    private Rectangle nativeBounds = new Rectangle(0, 0, 0, 0);
+    private volatile boolean isFullScreenMode;
+    private boolean isFullScreenAnimationOn;
 
     private Window target;
     private LWWindowPeer peer;
-    private CPlatformView contentView;
-    private CPlatformWindow owner;
-    private boolean visible = false; // visibility status from native perspective
+    protected CPlatformView contentView;
+    protected CPlatformWindow owner;
+    protected boolean visible = false; // visibility status from native perspective
     private boolean undecorated; // initialized in getInitialStyleBits()
     private Rectangle normalBounds = null; // not-null only for undecorated maximized windows
     private CPlatformResponder responder;
@@ -227,12 +230,8 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
 
         final int styleBits = getInitialStyleBits();
 
-        // TODO: handle these misc properties
-        final long parentNSWindowPtr = (owner != null ? owner.getNSWindowPtr() : 0);
-        String warningString = target.getWarningString();
-
-        responder = new CPlatformResponder(peer, false);
-        contentView = new CPlatformView();
+        responder = createPlatformResponder();
+        contentView = createContentView();
         contentView.initialize(peer, responder);
 
         final long nativeWindowPtr = nativeCreateNSWindow(contentView.getAWTView(), styleBits, 0, 0, 0, 0);
@@ -252,6 +251,14 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         }
 
         validateSurface();
+    }
+
+    protected CPlatformResponder createPlatformResponder() {
+        return new CPlatformResponder(peer, false);
+    }
+
+    protected CPlatformView createContentView() {
+        return new CPlatformView();
     }
 
     protected int getInitialStyleBits() {
@@ -370,6 +377,13 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
             }
         }
 
+        if (isDialog) {
+            styleBits = SET(styleBits, IS_DIALOG, true);
+            if (((Dialog) target).isModal()) {
+                styleBits = SET(styleBits, IS_MODAL, true);
+            }
+        }
+
         peer.setTextured(IS(TEXTURED, styleBits));
 
         return styleBits;
@@ -427,8 +441,10 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
 
     @Override // PlatformWindow
     public Insets getInsets() {
-        final Insets insets = nativeGetNSWindowInsets(getNSWindowPtr());
-        return insets;
+        if (!isFullScreenMode) {
+            return nativeGetNSWindowInsets(getNSWindowPtr());
+        }
+        return new Insets(0, 0, 0, 0);
     }
 
     @Override // PlatformWindow
@@ -458,7 +474,7 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         nativeSetNSWindowBounds(getNSWindowPtr(), x, y, w, h);
     }
 
-    private boolean isVisible() {
+    public boolean isVisible() {
         return this.visible;
     }
 
@@ -467,7 +483,7 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     }
 
     private void maximize() {
-        if (isMaximized()) {
+        if (peer == null || isMaximized()) {
             return;
         }
         if (!undecorated) {
@@ -530,7 +546,7 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         updateFocusabilityForAutoRequestFocus(false);
 
         // Actually show or hide the window
-        LWWindowPeer blocker = peer.getBlocker();
+        LWWindowPeer blocker = (peer == null)? null : peer.getBlocker();
         if (blocker == null || !visible) {
             // If it ain't blocked, or is being hidden, go regular way
             if (visible) {
@@ -656,6 +672,10 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
 
     @Override
     public void setResizable(boolean resizable) {
+        if (peer == null) {
+            return;
+        }
+
         setStyleBits(RESIZABLE, resizable);
 
         // Re-apply the size constraints and the size to ensure the space
@@ -725,7 +745,8 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     @Override
     public void setOpaque(boolean isOpaque) {
         CWrapper.NSWindow.setOpaque(getNSWindowPtr(), isOpaque);
-        if (!isOpaque && !peer.isTextured()) {
+        boolean isTextured = (peer == null)? false : peer.isTextured();
+        if (!isOpaque && !isTextured) {
             long clearColor = CWrapper.NSColor.clearColor();
             CWrapper.NSWindow.setBackgroundColor(getNSWindowPtr(), clearColor);
         }
@@ -743,7 +764,19 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     @Override
     public void enterFullScreenMode() {
         isFullScreenMode = true;
-        contentView.enterFullScreenMode(getNSWindowPtr());
+        contentView.enterFullScreenMode();
+        // the move/size notification from the underlying system comes
+        // but it contains a bounds smaller than the whole screen
+        // and therefore we need to create the synthetic notifications
+        Rectangle screenBounds;
+        final long screenPtr = CWrapper.NSWindow.screen(getNSWindowPtr());
+        try {
+            screenBounds = CWrapper.NSScreen.frame(screenPtr).getBounds();
+        } finally {
+            CWrapper.NSObject.release(screenPtr);
+        }
+        responder.handleReshapeEvent(screenBounds.x, screenBounds.y, screenBounds.width,
+                           screenBounds.height);
     }
 
     @Override
@@ -753,8 +786,13 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     }
 
     @Override
+    public boolean isFullScreenMode() {
+        return isFullScreenMode;
+    }
+
+    @Override
     public void setWindowState(int windowState) {
-        if (!peer.isVisible()) {
+        if (peer == null || !peer.isVisible()) {
             // setVisible() applies the state
             return;
         }
@@ -870,47 +908,85 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         }
     }
 
+    void flushBuffers() {
+        if (isVisible() && !nativeBounds.isEmpty() && !isFullScreenMode) {
+            try {
+                LWCToolkit.invokeAndWait(new Runnable() {
+                    @Override
+                    public void run() {
+                        //Posting an empty to flush the EventQueue without blocking the main thread
+                    }
+                }, target);
+            } catch (InterruptedException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     /*************************************************************
      * Callbacks from the AWTWindow and AWTView objc classes.
      *************************************************************/
-    private void deliverWindowFocusEvent(boolean gained){
+    private void deliverWindowFocusEvent(boolean gained, CPlatformWindow opposite){
         // Fix for 7150349: ingore "gained" notifications when the app is inactive.
         if (gained && !((LWCToolkit)Toolkit.getDefaultToolkit()).isApplicationActive()) {
             focusLogger.fine("the app is inactive, so the notification is ignored");
             return;
         }
-        responder.handleWindowFocusEvent(gained);
+
+        LWWindowPeer oppositePeer = (opposite == null)? null : opposite.getPeer();
+        responder.handleWindowFocusEvent(gained, oppositePeer);
     }
 
-    private void deliverMoveResizeEvent(int x, int y, int width, int height) {
+    protected void deliverMoveResizeEvent(int x, int y, int width, int height,
+                                        boolean byUser) {
         // when the content view enters the full-screen mode, the native
         // move/resize notifications contain a bounds smaller than
         // the whole screen and therefore we ignore the native notifications
         // and the content view itself creates correct synthetic notifications
-        if (isFullScreenMode) return;
+        if (isFullScreenMode) {
+            return;
+        }
 
+        final Rectangle oldB = nativeBounds;
         nativeBounds = new Rectangle(x, y, width, height);
-        peer.notifyReshape(x, y, width, height);
-        //TODO validateSurface already called from notifyReshape
-        validateSurface();
+        final GraphicsConfiguration oldGC = contentView.getGraphicsConfiguration();
+
+        if (peer!= null) {
+            peer.notifyReshape(x, y, width, height);
+        }
+
+        final GraphicsConfiguration newGC = contentView.getGraphicsConfiguration();
+        // System-dependent appearance optimization.
+        if ((byUser && !oldB.getSize().equals(nativeBounds.getSize()))
+            || isFullScreenAnimationOn || !Objects.equals(newGC, oldGC)) {
+            flushBuffers();
+        }
     }
 
     private void deliverWindowClosingEvent() {
-        if (peer.getBlocker() == null)  {
-            peer.postEvent(new WindowEvent(target, WindowEvent.WINDOW_CLOSING));
+        if (peer != null) {
+            if (peer.getBlocker() == null)  {
+                peer.postEvent(new WindowEvent(target, WindowEvent.WINDOW_CLOSING));
+            }
         }
     }
 
     private void deliverIconify(final boolean iconify) {
-        peer.notifyIconify(iconify);
+        if (peer != null) {
+            peer.notifyIconify(iconify);
+        }
     }
 
     private void deliverZoom(final boolean isZoomed) {
-        peer.notifyZoom(isZoomed);
+        if (peer != null) {
+            peer.notifyZoom(isZoomed);
+        }
     }
 
     private void deliverNCMouseDown() {
-        peer.notifyNCMouseDown();
+        if (peer != null) {
+            peer.notifyNCMouseDown();
+        }
     }
 
     /*
@@ -918,6 +994,10 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
      * may become natively focusable window.
      */
     private boolean isNativelyFocusableWindow() {
+        if (peer == null) {
+            return false;
+        }
+
         return !peer.isSimpleWindow() && target.getFocusableWindowState();
     }
 
@@ -932,9 +1012,13 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
     }
 
     private boolean checkBlocking() {
-        LWWindowPeer blocker = peer.getBlocker();
+        LWWindowPeer blocker = (peer == null)? null : peer.getBlocker();
         if (blocker == null) {
             return false;
+        }
+
+        if (blocker instanceof CPrinterDialogPeer) {
+            return true;
         }
 
         CPlatformWindow pWindow = (CPlatformWindow)blocker.getPlatformWindow();
@@ -988,27 +1072,19 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         orderAboveSiblings();
     }
 
-    private void updateDisplay() {
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                validateSurface();
-            }
-        });
-    }
-
-    private void updateWindowContent() {
-        ComponentEvent resizeEvent = new ComponentEvent(target, ComponentEvent.COMPONENT_RESIZED);
-        SunToolkit.postEvent(SunToolkit.targetToAppContext(target), resizeEvent);
-    }
-
     private void windowWillEnterFullScreen() {
-        updateWindowContent();
+        isFullScreenAnimationOn = true;
     }
+
     private void windowDidEnterFullScreen() {
-        updateDisplay();
+        isFullScreenAnimationOn = false;
     }
+
     private void windowWillExitFullScreen() {
-        updateWindowContent();
+        isFullScreenAnimationOn = true;
     }
-    private void windowDidExitFullScreen() {}
+
+    private void windowDidExitFullScreen() {
+        isFullScreenAnimationOn = false;
+    }
 }

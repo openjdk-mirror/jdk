@@ -448,35 +448,8 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
 
     private void applyConstrain(final Graphics g) {
         final SunGraphics2D sg2d = (SunGraphics2D) g;
-        final Rectangle constr = localToWindow(getSize());
-        // translate and set rectangle constrain.
-        sg2d.constrain(constr.x, constr.y, constr.width, constr.height);
-        // set region constrain.
-        //sg2d.constrain(getVisibleRegion());
-        SG2DConstraint(sg2d, getVisibleRegion());
-    }
-
-    //TODO Move this method to SG2D?
-    void SG2DConstraint(final SunGraphics2D sg2d, Region r) {
-        sg2d.constrainX = sg2d.transX;
-        sg2d.constrainY = sg2d.transY;
-
-        Region c = sg2d.constrainClip;
-        if ((sg2d.constrainX | sg2d.constrainY) != 0) {
-            r = r.getTranslatedRegion(sg2d.constrainX, sg2d.constrainY);
-        }
-        if (c == null) {
-            c = r;
-        } else {
-            c = c.getIntersection(r);
-            if (c == sg2d.constrainClip) {
-                // Common case to ignore
-                return;
-            }
-        }
-        sg2d.constrainClip = c;
-        //validateCompClip() forced call.
-        sg2d.setDevClip(r.getLoX(), r.getLoY(), r.getWidth(), r.getHeight());
+        final Rectangle size = localToWindow(getSize());
+        sg2d.constrain(size.x, size.y, size.width, size.height, getVisibleRegion());
     }
 
     public Region getVisibleRegion() {
@@ -1184,10 +1157,10 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
     }
 
     protected void sendEventToDelegate(final AWTEvent e) {
+        if (getDelegate() == null || !isShowing() || !isEnabled()) {
+            return;
+        }
         synchronized (getDelegateLock()) {
-            if (getDelegate() == null || !isShowing() || !isEnabled()) {
-                return;
-            }
             AWTEvent delegateEvent = createDelegateEvent(e);
             if (delegateEvent != null) {
                 AWTAccessor.getComponentAccessor()
@@ -1201,7 +1174,12 @@ public abstract class LWComponentPeer<T extends Component, D extends JComponent>
         }
     }
 
-    protected AWTEvent createDelegateEvent(AWTEvent e) {
+    /**
+     * Changes the target of the AWTEvent from awt component to appropriate
+     * swing delegate.
+     */
+    private AWTEvent createDelegateEvent(final AWTEvent e) {
+        // TODO modifiers should be changed to getModifiers()|getModifiersEx()?
         AWTEvent delegateEvent = null;
         if (e instanceof MouseWheelEvent) {
             MouseWheelEvent me = (MouseWheelEvent) e;

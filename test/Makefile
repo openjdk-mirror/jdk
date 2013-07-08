@@ -484,7 +484,7 @@ endif
 
 # Stable agentvm testruns (minus items from PROBLEM_LIST)
 JDK_ALL_TARGETS += jdk_lang
-jdk_lang: $(call TestDirs, java/lang sun/invoke sun/misc vm)
+jdk_lang: $(call TestDirs, java/lang sun/invoke sun/misc vm sun/reflect)
 	$(call RunAgentvmBatch)
 
 # Stable othervm testruns (minus items from PROBLEM_LIST)
@@ -513,11 +513,11 @@ jdk_other: $(call TestDirs, \
           java/sql javax/sql \
           javax/smartcardio \
           javax/xml/soap \
+          javax/xml/jaxp \
           com/sun/xml \
           javax/xml/ws com/sun/internal/ws \
           com/sun/org/apache/xerces \
           com/sun/corba \
-          com/sun/servicetag \
           com/sun/tracing \
           sun/usagetracker) 
 	$(call RunAgentvmBatch)
@@ -594,7 +594,7 @@ jdk_jdi: $(call TestDirs, com/sun/jdi)
 JDK_ALL_TARGETS += jdk_tools
 jdk_tools: $(call TestDirs, \
 		com/sun/tools sun/jvmstat sun/tools tools \
-		com/sun/servicetag com/sun/tracing)
+		com/sun/tracing)
 	$(call SharedLibraryPermissions,tools/launcher)
 	$(call RunAgentvmBatch)
 

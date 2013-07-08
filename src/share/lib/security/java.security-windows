@@ -129,6 +129,7 @@ keystore.type=jks
 # corresponding RuntimePermission ("accessClassInPackage."+package) has
 # been granted.
 package.access=sun.,\
+               com.sun.corba.se.impl.,\
                com.sun.xml.internal.,\
                com.sun.imageio.,\
                com.sun.istack.internal.,\
@@ -151,7 +152,9 @@ package.access=sun.,\
                com.sun.org.apache.xml.internal.res.,\
                com.sun.org.apache.xml.internal.serializer.utils.,\
                com.sun.org.apache.xml.internal.utils.,\
+               com.sun.org.apache.xml.internal.security.,\
                com.sun.org.glassfish.,\
+               org.jcp.xml.dsig.internal.,\
                com.sun.java.accessibility.,\
                oracle.jrockit.jfr.
 
@@ -166,6 +169,7 @@ package.access=sun.,\
 # checkPackageDefinition.
 #
 package.definition=sun.,\
+                   com.sun.corba.se.impl.,\
                    com.sun.xml.internal.,\
                    com.sun.imageio.,\
                    com.sun.istack.internal.,\
@@ -188,7 +192,9 @@ package.definition=sun.,\
                    com.sun.org.apache.xml.internal.res.,\
                    com.sun.org.apache.xml.internal.serializer.utils.,\
                    com.sun.org.apache.xml.internal.utils.,\
+                   com.sun.org.apache.xml.internal.security.,\
                    com.sun.org.glassfish.,\
+                   org.jcp.xml.dsig.internal.,\
                    com.sun.java.accessibility.,\
                    oracle.jrockit.jfr.
 

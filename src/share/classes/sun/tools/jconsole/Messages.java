@@ -247,6 +247,7 @@ final public class Messages {
     public static String PROCESS_CPU_TIME;
     public static String READABLE;
     public static String RECONNECT;
+    public static String INSECURE;
     public static String REMOTE_PROCESS_COLON;
     public static String REMOTE_PROCESS_TEXT_FIELD_ACCESSIBLE_NAME;
     public static String RESTORE_ALL;
@@ -304,6 +305,8 @@ final public class Messages {
     public static String CONNECTION_FAILED1;
     public static String CONNECTION_FAILED2;
     public static String CONNECTION_LOST1;
+    public static String CONNECTION_INSECURE1;
+    public static String CONNECTION_INSECURE2;
     public static String CONNECTING_TO1;
     public static String CONNECTING_TO2;
     public static String DEADLOCK_TAB;
