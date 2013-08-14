@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013 Red Hat, Inc. and/or its affiliates.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,7 +44,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.reflect.*;
 
 /**
  * CredentialsCache stores credentials(tickets, session keys, etc) in a
@@ -63,6 +63,8 @@ public class FileCredentialsCache extends CredentialsCache
     private Vector<Credentials> credentialsList;
     private static String dir;
     private static boolean DEBUG = Krb5.DEBUG;
+    private static boolean alreadyLoaded = false;
+    private static boolean alreadyTried = false;
 
     public static synchronized FileCredentialsCache acquireInstance(
                 PrincipalName principal, String cache) {
@@ -357,7 +359,7 @@ public class FileCredentialsCache extends CredentialsCache
      * The path name is searched in the following order:
      *
      * 1. KRB5CCNAME (bare file name without FILE:)
-     * 2. /tmp/krb5cc_<uid> on unix systems
+     * 2. location specified by Kerberos API on unix systems
      * 3. <user.home>/krb5cc_<user.name>
      * 4. <user.home>/krb5cc (if can't get <user.name>)
      */
@@ -406,26 +408,46 @@ public class FileCredentialsCache extends CredentialsCache
          */
 
         if (osname != null) {
-            String cmd = null;
-            String uidStr = null;
-            long uid = 0;
-
             if (osname.startsWith("SunOS") ||
                 (osname.startsWith("Linux"))) {
                 try {
-                    Class<?> c = Class.forName
-                        ("com.sun.security.auth.module.UnixSystem");
-                    Constructor<?> constructor = c.getConstructor();
-                    Object obj = constructor.newInstance();
-                    Method method = c.getMethod("getUid");
-                    uid =  ((Long)method.invoke(obj)).longValue();
-                    name = File.separator + "tmp" +
-                        File.separator + stdCacheNameComponent + "_" + uid;
-                    if (DEBUG) {
-                        System.out.println(">>>KinitOptions cache name is " +
-                                           name);
+                    // Load the native code if necessary
+                    if (!alreadyTried) {
+                        // See if there's any native code to load
+                        try {
+                            ensureLoaded();
+                        } catch (Exception e) {
+                            if (DEBUG) {
+                                System.out.println("Could not load native Kerberos bridge");
+                                e.printStackTrace();
+                            }
+                            alreadyTried = true;
+                        }
                     }
-                    return name;
+                    if (alreadyLoaded) {
+                        // There is some native code
+                        if (DEBUG) {
+                           System.out.println(">> Look up native default credential cache");
+                        }
+                        // Query the native Kerberos API for the cache location
+                        name = nativeGetDefaultCacheName();
+                    }
+
+                    /*
+                     * We require the default cache location to be a file name.
+                     * DIR: can point to a cache collection, while DIR:: points
+                     * to a specific cache file.
+                     *  
+                     * http://k5wiki.kerberos.org/wiki?title=Projects/Client_principal_selection&oldid=4118
+                     */
+                    if (name.startsWith("FILE:") || name.startsWith("DIR::")) {
+                        name = name.substring(5);
+                        if (DEBUG) {
+                            System.out.println(">>>KinitOptions cache name is " +
+                                    name);
+                        }
+                        return name;
+                    }
                 } catch (Exception e) {
                     if (DEBUG) {
                         System.out.println("Exception in obtaining uid " +
@@ -469,6 +491,8 @@ public class FileCredentialsCache extends CredentialsCache
 
         return name;
     }
+    
+    private native static String nativeGetDefaultCacheName() throws Exception;
 
     public static String checkValidation(String name) {
         String fullname = null;
@@ -550,4 +574,16 @@ public class FileCredentialsCache extends CredentialsCache
         }
         return null;
     }
+    
+    private static void ensureLoaded() {
+        java.security.AccessController.doPrivileged(
+                new java.security.PrivilegedAction<Void> () {
+                    public Void run() {
+                            System.loadLibrary("j2krb5");
+                        return null;
+                    }
+                });
+        alreadyLoaded = true;
+    }
+    
 }
