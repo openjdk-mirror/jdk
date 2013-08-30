@@ -44,5 +44,6 @@ vpath %.c \
 
 include $(BUILDDIR)/common/Library.gmk
 
-OTHER_LDLIBS = $(LIBDL) $(JVMLIB) -lkrb5
+OTHER_CFLAGS += $(KRB5_CFLAGS)
+OTHER_LDLIBS = $(LIBDL) $(JVMLIB) $(KRB5_LIBS)
 endif # PLATFORM

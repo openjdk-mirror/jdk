@@ -451,6 +451,14 @@ if [ "${GIF_LIBS}" = "" ] ; then
 fi
 export GIF_LIBS
 
+# Export variables for system krb5
+# KRB5_CFLAGS and KRB5_LIBS tell the compiler how to compile and
+# link against Kerberos
+if [ "${KRB5_LIBS}" = "" ] ; then
+    KRB5_LIBS="-lkrb5"
+fi
+export KRB5_LIBS
+
 # Setup nss.cfg using location of NSS libraries
 if [ -x "${pkgconfig}" ] ; then
   jdk_topdir=$(dirname ${BASH_SOURCE})/..
@@ -468,3 +476,4 @@ export SYSTEM_ZLIB=true
 export USE_SYSTEM_JPEG=true
 export USE_SYSTEM_PNG=true
 export USE_SYSTEM_GIF=true
+export SYSTEM_KRB5=true

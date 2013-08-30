@@ -56,7 +56,9 @@ endif
 # Build krb5/internal/ccache only on Linux and Solaris platforms.
 KRB5_CCACHE =
 ifeq ($(PLATFORM), $(filter $(PLATFORM),linux solaris))
-  KRB5_CCACHE = krb5/internal/ccache
+  ifeq ($(SYSTEM_KRB5),true)
+    KRB5_CCACHE = krb5/internal/ccache
+  endif
 endif
 
 # Build Microsoft CryptoAPI provider only on Windows platform.
