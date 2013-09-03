@@ -23,7 +23,9 @@
  * questions.
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <krb5.h>
 #include <stdlib.h>
