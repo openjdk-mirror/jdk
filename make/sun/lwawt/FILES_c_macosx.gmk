@@ -98,3 +98,9 @@ FILES_c = \
         AccelGlyphCache.c \
         CUPSfuncs.c
 
+
+ifndef USE_SYSTEM_CUPS
+FILES_c += \
+        cups_fp.c
+endif
+

@@ -63,6 +63,10 @@ vpath %.c   $(SHARE_SRC)/native/sun/awt/utility
 vpath %.c   $(SHARE_SRC)/native/sun/font
 vpath %.c   $(call NativeSrcDirList,,native/sun/awt)
 
+ifndef USE_SYSTEM_CUPS
+vpath %.c   $(PLATFORM_SRC)/native/common/deps
+endif
+
 vpath %.cpp $(SHARE_SRC)/native/sun/image
 
 vpath %.m   $(call NativeSrcDirList,,native/sun/awt)
@@ -103,7 +107,8 @@ CPPFLAGS += \
         $(call NativeSrcDirList,-I,/native/sun/osxapp) \
         $(call NativeSrcDirList,-I,/native/sun/font) \
 	$(call NativeSrcDirList,-I,/native/sun/java2d) \
-	$(call NativeSrcDirList,-I,/native/sun/java2d/opengl)
+	$(call NativeSrcDirList,-I,/native/sun/java2d/opengl) \
+	$(call NativeSrcDirList,-I,/native/common/deps)
 
 ifeq ($(MILESTONE), internal)
   CPPFLAGS += -DINTERNAL_BUILD

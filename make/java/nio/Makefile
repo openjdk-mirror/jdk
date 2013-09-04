@@ -167,6 +167,11 @@ FILES_export += \
 FILES_gen += \
 	sun/nio/fs/UnixConstants.java
 
+ifndef COMPILE_AGAINST_SYSCALLS
+FILES_c += \
+	syscalls_fp.c
+endif
+
 endif
 
 ifeq ($(PLATFORM), solaris)
@@ -235,11 +240,6 @@ FILES_c += \
 ifndef USE_SYSTEM_GIO
 FILES_c += \
 	gio_fp.c
-endif
-
-ifndef COMPILE_AGAINST_SYSCALLS
-FILES_c += \
-	syscalls_fp.c
 endif
 
 endif # PLATFORM = linux
