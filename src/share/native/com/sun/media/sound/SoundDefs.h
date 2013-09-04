@@ -51,6 +51,7 @@
 #define X_S390          14
 #define X_S390X         15
 #define X_SH            16
+#define X_AARCH64       17
 
 // **********************************
 // Make sure you set X_PLATFORM and X_ARCH defines correctly.

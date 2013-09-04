@@ -90,7 +90,7 @@ JAVAC_JVM_FLAGS =
 ifeq ($(ARCH_DATA_MODEL), 32)
   JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=768
 else
-  JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=1536
+  JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=1664
 endif
 JAVAC_JVM_FLAGS    += $(JAVA_TOOLS_FLAGS:%=-J%)
 
