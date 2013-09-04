@@ -266,7 +266,7 @@ if [ "${ZERO_BUILD}" = true ] ; then
 
   # ARCH_DATA_MODEL is the number of bits in a pointer
   case "${ZERO_LIBARCH}" in
-    i386|ppc|s390|sparc|arm|sh)
+    arm|i386|ppc|s390|sh|sparc)
       ARCH_DATA_MODEL=32
       ;;
     aarch64|alpha|amd64|ia64|ppc64|s390x|sparcv9)
@@ -306,6 +306,9 @@ if [ "${ZERO_BUILD}" = true ] ; then
   case "${ZERO_LIBARCH}" in
     s390)
       ZERO_ARCHFLAG="-m31"
+      ;;
+    arm|aarch64)
+      ZERO_ARCHFLAG="-D_LITTLE_ENDIAN"
       ;;
     *)
       ZERO_ARCHFLAG="-m${ARCH_DATA_MODEL}"
