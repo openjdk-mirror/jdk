@@ -161,7 +161,7 @@ ifeq ($(SYSTEM_UNAME), Linux)
     mach := $(shell uname -m)
   endif
   ifneq (,$(wildcard /usr/bin/dpkg-architecture))
-    mach := $(shell (dpkg-architecture -qDEB_BUILD_ARCH_CPU 2>/dev/null || echo $(mach)) | sed 's/powerpc$$/ppc/;s/hppa/parisc/')
+    mach := $(shell (dpkg-architecture -qDEB_HOST_ARCH_CPU 2>/dev/null || echo $(mach)) | sed 's/arm64/aarch64/;s/powerpc$$/ppc/;s/hppa/parisc/')
   endif
   archExpr = case "$(mach)" in \
                 i[3-9]86) \
