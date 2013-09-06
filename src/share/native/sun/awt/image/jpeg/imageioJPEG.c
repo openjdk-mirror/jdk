@@ -1454,6 +1454,8 @@ Java_com_sun_imageio_plugins_jpeg_JPEGImageReader_initReaderIDs
                                                     "[S");
 }
 
+#define JPEG_APP1  (JPEG_APP0 + 1)  /* EXIF APP1 marker code  */
+
 JNIEXPORT jlong JNICALL
 Java_com_sun_imageio_plugins_jpeg_JPEGImageReader_initJPEGImageReader
     (JNIEnv *env,
@@ -1507,6 +1509,7 @@ Java_com_sun_imageio_plugins_jpeg_JPEGImageReader_initJPEGImageReader
 
     // Set up to keep any APP2 markers, as these might contain ICC profile
     // data
+    jpegsavemarkers(cinfo, JPEG_APP1, 0xFFFF);
     jpeg_save_markers(cinfo, ICC_MARKER, 0xFFFF);
 
     /*
@@ -1568,8 +1571,6 @@ Java_com_sun_imageio_plugins_jpeg_JPEGImageReader_setSource
 
     imageio_init_source((j_decompress_ptr) cinfo);
 }
-
-#define JPEG_APP1  (JPEG_APP0 + 1)  /* EXIF APP1 marker code  */
 
 /*
  * For EXIF images, the APP1 will appear immediately after the SOI,
