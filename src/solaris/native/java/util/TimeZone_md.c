@@ -53,6 +53,8 @@
 
 
 static const char *ETC_TIMEZONE_FILE = "/etc/timezone";
+static const char *REDHAT_RELEASE_FILE = "/etc/redhat-release";
+static const char *SYSCONFIG_CLOCK_FILE = "/etc/sysconfig/clock";
 static const char *ZONEINFO_DIR = "/usr/share/zoneinfo";
 static const char *DEFAULT_ZONEINFO_FILE = "/etc/localtime";
 #else
@@ -253,6 +255,64 @@ getPlatformTimeZoneID()
         }
     }
 #endif /* __linux__ */
+
+    /*
+     * Next, try the ZONE entry in /etc/sysconfig/clock.
+     */
+    if ((fp = fopen(REDHAT_RELEASE_FILE, "r")) != NULL) {
+	char id[7];
+
+	/* Avoid this file on Fedora as may be buggy; RH489586 */
+	if (fgets(id, sizeof (id), fp) != NULL && 
+	  strncmp(id, "Fedora", 6) != 0) {
+	    (void) fclose(fp);
+	    if ((fp = fopen(SYSCONFIG_CLOCK_FILE, "r")) != NULL) {
+		char line[256];
+		
+		while (fgets(line, sizeof(line), fp) != NULL) {
+		    char *p = line;
+		    char *s;
+		    
+		    SKIP_SPACE(p);
+		    if (*p != 'Z') {
+			continue;
+		    }
+		    if (strncmp(p, "ZONE=\"", 6) == 0) {
+			p += 6;
+		    } else {
+			/*
+			 * In case we need to parse it token by token.
+			 */
+			if (strncmp(p, "ZONE", 4) != 0) {
+			    continue;
+			}
+			p += 4;
+			SKIP_SPACE(p);
+			if (*p++ != '=') {
+			    break;
+			}
+			SKIP_SPACE(p);
+			if (*p++ != '"') {
+			    break;
+			}
+		    }
+		    for (s = p; *s && *s != '"'; s++)
+			;
+		    if (*s != '"') {
+			/* this ZONE entry is broken. */
+			break;
+		    }
+		    *s = '\0';
+		    tz = strdup(p);
+		    break; 
+		}
+		(void) fclose(fp);
+		if (tz != NULL) {
+		    return tz;
+		}
+	    }
+	}
+    }
 
     /*
      * Next, try /etc/localtime to find the zone ID.
