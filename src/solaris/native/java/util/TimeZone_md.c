@@ -250,6 +250,7 @@ getPlatformTimeZoneID()
             }
         }
         (void) fclose(fp);
+	fp = NULL;
         if (tz != NULL) {
             return tz;
         }
@@ -306,11 +307,14 @@ getPlatformTimeZoneID()
 		    tz = strdup(p);
 		    break; 
 		}
-		(void) fclose(fp);
-		if (tz != NULL) {
-		    return tz;
-		}
 	    }
+	}
+	if (fp != NULL) {
+	    (void) fclose(fp);
+	    fp = NULL;
+	}
+	if (tz != NULL) {
+	    return tz;
 	}
     }
 
