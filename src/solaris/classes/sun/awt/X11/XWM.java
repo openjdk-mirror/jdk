@@ -578,7 +578,7 @@ final class XWM
     }
 
     static boolean isMutter() {
-        return isNetWMName("Mutter");
+        return isNetWMName("Mutter") || isNetWMName("GNOME Shell");
     }
 
     // TODO: according to wikipedia, compiz is now reparenting. This should
