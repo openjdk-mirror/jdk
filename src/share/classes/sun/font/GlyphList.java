@@ -361,7 +361,9 @@ public final class GlyphList {
                 graybits = new byte[len];
             }
         }
-        long pixelDataAddress = StrikeCache.unsafe.getAddress(images[glyphindex] + StrikeCache.pixelDataOffset);
+        long pixelDataAddress =
+            StrikeCache.unsafe.getAddress(images[glyphindex] +
+                                          StrikeCache.pixelDataOffset);
 
         if (pixelDataAddress == 0L) {
             return graybits;

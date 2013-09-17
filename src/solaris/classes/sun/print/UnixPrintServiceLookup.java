@@ -164,6 +164,10 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
 	return "AIX".contains(osname);
     }
 
+    static boolean isLinux() {
+        return (osname.equals("Linux"));
+    }
+
     static boolean isBSD() {
         return (osname.equals("Linux") ||
                 osname.contains("OS X"));
@@ -405,10 +409,33 @@ public class UnixPrintServiceLookup extends PrintServiceLookup
      */
     private PrintService getServiceByName(PrinterName nameAttr) {
         String name = nameAttr.getValue();
-        PrintService printer = null;
         if (name == null || name.equals("") || !checkPrinterName(name)) {
             return null;
         }
+        /* check is all printers are already available */
+        if (printServices != null) {
+            for (PrintService printService : printServices) {
+                if (printService.getName().equals(name)) {
+                    return printService;
+                }
+            }
+        }
+        /* take CUPS into account first */
+        if (CUPSPrinter.isCupsRunning()) {
+            try {
+                return new IPPPrintService(name,
+                                           new URL("http://"+
+                                                   CUPSPrinter.getServer()+":"+
+                                                   CUPSPrinter.getPort()+"/"+
+                                                   name));
+            } catch (Exception e) {
+                IPPPrintService.debug_println(debugPrefix+
+                                              " getServiceByName Exception "+
+                                              e);
+            }
+        }
+        /* fallback if nothing not having a printer at this point */
+        PrintService printer = null;
         if (isAIX()) {
             printer = getNamedPrinterNameAix(name);
         } else if (isMac() || isSysV()) {

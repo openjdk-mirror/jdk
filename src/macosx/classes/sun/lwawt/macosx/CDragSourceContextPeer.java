@@ -38,8 +38,12 @@ import javax.swing.text.*;
 import javax.accessibility.*;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
+
 import sun.awt.dnd.*;
 import sun.lwawt.LWComponentPeer;
+import sun.lwawt.LWWindowPeer;
+import sun.lwawt.PlatformWindow;
 
 
 public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
@@ -88,44 +92,20 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
         DragGestureEvent trigger = getTrigger();
         InputEvent         triggerEvent = trigger.getTriggerEvent();
 
-        Point dragOrigin = trigger.getDragOrigin();
+        Point dragOrigin = new Point(trigger.getDragOrigin());
         int extModifiers = (triggerEvent.getModifiers() | triggerEvent.getModifiersEx());
         long timestamp   = triggerEvent.getWhen();
         int clickCount   = ((triggerEvent instanceof MouseEvent) ? (((MouseEvent) triggerEvent).getClickCount()) : 1);
 
-        // Get drag source component and its peer:
         Component component = trigger.getComponent();
-        Point componentOffset = new Point();
-        ComponentPeer peer = component.getPeer();
-
-        // For a lightweight component traverse up the hierarchy to the first heavyweight
-        // which will be used as the ComponentModel for the native drag source.
-        if (component.isLightweight()) {
-            Point loc = component.getLocation();
-            componentOffset.translate(loc.x, loc.y);
-
-            for (Component parent = component.getParent(); parent != null; parent = parent.getParent()) {
-                if (parent.isLightweight() == false) {
-                    peer = parent.getPeer();
-                    break;
-                }
-
-                loc = parent.getLocation();
-                componentOffset.translate(loc.x, loc.y);
-            }
+        // For a lightweight component traverse up the hierarchy to the root
+        Point loc = component.getLocation();
+        Component rootComponent = component;
+        while (!(rootComponent instanceof Window)) {
+            dragOrigin.translate(loc.x, loc.y);
+            rootComponent = rootComponent.getParent();
+            loc = rootComponent.getLocation();
         }
-
-        // Make sure the drop target is a ComponentModel:
-        if (!(peer instanceof LWComponentPeer))
-            throw new IllegalArgumentException("DragSource's peer must be a ComponentModel.");
-
-        // Get model pointer (CButton.m and such) and its native peer:
-        LWComponentPeer model = (LWComponentPeer) peer;
-        CPlatformWindow platformWindow = (CPlatformWindow) model.getPlatformWindow();
-        long nativeWindowPtr = platformWindow.getNSWindowPtr();
-
-        // Get drag cursor:
-        Cursor cursor = this.getCursor();
 
         // If there isn't any drag image make one of default appearance:
         if (fDragImage == null)
@@ -153,20 +133,21 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
         }
 
         try {
+            //It sure will be LWComponentPeer instance as rootComponent is a Window
+            PlatformWindow platformWindow = ((LWComponentPeer)rootComponent.getPeer()).getPlatformWindow();
+            long nativeViewPtr = CPlatformWindow.getNativeViewPtr(platformWindow);
+            if (nativeViewPtr == 0L) throw new InvalidDnDOperationException("Unsupported platform window implementation");
+
             // Create native dragging source:
-            final long nativeDragSource = createNativeDragSource(component, peer, nativeWindowPtr, transferable, triggerEvent,
-                (int) (dragOrigin.getX() + componentOffset.x), (int) (dragOrigin.getY() + componentOffset.y), extModifiers,
-                clickCount, timestamp, cursor, fDragCImage, dragImageOffset.x, dragImageOffset.y,
+            final long nativeDragSource = createNativeDragSource(component, nativeViewPtr, transferable, triggerEvent,
+                (int) (dragOrigin.getX()), (int) (dragOrigin.getY()), extModifiers,
+                clickCount, timestamp, fDragCImage, dragImageOffset.x, dragImageOffset.y,
                 getDragSourceContext().getSourceActions(), formats, formatMap);
 
             if (nativeDragSource == 0)
                 throw new InvalidDnDOperationException("");
 
             setNativeContext(nativeDragSource);
-
-            CCursorManager.getInstance().startDrag(
-                    (int) (dragOrigin.getX() + componentOffset.x),
-                    (int) (dragOrigin.getY() + componentOffset.y));
         }
 
         catch (Exception e) {
@@ -174,6 +155,8 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
         }
 
         SunDropTargetContextPeer.setCurrentJVMLocalSourceTransferable(transferable);
+
+        CCursorManager.getInstance().setCursor(getCursor());
 
         // Create a new thread to run the dragging operation since it's synchronous, only coming back
         // after dragging is finished. This leaves the AWT event thread free to handle AWT events which
@@ -188,8 +171,6 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
                     } catch (Exception e) {
                         e.printStackTrace();
                     } finally {
-                        CCursorManager.getInstance().stopDrag();
-
                         releaseNativeDragSource(nativeDragSource);
                         fDragImage = null;
                         if (fDragCImage != null) {
@@ -204,8 +185,6 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
         }
 
         catch (Exception e) {
-            CCursorManager.getInstance().stopDrag();
-
             final long nativeDragSource = getNativeContext();
             setNativeContext(0);
             releaseNativeDragSource(nativeDragSource);
@@ -431,13 +410,24 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
                                 final int modifiers,
                                 final int x, final int y) {
 
-        CCursorManager.getInstance().updateDragPosition(x, y);
+        try {
+            Component componentAt = LWCToolkit.invokeAndWait(
+                    new Callable<Component>() {
+                        @Override
+                        public Component call() {
+                            LWWindowPeer mouseEventComponent = LWWindowPeer.getWindowUnderCursor();
+                            if (mouseEventComponent == null) {
+                                return null;
+                            }
+                            Component root = SwingUtilities.getRoot(mouseEventComponent.getTarget());
+                            if (root == null) {
+                                return null;
+                            }
+                            Point rootLocation = root.getLocationOnScreen();
+                            return getDropTargetAt(root, x - rootLocation.x, y - rootLocation.y);
+                        }
+                    }, getComponent());
 
-        Component rootComponent = SwingUtilities.getRoot(getComponent());
-        if(rootComponent != null) {
-            Point componentPoint = new Point(x, y);
-            SwingUtilities.convertPointFromScreen(componentPoint, rootComponent);
-            Component componentAt = SwingUtilities.getDeepestComponentAt(rootComponent, componentPoint.x, componentPoint.y);
             if(componentAt != hoveringComponent) {
                 if(hoveringComponent != null) {
                     dragExit(x, y);
@@ -447,20 +437,36 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
                 }
                 hoveringComponent = componentAt;
             }
+
+            postDragSourceDragEvent(targetActions, modifiers, x, y,
+                    DISPATCH_MOUSE_MOVED);
+        } catch (Exception e) {
+            throw new InvalidDnDOperationException("Failed to handle DragMouseMoved event");
         }
-        postDragSourceDragEvent(targetActions, modifiers, x, y,
-                                DISPATCH_MOUSE_MOVED);
     }
 
-    /**
-     * upcall from native code
-     */
-    private void dragEnter(final int targetActions,
-                           final int modifiers,
-                           final int x, final int y) {
-        CCursorManager.getInstance().updateDragPosition(x, y);
+    //Returns the first lightweight or heavyweight Component which has a dropTarget ready to accept the drag
+    //Should be called from the EventDispatchThread
+    private static Component getDropTargetAt(Component root, int x, int y) {
+        if (!root.contains(x, y) || !root.isEnabled() || !root.isVisible()) {
+            return null;
+        }
 
-        postDragSourceDragEvent(targetActions, modifiers, x, y, DISPATCH_ENTER);
+        if (root.getDropTarget() != null && root.getDropTarget().isActive()) {
+            return root;
+        }
+
+        if (root instanceof Container) {
+            for (Component comp : ((Container) root).getComponents()) {
+                Point loc = comp.getLocation();
+                Component dropTarget = getDropTargetAt(comp, x - loc.x, y - loc.y);
+                if (dropTarget != null) {
+                    return dropTarget;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -470,19 +476,15 @@ public final class CDragSourceContextPeer extends SunDragSourceContextPeer {
         hoveringComponent = null;
     }
 
-    public void setCursor(Cursor c) throws InvalidDnDOperationException {
-        // TODO : BG
-        //AWTLockAccess.awtLock();
-        super.setCursor(c);
-        //AWTLockAccess.awtUnlock();
+    @Override
+    protected void setNativeCursor(long nativeCtxt, Cursor c, int cType) {
+        CCursorManager.getInstance().setCursor(c);
     }
 
-    protected native void setNativeCursor(long nativeCtxt, Cursor c, int cType);
-
     // Native support:
-    private native long createNativeDragSource(Component component, ComponentPeer peer, long nativePeer, Transferable transferable,
+    private native long createNativeDragSource(Component component, long nativePeer, Transferable transferable,
         InputEvent triggerEvent, int dragPosX, int dragPosY, int extModifiers, int clickCount, long timestamp,
-        Cursor cursor, CImage nsDragImage, int dragImageOffsetX, int dragImageOffsetY,
+        CImage nsDragImage, int dragImageOffsetX, int dragImageOffsetY,
         int sourceActions, long[] formats, Map formatMap);
 
     private native void doDragging(long nativeDragSource);

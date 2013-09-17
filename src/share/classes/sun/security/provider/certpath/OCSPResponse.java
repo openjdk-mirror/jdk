@@ -553,7 +553,7 @@ public final class OCSPResponse {
 
         try {
             Signature respSignature = Signature.getInstance(sigAlgId.getName());
-            respSignature.initVerify(cert);
+            respSignature.initVerify(cert.getPublicKey());
             respSignature.update(responseData);
 
             if (respSignature.verify(signBytes)) {
@@ -701,8 +701,7 @@ public final class OCSPResponse {
                 singleExtensions = Collections.emptyMap();
             }
 
-            long now = (dateCheckedAgainst == null) ?
-                System.currentTimeMillis() : dateCheckedAgainst.getTime();
+            long now = System.currentTimeMillis();
             Date nowPlusSkew = new Date(now + MAX_CLOCK_SKEW);
             Date nowMinusSkew = new Date(now - MAX_CLOCK_SKEW);
             if (DEBUG != null) {

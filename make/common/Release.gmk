@@ -170,20 +170,12 @@ ifndef OPENJDK
 endif
 
 ifeq ($(PLATFORM), solaris)
-  ifndef OPENJDK
-    MANBASEDIRS=$(CLOSED_SRC)/solaris/doc $(IMPORTDOCDIR)
-  else
-    MANBASEDIRS=$(JDK_TOPDIR)/src/solaris/doc $(IMPORTDOCDIR)
-  endif
+  MANBASEDIRS=$(JDK_TOPDIR)/src/solaris/doc $(IMPORTDOCDIR)
   MAN1SUBDIR=sun/man/man1
 endif # solaris
 
 ifeq ($(PLATFORM), linux)
-  ifndef OPENJDK
-    MANBASEDIRS=$(CLOSED_SRC)/linux/doc $(IMPORTDOCDIR)
-  else
-    MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
-  endif
+  MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
   MAN1SUBDIR=man
   JA_DIRNAME=ja_JP.UTF-8
 endif # linux
@@ -261,7 +253,7 @@ images:: sanity-images post-sanity-images  \
 	 trim-image-jre trim-image-jdk \
 	 identify-image-jre identify-image-jdk \
 	 process-image-jre process-image-jdk sec-files sec-files-win \
-	jgss-files $(EXTRA_IMAGE_TARGETS) server-jdk-image 
+	jgss-files $(EXTRA_IMAGE_TARGETS) server-jdk-image
 else
 
 images:: sanity-images post-sanity-images  \
@@ -437,7 +429,8 @@ JFR_CLASSES_DIRS=
 ifdef BUILD_JFR
 JFR_CLASSES_DIRS= \
 	com/oracle/jrockit/jfr \
-	oracle/jrockit/jfr
+	oracle/jrockit/jfr \
+	jdk/internal/jfr
 endif
 
 # classes that go into jsse.jar
@@ -554,7 +547,7 @@ $(JDK_IMAGE_DIR)/demo/DEMOS_LICENSE: $(SHARE_JDK_DOC_SRC)/DEMOS_LICENSE
 $(JDK_IMAGE_DIR)/sample/SAMPLES_LICENSE: $(SHARE_JDK_DOC_SRC)/SAMPLES_LICENSE
 	$(process-doc-file)
 
-# JRE files 
+# JRE files
 $(JRE_IMAGE_DIR)/%: $(SHARE_JRE_DOC_SRC)/%
 	$(process-doc-file)
 ifeq ($(PLATFORM), windows)
@@ -652,6 +645,7 @@ ifdef BUILD_JFR
 	$(ECHO) "oracle/jrockit/jfr/parser/" >> $@
 	$(ECHO) "oracle/jrockit/jfr/settings/" >> $@
 	$(ECHO) "oracle/jrockit/jfr/tools/" >> $@
+	$(ECHO) "jdk/internal/jfr/events/" >> $@
 endif
 
 
@@ -945,7 +939,7 @@ endif
 	done
 	$(RM) $(JRE_BIN_LIST)
 
-# Duplicate current j2re-image contents to server-j2re-image 
+# Duplicate current j2re-image contents to server-j2re-image
 # for the server version of jre, before deploy build
 server-jdk-image::
 ifeq ($(PLATFORM), macosx)
@@ -1245,7 +1239,6 @@ endef
 define echo-java-info
 $(CAT) $1
 endef
--include $(JDK_TOPDIR)/make/closed/common/release.gmk
 
 # Values to emit
 MINIMUM_OS_NAME    := $(REQUIRED_OS_NAME)
@@ -1442,3 +1435,4 @@ images images-clobber::
 # Force rule
 FRC:
 
+-include $(JDK_TOPDIR)/make/closed/common/release.gmk
