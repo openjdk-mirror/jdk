@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -168,6 +168,7 @@ public final class SunPKCS11 extends AuthProvider {
                 String nssLibraryDirectory = config.getNssLibraryDirectory();
                 String nssSecmodDirectory = config.getNssSecmodDirectory();
                 int errorHandling = config.getHandleStartupErrors();
+                boolean nssOptimizeSpace = config.getNssOptimizeSpace();
 
                 if (secmod.isInitialized()) {
                     if (nssSecmodDirectory != null) {
@@ -215,7 +216,7 @@ public final class SunPKCS11 extends AuthProvider {
                         }
                     }
                     secmod.initialize(nssDbMode, nssSecmodDirectory,
-                        nssLibraryDirectory);
+                        nssLibraryDirectory, nssOptimizeSpace);
                 }
             } catch (IOException e) {
                 // XXX which exception to throw

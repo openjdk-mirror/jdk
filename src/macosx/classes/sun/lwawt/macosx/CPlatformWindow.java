@@ -48,7 +48,7 @@ import com.apple.laf.ClientPropertyApplicator.Property;
 import com.sun.awt.AWTUtilities;
 
 public class CPlatformWindow extends CFRetainedResource implements PlatformWindow {
-    private native long nativeCreateNSWindow(long nsViewPtr, long styleBits, double x, double y, double w, double h);
+    private native long nativeCreateNSWindow(long nsViewPtr,long ownerPtr, long styleBits, double x, double y, double w, double h);
     private static native void nativeSetNSWindowStyleBits(long nsWindowPtr, int mask, int data);
     private static native void nativeSetNSWindowMenuBar(long nsWindowPtr, long menuBarPtr);
     private static native Insets nativeGetNSWindowInsets(long nsWindowPtr);
@@ -234,7 +234,8 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         contentView = createContentView();
         contentView.initialize(peer, responder);
 
-        final long nativeWindowPtr = nativeCreateNSWindow(contentView.getAWTView(), styleBits, 0, 0, 0, 0);
+        final long ownerPtr = owner != null ? owner.getNSWindowPtr() : 0L;
+        final long nativeWindowPtr = nativeCreateNSWindow(contentView.getAWTView(), ownerPtr, styleBits, 0, 0, 0, 0);
         setPtr(nativeWindowPtr);
 
         // TODO: implement on top of JObjC bridged class
@@ -923,6 +924,19 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
         }
     }
 
+    /**
+     * Helper method to get a pointer to the native view from the PlatformWindow.
+     */
+    static long getNativeViewPtr(PlatformWindow platformWindow) {
+        long nativePeer = 0L;
+        if (platformWindow instanceof CPlatformWindow) {
+            nativePeer = ((CPlatformWindow) platformWindow).getContentView().getAWTView();
+        } else if (platformWindow instanceof CViewPlatformEmbeddedFrame){
+            nativePeer = ((CViewPlatformEmbeddedFrame) platformWindow).getNSViewPtr();
+        }
+        return nativePeer;
+    }
+
     /*************************************************************
      * Callbacks from the AWTWindow and AWTView objc classes.
      *************************************************************/
@@ -949,25 +963,19 @@ public class CPlatformWindow extends CFRetainedResource implements PlatformWindo
 
         final Rectangle oldB = nativeBounds;
         nativeBounds = new Rectangle(x, y, width, height);
-        final GraphicsConfiguration oldGC = contentView.getGraphicsConfiguration();
-
-        if (peer!= null) {
+        if (peer != null) {
             peer.notifyReshape(x, y, width, height);
-        }
-
-        final GraphicsConfiguration newGC = contentView.getGraphicsConfiguration();
-        // System-dependent appearance optimization.
-        if ((byUser && !oldB.getSize().equals(nativeBounds.getSize()))
-            || isFullScreenAnimationOn || !Objects.equals(newGC, oldGC)) {
-            flushBuffers();
+            // System-dependent appearance optimization.
+            if ((byUser && !oldB.getSize().equals(nativeBounds.getSize()))
+                    || isFullScreenAnimationOn) {
+                flushBuffers();
+            }
         }
     }
 
     private void deliverWindowClosingEvent() {
-        if (peer != null) {
-            if (peer.getBlocker() == null)  {
-                peer.postEvent(new WindowEvent(target, WindowEvent.WINDOW_CLOSING));
-            }
+        if (peer != null && peer.getBlocker() == null) {
+            peer.postEvent(new WindowEvent(target, WindowEvent.WINDOW_CLOSING));
         }
     }
 

@@ -216,6 +216,17 @@ public class VM {
         return allowArraySyntax;
     }
 
+    private static boolean allowGetCallerClass = true;
+
+    // Reflection.getCallerClass(int) is enabled by default.
+    // It can be disabled by setting the system property
+    // "jdk.reflect.allowGetCallerClass" to "false". It cannot be
+    // disabled if the logging stack walk (to find resource bundles)
+    // is enabled.
+    public static boolean allowGetCallerClass() {
+        return allowGetCallerClass;
+    }
+
     /**
      * Returns the system property of the specified key saved at
      * system initialization time.  This method should only be used
@@ -279,6 +290,15 @@ public class VM {
         allowArraySyntax = (s == null
                                ? defaultAllowArraySyntax
                                : Boolean.parseBoolean(s));
+
+        // Reflection.getCallerClass(int) is enabled by default.
+        // It can be disabled by setting a system property (but only if
+        // the logging stack walk is not enabled)
+        s = props.getProperty("jdk.reflect.allowGetCallerClass");
+        allowGetCallerClass = (s != null
+                                   ? (s.isEmpty() || Boolean.parseBoolean(s))
+                                   : true) ||
+             Boolean.valueOf(props.getProperty("jdk.logging.allowStackWalkSearch"));
 
         // Remove other private system properties
         // used by java.lang.Integer.IntegerCache
