@@ -23,14 +23,14 @@
  * questions.
  */
 
-#ifdef _WIN32
+#ifndef __solaris__
 /*
  * Win* needs this include. However, Linux and Solaris do not.
  * Having this include on Solaris SPARC breaks having non US-ASCII
  * characters in the value of the Premain-Class attribute.
  */
 #include <ctype.h>
-#endif /* _WIN32 */
+#endif /* __solaris__ */
 #include <string.h>
 #include <stdlib.h>
 
