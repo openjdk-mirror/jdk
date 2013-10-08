@@ -104,7 +104,8 @@ final class XWM
         COMPIZ_WM = 12,
         LG3D_WM = 13,
         CWM_WM = 14,
-        MUTTER_WM = 15;
+        MUTTER_WM = 15,
+        MARCO_WM = 16;
     public String toString() {
         switch  (WMID) {
           case NO_WM:
@@ -135,6 +136,8 @@ final class XWM
               return "CWM";
           case MUTTER_WM:
               return "Mutter";
+          case MARCO_WM:
+              return "Marco";
           case UNDETERMINED_WM:
           default:
               return "Undetermined WM";
@@ -581,6 +584,10 @@ final class XWM
         return isNetWMName("Mutter") || isNetWMName("GNOME Shell");
     }
 
+    static boolean isMarco() {
+        return isNetWMName("Marco");
+    }
+
     // TODO: according to wikipedia, compiz is now reparenting. This should
     // probably be updated.
     static boolean isNonReparentingWM() {
@@ -767,6 +774,8 @@ final class XWM
                 awt_wmgr = CWM_WM;
             } else if (doIsIceWM && isIceWM()) {
                 awt_wmgr = XWM.ICE_WM;
+            } else if (isMarco()) {
+                awt_wmgr = XWM.MARCO_WM;
             }
             /*
              * We don't check for legacy WM when we already know that WM
@@ -1066,6 +1075,7 @@ final class XWM
           case XWM.SAWFISH_WM:
           case XWM.ICE_WM:
           case XWM.METACITY_WM:
+          case XWM.MARCO_WM:
               return true;
           case XWM.OPENLOOK_WM:
           case XWM.MOTIF_WM:
@@ -1092,7 +1102,7 @@ final class XWM
                * WMs that talk NET/WIN protocol, but do not support
                * unidirectional maximization.
                */
-              if (getWMID() == METACITY_WM) {
+              if (getWMID() == METACITY_WM || getWMID() == MARCO_WM) {
                   /* "This is a deliberate policy decision." -hp */
                   return false;
               }
