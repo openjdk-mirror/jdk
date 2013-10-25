@@ -1,5 +1,4 @@
-#
-# Copyright (c) 1995, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -21,9 +20,30 @@
 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
 # or visit www.oracle.com if you need additional information or have any
 # questions.
-#
 
-# FILES_export definitions for Mac OS X
+CFLAGS =	
+OBJS =		myfile.o
+HEADERS =	MyCanvas.h
+CLASSES =	MyCanvas.class
 
-FILES_export += \
-	com/apple/resources/MacOSXResourceBundle.java
+JAVA =		$(TESTJAVA)/bin/java -classpath .
+JAVAC =		$(TESTJAVA)/bin/javac
+JAVAH =		$(TESTJAVA)/bin/javah
+DEL =		rm -rf
+LINK =		$(CC)
+
+INCLUDES =	-I $(TESTJAVA)/include/win32 -I $(TESTJAVA)/include -I .
+
+LIBS =		$(TESTJAVA)/lib/jawt.lib -lgdi32
+
+all:		$(CLASSES) mylib.dll
+
+mylib.dll: $(HEADERS) $(OBJS) 
+	$(LINK) -shared -o mylib.dll $(OBJS) $(LIBS) 
+
+myfile.o:
+	$(CC) $(CFLAGS)  $(INCLUDES) -c $(TESTSRC)/myfile.cpp
+
+clean:
+	$(DEL) mylib.* *.h *.class *.o
+ 

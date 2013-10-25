@@ -125,6 +125,12 @@ static void aix_free(void* p) {
 #define free aix_free
 #endif
 
+#ifdef __APPLE__
+/* use setjmp/longjmp versions that do not save/restore the signal mask */
+#define setjmp _setjmp
+#define longjmp _longjmp
+#endif
+
 #define MAX_ARRAY_DIMENSIONS 255
 /* align byte code */
 #ifndef ALIGN_UP

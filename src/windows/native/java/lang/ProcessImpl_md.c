@@ -63,46 +63,52 @@ extractExecutablePath(JNIEnv *env, char *source)
     return source;
 }
 
+static const char EXE_EXT[] = ".exe";
+
 DWORD
 selectProcessFlag(JNIEnv *env, jstring cmd0)
 {
-    char buf[MAX_PATH];
     DWORD newFlag = 0;
-    char *exe, *p, *name;
-    unsigned char buffer[2];
-    long headerLoc = 0;
-    int fd = 0;
-
-    exe = (char *)JNU_GetStringPlatformChars(env, cmd0, 0);
-    exe = extractExecutablePath(env, exe);
-
+    char *exe = (char *)JNU_GetStringPlatformChars(env, cmd0, 0);
     if (exe != NULL) {
-        if ((p = strchr(exe, '\\')) == NULL) {
-            SearchPath(NULL, exe, ".exe", MAX_PATH, buf, &name);
-        } else {
-            p = strrchr(exe, '\\');
-            *p = 0;
-            p++;
-            SearchPath(exe, p, ".exe", MAX_PATH, buf, &name);
-        }
-    }
-
-    fd = _open(buf, _O_RDONLY);
-    if (fd > 0) {
-        _read(fd, buffer, 2);
-        if (buffer[0] == 'M' && buffer[1] == 'Z') {
-            _lseek(fd, 60L, SEEK_SET);
-            _read(fd, buffer, 2);
-            headerLoc = (long)buffer[1] << 8 | (long)buffer[0];
-            _lseek(fd, headerLoc, SEEK_SET);
-            _read(fd, buffer, 2);
-            if (buffer[0] == 'P' && buffer[1] == 'E') {
-                newFlag = DETACHED_PROCESS;
+        char buf[MAX_PATH];
+        char *name;
+        DWORD len;
+        exe = extractExecutablePath(env, exe);
+        if (exe != NULL) {
+            /* We are here for Win9x/Me, so the [/] is not the path sep */
+            char *p = strrchr(exe, '\\');
+            if (p == NULL) {
+                len = SearchPath(NULL, exe, EXE_EXT, MAX_PATH, buf, &name);
+            } else {
+                *p = 0;
+                len = SearchPath(exe, p + 1, EXE_EXT, MAX_PATH, buf, &name);
             }
         }
-        _close(fd);
+
+        if (len > 0 && len < MAX_PATH) {
+            /* Here the [buf] path is valid and null terminated */
+            int fd = _open(buf, _O_RDONLY);
+            if (fd != -1) {
+                unsigned char buffer[2];
+                if (_read(fd, buffer, 2) == 2
+                    && buffer[0] == 'M' && buffer[1] == 'Z'
+                    && _lseek(fd, 60L, SEEK_SET) == 60L
+                    && _read(fd, buffer, 2) == 2)
+                {
+                    long headerLoc = (long)buffer[1] << 8 | (long)buffer[0];
+                    if (_lseek(fd, headerLoc, SEEK_SET) == headerLoc
+                        && _read(fd, buffer, 2) == 2
+                        && buffer[0] == 'P' && buffer[1] == 'E')
+                    {
+                        newFlag = DETACHED_PROCESS;
+                    }
+                }
+                _close(fd);
+            }
+        }
+        JNU_ReleaseStringPlatformChars(env, cmd0, exe);
     }
-    JNU_ReleaseStringPlatformChars(env, cmd0, exe);
     return newFlag;
 }
 
@@ -193,10 +199,12 @@ Java_java_lang_ProcessImpl_create(JNIEnv *env, jclass ignored,
             goto Catch;
         }
         si.hStdInput = inRead;
-        SetHandleInformation(inWrite, HANDLE_FLAG_INHERIT, FALSE);
+        SetHandleInformation(inWrite, HANDLE_FLAG_INHERIT, 0);
         handles[0] = (jlong) inWrite;
     }
-    SetHandleInformation(si.hStdInput, HANDLE_FLAG_INHERIT, TRUE);
+    SetHandleInformation(si.hStdInput,
+        HANDLE_FLAG_INHERIT,
+        HANDLE_FLAG_INHERIT);
 
     if (handles[1] != (jlong) -1) {
         si.hStdOutput = (HANDLE) handles[1];
@@ -207,10 +215,12 @@ Java_java_lang_ProcessImpl_create(JNIEnv *env, jclass ignored,
             goto Catch;
         }
         si.hStdOutput = outWrite;
-        SetHandleInformation(outRead, HANDLE_FLAG_INHERIT, FALSE);
+        SetHandleInformation(outRead, HANDLE_FLAG_INHERIT, 0);
         handles[1] = (jlong) outRead;
     }
-    SetHandleInformation(si.hStdOutput, HANDLE_FLAG_INHERIT, TRUE);
+    SetHandleInformation(si.hStdOutput,
+        HANDLE_FLAG_INHERIT,
+        HANDLE_FLAG_INHERIT);
 
     if (redirectErrorStream) {
         si.hStdError = si.hStdOutput;
@@ -224,10 +234,12 @@ Java_java_lang_ProcessImpl_create(JNIEnv *env, jclass ignored,
             goto Catch;
         }
         si.hStdError = errWrite;
-        SetHandleInformation(errRead, HANDLE_FLAG_INHERIT, FALSE);
+        SetHandleInformation(errRead, HANDLE_FLAG_INHERIT, 0);
         handles[2] = (jlong) errRead;
     }
-    SetHandleInformation(si.hStdError, HANDLE_FLAG_INHERIT, TRUE);
+    SetHandleInformation(si.hStdError,
+        HANDLE_FLAG_INHERIT,
+        HANDLE_FLAG_INHERIT);
 
     if (onNT)
         processFlag = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
