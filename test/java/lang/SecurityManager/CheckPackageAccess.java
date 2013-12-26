@@ -55,6 +55,7 @@ public class CheckPackageAccess {
         "com.sun.istack.internal.",
         "com.sun.jmx.",
         "com.sun.proxy.",
+        "com.sun.corba.se.",
         "com.sun.org.apache.bcel.internal.",
         "com.sun.org.apache.regexp.internal.",
         "com.sun.org.apache.xerces.internal.",
@@ -74,6 +75,7 @@ public class CheckPackageAccess {
         "com.sun.org.apache.xml.internal.serializer.utils.",
         "com.sun.org.apache.xml.internal.utils.",
         "com.sun.org.glassfish.",
+        "com.sun.script.",
         "oracle.jrockit.jfr.",
         "org.jcp.xml.dsig.internal.",
     };

@@ -145,8 +145,6 @@ ifeq ($(PLATFORM), macosx)
 #
 # Files
 #
-include FILES_c_macosx.gmk
-include FILES_export_macosx.gmk
 
 FILES_objc = $(FILES_AWT_objc)
 OTHER_LDLIBS = -lmlib_image $(JVMLIB) $(LIBM) \
@@ -193,6 +191,10 @@ ifeq ($(PLATFORM), windows)
 	sun/awt/windows/awtLocalization.properties
 endif
 
+ifeq ($(PLATFORM), macosx)
+  NEW_RESOURCE_BUNDLES_COMPILED_PROPERTIES += \
+        sun/awt/resources/awtosx.properties
+endif
 #
 # Rules
 #
