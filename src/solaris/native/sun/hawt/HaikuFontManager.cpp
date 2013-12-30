@@ -25,9 +25,8 @@
 
 #include <jni.h>
 
-#include <FindDirectory.h>
-#include <Path.h>
-#include <String.h>
+#include <PathFinder.h>
+#include <StringList.h>
 
 extern "C" {
 
@@ -40,19 +39,9 @@ JNIEXPORT jstring JNICALL
 Java_sun_hawt_HaikuFontManager_nativeGetFontPath
   (JNIEnv *env, jobject thiz)
 {
-	BPath systemFontsDirectory;
-	BPath commonFontsDirectory;
-	BPath userFontsDirectory;
-	
-	find_directory(B_SYSTEM_FONTS_DIRECTORY, &systemFontsDirectory);
-	find_directory(B_COMMON_FONTS_DIRECTORY, &commonFontsDirectory);
-	find_directory(B_USER_FONTS_DIRECTORY, &userFontsDirectory);
-	
-	BString path;
-	path << systemFontsDirectory.Path() << "/ttfonts:"
-		<< commonFontsDirectory.Path() << "/ttfonts:"
-		<< userFontsDirectory.Path() << "/ttfonts";
-	return env->NewStringUTF(path.String());
+	BStringList paths;
+	BPathFinder().FindPaths(B_FIND_PATH_FONTS_DIRECTORY, "ttfonts", paths);
+	return env->NewStringUTF(paths.Join(":").String());
 }
 
 }
