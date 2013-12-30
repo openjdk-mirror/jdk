@@ -54,11 +54,10 @@ $(shell if [ "$1" != "" -a -d "$1" ]; then (cd $1 && pwd); else echo "$1"; fi)
 endef
 
 BOOTSYSTEMBIN_PATH = $(shell finddir B_SYSTEM_BIN_DIRECTORY)/
-BOOTCOMMONBIN_PATH = $(shell finddir B_COMMON_BIN_DIRECTORY)/
 BOOTSYSTEMDEVELOP_PATH = $(shell finddir B_SYSTEM_DEVELOP_DIRECTORY)/
 
 # Location on system where jdk installs might be
-USRJDKINSTANCES_PATH =$(BOOTCOMMONBIN_PATH)/java
+USRJDKINSTANCES_PATH =$(BOOTSYSTEMBIN_PATH)/java
 
 # UNIXCOMMAND_PATH: path to where the most common Unix commands are.
 #  NOTE: Must end with / so that it could be empty, allowing PATH usage.
@@ -73,7 +72,7 @@ endif
 ifneq "$(origin ALT_USRBIN_PATH)" "undefined"
   USRBIN_PATH :=$(call PrefixPath,$(ALT_USRBIN_PATH))
 else
-  USRBIN_PATH  = $(BOOTCOMMONBIN_PATH)
+  USRBIN_PATH  = $(BOOTSYSTEMBIN_PATH)
 endif
 
 # UNIXCCS_PATH: path to where the Solaris ported UNIX commands can be found
@@ -81,7 +80,7 @@ endif
 ifneq "$(origin ALT_UNIXCCS_PATH)" "undefined"
   UNIXCCS_PATH :=$(call PrefixPath,$(ALT_UNIXCCS_PATH))
 else
-  UNIXCCS_PATH = $(BOOTSYSTEMDEVELOP_PATH)/tools/gnupro/
+  UNIXCCS_PATH = $(BOOTSYSTEMDEVELOP_PATH)/tools/
 endif
 
 # SLASH_JAVA: location of all network accessable files
@@ -103,7 +102,7 @@ endif
 ifneq "$(origin ALT_COMPILER_PATH)" "undefined"
   COMPILER_PATH :=$(call PrefixPath,$(ALT_COMPILER_PATH))
 else
-  COMPILER_PATH  = $(BOOTSYSTEMDEVELOP_PATH)/tools/gnupro/bin/
+  COMPILER_PATH  = $(BOOTSYSTEMBIN_PATH)
 endif
 
 # OPENWIN_HOME: path to where the X11 environment is installed.
@@ -119,7 +118,7 @@ endif
 ifneq "$(origin ALT_DEVTOOLS_PATH)" "undefined"
   DEVTOOLS_PATH :=$(call PrefixPath,$(ALT_DEVTOOLS_PATH))
 else
-  DEVTOOLS_PATH =$(BOOTSYSTEMDEVELOP_PATH)/tools/gnupro/bin/
+  DEVTOOLS_PATH =$(BOOTSYSTEMBIN_PATH)
 endif
 
 # _BOOTDIR1: First choice for a Bootstrap JDK, previous released JDK.
