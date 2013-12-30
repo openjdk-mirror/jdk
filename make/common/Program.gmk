@@ -99,8 +99,8 @@ ifneq (,$(findstring $(PLATFORM), linux solaris haiku))	# UNIX systems
     ifeq ($(PLATFORM), haiku)
 	LDFLAGS += $(LDFLAG_Z_ORIGIN)
 	LDFLAGS += -Wl,--allow-shlib-undefined
-	LDFLAGS += -Wl,-rpath -Wl,\%A/../lib/$(LIBARCH)/jli
-	LDFLAGS += -Wl,-rpath -Wl,\%A/../jre/lib/$(LIBARCH)/jli
+	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../lib/$(LIBARCH)/jli
+	LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/../jre/lib/$(LIBARCH)/jli
     endif
 endif
 ifeq ($(PLATFORM), windows)

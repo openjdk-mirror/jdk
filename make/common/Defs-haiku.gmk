@@ -219,15 +219,6 @@ ifdef LIBRARY
   #   The environment variable LD_LIBRARY_PATH will over-ride these runpaths.
   #   Try: 'readelf -d lib*.so' to see these settings in a library.
   #
-  #   On Haiku, %A is sort of like $ORIGIN except that it's relative to the
-  #   program's directory rather than the library's. This causes problems
-  #   with some of the libraries (like nio for one) so you should add the
-  #   library directory to your LIBRARY_PATH if you need those.
-  #
-  #   I plan to see if I can add a %B or some such to the runtime loader
-  #   for proper relative-to-the-library rpaths. At the moment %A gets the
-  #   basics done for the launchers.
-  #
   Z_ORIGIN_FLAG/sparc = -Xlinker -z -Xlinker origin
   Z_ORIGIN_FLAG/i586  = -Xlinker -z -Xlinker origin
   Z_ORIGIN_FLAG/amd64 = -Xlinker -z -Xlinker origin
@@ -238,8 +229,8 @@ ifdef LIBRARY
 
   LDFLAG_Z_ORIGIN = $(Z_ORIGIN_FLAG/$(ARCH_FAMILY))
 
-  LDFLAGS_COMMON += $(LDFLAG_Z_ORIGIN) -Xlinker -rpath -Xlinker \%A
-  LDFLAGS_COMMON += $(LD_RUNPATH_EXTRAS:%=$(LDFLAG_Z_ORIGIN) -Xlinker -rpath -Xlinker \%A/%)
+  LDFLAGS_COMMON += $(LDFLAG_Z_ORIGIN) -Xlinker -rpath -Xlinker \$$ORIGIN
+  LDFLAGS_COMMON += $(LD_RUNPATH_EXTRAS:%=$(LDFLAG_Z_ORIGIN) -Xlinker -rpath -Xlinker \$$ORIGIN/%)
 
 endif
 

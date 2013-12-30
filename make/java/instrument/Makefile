@@ -120,7 +120,7 @@ else
   ifeq ($(PLATFORM), haiku)
     LDFLAGS += $(LDFLAG_Z_ORIGIN)
     LDFLAGS += -Wl,--allow-shlib-undefined
-    LDFLAGS += -Wl,-rpath -Wl,\%A/jli
+    LDFLAGS += -Wl,-rpath -Wl,\$$ORIGIN/jli
   endif
 endif
 
