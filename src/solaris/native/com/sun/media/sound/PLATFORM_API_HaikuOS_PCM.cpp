@@ -35,7 +35,7 @@ extern "C" {
 #include <MediaDefs.h>
 #include <MediaNode.h>
 #include <MediaRoster.h>
-#include <SoundConsumer.h>
+#include <private/media/SoundConsumer.h>
 #include <SoundPlayer.h>
 #include <TimeSource.h>
 
