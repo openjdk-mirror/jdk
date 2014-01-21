@@ -92,7 +92,7 @@ ifeq ($(PLATFORM), haiku)
   CXX            = $(COMPILER_PATH)g++
 
   # Option used to create a shared library
-  SHARED_LIBRARY_FLAG = -shared # HAIKU_NOTE check me out
+  SHARED_LIBRARY_FLAG = -shared
 
 endif
 

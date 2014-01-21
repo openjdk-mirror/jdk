@@ -257,7 +257,7 @@ $(DEMO_JAR): \
     $(DEMO_RESOURCES:%=$(DEMO_JAR_IMAGE)/%)
 	@$(prep-target)
 	$(MKDIR) -p $(DEMO_JAR_IMAGE)
-	$(JAVAC_CMD) -d $(DEMO_JAR_IMAGE) -bootclasspath "$(ABS_OUTPUTDIR)/classes:$(ICEDTEA_RT)" -sourcepath $(DEMO_BUILD_SRCDIR) \
+	$(JAVAC_CMD) -d $(DEMO_JAR_IMAGE) -sourcepath $(DEMO_BUILD_SRCDIR) \
 	    @$(DEMO_JAVAC_INPUT)
   ifeq ($(DEMO_INCL_SRC),true)
 	$(CP) $(DEMO_JAVA_SOURCES:%=$(DEMO_BUILD_SRCDIR)/%) $(DEMO_JAR_IMAGE)

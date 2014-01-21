@@ -31,8 +31,7 @@ BUILDDIR = ../..
 PACKAGE = java.nio
 LIBRARY = nio
 PRODUCT = java
-#OTHER_JAVACFLAGS += -Xmaxwarns 1000 -Xlint:serial -Werror
-OTHER_JAVACFLAGS += -Xlint:serial -Werror
+OTHER_JAVACFLAGS += -Xmaxwarns 1000 -Xlint:serial -Werror
 include $(BUILDDIR)/common/Defs.gmk
 
 NIO_SRC = $(SHARE_SRC)/classes/java/nio
