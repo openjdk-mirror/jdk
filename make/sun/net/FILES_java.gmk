@@ -29,6 +29,7 @@ FILES_java = \
 	sun/net/URLCanonicalizer.java \
 	sun/net/NetworkClient.java \
 	sun/net/NetworkServer.java \
+	sun/net/PortConfig.java \
 	sun/net/ProgressMonitor.java \
 	sun/net/ProgressSource.java \
 	sun/net/ProgressEvent.java \
@@ -140,7 +141,7 @@ FILES_java = \
 	sun/net/idn/StringPrep.java
 
 ifeq ($(PLATFORM), windows)
-    FILES_java += sun/net/www/protocol/http/ntlm/NTLMAuthSequence.java 
+    FILES_java += sun/net/www/protocol/http/ntlm/NTLMAuthSequence.java
 else
     FILES_java += sun/net/sdp/SdpProvider.java
 endif

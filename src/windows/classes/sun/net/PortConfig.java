@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,20 +23,43 @@
  * questions.
  */
 
-#include "jni.h"
-#include "java_lang_ref_Finalizer.h"
+package sun.net;
 
+import java.security.AccessController;
 
-JNIEXPORT void JNICALL
-Java_java_lang_ref_Finalizer_invokeFinalizeMethod(JNIEnv *env, jclass clazz,
-                                                  jobject ob)
-{
-    jclass cls;
-    jmethodID mid;
+/**
+ * Determines the ephemeral port range in use on this system.
+ * If this cannot be determined, then the default settings
+ * of the OS are returned.
+ */
 
-    cls = (*env)->GetObjectClass(env, ob);
-    if (cls == NULL) return;
-    mid = (*env)->GetMethodID(env, cls, "finalize", "()V");
-    if (mid == NULL) return;
-    (*env)->CallVoidMethod(env, ob, mid);
+public final class PortConfig {
+
+    private final static int upper, lower;
+
+    private PortConfig() {}
+
+    static {
+        AccessController.doPrivileged(
+            new java.security.PrivilegedAction<Void>() {
+                public Void run() {
+                    System.loadLibrary("net");
+                    return null;
+                }
+            });
+
+        lower = getLower0();
+        upper = getUpper0();
+    }
+
+    static native int getLower0();
+    static native int getUpper0();
+
+    public static int getLower() {
+        return lower;
+    }
+
+    public static int getUpper() {
+        return upper;
+    }
 }
