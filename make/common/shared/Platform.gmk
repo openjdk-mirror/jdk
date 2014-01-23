@@ -161,7 +161,7 @@ ifeq ($(SYSTEM_UNAME), Linux)
     mach := $(shell uname -m)
   endif
   ifneq (,$(wildcard /usr/bin/dpkg-architecture))
-    mach := $(shell (dpkg-architecture -qDEB_HOST_ARCH_CPU 2>/dev/null || echo $(mach)) | sed 's/arm64/aarch64/;s/powerpc$$/ppc/;s/hppa/parisc/')
+    mach := $(shell (dpkg-architecture -qDEB_HOST_ARCH_CPU 2>/dev/null || echo $(mach)) | sed 's/arm64/aarch64/;s/powerpc$$/ppc/;s/hppa/parisc/;s/ppc64el/ppc64le/')
   endif
   archExpr = case "$(mach)" in \
                 i[3-9]86) \
@@ -205,10 +205,10 @@ ifeq ($(SYSTEM_UNAME), Linux)
     # Most archs are 32-bit
     ifndef ARCH_DATA_MODEL
       ARCH_DATA_MODEL=32
-      ifeq ($(ARCH), amd64)
+      ifneq (,$(findstring 64,$(ARCH)))
         ARCH_DATA_MODEL=64
       endif
-      ifeq ($(ARCH), ia64)
+      ifeq ($(ARCH), s390x)
         ARCH_DATA_MODEL=64
       endif
       ifeq ($(ARCH), sh)

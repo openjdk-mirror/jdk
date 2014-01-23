@@ -260,6 +260,7 @@ if [ "${ZERO_BUILD}" = true ] ; then
     sparc64) ZERO_LIBARCH=sparcv9   ;;
     arm*)    ZERO_LIBARCH=arm       ;;
     sh*)     ZERO_LIBARCH=sh        ;;
+    ppc64le) ZERO_LIBARCH=ppc64le   ;;
     *)       ZERO_LIBARCH="$(arch)"
   esac
   export ZERO_LIBARCH
@@ -269,7 +270,7 @@ if [ "${ZERO_BUILD}" = true ] ; then
     arm|i386|ppc|s390|sh|sparc)
       ARCH_DATA_MODEL=32
       ;;
-    aarch64|alpha|amd64|ia64|ppc64|s390x|sparcv9)
+    aarch64|alpha|amd64|ia64|ppc64*|s390x|sparcv9)
       ARCH_DATA_MODEL=64
       ;;
     *)
@@ -280,7 +281,7 @@ if [ "${ZERO_BUILD}" = true ] ; then
 
   # ZERO_ENDIANNESS is the endianness of the processor
   case "${ZERO_LIBARCH}" in
-    arm|aarch64|amd64|i386|ia64|mipsel)
+    arm|aarch64|amd64|i386|ia64|mipsel|ppc64le)
       ZERO_ENDIANNESS=little
       ;;
     ppc*|s390*|sparc*|alpha)
@@ -307,7 +308,7 @@ if [ "${ZERO_BUILD}" = true ] ; then
     s390)
       ZERO_ARCHFLAG="-m31"
       ;;
-    arm|aarch64)
+    arm|aarch64|ppc64le)
       ZERO_ARCHFLAG="-D_LITTLE_ENDIAN"
       ;;
     *)
