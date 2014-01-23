@@ -130,7 +130,9 @@ package.access=sun.,\
                com.sun.imageio.,\
                com.sun.istack.internal.,\
                com.sun.jmx.,\
+               com.sun.naming.internal.,\
                com.sun.proxy.,\
+               com.sun.corba.se.,\
                com.sun.script.,\
                com.sun.org.apache.bcel.internal.,\
                com.sun.org.apache.regexp.internal.,\
@@ -169,7 +171,9 @@ package.definition=sun.,\
                    com.sun.imageio.,\
                    com.sun.istack.internal.,\
                    com.sun.jmx.,\
+                   com.sun.naming.internal.,\
                    com.sun.proxy.,\
+                   com.sun.corba.se.,\
                    com.sun.script.,\
                    com.sun.org.apache.bcel.internal.,\
                    com.sun.org.apache.regexp.internal.,\
@@ -429,4 +433,3 @@ jdk.certpath.disabledAlgorithms=MD2, RSA keySize < 1024
 #
 # Example:
 #   jdk.tls.disabledAlgorithms=MD5, SHA1, DSA, RSA keySize < 2048
-i
