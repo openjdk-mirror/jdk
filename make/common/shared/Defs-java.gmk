@@ -88,7 +88,11 @@ JAVAC_JVM_FLAGS =
 
 # 64-bit builds require a larger thread stack size.
 ifeq ($(ARCH_DATA_MODEL), 32)
-  JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=768
+  ifeq ($(ARCH), ppc)
+    JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=1152
+  else
+    JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=768
+  endif
 else
   JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=1664
 endif
