@@ -316,6 +316,36 @@ FILES_gen += \
 	sun/nio/fs/UnixConstants.java
 endif # PLATFORM = bsd, macosx
 
+ifeq ($(PLATFORM), aix)
+FILES_java += \
+	sun/nio/ch/AixAsynchronousChannelProvider.java \
+	sun/nio/ch/AixPollPort.java \
+	\
+	sun/nio/fs/AixFileStore.java \
+	sun/nio/fs/AixFileSystem.java \
+	sun/nio/fs/AixFileSystemProvider.java \
+	sun/nio/fs/AixNativeDispatcher.java
+
+FILES_c += \
+	AixPollPort.c \
+	InheritedChannel.c \
+	NativeThread.c \
+        PollArrayWrapper.c \
+	UnixAsynchronousServerSocketChannelImpl.c \
+	UnixAsynchronousSocketChannelImpl.c \
+	\
+	GnomeFileTypeDetector.c \
+	UnixCopyFile.c \
+	AixNativeDispatcher.c \
+	UnixNativeDispatcher.c
+
+FILES_export += \
+	sun/nio/ch/AixPollPort.java \
+	sun/nio/fs/AixNativeDispatcher.java
+
+endif # PLATFORM = aix
+
+
 ifeq ($(PLATFORM), macosx)
 FILES_java += \
     sun/nio/ch/KQueueSelectorProvider.java \
@@ -389,6 +419,9 @@ endif
 ifeq ($(PLATFORM), solaris)
 OTHER_LDLIBS += $(JVMLIB) $(LIBSOCKET) -lposix4 $(LIBDL) -lsendfile \
 		-L$(LIBDIR)/$(LIBARCH) -ljava -lnet
+endif
+ifeq ($(PLATFORM), aix)
+OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -ljava -lnet
 endif # PLATFORM
 
 ifdef COMPILE_AGAINST_SYSCALLS

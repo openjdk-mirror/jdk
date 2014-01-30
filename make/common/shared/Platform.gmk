@@ -151,6 +151,16 @@ ifeq ($(SYSTEM_UNAME), SunOS)
   MB_OF_MEMORY:=$(shell /usr/sbin/prtconf 2>/dev/null | fgrep 'Memory size:' | expand | cut -d' ' -f3)
 endif
 
+ifeq ($(SYSTEM_UNAME), AIX)
+  PLATFORM = aix
+  ARCH=ppc64
+  ARCH_DATA_MODEL=64
+  ARCH_FAMILY=$(ARCH)
+  LIBARCH=$(ARCH)
+  ARCHPROP = $(LIBARCH)
+endif
+
+
 # Platform settings specific to Linux
 ifeq ($(SYSTEM_UNAME), Linux)
   PLATFORM = linux

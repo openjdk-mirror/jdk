@@ -149,6 +149,10 @@ OTHER_LDLIBS = -llwawt -L$(LIBDIR)/lwawt -Xlinker -rpath -Xlinker @loader_path/l
                -framework Cocoa
 endif # PLATFORM
 
+ifeq ($(PLATFORM), aix)
+  OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt
+endif # PLATFORM
+
 endif # PLATFORM
 
 #

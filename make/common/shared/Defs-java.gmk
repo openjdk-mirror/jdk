@@ -94,7 +94,11 @@ ifeq ($(ARCH_DATA_MODEL), 32)
     JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=768
   endif
 else
-  JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=1664
+  ifeq ($(ARCH), ppc64)
+    JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=2096
+  else
+    JAVAC_JVM_FLAGS    += -J-XX:ThreadStackSize=1664
+  endif
 endif
 JAVAC_JVM_FLAGS    += $(JAVA_TOOLS_FLAGS:%=-J%)
 
@@ -187,7 +191,7 @@ else
   JAVAH_CMD     = $(JAVA_TOOLS_DIR)/javah \
 		  $(JAVAHFLAGS)
   JAVADOC_CMD   = $(JAVA_TOOLS_DIR)/javadoc $(JAVA_TOOLS_FLAGS:%=-J%) \
-  		  $(JAVADOCFLAGS)
+		  $(JAVADOCFLAGS)
 endif
 
 # Override of what javac to use (see deploy workspace)

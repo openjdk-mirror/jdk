@@ -70,6 +70,8 @@ public class DefaultFileSystemProvider {
             return createProvider("sun.nio.fs.LinuxFileSystemProvider");
         if (osname.equals("Darwin") || osname.contains("OS X"))
             return createProvider("sun.nio.fs.MacOSXFileSystemProvider");
+        if (osname.equals("AIX") || osname.equals("OS400"))
+            return createProvider("sun.nio.fs.AixFileSystemProvider");
         throw new AssertionError("Platform not recognized");
     }
 }

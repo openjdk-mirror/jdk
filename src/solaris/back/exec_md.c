@@ -30,8 +30,8 @@
 #include "sys.h"
 #include "util.h"
 
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
-  /* Linux */
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
+  /* Linux, AIX */
   #define FORK() fork()
 #else
   /* Solaris (make sure we always get the POSIX-specified behavior) */

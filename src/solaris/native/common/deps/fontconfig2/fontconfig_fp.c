@@ -60,6 +60,24 @@ void* dlOpenFontConfig() {
         }
     }
 #endif
+#if defined(AIX)
+    /* On AIX, fontconfig is not a standard package supported by IBM.
+     * insted it has to be installed from the "AIX Toolbox for Linux Applications" 
+     * site http://www-03.ibm.com/systems/power/software/aix/linux/toolbox/alpha.html
+     * and will be installed under /opt/freeware/lib/libfontconfig.a.
+     * Notice that the archive contains the real 32- and 64-bit shared libraries.
+     * We first try to load 'libfontconfig.so' from the default library path in the 
+     * case the user has installed a private version of the library and if that 
+     * doesn't succeed, we try the version from /opt/freeware/lib/libfontconfig.a
+     */
+    libfontconfig = dlopen("libfontconfig.so", RTLD_LOCAL|RTLD_LAZY);
+    if (libfontconfig == NULL) {
+        libfontconfig = dlopen("/opt/freeware/lib/libfontconfig.a(libfontconfig.so.1)", RTLD_MEMBER|RTLD_LOCAL|RTLD_LAZY);
+        if (libfontconfig == NULL) {
+            return NULL;
+        }
+    }
+#else
     /* 64 bit sparc should pick up the right version from the lib path.
      * New features may be added to libfontconfig, this is expected to
      * be compatible with old features, but we may need to start

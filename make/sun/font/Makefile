@@ -182,7 +182,7 @@ else # PLATFORM
 # Libraries to link, and other C flags.
 #
 
-ifeq ($(PLATFORM), macosx))
+ifeq ($(PLATFORM), macosx)
 OTHER_INCLUDES += -I$(X11_PATH)/include
 OTHER_LDLIBS  += -lawt $(LIBM) $(LIBCXX)
  ifeq ($(OS_VENDOR),Apple)
@@ -195,6 +195,10 @@ ifeq ($(PLATFORM), solaris)
   # Note that on Solaris, fontmanager is built against the headless library.
   LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
   OTHER_LDLIBS += -lawt -L$(LIBDIR)/$(LIBARCH)/xawt -lmawt -lc $(LIBM) $(LIBCXX)
+else
+ifeq ($(PLATFORM), aix)
+  LDFLAGS      += -L$(LIBDIR)/$(LIBARCH)/headless
+  OTHER_LDLIBS += -G -lawt -lc $(LIBM) $(LIBCXX)
 else # PLATFORM is linux
  OTHER_LDLIBS  += -lawt $(LIBM) $(LIBCXX)
   ifeq ("$(CC_VER_MAJOR)", "3")
@@ -202,12 +206,13 @@ else # PLATFORM is linux
   endif                           
 endif
 endif
+endif
 
 endif # PLATFORM
 
 # set up compile flags..
 
-ifeq ($(PLATFORM), macosx))
+ifeq ($(PLATFORM), macosx)
 CPPFLAGS += -I$(CLASSHDRDIR)
 endif
 

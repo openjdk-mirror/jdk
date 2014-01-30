@@ -199,6 +199,7 @@ CFLAGS_REQUIRED_mips    +=
 CFLAGS_REQUIRED_mipsel  += -D_LITTLE_ENDIAN
 CFLAGS_REQUIRED_ppc     += -m32
 CFLAGS_REQUIRED_ppc64   += -m64
+LDFLAGS_COMMON_ppc64    += -m64 -L/lib64 -Wl,-melf64ppc
 CFLAGS_REQUIRED_s390    +=
 CFLAGS_REQUIRED_s390x   += -m64
 CFLAGS_REQUIRED_sparcv9 += -m64 -mcpu=v9
@@ -314,6 +315,9 @@ CPPFLAGS_COMMON = $(CPP_ARCH_FLAGS) -DLINUX $(VERSION_DEFINES) \
 ifeq ($(ARCH_DATA_MODEL), 64)
 CPPFLAGS_COMMON += -D_LP64=1
 endif
+
+# turn on USE_PTHREADS
+CPPFLAGS_COMMON += -DUSE_PTHREADS
 
 CPPFLAGS_OPT    = -DNDEBUG
 CPPFLAGS_DBG    = -DDEBUG
@@ -441,7 +445,7 @@ override LIBTHREAD               =
 override LIBDL                   = -ldl
 override MOOT_PRIORITIES         = true
 override NO_INTERRUPTIBLE_IO     = true
-ifeq ($(ARCH), amd64)
+ifeq ($(ARCH), $(findstring $(ARCH), amd64 ppc64))
 override OPENWIN_LIB             = $(OPENWIN_HOME)/lib64
 else
 override OPENWIN_LIB             = $(OPENWIN_HOME)/lib

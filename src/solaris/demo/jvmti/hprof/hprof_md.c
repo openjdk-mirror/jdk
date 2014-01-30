@@ -42,7 +42,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#if !defined(LINUX) && !defined(_ALLBSD_SOURCE)
+#if !defined(LINUX) && !defined(_ALLBSD_SOURCE) && !defined(AIX)
 #include <procfs.h>
 #endif
 
@@ -65,6 +65,21 @@
 #include "jvm_md.h"
 #include "hprof.h"
 
+
+#ifdef AIX
+/* SAPJVM */
+#include <sys/ldr.h>
+#include <errno.h>
+typedef struct {
+  const char *dli_fname;
+  void *dli_fbase;
+  const char *dli_sname;
+  void *dli_saddr;
+} Dl_info;
+
+static int dladdr(void *addr, Dl_info *info);
+#endif /* AIX */
+
 int
 md_getpid(void)
 {
@@ -86,7 +101,7 @@ md_sleep(unsigned seconds)
 void
 md_init(void)
 {
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     /* No Hi-Res timer option? */
 #else
     if ( gdata->micro_state_accounting ) {
@@ -248,7 +263,7 @@ md_timeofday(void)
 jlong
 md_get_microsecs(void)
 {
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     return (jlong)(md_timeofday() * (jlong)1000); /* Milli to micro */
 #else
     return (jlong)(gethrtime()/(hrtime_t)1000); /* Nano seconds to micro seconds */
@@ -266,7 +281,7 @@ md_get_timemillis(void)
 jlong
 md_get_thread_cpu_timemillis(void)
 {
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     return md_timeofday();
 #else
     return (jlong)(gethrvtime()/1000); /* Nano seconds to milli seconds */
@@ -281,7 +296,7 @@ md_get_prelude_path(char *path, int path_len, char *filename)
     Dl_info dlinfo;
 
     libdir[0] = 0;
-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
+#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(AIX)
     addr = (void*)&Agent_OnLoad;
 #else
     /* Just using &Agent_OnLoad will get the first external symbol with
@@ -452,3 +467,65 @@ md_find_library_entry(void *handle, const char *name)
     sym =  dlsym(handle, name);
     return sym;
 }
+
+#ifdef AIX
+
+/* SAPJVM:
+ * workaround for the missing dladdr */
+static unsigned char dladdr_buffer[0x4000];
+
+static void fill_dll_info(void) {
+  int rc = loadquery(L_GETINFO,dladdr_buffer, sizeof(dladdr_buffer));
+  if (rc == -1) {
+    fprintf(stderr, "loadquery failed (%d %s)", errno, strerror(errno));
+    fflush(stderr);
+  }
+}
+
+static int dladdr_dont_reload(void* addr, Dl_info* info) {
+  const struct ld_info* p = (struct ld_info*) dladdr_buffer;
+  info->dli_fbase = 0; info->dli_fname = 0;
+  info->dli_sname = 0; info->dli_saddr = 0;
+  for (;;) {
+    if (addr >= p->ldinfo_textorg && 
+	    addr < (((char*)p->ldinfo_textorg) + p->ldinfo_textsize)) {
+      info->dli_fname = p->ldinfo_filename;
+      info->dli_fbase = p->ldinfo_textorg;
+      return 1; /* [sic] */
+    }
+    if (!p->ldinfo_next) {
+      break;
+    }
+    p = (struct ld_info*)(((char*)p) + p->ldinfo_next);
+  }
+  return 0; /* [sic] */
+} 
+
+static int dladdr(void *addr, Dl_info *info) {
+  static int loaded = 0;
+  if (!loaded) {
+    fill_dll_info();
+    loaded = 1;
+  }
+  if (!addr) {
+    return 0;  /* [sic] */
+  }
+  /* Address cuold be AIX function descriptor? */
+  void* const addr0 = *( (void**) addr );  
+  int rc = dladdr_dont_reload(addr, info);
+  if (rc == 0) {
+    rc = dladdr_dont_reload(addr0, info);
+    if (rc == 0) { /* [sic] */
+      fill_dll_info(); /* refill, maybe loadquery info is outdated */
+      rc = dladdr_dont_reload(addr, info);
+      if (rc == 0) {
+        rc = dladdr_dont_reload(addr0, info);
+      }
+    }
+  }
+  return rc;
+} 
+
+#endif /* AIX */
+
+

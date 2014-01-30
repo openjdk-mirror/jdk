@@ -127,6 +127,14 @@ OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
 OTHER_LDLIBS = $(JVMLIB) $(LIBM) $(LIBDL)
 endif
 
+ifeq  ($(PLATFORM), aix)
+FILES_c = $(FILES_2D_c)
+FILES_c += awt_LoadLibrary.c
+OTHER_CFLAGS += -DMLIB_NO_LIBSUNMATH
+OTHER_CFLAGS += -DMOTIF_VERSION=2
+OTHER_LDLIBS = -L$(LIBDIR)/$(LIBARCH) -lmlib_image $(JVMLIB) $(LIBM)
+endif
+
 FILES_c += initIDs.c
 
 ifeq ($(PLATFORM), macosx)
@@ -515,6 +523,25 @@ _FONTCONFIGS    = \
 FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ MAC OS X
+endif # PLATFORM
+
+ifeq ($(PLATFORM), aix)
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv AIX
+
+ifdef OPENJDK
+
+FONTCONFIGS_SRC	= $(PLATFORM_SRC)/classes/sun/awt/fontconfigs
+_FONTCONFIGS	= \
+	fontconfig.properties
+else
+
+$(error "Currently we only support the 'OPENJDK' configuration for AIX")
+
+endif
+
+FONTCONFIGS_SRC_PREFIX = $(PLATFORM).
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ AIX
 endif # PLATFORM
 
 FONTCONFIGS     = $(_FONTCONFIGS:%=$(LIBDIR)/%.src)

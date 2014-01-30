@@ -182,6 +182,9 @@ DEVTOOLS_FT_DIR_EXISTS = $(shell \
     ifeq ($(PLATFORM), macosx)
       USING_SYSTEM_FT_LIB=true
     endif
+    ifeq ($(PLATFORM), aix)
+      USING_SYSTEM_FT_LIB=true
+    endif
   else
     ifeq ($(DEVTOOLS_FT_DIR_EXISTS), true)
       FREETYPE_LIB_PATH = $(DEVTOOLS_FT_DIR)/lib
@@ -272,6 +275,11 @@ ifdef PROGRAM
 
   ifeq ($(PLATFORM), macosx)
     LDLIBS_COMMON = -pthread
+  endif
+
+  # AIX port: do not link launchers (e.g. java, javac) against libjava.so  and libjvm.so
+  ifeq ($(PLATFORM), aix)
+    LDLIBS_COMMON =
   endif
 
 endif # PROGRAM

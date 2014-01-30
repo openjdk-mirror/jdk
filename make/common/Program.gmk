@@ -114,6 +114,15 @@ ifneq (,$(findstring $(PLATFORM), linux solaris)) # UNIX systems
   endif # PLATFORM LINUX
 endif # PLATFORM linux solaris
 
+# AIX can not handle $ORIGIN so we have to link with the static JLI version (libjli.a)
+# (see make/java/jli/Makfile for where we build libjli.a)
+ifeq ($(PLATFORM), aix)
+  LDFLAGS += -L$(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/static
+  OTHER_LDLIBS += -ljli
+  # We need the following line to make incremental builds work
+  $(ACTUAL_PROGRAM):: $(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/static/libjli.a
+endif # PLATFORM aix
+
 ifeq ($(PLATFORM), windows)
   JLI_LCF = $(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/jli.lcf
   ifdef STATIC_JLI
@@ -255,7 +264,12 @@ else # *NIXES
     endif
   endif
 
-  $(ACTUAL_PROGRAM):: $(FILES_o)
+  ifeq ($(PLATFORM), aix)
+    # We need the following line to make incremental builds work on AIX if libjli.a changes
+    $(ACTUAL_PROGRAM):: $(FILES_o) $(OUTPUTDIR)/tmp/java/jli/$(OBJDIRNAME)/static/libjli.a
+  else
+    $(ACTUAL_PROGRAM):: $(FILES_o)
+  endif
 	@$(prep-target)
 	@set -- $?; \
 	$(ECHO) Rebuilding $@ because of $$1 $$2 $$3 $$4 $$5 $$6 $${7:+...};

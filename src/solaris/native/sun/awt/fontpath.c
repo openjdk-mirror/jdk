@@ -66,7 +66,7 @@ extern Display *awt_display;
 
 #define MAXFDIRS 512    /* Max number of directories that contain fonts */
 
-#if !defined(__linux__) && !defined(MACOSX)
+#if defined(__solaris__)
 /*
  * This can be set in the makefile to "/usr/X11" if so desired.
  */
@@ -116,7 +116,7 @@ static char *fullSolarisFontPath[] = {
     NULL, /* terminates the list */
 };
 
-#elif MACOSX
+#elif defined(MACOSX)
 static char *full_MACOSX_X11FontPath[] = {
     X11_PATH "/lib/X11/fonts/TrueType",
     X11_PATH "/lib/X11/fonts/truetype",
@@ -132,7 +132,7 @@ static char *full_MACOSX_X11FontPath[] = {
     PACKAGE_PATH "/share/fonts/Type1",
     NULL, /* terminates the list */
 };
-#else /* __linux */
+#elif defined( __linux__)
 /* All the known interesting locations we have discovered on
  * various flavors of Linux
  */
@@ -150,6 +150,14 @@ static char *fullLinuxFontPath[] = {
     "/var/lib/defoma/x-ttcidfont-conf.d/dirs/TrueType", /* Debian */
     "/usr/X11R6/lib/X11/fonts/Type1",
     "/usr/share/fonts/default/Type1",     /* RH 9.0 */
+    NULL, /* terminates the list */
+};
+#elif defined(AIX)
+/* Very basic start for AIX -  feel free to complete ..
+ */
+static char *fullAixFontPath[] = {
+    "/usr/lib/X11/fonts/TrueType",  /* */
+    "/usr/lib/X11/fonts/Type1",     /* */
     NULL, /* terminates the list */
 };
 #endif
@@ -517,8 +525,10 @@ static char *getPlatformFontPathChars(JNIEnv *env, jboolean noType1) {
     knowndirs = fullLinuxFontPath;
 #elif defined(MACOSX)
     knowndirs = full_MACOSX_X11FontPath;
-#else /* IF SOLARIS */
+#elif defined(__solaris__)
     knowndirs = fullSolarisFontPath;
+#elif defined(AIX)
+    knowndirs = fullAixFontPath;
 #endif
 
     /* REMIND: this code requires to be executed when the GraphicsEnvironment
@@ -960,7 +970,7 @@ Java_sun_font_FontConfigManager_getFontConfig
              */
             if (fontformat != NULL
                 && (strcmp((char*)fontformat, "TrueType") != 0)
-#ifdef __linux__
+#if defined(__linux__) || defined(AIX)
                 && (strcmp((char*)fontformat, "Type 1") != 0)
 #endif
              ) {

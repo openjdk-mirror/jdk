@@ -75,7 +75,7 @@ Windows* | CYGWIN* )
 SunOS | Darwin)
     DEL=":"
     ;;
-Linux)
+Linux | AIX)
     DEL=":"
     HAS_S=YES
     ;;

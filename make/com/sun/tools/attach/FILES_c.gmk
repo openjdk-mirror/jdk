@@ -43,3 +43,8 @@ ifeq ($(PLATFORM), macosx)
 FILES_c = \
 	BsdVirtualMachine.c
 endif
+
+ifeq ($(PLATFORM), aix)
+FILES_c = \
+	AixVirtualMachine.c
+endif

@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <ctype.h>
-#ifdef _ALLBSD_SOURCE
+#if defined( _ALLBSD_SOURCE ) || defined(AIX)
 #include <sys/wait.h>
 #else
 #include <wait.h>

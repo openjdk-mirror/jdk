@@ -205,20 +205,37 @@ ifeq ($(PLATFORM), macosx)
              -framework ApplicationServices
   # Add solaris sources containing common logic to the header path
   OTHER_INCLUDES += -I$(LAUNCHER_SOLARIS_PLATFORM_SRC)
-endif # PLATFORM
 
-STATIC_LIBRARY_DIR = $(OBJDIR)/static
-STATIC_LIBRARY_NAME = lib$(LIBRARY).a
-STATIC_LIBRARY = $(STATIC_LIBRARY_DIR)/$(STATIC_LIBRARY_NAME)
+  STATIC_LIBRARY_DIR = $(OBJDIR)/static
+  STATIC_LIBRARY_NAME = lib$(LIBRARY).a
+  STATIC_LIBRARY = $(STATIC_LIBRARY_DIR)/$(STATIC_LIBRARY_NAME)
 
-$(STATIC_LIBRARY_DIR): | $(OBJDIR)
+  $(STATIC_LIBRARY_DIR): | $(OBJDIR)
 	@$(MKDIR) $(STATIC_LIBRARY_DIR)
 
-$(STATIC_LIBRARY): $(STATIC_LIBRARY_DIR)
+  $(STATIC_LIBRARY): $(STATIC_LIBRARY_DIR)
 	@$(prep-target)
 	$(AR) $(ARFLAGS) $@ $(FILES_o)
 
-library:: $(STATIC_LIBRARY)
+  library:: $(STATIC_LIBRARY)
+endif # PLATFORM
+
+# AIX can not handle $ORIGIN so we have to link with a static version of JLI.
+# (see make/common/Program.gmk for how we link the Java executables)
+ifeq ($(PLATFORM), aix)
+  STATIC_LIBRARY_DIR = $(OBJDIR)/static
+  STATIC_LIBRARY_NAME = lib$(LIBRARY).a
+  STATIC_LIBRARY = $(STATIC_LIBRARY_DIR)/$(STATIC_LIBRARY_NAME)
+
+  $(STATIC_LIBRARY_DIR): | $(OBJDIR)
+	@$(MKDIR) $(STATIC_LIBRARY_DIR)
+
+  $(STATIC_LIBRARY): $(STATIC_LIBRARY_DIR) $(FILES_o)
+	@$(prep-target)
+	$(AR) $(ARFLAGS) $@ $(FILES_o)
+
+  library:: $(STATIC_LIBRARY)
+endif # PLATFORM aix
 
 vpath %.c $(LAUNCHER_SHARE_SRC) $(LAUNCHER_PLATFORM_SRC)
 ifneq ($(SYSTEM_ZLIB),true)

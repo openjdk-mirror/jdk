@@ -72,8 +72,9 @@ class FileDispatcherImpl extends FileDispatcher
         return writev0(fd, address, len);
     }
 
-    int force(FileDescriptor fd, boolean metaData) throws IOException {
-        return force0(fd, metaData);
+    // Added parameter writable for AIX platform port.
+    int force(FileDescriptor fd, boolean metaData, boolean writable) throws IOException {
+        return force0(fd, metaData, writable);
     }
 
     int truncate(FileDescriptor fd, long size) throws IOException {
@@ -128,7 +129,8 @@ class FileDispatcherImpl extends FileDispatcher
     static native long writev0(FileDescriptor fd, long address, int len)
         throws IOException;
 
-    static native int force0(FileDescriptor fd, boolean metaData)
+    // Added parameter writable for AIX platform port.
+    static native int force0(FileDescriptor fd, boolean metaData, boolean writable)
         throws IOException;
 
     static native int truncate0(FileDescriptor fd, long size)

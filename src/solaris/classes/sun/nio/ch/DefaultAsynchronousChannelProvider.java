@@ -52,6 +52,8 @@ public class DefaultAsynchronousChannelProvider {
             return new LinuxAsynchronousChannelProvider();
         if (osname.contains("OS X"))
             return new BsdAsynchronousChannelProvider();
+        if (osname.equals("AIX"))
+            return new AixAsynchronousChannelProvider();
         throw new InternalError("platform not recognized");
     }
 

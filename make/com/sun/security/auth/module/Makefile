@@ -67,7 +67,7 @@ ifeq ($(PLATFORM), solaris)
   include FILES_c_solaris.gmk
 endif # solaris
 
-ifneq (,$(findstring $(PLATFORM), linux macosx))
+ifneq (,$(findstring $(PLATFORM), linux macosx aix))
   LIBRARY = jaas_unix
   include FILES_export_unix.gmk
   include FILES_c_unix.gmk

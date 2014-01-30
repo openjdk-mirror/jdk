@@ -67,6 +67,7 @@ import javax.print.attribute.standard.Severity;
 import javax.print.attribute.standard.SheetCollate;
 import javax.print.attribute.standard.Sides;
 import javax.print.event.PrintServiceAttributeListener;
+import java.util.ArrayList; // required for method filterPrinterNamesAIX(...)
 
 
 public class UnixPrintService implements PrintService, AttributeUpdater,
@@ -202,6 +203,25 @@ public class UnixPrintService implements PrintService, AttributeUpdater,
         isInvalid = false;
     }
 
+    // filter the list of possible AIX Printers
+    static String[] filterPrinterNamesAIX(String[] posPrinters) {
+        ArrayList printers = new ArrayList();
+        String [] splitPart;
+
+    	for(int i = 0; i < posPrinters.length; i++) {
+            // check if there is a ":" in the end of the first colomn -> not a valid printer
+            splitPart = posPrinters[i].split(" ");
+
+            if(splitPart.length >= 1) {
+                if(!splitPart[0].trim().endsWith(":")) {
+                    printers.add(posPrinters[i]);
+                }
+            }
+        }
+
+        return (String[])printers.toArray(new String[printers.size()]);
+    }
+
     public void invalidateService() {
         isInvalid = true;
     }
@@ -218,6 +238,28 @@ public class UnixPrintService implements PrintService, AttributeUpdater,
     }
 
     private PrinterIsAcceptingJobs getPrinterIsAcceptingJobsSysV() {
+        // AIX command line arguments are special
+        // Also the output is in different format than on the other os's.
+        if (UnixPrintServiceLookup.isAIX()) {
+            // for AIX there should not be a blank after '-a'
+            String command = "/usr/bin/lpstat -a" + printer;
+            String results[]= UnixPrintServiceLookup.execCmd(command);
+
+            // on AIX remote printers add additional lines to the result
+            // which should be removed
+            results = filterPrinterNamesAIX(results);
+
+            if (results != null && results.length > 0) {
+                for (int i = 0; i < results.length; i++) {
+                    if (results[i].contains(printer) && results[i].contains("READY")) {
+                        return PrinterIsAcceptingJobs.ACCEPTING_JOBS;
+                    }
+                }
+            }
+
+            return PrinterIsAcceptingJobs.NOT_ACCEPTING_JOBS;
+        }
+
         String command = "/usr/bin/lpstat -a " + printer;
         String results[]= UnixPrintServiceLookup.execCmd(command);
 
@@ -302,11 +344,34 @@ public class UnixPrintService implements PrintService, AttributeUpdater,
     }
 
     private QueuedJobCount getQueuedJobCountSysV() {
-        String command = "/usr/bin/lpstat -R " + printer;
-        String results[]= UnixPrintServiceLookup.execCmd(command);
-        int qlen = (results == null) ? 0 : results.length;
+        // AIX command line arguments are special
+        // Also the output is in different format than on the other os's.
+        if (UnixPrintServiceLookup.isAIX()){
+            // on AIX there is not '-R' option
+            int qlen = 0;
+            String command = "/usr/bin/lpstat -a" + printer;
+            String results[]=  UnixPrintServiceLookup.execCmd(command);
 
-        return new QueuedJobCount(qlen);
+            // on AIX remote printers add additional lines to the result
+            // which should be removed
+            results = filterPrinterNamesAIX(results);
+
+	    if (results != null && results.length > 0){
+	        for (int i = 0; i < results.length; i++) {
+	            if (results[i].contains("QUEUED")){
+		        qlen ++;
+	            }
+	        }
+	    }
+	    return new QueuedJobCount(qlen);
+	} else {
+	    // original Sun coding for non-AIX
+            String command = "/usr/bin/lpstat -R " + printer;
+            String results[]= UnixPrintServiceLookup.execCmd(command);
+            int qlen = (results == null) ? 0 : results.length;
+
+            return new QueuedJobCount(qlen);
+        }
     }
 
     private QueuedJobCount getQueuedJobCountBSD() {

@@ -84,7 +84,8 @@ class FileDispatcherImpl extends FileDispatcher
         return writev0(fd, address, len, append);
     }
 
-    int force(FileDescriptor fd, boolean metaData) throws IOException {
+    //  Added parameter writable for AIX platform port (not used on Windows).
+    int force(FileDescriptor fd, boolean metaData, boolean writable) throws IOException {
         return force0(fd, metaData);
     }
 

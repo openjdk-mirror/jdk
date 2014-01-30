@@ -160,7 +160,8 @@ public class SimpleAsynchronousFileChannelImpl
             try {
                 begin();
                 do {
-                    n = nd.force(fdObj, metaData);
+                    // Added parameter writing for AIX platform port.
+                    n = nd.force(fdObj, metaData, writing);
                 } while ((n == IOStatus.INTERRUPTED) && isOpen());
             } finally {
                 end(n >= 0);

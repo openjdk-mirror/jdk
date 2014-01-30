@@ -23,6 +23,22 @@
  * questions.
  */
 
+/*
+ * This file contains implementations of NET_... functions. The NET_.. functions are
+ * wrappers for common file- and socket functions plus provisions for non-blocking IO.
+ *
+ * (basically, the layers remember all  file descriptors waiting for a particular fd;
+ *  all threads waiting on a certain fd can be woken up by sending them a signal; this
+ *  is done e.g. when the fd is closed.)
+ *
+ * This, originally, was just for linux - hence the name. But we also switched 
+ * this implementation on for AIX when doing the first AIX jck tests in 2006.
+ *
+ * Side Note: This coding needs initialization. Under Linux this is done
+ * automatically via __attribute((constructor)), on AIX this is done manually 
+ * (see linux_close_init).
+ *
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -57,13 +73,17 @@ typedef struct {
 /*
  * Signal to unblock thread
  */
+#ifdef _AIX
+static int sigWakeup = (SIGRTMAX - 1);
+#else
 static int sigWakeup = (__SIGRTMAX - 2);
+#endif
 
 /*
  * The fd table and the number of file descriptors
  */
-static fdEntry_t *fdTable;
-static int fdCount;
+static fdEntry_t *fdTable = NULL;
+static int fdCount = 0;
 
 /*
  * Null signal handler
@@ -75,22 +95,55 @@ static void sig_wakeup(int sig) {
  * Initialization routine (executed when library is loaded)
  * Allocate fd tables and sets up signal handler.
  */
+#ifdef _AIX
+/*
+ * On AIX we don't have __attribute((constructor)) so
+ * we need to initialize manually
+ */
+void linux_close_init() {
+#else
 static void __attribute((constructor)) init() {
+#endif
     struct rlimit nbr_files;
     sigset_t sigset;
     struct sigaction sa;
+
+    /* Check already initialized */
+    if (fdCount > 0 && fdTable != NULL) {
+	return;
+    }
 
     /*
      * Allocate table based on the maximum number of
      * file descriptors.
      */
-    getrlimit(RLIMIT_NOFILE, &nbr_files);
+    if (-1 == getrlimit(RLIMIT_NOFILE, &nbr_files)) {
+	fprintf(stderr, "library initialization failed - "
+		"unable to get max # of allocated fds\n");
+	abort();
+    }
     fdCount = nbr_files.rlim_max;
+    /*
+     * We have a conceptual problem here, when the number of files is
+     * unlimited. As a kind of workaround, we ensure the table is big
+     * enough for handle even a large number of files. Since SAP itself
+     * recommends a limit of 32000 files, we just use 64000 as 'infinity'.
+     */
+    if (nbr_files.rlim_max == RLIM_INFINITY) {
+        fdCount = 64000;
+    }
     fdTable = (fdEntry_t *)calloc(fdCount, sizeof(fdEntry_t));
     if (fdTable == NULL) {
         fprintf(stderr, "library initialization failed - "
                 "unable to allocate file descriptor table - out of memory");
         abort();
+    }
+
+    {
+	int i;
+	for (i=0; i < fdCount; i++) {
+	    pthread_mutex_init(&fdTable[i].lock, NULL);
+	}
     }
 
     /*

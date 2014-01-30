@@ -202,7 +202,8 @@ public class WindowsAsynchronousFileChannelImpl
     public void force(boolean metaData) throws IOException {
         try {
             begin();
-            nd.force(fdObj, metaData);
+            //  Added parameter writable for AIX platform port (not used on Windows).
+            nd.force(fdObj, metaData, writing);
         } finally {
             end();
         }

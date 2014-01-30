@@ -180,6 +180,12 @@ ifeq ($(PLATFORM), linux)
   JA_DIRNAME=ja_JP.UTF-8
 endif # linux
 
+ifeq ($(PLATFORM), aix)
+  MANBASEDIRS=$(JDK_TOPDIR)/src/linux/doc $(IMPORTDOCDIR)
+  MAN1SUBDIR=man
+  JA_DIRNAME=ja_JP.UTF-8
+endif # aix
+
 define copy-man-pages
 $(MKDIR) -p $1/man/man1
 for manbase in $(MANBASEDIRS:%=%/$(MAN1SUBDIR)) ; do \
@@ -203,7 +209,7 @@ for manbase in $(MANBASEDIRS:%=%/$(MAN1SUBDIR)) ; do \
 done
 $(java-vm-cleanup)
 if [ "$(JA_DIRNAME)" != "" ] ; then \
-  $(CD) $1/man && $(RM) ja && $(LN) -s $(JA_DIRNAME) ja; \
+  $(CD) $1/man && $(RM) -r ja && $(LN) -s $(JA_DIRNAME) ja; \
 fi
 endef
 
@@ -1097,7 +1103,7 @@ initial-image-jdk:: initial-image-jdk-setup \
 	@# So for Linux, make use of the -T option (like Solaris' -I option) of
 	@# obtaining the list of files from a file. MKS tar has no such option.
 
-  ifneq (,$(findstring $(PLATFORM), linux macosx))
+  ifneq (,$(findstring $(PLATFORM), linux macosx aix))
 	for d in $(SOURCE_DIRS); do \
 	  $(RM) $(ABS_TEMPDIR)/src-files.list; \
 	  ($(CD) $$d &&  \

@@ -37,7 +37,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#if defined(AIX)
+#include <sys/limits.h>
+#else
 #include <sys/syslimits.h>
+#endif
 #include <sys/un.h>
 #include <fcntl.h>
 

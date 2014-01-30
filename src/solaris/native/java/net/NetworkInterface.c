@@ -52,6 +52,13 @@
 #include <stdio.h>
 #endif
 
+#if defined(AIX)
+#include <sys/ioctl.h>
+#include <netinet/in6_var.h>
+#include <sys/ndd_var.h>
+#include <sys/kinfo.h>
+#endif
+
 #ifdef __linux__
 #define _PATH_PROCNET_IFINET6           "/proc/net/if_inet6"
 #endif
@@ -89,6 +96,8 @@ typedef struct _netif {
     struct _netif *childs;
     struct _netif *next;
 } netif;
+
+#define SIZE(p) MAX((p).sa_len, sizeof(p))
 
 /************************************************************************
  * NetworkInterface
@@ -1019,8 +1028,8 @@ static int  openSocket(JNIEnv *env, int proto){
 }
 
 
-/** Linux **/
-#ifdef __linux__
+/** Linux, AIX **/
+#if !defined(__solaris__)
 /* Open socket for further ioct calls, try v4 socket first and
  * if it falls return v6 socket
  */
@@ -1058,11 +1067,13 @@ static int openSocketWithFallback(JNIEnv *env, const char *ifname){
 static netif *enumIPv4Interfaces(JNIEnv *env, int sock, netif *ifs) {
     struct ifconf ifc;
     struct ifreq *ifreqP;
-    char *buf;
+    char *buf = NULL;
     int numifs;
     unsigned i;
+    unsigned bufsize;
 
 
+#if defined(__linux__)
     /* need to do a dummy SIOCGIFCONF to determine the buffer size.
      * SIOCGIFCOUNT doesn't work
      */
@@ -1071,11 +1082,25 @@ static netif *enumIPv4Interfaces(JNIEnv *env, int sock, netif *ifs) {
         NET_ThrowByNameWithLastError(env , JNU_JAVANETPKG "SocketException", "ioctl SIOCGIFCONF failed");
         return ifs;
     }
+    bufsize = ifc.ifc_len;
+#elif defined(AIX)
+    ifc.ifc_buf = NULL;
+    if (ioctl(sock, SIOCGSIZIFCONF, &(ifc.ifc_len)) < 0) {
+        NET_ThrowByNameWithLastError(env , JNU_JAVANETPKG "SocketException",
+            "ioctl SIOCGSIZIFCONF failed");
+        return ifs;
+    }
+    bufsize = ifc.ifc_len;
+#endif /* __linux__ */
 
-    CHECKED_MALLOC3(buf,char *, ifc.ifc_len);
+    CHECKED_MALLOC3(buf,char *, bufsize);
 
     ifc.ifc_buf = buf;
-    if (ioctl(sock, SIOCGIFCONF, (char *)&ifc) < 0) {
+    int request = SIOCGIFCONF;
+#if defined(AIX)
+    request = CSIOCGIFCONF;
+#endif
+    if (ioctl(sock, request, (char *)&ifc) < 0) {
         NET_ThrowByNameWithLastError(env , JNU_JAVANETPKG "SocketException", "ioctl SIOCGIFCONF failed");
         (void) free(buf);
         return ifs;
@@ -1086,6 +1111,10 @@ static netif *enumIPv4Interfaces(JNIEnv *env, int sock, netif *ifs) {
      */
     ifreqP = ifc.ifc_req;
     for (i=0; i<ifc.ifc_len/sizeof (struct ifreq); i++, ifreqP++) {
+#if defined(AIX)
+    if (ifreqP->ifr_addr.sa_family != AF_INET)
+        continue; 
+#endif
         /*
          * Add to the list
          */
@@ -1113,7 +1142,7 @@ static netif *enumIPv4Interfaces(JNIEnv *env, int sock, netif *ifs) {
  * Enumerates and returns all IPv6 interfaces on Linux
  */
 
-#ifdef AF_INET6
+#if defined(AF_INET6) && defined(__linux__)
 static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
     FILE *f;
     char addr6[40], devname[21];
@@ -1157,11 +1186,102 @@ static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
 #endif
 
 
+#if (defined(AIX) && defined(AF_INET6))
+/*
+ * Enumerates and returns all IPv6 interfaces on AIX
+ */
+static netif *enumIPv6Interfaces(JNIEnv *env, int sock, netif *ifs) {
+    struct ifconf ifc;
+    struct ifreq *ifreqP;
+    char *buf;
+    int numifs;
+    unsigned i;
+    unsigned bufsize;
+    char *cp, *cplimit;
+
+    /* use SIOCGSIZIFCONF to get size for  SIOCGIFCONF */
+
+    ifc.ifc_buf = NULL;
+    if (ioctl(sock, SIOCGSIZIFCONF, &(ifc.ifc_len)) < 0) {
+        NET_ThrowByNameWithLastError(env , JNU_JAVANETPKG "SocketException",
+                        "ioctl SIOCGSIZIFCONF failed");
+        return ifs;
+    }
+    bufsize = ifc.ifc_len;
+
+    buf = (char *)malloc(bufsize);
+    if (!buf) {
+        JNU_ThrowOutOfMemoryError(env, "Network interface native buffer allocation failed");
+        return ifs;
+    }
+    ifc.ifc_len = bufsize;
+    ifc.ifc_buf = buf;
+    if (ioctl(sock, SIOCGIFCONF, (char *)&ifc) < 0) {
+        NET_ThrowByNameWithLastError(env , JNU_JAVANETPKG "SocketException",
+                       "ioctl CSIOCGIFCONF failed");
+        free(buf);
+        return ifs;
+    }
+
+    /*
+     * Iterate through each interface
+     */
+    ifreqP = ifc.ifc_req;
+    cp = (char *)ifc.ifc_req;
+    cplimit = cp + ifc.ifc_len;
+    for ( ; cp < cplimit; cp += (sizeof(ifreqP->ifr_name) + SIZE(ifreqP->ifr_addr))) {
+        ifreqP = (struct ifreq *)cp;
+        struct ifreq if2;
+
+        memset((char *)&if2, 0, sizeof(if2));
+        strcpy(if2.ifr_name, ifreqP->ifr_name);
+
+        /*
+         * Skip interface that aren't UP
+         */
+        if (ioctl(sock, SIOCGIFFLAGS, (char *)&if2) >= 0) {
+            if (!(if2.ifr_flags & IFF_UP)) {
+                continue;
+            }
+        }
+
+        if (ifreqP->ifr_addr.sa_family != AF_INET6)
+            continue;
+
+        /*
+         * Add to the list
+         */
+        ifs = addif(env, sock, ifreqP->ifr_name, ifs,
+                    (struct sockaddr *)&(ifreqP->ifr_addr),
+                     AF_INET6, 0);
+
+        /*
+         * If an exception occurred then free the list
+         */
+        if ((*env)->ExceptionOccurred(env)) {
+            free(buf);
+            freeif(ifs);
+            return NULL;
+        }
+    }
+
+    /*
+     * Free socket and buffer
+     */
+    free(buf);
+    return ifs;
+}
+#endif
+
+
 static int getIndex(int sock, const char *name){
      /*
       * Try to get the interface index
       * (Not supported on Solaris 2.6 or 7)
       */
+#if defined(AIX)
+    return if_nametoindex(name);
+#else
     struct ifreq if2;
     strcpy(if2.ifr_name, name);
 
@@ -1170,6 +1290,7 @@ static int getIndex(int sock, const char *name){
     }
 
     return if2.ifr_ifindex;
+#endif
 }
 
 /**
@@ -1236,6 +1357,45 @@ static short getSubnet(JNIEnv *env, int sock, const char *ifname) {
  * MAC address. Returns -1 if there is no hardware address on that interface.
  */
 static int getMacAddress(JNIEnv *env, int sock, const char* ifname, const struct in_addr* addr, unsigned char *buf) {
+#if defined (AIX)
+    int size;
+    struct kinfo_ndd *nddp;
+    void *end;
+
+    size = getkerninfo(KINFO_NDD, 0, 0, 0);
+    if (size == 0) {
+        return -1;
+    }
+
+    if (size < 0) {
+        perror("getkerninfo 1");
+        return -1;
+    }
+
+    nddp = (struct kinfo_ndd *)malloc(size);
+
+    if (!nddp) {
+        return -1;
+    }
+
+    if (getkerninfo(KINFO_NDD, nddp, &size, 0) < 0) {
+        exit(1);
+    }
+
+    end = (void *)nddp + size;
+    while ((void *)nddp < end) {
+        if (!strcmp(nddp->ndd_alias, ifname) ||
+                !strcmp(nddp->ndd_name, ifname)) {
+            bcopy(nddp->ndd_addr, buf, 6);
+            return 6;
+        } else {
+            nddp++;
+        }
+    }
+
+    return -1;
+
+#elif defined(__linux__)
     static struct ifreq ifr;
     int i;
 
@@ -1257,6 +1417,7 @@ static int getMacAddress(JNIEnv *env, int sock, const char* ifname, const struct
     }
 
     return -1;
+#endif
 }
 
 static int getMTU(JNIEnv *env, int sock,  const char *ifname) {

@@ -68,9 +68,16 @@ char* SplashConvertStringAlloc(const char* in, int* size) {
     if ( codeset == NULL || codeset[0] == 0 ) {
         goto done;
     }
+#ifdef AIX
+    /* (AIX<7.1)'s converter tables don't distunguish between                        */ 
+    /* LE/BE (always BE). Specifying BE makes iconv_open return with an error => So  */
+    /* don't do it (I checked that there's no BOM in output).                        */
+    codeset_out = "UCS-2";
+#else
     /* we don't need BOM in output so we choose native BE or LE encoding here */
     codeset_out = (platformByteOrder()==BYTE_ORDER_MSBFIRST) ?
         "UCS-2BE" : "UCS-2LE";
+#endif
 
     cd = iconv_open(codeset_out, codeset);
     if (cd == (iconv_t)-1 ) {

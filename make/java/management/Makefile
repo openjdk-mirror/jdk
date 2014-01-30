@@ -85,6 +85,12 @@ FILES_c     += MacosxOperatingSystem.c
 
 endif # PLATFORM macosx
 
+ifeq ($(PLATFORM),aix) # PLATFORM aix
+
+OTHER_LDLIBS += -lperfstat
+
+endif # PLATFORM aix
+
 endif # PLATFORM
 
 #

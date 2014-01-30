@@ -47,3 +47,8 @@ ifeq ($(PLATFORM), macosx)
 FILES_export = \
 	sun/tools/attach/BsdVirtualMachine.java
 endif
+
+ifeq ($(PLATFORM), aix)
+FILES_export = \
+	sun/tools/attach/AixVirtualMachine.java
+endif

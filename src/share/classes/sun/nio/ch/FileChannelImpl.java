@@ -373,7 +373,8 @@ public class FileChannelImpl
             if (!isOpen())
                 return;
             do {
-                rv = nd.force(fd, metaData);
+                // Added parameter writable for AIX platform port.
+                rv = nd.force(fd, metaData, writable);
             } while ((rv == IOStatus.INTERRUPTED) && isOpen());
         } finally {
             threads.remove(ti);

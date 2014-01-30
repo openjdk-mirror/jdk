@@ -35,7 +35,7 @@ FT_TEST = $(BUILDTOOLBINDIR)/$(PROGRAM)$(EXE_SUFFIX)
 # Used on openjdk only
 ifeq ($(OPENJDK),true)
 
-# Start with CFLAGS (which gets us the required -xarch setting on solaris)
+# Start with FT_CFLAGS (which gets us the required -xarch setting on solaris)
 ifeq ($(PLATFORM), windows)
   FT_OPTIONS  = /nologo /c
   FREETYPE_DLL = $(FREETYPE_LIB_PATH)/freetype.dll
@@ -44,16 +44,16 @@ ifdef MT
   FT_LD_OPTIONS += /manifest
 endif
 else
-  FT_OPTIONS  = $(CFLAGS)
+  FT_OPTIONS  = $(FT_CFLAGS)
   FT_LD_OPTIONS = -L$(FREETYPE_LIB_PATH)
   # Add runtime lib search path to ensure test will be runnable
-  ifeq ($(PLATFORM), solaris)
-    FT_LD_OPTIONS += -R $(FREETYPE_LIB_PATH) -lfreetype
+  ifeq ($(PLATFORM), linux)
+    FT_LD_OPTIONS += -Wl,-rpath -Wl,$(FREETYPE_LIB_PATH) $(FT2_LIBS)
   else 
     ifeq ($(PLATFORM), macosx)
       FT_LD_OPTIONS += -lfreetype -lz
-    else # linux
-      FT_LD_OPTIONS += -Wl,-rpath -Wl,$(FREETYPE_LIB_PATH) $(FT2_LIBS)
+    else # everything else
+      FT_LD_OPTIONS += -R $(FREETYPE_LIB_PATH) -lfreetype 
     endif
   endif
 endif
@@ -68,10 +68,10 @@ all: $(FT_TEST)
 
 # On windows we need to copy dll to test dir to ensure it will be found
 #   at runtime
-$(FT_TEST): freetypecheck.c
+$(FT_TEST): FRC
 	$(prep-target)
 ifeq ($(PLATFORM), windows)
-	$(CC) $(FT_OPTIONS) $(CC_OBJECT_OUTPUT_FLAG)$(FT_OBJ) $<
+	$(CC) $(FT_OPTIONS) $(CC_OBJECT_OUTPUT_FLAG)$(FT_OBJ) freetypecheck.c
 	$(LINK) $(FT_LD_OPTIONS) /OUT:$(FT_TEST) $(FT_OBJ)
 	$(CP) $(FREETYPE_DLL) $(@D)/
 ifdef MT
@@ -79,7 +79,7 @@ ifdef MT
 	$(MT) /manifest $(FT_TEST).manifest /outputresource:$(FT_TEST);#1
 endif
 else
-	@$(CC) $(FT_OPTIONS) $(CC_PROGRAM_OUTPUT_FLAG)$@ $< $(FT_LD_OPTIONS)
+	$(CC) $(FT_OPTIONS) $(CC_PROGRAM_OUTPUT_FLAG)$@ freetypecheck.c $(FT_LD_OPTIONS)
 endif
 
 else
@@ -92,4 +92,7 @@ endif
 
 clean::
 	$(RM) $(FT_TEST)
+
+# Force rule
+FRC:
 
