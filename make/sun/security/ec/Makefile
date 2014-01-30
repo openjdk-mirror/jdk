@@ -190,10 +190,8 @@ ifeq ($(NATIVE_ECC_AVAILABLE), true)
   #
   # Libraries to link
   #
-  ifeq ($(PLATFORM), windows)
-    OTHER_LDLIBS += $(JVMLIB)
-  else
-    OTHER_LDLIBS = $(LIBDL) $(JVMLIB) $(LIBCXX)
+  ifneq ($(PLATFORM), windows)
+    OTHER_LDLIBS = $(LIBCXX)
   endif
 
   include $(BUILDDIR)/common/Mapfile-vers.gmk

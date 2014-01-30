@@ -157,10 +157,8 @@ include $(BUILDDIR)/common/Library.gmk
 #
 # Libraries to link
 #
-ifeq ($(PLATFORM), windows)
-  OTHER_LDLIBS = $(JVMLIB)
-else
-  OTHER_LDLIBS = $(LIBDL) $(JVMLIB)
+ifneq ($(PLATFORM), windows)
+  OTHER_LDLIBS = $(LIBDL)
 endif
 
 # Other config files

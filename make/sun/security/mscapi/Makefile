@@ -161,7 +161,7 @@ include $(BUILDDIR)/common/Library.gmk
 # Libraries to link
 #
 ifeq ($(PLATFORM), windows)
-  OTHER_LDLIBS += $(JVMLIB) Crypt32.Lib
+  OTHER_LDLIBS += Crypt32.Lib
 endif
 
 #

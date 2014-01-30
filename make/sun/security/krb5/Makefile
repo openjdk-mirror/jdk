@@ -84,12 +84,8 @@ endif # PLATFORM
 #
 # Libraries to link
 #
-ifeq ($(PLATFORM), windows)
-  OTHER_LDLIBS = $(JVMLIB)
-else ifeq ($(PLATFORM), macosx)
-  OTHER_LDLIBS = $(LIBDL) $(JVMLIB) -framework Kerberos
-else
-  OTHER_LDLIBS = $(LIBDL) $(JVMLIB)
+ifeq ($(PLATFORM), macosx)
+  OTHER_LDLIBS = -framework Kerberos
 endif
 
 build:
