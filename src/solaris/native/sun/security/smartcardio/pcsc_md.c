@@ -36,6 +36,7 @@
 
 #include "pcsc_md.h"
 
+#ifndef USE_SYSTEM_PCSC
 void *hModule;
 FPTR_SCardEstablishContext scardEstablishContext;
 FPTR_SCardConnect scardConnect;
@@ -47,6 +48,7 @@ FPTR_SCardListReaders scardListReaders;
 FPTR_SCardBeginTransaction scardBeginTransaction;
 FPTR_SCardEndTransaction scardEndTransaction;
 FPTR_SCardControl scardControl;
+#endif
 
 /*
  * Throws a Java Exception by name
@@ -75,7 +77,9 @@ void throwIOException(JNIEnv *env, const char *msg)
     throwByName(env, "java/io/IOException", msg);
 }
 
+#ifndef USE_SYSTEM_PCSC
 void *findFunction(JNIEnv *env, void *hModule, char *functionName) {
+    return NULL;
     void *fAddress = dlsym(hModule, functionName);
     if (fAddress == NULL) {
         char errorMessage[256];
@@ -85,9 +89,11 @@ void *findFunction(JNIEnv *env, void *hModule, char *functionName) {
     }
     return fAddress;
 }
+#endif
 
 JNIEXPORT void JNICALL Java_sun_security_smartcardio_PlatformPCSC_initialize
         (JNIEnv *env, jclass thisClass, jstring jLibName) {
+#ifndef USE_SYSTEM_PCSC
     const char *libName = (*env)->GetStringUTFChars(env, jLibName, NULL);
     hModule = dlopen(libName, RTLD_LAZY);
     (*env)->ReleaseStringUTFChars(env, jLibName, libName);
@@ -106,4 +112,5 @@ JNIEXPORT void JNICALL Java_sun_security_smartcardio_PlatformPCSC_initialize
     scardBeginTransaction = (FPTR_SCardBeginTransaction)findFunction(env, hModule, "SCardBeginTransaction");
     scardEndTransaction   = (FPTR_SCardEndTransaction)  findFunction(env, hModule, "SCardEndTransaction");
     scardControl          = (FPTR_SCardControl)         findFunction(env, hModule, "SCardControl");
+#endif
 }

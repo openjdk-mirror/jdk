@@ -55,8 +55,14 @@ vpath %.c \
 #
 OTHER_INCLUDES += \
   -I$(SHARE_SRC)/native/sun/security/smartcardio \
-  -I$(PLATFORM_SRC)/native/sun/security/smartcardio \
+  -I$(PLATFORM_SRC)/native/sun/security/smartcardio
+
+ifdef USE_SYSTEM_PCSC
+OTHER_INCLUDES += $(PCSC_CFLAGS)
+else
+OTHER_INCLUDES += \
   -I$(PLATFORM_SRC)/native/sun/security/smartcardio/MUSCLE
+endif
 
 #
 # Rules
@@ -75,6 +81,11 @@ include $(BUILDDIR)/common/Library.gmk
 ifeq ($(PLATFORM), windows)
   OTHER_LDLIBS = winscard.lib
 else
+ifdef USE_SYSTEM_PCSC
+  OTHER_LDLIBS = $(PCSC_LIBS)
+  OTHER_CFLAGS = -DUSE_SYSTEM_PCSC
+else
   OTHER_LDLIBS = $(LIBDL)
   OTHER_CFLAGS = -D__sun_jdk
+endif
 endif
