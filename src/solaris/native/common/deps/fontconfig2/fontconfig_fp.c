@@ -92,6 +92,7 @@ void* dlOpenFontConfig() {
             return NULL;
         }
     }
+#endif
 
     /* Version 1.0 of libfontconfig crashes if HOME isn't defined in
      * the environment. This should generally never happen, but we can't
