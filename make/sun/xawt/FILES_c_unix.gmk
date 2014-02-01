@@ -94,7 +94,7 @@ FILES_c += \
 	cups_fp.c
 endif
 
-ifndef USE_SYSTEM_FONTCONFIG
+ifneq ($(SYSTEM_FONTCONFIG), true)
 FILES_c += \
 	fontconfig_fp.c
 endif

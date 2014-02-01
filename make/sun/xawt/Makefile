@@ -121,7 +121,7 @@ ifndef USE_SYSTEM_CUPS
 vpath %.c   $(PLATFORM_SRC)/native/common/deps
 endif
 
-ifndef USE_SYSTEM_FONTCONFIG
+ifneq ($(SYSTEM_FONTCONFIG), true)
 vpath %.c   $(PLATFORM_SRC)/native/common/deps/fontconfig2
 endif
 
@@ -136,7 +136,7 @@ ifdef USE_SYSTEM_CUPS
   OTHER_LDLIBS += $(CUPS_LIBS)
 endif
 
-ifdef USE_SYSTEM_FONTCONFIG
+ifeq ($(SYSTEM_FONTCONFIG), true)
   OTHER_LDLIBS += $(FONTCONFIG_LIBS)
 endif
 
@@ -193,7 +193,7 @@ else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps
 endif
 
-ifdef USE_SYSTEM_FONTCONFIG
+ifeq ($(SYSTEM_FONTCONFIG), true)
   CPPFLAGS += $(FONTCONFIG_CFLAGS) -DUSE_SYSTEM_FONTCONFIG
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/fontconfig2
