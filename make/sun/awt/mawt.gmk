@@ -103,7 +103,7 @@ vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/../java2d/pipe
 vpath %.cpp $(SHARE_SRC)/native/$(PKGDIR)/image
 vpath %.c   $(PLATFORM_SRC)/native/$(PKGDIR)/robot_child
 
-ifndef USE_SYSTEM_CUPS
+ifneq ($(SYSTEM_CUPS), true)
 vpath %.c   $(PLATFORM_SRC)/native/common/deps
 endif
 
@@ -190,7 +190,7 @@ endif
 OTHER_LDLIBS += $(JVMLIB) $(LIBCXX) \
                 -lawt $(LIBM)
 
-ifdef USE_SYSTEM_CUPS
+ifeq ($(SYSTEM_CUPS), true)
   OTHER_LDLIBS += $(CUPS_LIBS)
 endif
 
@@ -217,7 +217,7 @@ else
   CPPFLAGS += -I$(CUPS_HEADERS_PATH)
 endif
 
-ifdef USE_SYSTEM_CUPS
+ifeq ($(SYSTEM_CUPS), true)
   CPPFLAGS += -DUSE_SYSTEM_CUPS
   LDFLAGS += $(CUPS_LIBS)
 else

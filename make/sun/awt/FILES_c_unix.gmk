@@ -230,7 +230,7 @@ FILES_NO_MOTIF_c = \
         AccelGlyphCache.c \
 	CUPSfuncs.c
 
-ifndef USE_SYSTEM_CUPS
+ifneq ($(SYSTEM_CUPS), true)
 FILES_NO_MOTIF_c += \
 	cups_fp.c
 endif

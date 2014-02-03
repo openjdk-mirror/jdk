@@ -63,7 +63,7 @@ vpath %.c   $(SHARE_SRC)/native/sun/awt/utility
 vpath %.c   $(SHARE_SRC)/native/sun/font
 vpath %.c   $(call NativeSrcDirList,,native/sun/awt)
 
-ifndef USE_SYSTEM_CUPS
+ifneq ($(SYSTEM_CUPS), true)
 vpath %.c   $(PLATFORM_SRC)/native/common/deps
 endif
 

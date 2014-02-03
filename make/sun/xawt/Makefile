@@ -117,7 +117,7 @@ ifndef USE_SYSTEM_GTK
 vpath %.c   $(PLATFORM_SRC)/native/common/deps/gtk2
 endif
 
-ifndef USE_SYSTEM_CUPS
+ifneq ($(SYSTEM_CUPS), true)
 vpath %.c   $(PLATFORM_SRC)/native/common/deps
 endif
 
@@ -132,7 +132,7 @@ ifdef USE_SYSTEM_GTK
   OTHER_LDLIBS += $(GTK_LIBS)
 endif
 
-ifdef USE_SYSTEM_CUPS
+ifeq ($(SYSTEM_CUPS), true)
   OTHER_LDLIBS += $(CUPS_LIBS)
 endif
 
@@ -187,7 +187,7 @@ else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gtk2
 endif
 
-ifdef USE_SYSTEM_CUPS
+ifeq ($(SYSTEM_CUPS), true)
   CPPFLAGS += -DUSE_SYSTEM_CUPS
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps

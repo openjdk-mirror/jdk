@@ -553,8 +553,8 @@ export SYSTEM_JPEG=true
 export SYSTEM_PNG=true
 export SYSTEM_GIF=true
 export SYSTEM_KRB5=true
-export USE_SYSTEM_CUPS=true
-export USE_SYSTEM_FONTCONFIG=true
+export SYSTEM_CUPS=true
+export SYSTEM_FONTCONFIG=true
 export USE_SYSTEM_PCSC=false
 export COMPILE_AGAINST_SYSCALLS=true
 

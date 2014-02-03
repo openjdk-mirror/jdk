@@ -99,7 +99,7 @@ FILES_c = \
         CUPSfuncs.c
 
 
-ifndef USE_SYSTEM_CUPS
+ifneq ($(SYSTEM_CUPS), true)
 FILES_c += \
         cups_fp.c
 endif
