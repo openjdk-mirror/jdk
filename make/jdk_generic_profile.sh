@@ -555,7 +555,7 @@ export SYSTEM_GIF=true
 export SYSTEM_KRB5=true
 export SYSTEM_CUPS=true
 export SYSTEM_FONTCONFIG=true
-export USE_SYSTEM_PCSC=false
+export SYSTEM_PCSC=false
 export COMPILE_AGAINST_SYSCALLS=true
 
 if [ "x${GTK_LIBS}" != "x" ] ; then
