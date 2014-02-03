@@ -90,7 +90,7 @@ ifndef USE_SYSTEM_GCONF
   vpath %.c	$(PLATFORM_SRC)/native/common/deps/gconf2
 endif
 
-ifndef USE_SYSTEM_GIO
+ifneq ($(SYSTEM_GIO), true)
   vpath %.c     $(PLATFORM_SRC)/native/common/deps/glib2
 endif
 
@@ -127,7 +127,7 @@ else
   OTHER_LDLIBS += $(LIBDL)
 endif
 
-ifdef USE_SYSTEM_GIO
+ifeq ($(SYSTEM_GIO), true)
   OTHER_LDLIBS += $(GIO_LIBS)
   CPPFLAGS += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
 else

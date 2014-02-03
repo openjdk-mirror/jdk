@@ -237,7 +237,7 @@ FILES_c += \
 	UnixCopyFile.c \
 	UnixNativeDispatcher.c
 
-ifndef USE_SYSTEM_GIO
+ifneq ($(SYSTEM_GIO), true)
 FILES_c += \
 	gio_fp.c
 endif
@@ -369,7 +369,7 @@ vpath %.c $(SHARE_SRC)/native/sun/nio/ch
 
 endif # PLATFORM = macosx
 
-ifndef USE_SYSTEM_GIO
+ifneq ($(SYSTEM_GIO), true)
   vpath %.c	$(PLATFORM_SRC)/native/common/deps/glib2
 endif
 
@@ -404,7 +404,7 @@ endif
 
 ifeq ($(PLATFORM), linux)
   OTHER_LDLIBS += -L$(LIBDIR)/$(LIBARCH) -ljava -lnet -lpthread $(LIBDL)
-  ifdef USE_SYSTEM_GIO
+  ifeq ($(SYSTEM_GIO), true)
     OTHER_LDLIBS += $(GIO_LIBS)
     OTHER_INCLUDES += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
   else

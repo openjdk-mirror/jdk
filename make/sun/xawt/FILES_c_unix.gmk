@@ -99,7 +99,7 @@ FILES_c += \
 	fontconfig_fp.c
 endif
 
-ifndef USE_SYSTEM_GIO
+ifneq ($(SYSTEM_GIO), true)
 FILES_c += \
 	gio_fp.c
 endif

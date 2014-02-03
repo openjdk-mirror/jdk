@@ -563,5 +563,5 @@ if [ "x${GTK_LIBS}" != "x" ] ; then
 fi
 
 if [ "x${GIO_LIBS}" != "x" ] ; then
-  export USE_SYSTEM_GIO=true
+  export SYSTEM_GIO=true
 fi

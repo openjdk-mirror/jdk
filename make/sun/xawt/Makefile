@@ -109,7 +109,7 @@ vpath %.c   $(SHARE_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/opengl
 vpath %.c   $(PLATFORM_SRC)/native/sun/java2d/x11
 
-ifndef USE_SYSTEM_GIO
+ifneq ($(SYSTEM_GIO), true)
 vpath %.c   $(PLATFORM_SRC)/native/common/deps/glib2
 endif
 
@@ -140,7 +140,7 @@ ifeq ($(SYSTEM_FONTCONFIG), true)
   OTHER_LDLIBS += $(FONTCONFIG_LIBS)
 endif
 
-ifdef USE_SYSTEM_GIO
+ifeq ($(SYSTEM_GIO), true)
   OTHER_LDLIBS += $(GIO_LIBS)
 endif
 
@@ -199,7 +199,7 @@ else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/fontconfig2
 endif
 
-ifdef USE_SYSTEM_GIO
+ifeq ($(SYSTEM_GIO), true)
   CPPFLAGS += $(GIO_CFLAGS) -DUSE_SYSTEM_GIO
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/glib2
