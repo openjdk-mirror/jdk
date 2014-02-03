@@ -115,7 +115,7 @@ FILES_c += \
 	pngwutil.c
 endif
 
-ifndef USE_SYSTEM_GIF
+ifneq ($(SYSTEM_GIF), true)
 FILES_c += \
 	dgif_lib.c \
 	gif_err.c \

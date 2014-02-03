@@ -103,7 +103,7 @@ endif # PLATFORM
 #
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/splashscreen
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)
-ifndef USE_SYSTEM_GIF
+ifneq ($(SYSTEM_GIF), true)
   vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/giflib
 endif
 ifneq ($(SYSTEM_ZLIB),true)
@@ -150,7 +150,7 @@ else
   CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/libpng
 endif
 
-ifdef USE_SYSTEM_GIF
+ifeq ($(SYSTEM_GIF), true)
   CPPFLAGS += $(GIF_CFLAGS)
   OTHER_LDLIBS += $(GIF_LIBS)
 else
