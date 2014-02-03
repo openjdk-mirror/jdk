@@ -24,7 +24,7 @@
 # questions.
 #
 
-ifndef USE_SYSTEM_LCMS
+ifneq ($(SYSTEM_LCMS),true)
 FILES_c = \
     cmscam02.c \
     cmscgats.c \

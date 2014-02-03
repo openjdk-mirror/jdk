@@ -547,7 +547,7 @@ if [ -x "${pkgconfig}" ] ; then
 fi
 
 # IcedTea defaults; use system libraries
-export USE_SYSTEM_LCMS=true
+export SYSTEM_LCMS=true
 export SYSTEM_ZLIB=true
 export USE_SYSTEM_JPEG=true
 export USE_SYSTEM_PNG=true
