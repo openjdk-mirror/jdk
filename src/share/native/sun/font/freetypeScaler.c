@@ -441,7 +441,6 @@ Java_sun_font_FreetypeFontScaler_getFontMetricsNative(
     jobject metrics;
     jfloat ax, ay, dx, dy, bx, by, lx, ly, mx, my;
     jfloat f0 = 0.0;
-    FT_Pos bmodifier = 0;
     FTScalerContext *context =
         (FTScalerContext*) jlong_to_ptr(pScalerContext);
     FTScalerInfo *scalerInfo =
@@ -474,30 +473,21 @@ Java_sun_font_FreetypeFontScaler_getFontMetricsNative(
        So, we have to do adust them explicitly and stay consistent with what
        freetype does to outlines. */
 
-    /* For bolding glyphs are not just widened. Height is also changed
-       (see ftsynth.c).
-
-       TODO: In vertical direction we could do better job and adjust metrics
-       proportionally to glyoh shape. */
-    if (context->doBold) {
-        bmodifier = FT_MulFix(
-                       scalerInfo->face->units_per_EM,
-                       scalerInfo->face->size->metrics.y_scale)/24;
-    }
-
 
     /**** Note: only some metrics are affected by styling ***/
 
 #define FT_MulFixFloatShift6(a, b) (((float) (a)) * ((float) (b)) / 65536.0 / 64.0)
+
+    /* See FreeType source code: src/base/ftobjs.c ft_recompute_scaled_metrics() */
     /* ascent */
     ax = 0;
     ay = -(jfloat) (FT_MulFixFloatShift6(
-                       ((jlong) scalerInfo->face->ascender + bmodifier/2),
+                       ((jlong) scalerInfo->face->ascender),
                        (jlong) scalerInfo->face->size->metrics.y_scale));
     /* descent */
     dx = 0;
     dy = -(jfloat) (FT_MulFixFloatShift6(
-                       ((jlong) scalerInfo->face->descender + bmodifier/2),
+                       ((jlong) scalerInfo->face->descender),
                        (jlong) scalerInfo->face->size->metrics.y_scale));
     /* baseline */
     bx = by = 0;
@@ -505,13 +495,12 @@ Java_sun_font_FreetypeFontScaler_getFontMetricsNative(
     /* leading */
     lx = 0;
     ly = (jfloat) (FT_MulFixFloatShift6(
-                      (jlong) scalerInfo->face->height + bmodifier,
+                      (jlong) scalerInfo->face->height,
                       (jlong) scalerInfo->face->size->metrics.y_scale))
                   + ay - dy;
     /* max advance */
     mx = (jfloat) FT26Dot6ToFloat(
                      scalerInfo->face->size->metrics.max_advance +
-                     2*bmodifier +
                      OBLIQUE_MODIFIER(scalerInfo->face->size->metrics.height));
     my = 0;
 
