@@ -27,7 +27,7 @@ FILES_c = \
 	imageioJPEG.c \
 	jpegdecoder.c
 
-ifndef USE_SYSTEM_JPEG
+ifneq ($(SYSTEM_JPEG), true)
 FILES_c = \
 	jcomapi.c \
 	jdapimin.c \

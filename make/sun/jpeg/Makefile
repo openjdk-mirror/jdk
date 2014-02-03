@@ -56,7 +56,7 @@ OTHER_INCLUDES += -I$(CLOSED_SRC)/share/native/$(PKGDIR)/image/jpeg
 endif
 
 OTHER_INCLUDES += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
-ifndef USE_SYSTEM_JPEG
+ifneq ($(SYSTEM_JPEG), true)
 OTHER_INCLUDES += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
 endif
 
@@ -93,12 +93,12 @@ include $(BUILDDIR)/common/Library.gmk
 # Add to ambient vpath to get files in a subdirectory
 #
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg
-ifndef USE_SYSTEM_JPEG
+ifneq ($(SYSTEM_JPEG), true)
 vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
 endif
 
 CLASSES.export += java.io.InputStream
 
-ifdef USE_SYSTEM_JPEG
+ifeq ($(SYSTEM_JPEG), true)
   OTHER_LDLIBS += $(JPEG_LIBS)
 endif

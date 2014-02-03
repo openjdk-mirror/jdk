@@ -48,7 +48,7 @@ ifneq ($(SYSTEM_ZLIB),true)
 	zutil.c
 endif
 
-ifndef USE_SYSTEM_JPEG
+ifneq ($(SYSTEM_JPEG), true)
 FILES_c += \
 	jcomapi.c \
 	jdapimin.c \

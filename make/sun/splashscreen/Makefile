@@ -112,7 +112,7 @@ endif
 ifndef USE_SYSTEM_PNG
   vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/libpng
 endif
-ifndef USE_SYSTEM_JPEG
+ifneq ($(SYSTEM_JPEG), true)
   vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
 endif
 ifneq ($(PLATFORM), macosx)
@@ -136,7 +136,7 @@ else
   OTHER_LDLIBS += $(ZLIB_LIBS)
 endif
 
-ifdef USE_SYSTEM_JPEG
+ifeq ($(SYSTEM_JPEG), true)
   CPPFLAGS += $(JPEG_CFLAGS)
   OTHER_LDLIBS += $(JPEG_LIBS)
 else
