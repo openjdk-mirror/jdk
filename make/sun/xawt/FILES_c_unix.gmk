@@ -84,7 +84,7 @@ FILES_c = \
 	XRSurfaceData.c \
 	XRBackendNative.c
 
-ifndef USE_SYSTEM_GTK
+ifneq ($(SYSTEM_GTK), true)
 FILES_c += \
 	gtk_fp.c
 endif

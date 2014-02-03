@@ -559,7 +559,7 @@ export SYSTEM_PCSC=false
 export COMPILE_AGAINST_SYSCALLS=true
 
 if [ "x${GTK_LIBS}" != "x" ] ; then
-  export USE_SYSTEM_GTK=true
+  export SYSTEM_GTK=true
 fi
 
 if [ "x${GIO_LIBS}" != "x" ] ; then

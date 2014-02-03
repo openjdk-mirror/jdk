@@ -113,7 +113,7 @@ ifndef USE_SYSTEM_GIO
 vpath %.c   $(PLATFORM_SRC)/native/common/deps/glib2
 endif
 
-ifndef USE_SYSTEM_GTK
+ifneq ($(SYSTEM_GTK), true)
 vpath %.c   $(PLATFORM_SRC)/native/common/deps/gtk2
 endif
 
@@ -128,7 +128,7 @@ endif
 OTHER_LDLIBS = $(LIBM) -lawt -lXext -lX11 -lXrender $(LIBDL) \
                    $(LDFLAGS_COMMON) $(AWT_RUNPATH) $(OTHER_LDFLAGS) -lXtst -lXi
 
-ifdef USE_SYSTEM_GTK
+ifeq ($(SYSTEM_GTK), true)
   OTHER_LDLIBS += $(GTK_LIBS)
 endif
 
@@ -181,7 +181,7 @@ CPPFLAGS += -DXAWT -DXAWT_HACK \
         -I$(SHARE_SRC)/native/sun/awt \
         -I$(PLATFORM_SRC)/native/sun/awt
 
-ifdef USE_SYSTEM_GTK
+ifeq ($(SYSTEM_GTK), true)
   CPPFLAGS += $(GTK_CFLAGS) -DUSE_SYSTEM_GTK
 else
   CPPFLAGS += -I$(PLATFORM_SRC)/native/common/deps/gtk2
