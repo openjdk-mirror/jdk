@@ -385,10 +385,12 @@ if [ "${ZERO_BUILD}" = true ] ; then
   fi
 fi
 
+# Obtain pkgconfig for libs
+pkgconfig=$(which pkg-config 2>/dev/null)
+
 # Export variables for system zlib
 # ZLIB_CFLAGS and ZLIB_LIBS tell the compiler how to compile and
 # link against zlib
-pkgconfig=$(which pkg-config 2>/dev/null)
 if [ -x "${pkgconfig}" ] ; then
   if [ "${ZLIB_CFLAGS}" = "" ] ; then
     ZLIB_CFLAGS=$("${pkgconfig}" --cflags zlib)
@@ -406,7 +408,6 @@ export ZLIB_LIBS
 # Export variables for system LCMS
 # LCMS_CFLAGS and LCMS_LIBS tell the compiler how to compile and
 # link against lcms2
-pkgconfig=$(which pkg-config 2>/dev/null)
 if [ -x "${pkgconfig}" ] ; then
   if [ "${LCMS_CFLAGS}" = "" ] ; then
     LCMS_CFLAGS=$("${pkgconfig}" --cflags lcms2)
@@ -432,7 +433,6 @@ export JPEG_LIBS
 # Export variables for system libpng
 # PNG_CFLAGS and PNG_LIBS tell the compiler how to compile and
 # link against libpng
-pkgconfig=$(which pkg-config 2>/dev/null)
 if [ -x "${pkgconfig}" ] ; then
   if [ "${PNG_CFLAGS}" = "" ] ; then
     PNG_CFLAGS=$("${pkgconfig}" --cflags libpng)
@@ -463,6 +463,78 @@ if [ "${KRB5_LIBS}" = "" ] ; then
 fi
 export KRB5_LIBS
 
+# Export variables for system CUPS
+# CUPS_CFLAGS and CUPS_LIBS tell the compiler how to compile and
+# link against CUPS
+if [ "${CUPS_LIBS}" = "" ] ; then
+    CUPS_LIBS="-lcups"
+fi
+export CUPS_LIBS
+
+# Export variables for system libgtk
+# GTK_CFLAGS and GTK_LIBS tell the compiler how to compile and
+# link against libgtk
+if [ -x "${pkgconfig}" ] ; then
+  if [ "${GTK_CFLAGS}" = "" ] ; then
+    GTK_CFLAGS=$("${pkgconfig}" --cflags gtk+-2.0 gthread-2.0)
+  fi
+  if [ "${GTK_LIBS}" = "" ] ; then
+    GTK_LIBS=$("${pkgconfig}" --libs gtk+-2.0 gthread-2.0)
+  fi
+fi
+export GTK_CFLAGS
+export GTK_LIBS
+
+# Export variables for system libgio
+# GIO_CFLAGS and GIO_LIBS tell the compiler how to compile and
+# link against libgio
+if [ -x "${pkgconfig}" ] ; then
+  if "${pkgconfig}" --atleast-version=2.6 gio-2.0 ; then
+    if [ "${GIO_CFLAGS}" = "" ] ; then
+      GIO_CFLAGS=$("${pkgconfig}" --cflags gio-2.0)
+    fi
+    if [ "${GIO_LIBS}" = "" ] ; then
+      GIO_LIBS=$("${pkgconfig}" --libs gio-2.0)
+    fi
+  fi
+fi
+export GIO_CFLAGS
+export GIO_LIBS
+
+# Export variables for system libpcsc
+# PCSC_CFLAGS and PCSC_LIBS tell the compiler how to compile and
+# link against libpcsc
+if [ -x "${pkgconfig}" ] ; then
+  if [ "${PCSC_CFLAGS}" = "" ] ; then
+    PCSC_CFLAGS=$("${pkgconfig}" --cflags libpcsclite)
+  fi
+  if [ "${PCSC_LIBS}" = "" ] ; then
+    PCSC_LIBS=$("${pkgconfig}" --libs libpcsclite)
+  fi
+fi
+if [ "${PCSC_LIBS}" = "" ] ; then
+    PCSC_LIBS="-lpcsclite"
+fi
+export PCSC_CFLAGS
+export PCSC_LIBS
+
+# Export variables for system fontconfig
+# FONTCONFIG_CFLAGS and FONTCONFIG_LIBS tell the compiler how to compile and
+# link against libfontconfig
+if [ -x "${pkgconfig}" ] ; then
+  if [ "${FONTCONFIG_CFLAGS}" = "" ] ; then
+    FONTCONFIG_CFLAGS=$("${pkgconfig}" --cflags fontconfig)
+  fi
+  if [ "${FONTCONFIG_LIBS}" = "" ] ; then
+    FONTCONFIG_LIBS=$("${pkgconfig}" --libs fontconfig)
+  fi
+fi
+if [ "${FONTCONFIG_LIBS}" = "" ] ; then
+    FONTCONFIG_LIBS="-lfontconfig"
+fi
+export FONTCONFIG_CFLAGS
+export FONTCONFIG_LIBS
+
 # Setup nss.cfg using location of NSS libraries
 if [ -x "${pkgconfig}" ] ; then
   jdk_topdir=$(dirname ${BASH_SOURCE})/..
@@ -481,3 +553,15 @@ export USE_SYSTEM_JPEG=true
 export USE_SYSTEM_PNG=true
 export USE_SYSTEM_GIF=true
 export SYSTEM_KRB5=true
+export USE_SYSTEM_CUPS=true
+export USE_SYSTEM_FONTCONFIG=true
+export USE_SYSTEM_PCSC=false
+export COMPILE_AGAINST_SYSCALLS=true
+
+if [ "x${GTK_LIBS}" != "x" ] ; then
+  export USE_SYSTEM_GTK=true
+fi
+
+if [ "x${GIO_LIBS}" != "x" ] ; then
+  export USE_SYSTEM_GIO=true
+fi
