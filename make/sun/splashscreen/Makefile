@@ -109,7 +109,7 @@ endif
 ifneq ($(SYSTEM_ZLIB),true)
   vpath %.c   $(SHARE_SRC)/native/java/util/zip/zlib-$(ZLIB_VERSION)
 endif
-ifndef USE_SYSTEM_PNG
+ifneq ($(SYSTEM_PNG), true)
   vpath %.c   $(SHARE_SRC)/native/$(PKGDIR)/libpng
 endif
 ifneq ($(SYSTEM_JPEG), true)
@@ -143,7 +143,7 @@ else
   CPPFLAGS += -I$(SHARE_SRC)/native/$(PKGDIR)/image/jpeg/jpeg-6b
 endif
 
-ifdef USE_SYSTEM_PNG
+ifeq ($(SYSTEM_PNG), true)
   CPPFLAGS += $(PNG_CFLAGS)
   OTHER_LDLIBS += $(PNG_LIBS)
 else

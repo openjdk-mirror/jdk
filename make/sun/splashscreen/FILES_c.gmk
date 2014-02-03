@@ -96,7 +96,7 @@ FILES_c += \
 	jfdctint.c
 endif
 
-ifndef USE_SYSTEM_PNG
+ifneq ($(SYSTEM_PNG), true)
 FILES_c += \
 	png.c \
 	pngerror.c \

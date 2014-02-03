@@ -550,7 +550,7 @@ fi
 export SYSTEM_LCMS=true
 export SYSTEM_ZLIB=true
 export SYSTEM_JPEG=true
-export USE_SYSTEM_PNG=true
+export SYSTEM_PNG=true
 export USE_SYSTEM_GIF=true
 export SYSTEM_KRB5=true
 export USE_SYSTEM_CUPS=true
