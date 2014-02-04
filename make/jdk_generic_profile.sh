@@ -505,11 +505,13 @@ export GIO_LIBS
 # PCSC_CFLAGS and PCSC_LIBS tell the compiler how to compile and
 # link against libpcsc
 if [ -x "${pkgconfig}" ] ; then
-  if [ "${PCSC_CFLAGS}" = "" ] ; then
-    PCSC_CFLAGS=$("${pkgconfig}" --cflags libpcsclite)
-  fi
-  if [ "${PCSC_LIBS}" = "" ] ; then
-    PCSC_LIBS=$("${pkgconfig}" --libs libpcsclite)
+  if "${pkgconfig}" --exists libpcsclite ; then
+    if [ "${PCSC_CFLAGS}" = "" ] ; then
+      PCSC_CFLAGS=$("${pkgconfig}" --cflags libpcsclite)
+    fi
+    if [ "${PCSC_LIBS}" = "" ] ; then
+      PCSC_LIBS=$("${pkgconfig}" --libs libpcsclite)
+    fi
   fi
 fi
 if [ "${PCSC_LIBS}" = "" ] ; then
