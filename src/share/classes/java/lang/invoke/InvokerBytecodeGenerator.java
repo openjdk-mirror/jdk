@@ -613,6 +613,12 @@ class InvokerBytecodeGenerator {
             return false;  // inner class of some sort
         if (cls.getClassLoader() != MethodHandle.class.getClassLoader())
             return false;  // not on BCP
+        MethodType mtype = member.getMethodOrFieldType();
+        if (!isStaticallyNameable(mtype.returnType()))
+            return false;
+        for (Class<?> ptype : mtype.parameterArray())
+            if (!isStaticallyNameable(ptype))
+                return false;
         if (!member.isPrivate() && VerifyAccess.isSamePackage(MethodHandle.class, cls))
             return true;   // in java.lang.invoke package
         if (member.isPublic() && isStaticallyNameable(cls))
@@ -653,6 +659,12 @@ class InvokerBytecodeGenerator {
             // in order to pass the verifier, we need to convert this to invokevirtual in all cases
             assert(member.canBeStaticallyBound()) : member;
             refKind = REF_invokeVirtual;
+        }
+
+        if (member.getDeclaringClass().isInterface() && refKind == REF_invokeVirtual) {
+            // Methods from Object declared in an interface can be resolved by JVM to invokevirtual kind.
+            // Need to convert it back to invokeinterface to pass verification and make the invocation works as expected.
+            refKind = REF_invokeInterface;
         }
 
         // push arguments

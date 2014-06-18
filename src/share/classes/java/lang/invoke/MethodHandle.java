@@ -753,6 +753,10 @@ public abstract class MethodHandle {
      * to the target method handle.
      * (The array may also be null when zero elements are required.)
      * <p>
+     * If, when the adapter is called, the supplied array argument does
+     * not have the correct number of elements, the adapter will throw
+     * an {@link IllegalArgumentException} instead of invoking the target.
+     * <p>
      * Here are some simple examples of array-spreading method handles:
      * <blockquote><pre>
 MethodHandle equals = publicLookup()
@@ -763,6 +767,12 @@ assert(!(boolean) equals.invokeExact("me", (Object)"thee"));
 MethodHandle eq2 = equals.asSpreader(Object[].class, 2);
 assert( (boolean) eq2.invokeExact(new Object[]{ "me", "me" }));
 assert(!(boolean) eq2.invokeExact(new Object[]{ "me", "thee" }));
+// try to spread from anything but a 2-array:
+for (int n = 0; n <= 10; n++) {
+  Object[] badArityArgs = (n == 2 ? null : new Object[n]);
+  try { assert((boolean) eq2.invokeExact(badArityArgs) && false); }
+  catch (IllegalArgumentException ex) { } // OK
+}
 // spread both arguments from a String array:
 MethodHandle eq2s = equals.asSpreader(String[].class, 2);
 assert( (boolean) eq2s.invokeExact(new String[]{ "me", "me" }));
@@ -1250,8 +1260,6 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     /*non-public*/
     MethodHandle viewAsType(MethodType newType) {
         // No actual conversions, just a new view of the same method.
-        if (!type.isViewableAs(newType))
-            throw new InternalError();
         return MethodHandleImpl.makePairwiseConvert(this, newType, 0);
     }
 
