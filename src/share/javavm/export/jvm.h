@@ -1317,6 +1317,9 @@ JVM_GetManagement(jint version);
 JNIEXPORT jobject JNICALL
 JVM_InitAgentProperties(JNIEnv *env, jobject agent_props);
 
+JNIEXPORT jstring JNICALL
+JVM_GetTemporaryDirectory(JNIEnv *env);
+
 /* Generics reflection support.
  *
  * Returns information about the given class's EnclosingMethod
